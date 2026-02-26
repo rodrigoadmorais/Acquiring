@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Comparativo - Mercado Livre</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --meli-yellow: #FFE600;
+            --meli-blue: #3483FA;
+            --meli-dark: #333333;
+            --meli-bg: #EBEBEB;
+            --meli-green: #00A650;
+            --meli-red: #F23D4F;
+            --meli-orange: #FF9F40;
+        }
+        body {
+            background-color: var(--meli-bg);
+            color: var(--meli-dark);
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+        .meli-header {
+            background-color: var(--meli-yellow);
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.1);
+        }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+        }
+        .chart-container {
+            position: relative;
+            height: 380px;
+            width: 100%;
+        }
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 10;
+            box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+        }
+        .drill-down-row {
+            background-color: #fafafa;
+        }
+        .cursor-pointer-hover:hover {
+            cursor: pointer;
+            background-color: #f0f7ff !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-10">
+
+    <!-- Header -->
+    <header class="meli-header py-4 px-6 shadow-sm border-b border-gray-300 mb-6">
+        <div class="max-w-full mx-auto flex flex-col md:flex-row justify-between items-center gap-4 px-4">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 text-white p-2 rounded font-bold italic">MELI</div>
+                <h1 class="text-xl font-bold text-gray-800 tracking-tight">Vendas de Dispositivos: Evolução Actual vs Plano</h1>
+            </div>
+            <div class="text-sm font-semibold text-gray-700 bg-white/50 px-3 py-1 rounded-full">
+                Reporting Consolidado 2025-2026
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- KPIs de Totais Acumulados -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="card p-6 border-l-4 border-blue-500">
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Total Actual Acumulado</p>
+                <h3 id="kpiActual" class="text-3xl font-extrabold mt-1 text-gray-800">0</h3>
+            </div>
+            <div class="card p-6 border-l-4 border-yellow-400">
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">Total Plano Acumulado</p>
+                <h3 id="kpiPlano" class="text-3xl font-extrabold mt-1 text-gray-800">0</h3>
+            </div>
+            <div id="variationCard" class="card p-6 border-l-4 border-gray-300">
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">GAP Acumulado (Δ)</p>
+                <h3 id="kpiVariation" class="text-3xl font-extrabold mt-1 text-gray-800">0%</h3>
+            </div>
+        </div>
+
+        <!-- Gráfico de Evolução -->
+        <div class="card p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b pb-4">
+                <div>
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-gray-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        Tendência Temporal
+                    </h2>
+                    <p class="text-sm text-gray-500 font-medium">Volumes reais vs projetados por canal</p>
+                </div>
+                <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border">
+                    <label class="text-xs font-bold text-gray-600 uppercase">Filtrar Canal:</label>
+                    <select id="chartChannelSelector" class="border-0 bg-transparent font-bold text-blue-600 focus:ring-0 cursor-pointer min-w-[150px]"></select>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="evolutionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabela Evolutiva -->
+        <div class="card overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                <h2 class="text-lg font-bold flex items-center gap-2 text-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                    Matriz Evolutiva por Canal
+                </h2>
+                <div class="flex flex-col items-end gap-1">
+                    <div class="flex gap-4 text-[10px] font-bold uppercase tracking-tight">
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></span> Actual</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-orange-400 rounded-full shadow-sm"></span> Jan Plano</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-yellow-400 rounded-full shadow-sm"></span> Plano</span>
+                    </div>
+                    <span class="text-[9px] text-gray-400 italic font-medium mt-1">Clique em APP + LP para expandir dispositivos</span>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[1500px]">
+                    <thead>
+                        <tr id="headerMonths" class="bg-white border-b-2 border-gray-100">
+                            <th class="p-4 text-xs font-extrabold text-gray-500 uppercase tracking-wider sticky-col border-b">Canal / Período</th>
+                        </tr>
+                    </thead>
+                    <tbody id="evolutionTableBody" class="divide-y divide-gray-100 text-[11px] font-medium"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Foco Janeiro -->
+        <div class="card overflow-hidden border-2 border-blue-100">
+            <div class="p-4 border-b bg-blue-50/50 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold text-blue-900 flex items-center gap-2">
+                        Foco Janeiro/2026: Actual vs Plano
+                    </h2>
+                    <p class="text-[10px] text-blue-600 font-semibold mt-1 uppercase tracking-wider">Clique em APP + LP para detalhamento de dispositivos</p>
+                </div>
+                <div class="bg-white px-3 py-1 rounded-full border border-blue-200 text-xs font-black text-blue-700 uppercase">
+                    Mês de Fechamento
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="p-4 font-bold text-xs text-gray-500 uppercase tracking-wider">Canal</th>
+                            <th class="p-4 font-bold text-xs text-gray-500 uppercase text-right tracking-wider">Actual Jan/26</th>
+                            <th class="p-4 font-bold text-xs text-gray-500 uppercase text-right tracking-wider">Plano Jan/26</th>
+                            <th class="p-4 font-bold text-xs text-gray-500 uppercase text-center tracking-wider">Variância Vol.</th>
+                            <th class="p-4 font-bold text-xs text-gray-500 uppercase text-right tracking-wider">% Realizado vs Plano</th>
+                        </tr>
+                    </thead>
+                    <tbody id="januaryTableBody" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.weight = '500';
+        Chart.defaults.color = '#666';
+
+        // --- DADOS ATUALIZADOS ---
+        const channels = ["APP + LP", "FDV Propria", "FDV Tercera", "MGM", "RESELLERS", "TLV", "TO", "Engagement", "Big Sellers H", "Total"];
+        
+        const actualData = {
+            "202506": [33617, 10171, 4994, 13910, 17360, 5553, 25380, 10664, 0, 121649],
+            "202507": [35112, 10505, 5851, 16798, 13831, 6249, 26745, 10971, 0, 126062],
+            "202508": [37100, 10619, 6413, 13621, 10960, 4877, 26852, 13609, 0, 124051],
+            "202509": [35972, 11854, 5534, 15884, 11098, 4569, 28718, 4927, 0, 118556],
+            "202510": [42654, 13185, 5476, 11916, 10429, 4182, 25882, 5676, 0, 119400],
+            "202511": [45498, 12795, 4990, 10214, 8183, 2896, 23912, 9582, 404, 118474],
+            "202512": [36024, 11034, 4357, 7659, 7537, 2319, 21356, 8544, 836, 99666],
+            "202601": [49561, 12845, 4161, 10174, 8459, 2618, 26912, 20936, 1130, 136796]
+        };
+
+        const planoData = {
+            "202601": [36810, 10823, 4672, 13908, 8475, 1163, 26164, 17369, 1143, 120527],
+            "202602": [36829, 10581, 3681, 14221, 8389, 991, 26873, 16781, 1490, 119836],
+            "202603": [36786, 14002, 4329, 15120, 9073, 1060, 27806, 16714, 1635, 126525],
+            "202604": [37951, 13153, 3770, 15514, 9660, 934, 26157, 16052, 1676, 124867],
+            "202605": [38298, 13732, 3690, 15753, 10192, 1069, 27030, 15789, 1616, 127169],
+            "202606": [37108, 14511, 3565, 14231, 10413, 964, 24900, 15148, 1803, 122643]
+        };
+
+        const drilldownData = {
+            "Actual": {
+                "AIR":   [4853, 4770, 4539, 4121, 4607, 7053, 7370, 10416],
+                "MINI":  [10771, 11311, 11496, 11554, 12590, 11507, 8133, 11015],
+                "PRO":   [11637, 11990, 12984, 12830, 16350, 16809, 13522, 17968],
+                "SMART": [6356, 7041, 8081, 7467, 9107, 10129, 6999, 10162]
+            },
+            "Plano": {
+                "SMART": [8509, 8564, 8629, 9034, 9244, 9067],
+                "PRO":   [12404, 12428, 12565, 13248, 13452, 13066],
+                "AIR":   [7722, 7772, 7759, 7585, 7415, 7260],
+                "MINI":  [8178, 8068, 7838, 8088, 8192, 7722]
+            },
+            "PlanoMonths": ["202601", "202602", "202603", "202604", "202605", "202606"]
+        };
+
+        const actualMonthsList = Object.keys(actualData).sort();
+        const futurePlanoMonths = Object.keys(planoData).sort().filter(m => !actualMonthsList.includes(m));
+        
+        const matrixTimeline = [
+            ...actualMonthsList.map(m => ({ id: m, type: 'actual' })),
+            { id: '202601', type: 'plano_overlap' },
+            ...futurePlanoMonths.map(m => ({ id: m, type: 'plano' }))
+        ];
+
+        let myChart = null;
+        let isAppLpExpanded = false;
+        let isAppLpExpandedJan = false;
+
+        const chartChannelSelector = document.getElementById('chartChannelSelector');
+        const kpiActual = document.getElementById('kpiActual');
+        const kpiPlano = document.getElementById('kpiPlano');
+        const kpiVariation = document.getElementById('kpiVariation');
+        const variationCard = document.getElementById('variationCard');
+        const headerMonths = document.getElementById('headerMonths');
+        const evolutionTableBody = document.getElementById('evolutionTableBody');
+        const januaryTableBody = document.getElementById('januaryTableBody');
+
+        function init() {
+            populateSelectors();
+            renderChart();
+            renderEvolutionTable();
+            renderJanuaryComparison();
+            calculateKPIs();
+        }
+
+        function populateSelectors() {
+            channels.forEach((c, i) => chartChannelSelector.add(new Option(c, i)));
+            chartChannelSelector.value = channels.length - 1; 
+        }
+
+        function formatMonth(m) {
+            const monthsNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+            return monthsNames[parseInt(m.substring(4, 6)) - 1] + "/" + m.substring(2, 4);
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            const channelIdx = parseInt(chartChannelSelector.value);
+            const labels = [...new Set([...Object.keys(actualData), ...Object.keys(planoData)])].sort();
+            const actValues = labels.map(m => actualData[m] ? actualData[m][channelIdx] : null);
+            const plaValues = labels.map(m => planoData[m] ? planoData[m][channelIdx] : null);
+
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.map(m => formatMonth(m)),
+                    datasets: [
+                        { label: 'Actual', data: actValues, borderColor: '#3483FA', backgroundColor: 'rgba(52, 131, 250, 0.15)', borderWidth: 3.5, fill: true, tension: 0.35, pointRadius: 5 },
+                        { label: 'Plano', data: plaValues, borderColor: '#FFE600', backgroundColor: 'transparent', borderWidth: 3, borderDash: [7, 4], tension: 0.35, pointRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { callback: v => v.toLocaleString() } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function toggleAppLp() {
+            isAppLpExpanded = !isAppLpExpanded;
+            renderEvolutionTable();
+        }
+
+        function toggleAppLpJan() {
+            isAppLpExpandedJan = !isAppLpExpandedJan;
+            renderJanuaryComparison();
+        }
+
+        function renderEvolutionTable() {
+            let headHtml = '<th class="p-4 text-[11px] font-extrabold text-gray-400 bg-gray-50 sticky-col border-b min-w-[150px]">Canal de Venda</th>';
+            matrixTimeline.forEach(col => {
+                let colorClass = col.type === 'actual' ? 'text-blue-600 bg-blue-50/40' : (col.type === 'plano_overlap' ? 'text-orange-700 bg-orange-100/50' : 'text-yellow-600 bg-yellow-50/40');
+                let label = col.type === 'actual' ? 'Actual' : 'Plano';
+                headHtml += `
+                    <th class="p-4 text-center text-[10px] font-bold ${colorClass} border-b border-x border-gray-100">
+                        ${formatMonth(col.id)}<br><span class="text-[8px] uppercase font-black opacity-80">${label}</span>
+                    </th>
+                `;
+            });
+            headerMonths.innerHTML = headHtml;
+
+            let bodyHtml = '';
+            channels.forEach((channel, cIdx) => {
+                const isTotal = channel === "Total";
+                const isAppLp = channel === "APP + LP";
+                
+                bodyHtml += `<tr class="${isTotal ? 'bg-gray-50 font-bold border-t-2 border-gray-200' : (isAppLp ? 'cursor-pointer-hover transition-colors' : 'hover:bg-gray-50/50 transition-colors')}" ${isAppLp ? 'onclick="toggleAppLp()"' : ''}>`;
+                bodyHtml += `<td class="p-4 text-xs font-bold text-gray-700 sticky-col border-r flex items-center gap-2">
+                    ${isAppLp ? (isAppLpExpanded ? '▼' : '▶') : ''} ${channel}
+                </td>`;
+                
+                matrixTimeline.forEach(col => {
+                    const dataSrc = (col.type === 'actual') ? actualData : planoData;
+                    const val = dataSrc[col.id][cIdx];
+                    let cellColor = col.type === 'actual' ? 'text-blue-700' : (col.type === 'plano_overlap' ? 'text-orange-800 font-bold bg-orange-50/30' : 'text-gray-500');
+                    bodyHtml += `<td class="p-3 text-right text-xs font-semibold border-r border-gray-50 ${cellColor}">${val ? val.toLocaleString() : '-'}</td>`;
+                });
+                bodyHtml += `</tr>`;
+
+                if (isAppLp && isAppLpExpanded) {
+                    const devices = ["AIR", "MINI", "PRO", "SMART"];
+                    devices.forEach(dev => {
+                        bodyHtml += `<tr class="drill-down-row text-gray-500">`;
+                        bodyHtml += `<td class="p-4 pl-10 text-[10px] font-semibold text-gray-400 sticky-col border-r">${dev}</td>`;
+                        
+                        matrixTimeline.forEach((col, mIdx) => {
+                            let val = '-';
+                            if (col.type === 'actual') {
+                                val = drilldownData.Actual[dev][mIdx] ? drilldownData.Actual[dev][mIdx].toLocaleString() : '-';
+                            } else {
+                                const pIdx = drilldownData.PlanoMonths.indexOf(col.id);
+                                if (pIdx !== -1) {
+                                    val = drilldownData.Plano[dev][pIdx].toLocaleString();
+                                }
+                            }
+                            let cellColor = col.type === 'actual' ? 'text-blue-400' : 'text-gray-400';
+                            if (col.type === 'plano_overlap') cellColor = 'text-orange-400 font-bold';
+                            bodyHtml += `<td class="p-3 text-right text-[10px] border-r border-gray-50 font-mono italic ${cellColor}">${val}</td>`;
+                        });
+                        bodyHtml += `</tr>`;
+                    });
+                }
+            });
+            evolutionTableBody.innerHTML = bodyHtml;
+        }
+
+        function renderJanuaryComparison() {
+            const janActual = actualData["202601"];
+            const janPlano = planoData["202601"];
+            let html = '';
+            channels.forEach((channel, idx) => {
+                const isTotal = channel === "Total";
+                const isAppLp = channel === "APP + LP";
+                const act = janActual[idx];
+                const pla = janPlano[idx];
+                const diff = act - pla;
+                const perf = pla !== 0 ? (act / pla) * 100 : 0;
+                
+                html += `
+                    <tr class="${isTotal ? 'bg-gray-50 font-extrabold border-t-2' : (isAppLp ? 'cursor-pointer-hover transition-colors' : '')}" ${isAppLp ? 'onclick="toggleAppLpJan()"' : ''}>
+                        <td class="p-4 text-sm font-bold text-gray-800 flex items-center gap-2">
+                            ${isAppLp ? (isAppLpExpandedJan ? '▼' : '▶') : ''} ${channel}
+                        </td>
+                        <td class="p-4 text-right text-sm font-semibold text-blue-700 font-mono">${act.toLocaleString()}</td>
+                        <td class="p-4 text-right text-sm font-semibold text-gray-500 font-mono">${pla.toLocaleString()}</td>
+                        <td class="p-4 text-center">
+                            <span class="px-2.5 py-1 rounded-md text-[11px] font-black ${diff >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                                ${diff >= 0 ? '+' : ''}${diff.toLocaleString()}
+                            </span>
+                        </td>
+                        <td class="p-4 text-right text-sm font-black ${perf >= 100 ? 'text-green-600' : 'text-red-600'}">
+                            ${perf.toFixed(1)}%
+                        </td>
+                    </tr>
+                `;
+
+                if (isAppLp && isAppLpExpandedJan) {
+                    const devices = ["AIR", "MINI", "PRO", "SMART"];
+                    devices.forEach(dev => {
+                        const devAct = drilldownData.Actual[dev][7]; 
+                        const devPla = drilldownData.Plano[dev][0];   
+                        const devDiff = devAct - devPla;
+                        const devPerf = (devAct / devPla) * 100;
+
+                        html += `
+                            <tr class="drill-down-row bg-gray-50/50">
+                                <td class="p-3 pl-10 text-xs font-semibold text-gray-500 italic">${dev}</td>
+                                <td class="p-3 text-right text-xs font-mono text-blue-500">${devAct.toLocaleString()}</td>
+                                <td class="p-3 text-right text-xs font-mono text-gray-400">${devPla.toLocaleString()}</td>
+                                <td class="p-3 text-center">
+                                    <span class="text-[10px] font-bold ${devDiff >= 0 ? 'text-green-600' : 'text-red-500'}">
+                                        ${devDiff >= 0 ? '+' : ''}${devDiff.toLocaleString()}
+                                    </span>
+                                </td>
+                                <td class="p-3 text-right text-xs font-bold ${devPerf >= 100 ? 'text-green-500/80' : 'text-red-400'}">
+                                    ${devPerf.toFixed(1)}%
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+            januaryTableBody.innerHTML = html;
+        }
+
+        function calculateKPIs() {
+            const idxTotal = channels.length - 1;
+            let totalActual = 0;
+            Object.values(actualData).forEach(arr => totalActual += arr[idxTotal]);
+            let totalPlano = 0;
+            Object.values(planoData).forEach(arr => totalPlano += arr[idxTotal]);
+            const gap = totalActual - totalPlano;
+            const gapPerc = totalPlano !== 0 ? (gap / totalPlano) * 100 : 0;
+            kpiActual.innerText = totalActual.toLocaleString();
+            kpiPlano.innerText = totalPlano.toLocaleString();
+            kpiVariation.innerText = (gapPerc >= 0 ? '+' : '') + gapPerc.toFixed(1) + '%';
+            variationCard.className = `card p-6 border-l-4 ${gapPerc >= 0 ? 'border-green-500' : 'border-red-500'}`;
+            kpiVariation.className = `text-3xl font-extrabold mt-1 ${gapPerc >= 0 ? 'text-green-600' : 'text-red-600'}`;
+        }
+
+        chartChannelSelector.addEventListener('change', renderChart);
+        window.onload = init;
+    </script>
+</body>
+</html>
