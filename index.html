@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financeiro - Mercado Livre</title>
+    <!-- Importação da Fonte Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --ml-yellow: #FFE600;
+            --ml-blue: #3483FA;
+            --ml-blue-dark: #2968c8;
+            --ml-blue-light: #E1F0FF;
+            --ml-bg: #F5F5F5;
+        }
+        body { background-color: var(--ml-bg); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .ml-shadow { box-shadow: 0 1px 2px 0 rgba(0,0,0,0.1); }
+        .header-ml { background-color: var(--ml-yellow); }
+        .card { background: white; border-radius: 8px; border: 1px solid #e5e5e5; }
+        
+        .btn-toggle { 
+            padding: 8px 20px; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            border-radius: 6px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+        .btn-active { 
+            background-color: var(--ml-blue); 
+            color: white !important; 
+            box-shadow: 0 4px 6px -1px rgba(52, 131, 250, 0.3);
+            transform: scale(1.02);
+        }
+        .btn-inactive { 
+            color: #666; 
+            background-color: transparent;
+        }
+        .btn-inactive:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        .row-subtotal { background-color: #f8fafc; font-weight: 700; border-top: 1px solid #e2e8f0; }
+        .hidden-col { display: none; }
+        
+        .btn-action { background: #f1f1f1; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; color: #444; border: 1px solid #ddd; transition: all 0.2s; }
+        .btn-action:hover { background: #e5e5e5; }
+        .btn-action.active { background: #3483FA; color: white; border-color: #3483FA; }
+        
+        .kpi-breakdown { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; border-top: 1px solid #f0f0f0; padding-top: 16px; }
+        .kpi-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #64748b; }
+        .kpi-val { font-weight: 600; color: #1e293b; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+        
+        .tab-btn { 
+            padding: 14px 28px; 
+            font-weight: 700; 
+            border-bottom: 4px solid transparent; 
+            transition: all 0.3s ease; 
+            color: #777;
+            font-size: 0.9rem;
+        }
+        .tab-btn.active { 
+            border-bottom-color: var(--ml-blue); 
+            color: var(--ml-blue); 
+            background-color: var(--ml-blue-light);
+            border-radius: 8px 8px 0 0;
+        }
+        
+        table { font-variant-numeric: tabular-nums; width: 100%; }
+        
+        .executive-comment {
+            border-left: 4px solid var(--ml-blue);
+            background-color: #f8fafc;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-ml sticky top-0 z-50 ml-shadow">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <h1 class="text-lg font-extrabold text-blue-900 tracking-tight">Online Payments</h1>
+            </div>
+            <div class="text-blue-900 font-bold text-sm bg-white/40 px-4 py-2 rounded-lg">
+                Consolidado MLB
+            </div>
+        </div>
+        <div class="bg-white border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 flex gap-2">
+                <button onclick="switchTab('hosting')" id="tab-hosting" class="tab-btn active">Hosting Variable</button>
+                <button onclick="switchTab('cx')" id="tab-cx" class="tab-btn">CX Variable</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 space-y-6">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card p-5">
+                <h2 class="text-[10px] font-extrabold uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Conceito Técnico
+                </h2>
+                <div id="concept-content"></div>
+            </div>
+
+            <div class="card p-6 border-l-4 border-l-blue-500 flex flex-col justify-between">
+                <div>
+                    <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest" id="cost-label-title">Total Cost (MLB)</p>
+                    <h3 id="totalCostLabel" class="text-3xl font-extrabold text-slate-900 mt-2 tracking-tight">R$ 0</h3>
+                </div>
+                <div class="kpi-breakdown">
+                    <div class="kpi-item"><span>Big Sellers</span> <span id="kpiBS" class="kpi-val">R$ 0</span></div>
+                    <div class="kpi-item"><span>SMB</span> <span id="kpiSMB" class="kpi-val">R$ 0</span></div>
+                    <div class="kpi-item"><span>Longtail</span> <span id="kpiLT" class="kpi-val">R$ 0</span></div>
+                </div>
+            </div>
+
+            <div class="card p-6 border-l-4 border-l-yellow-400 flex flex-col justify-between">
+                <div>
+                    <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Total TPN MLB</p>
+                    <h3 id="totalTpnLabel" class="text-3xl font-extrabold text-slate-900 mt-2 tracking-tight">0</h3>
+                </div>
+                <div class="kpi-breakdown">
+                    <div class="kpi-item"><span>Big Sellers</span> <span id="kpiTpnBS" class="kpi-val">0</span></div>
+                    <div class="kpi-item"><span>SMB</span> <span id="kpiTpnSMB" class="kpi-val">0</span></div>
+                    <div class="kpi-item"><span>Longtail</span> <span id="kpiTpnLT" class="kpi-val">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-800 tracking-tight">Proposta Critério Técnico</h2>
+                    <p class="text-sm text-slate-500" id="chart-sub"></p>
+                </div>
+                <div class="flex bg-slate-100 p-1.5 rounded-lg border border-slate-200" id="view-toggle-container">
+                    <button id="viewAbs" class="btn-toggle btn-active" onclick="setView('abs')">Absoluto (R$)</button>
+                    <button id="viewTpn" class="btn-toggle btn-inactive" onclick="setView('tpn')">Por TPN (R$/TPN)</button>
+                </div>
+            </div>
+            <div class="h-[400px]">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card p-6 overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <h2 class="text-lg font-extrabold text-slate-800 tracking-tight" id="table-title">Detalhamento por Segmento</h2>
+                <div class="flex gap-2" id="table-actions">
+                    <button id="toggleTpnCol" class="btn-action" onclick="toggleTpn()">Mostrar Volumes (TPN)</button>
+                    <button id="toggleUnitCol" class="btn-action" onclick="toggleUnit()">Mostrar Custo/TPN</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead id="table-head"></thead>
+                    <tbody id="table-body"></tbody>
+                    <tfoot id="table-footer" class="bg-slate-100 font-bold border-t-2 border-slate-300"></tfoot>
+                </table>
+            </div>
+            <div id="table-comment" class="executive-comment"></div>
+        </div>
+    </main>
+
+    <script>
+        Chart.register(ChartDataLabels);
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        const rawData = [
+            { s: "NA", m: "Others", t: 343141, h: 13513, cx: 38193 },
+            { s: "NA", m: "Pix", t: 818448, h: 30216, cx: 40320 },
+            { s: "NA", m: "Crédito", t: 15517774, h: 706941, cx: 151643 },
+            { s: "NA", m: "Débito", t: 5803, h: 236, cx: 712 },
+            { s: "NA", m: "Others", t: 11347, h: 430, cx: 4409 },
+            { s: "NA", m: "Others", t: 253365, h: 9410, cx: 61006 },
+            { s: "BIG SELLERS", m: "Others", t: 90865953, h: 4181292, cx: 2174851 },
+            { s: "BIG SELLERS", m: "Pix", t: 223485381, h: 10128734, cx: 230474 },
+            { s: "BIG SELLERS", m: "Crédito", t: 153613849, h: 6565341, cx: 835349 },
+            { s: "BIG SELLERS", m: "Débito", t: 9759, h: 444, cx: 345 },
+            { s: "BIG SELLERS", m: "Others", t: 391742, h: 17321, cx: 72460 },
+            { s: "BIG SELLERS", m: "Others", t: 3257110, h: 149861, cx: 39983 },
+            { s: "LONGTAIL", m: "Others", t: 3747257, h: 165681, cx: 283056 },
+            { s: "LONGTAIL", m: "Pix", t: 32789539, h: 1495319, cx: 478249 },
+            { s: "LONGTAIL", m: "Crédito", t: 27139779, h: 1237037, cx: 4863000 },
+            { s: "LONGTAIL", m: "Débito", t: 66985, h: 3026, cx: 5685 },
+            { s: "LONGTAIL", m: "Others", t: 780543, h: 34444, cx: 970132 },
+            { s: "LONGTAIL", m: "Others", t: 905889, h: 41177, cx: 290441 },
+            { s: "NA", m: "Others", t: 19600670, h: 861674, cx: 72532 },
+            { s: "NA", m: "Pix", t: 864221, h: 39117, cx: 44055 },
+            { s: "NA", m: "Crédito", t: 3702625, h: 168281, cx: 574344 },
+            { s: "NA", m: "Débito", t: 13892, h: 633, cx: 1324 },
+            { s: "NA", m: "Others", t: 116650, h: 5174, cx: 87419 },
+            { s: "NA", m: "Others", t: 193619, h: 9017, cx: 74177 },
+            { s: "SMB", m: "Others", t: 1786184, h: 78803, cx: 82747 },
+            { s: "SMB", m: "Pix", t: 44751425, h: 2048959, cx: 196015 },
+            { s: "SMB", m: "Crédito", t: 18427096, h: 841655, cx: 1868256 },
+            { s: "SMB", m: "Débito", t: 23614, h: 1018, cx: 2341 },
+            { s: "SMB", m: "Others", t: 154174, h: 6973, cx: 91682 },
+            { s: "SMB", m: "Others", t: 970394, h: 43935, cx: 138483 }
+        ];
+
+        const hWeights = { "Pix": 0.28, "Crédito": 1.0, "Débito": 0.82, "Others": 0.25 };
+        const cxWeights = { "BIG SELLERS": 0.0768, "SMB": 0.3034, "LONGTAIL": 0.6198 };
+        
+        let currentTab = 'hosting';
+        let currentView = 'abs';
+        let showTpnColumn = false;
+        let showUnitColumn = false;
+        let chartInstance = null;
+
+        function formatCurrency(val, precision = 2) { 
+            return "R$ " + val.toLocaleString('pt-BR', { minimumFractionDigits: precision, maximumFractionDigits: precision }); 
+        }
+
+        function formatTick(value) {
+            if (currentView === 'tpn') return value.toFixed(3); 
+            if (value >= 1000000) return (value / 1000000).toFixed(0) + 'Mi';
+            if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+            return value;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            updateDashboard();
+        }
+
+        function setView(view) { currentView = view; updateDashboard(); }
+        function toggleTpn() { showTpnColumn = !showTpnColumn; updateDashboard(); }
+        function toggleUnit() { showUnitColumn = !showUnitColumn; updateDashboard(); }
+
+        function updateDashboard() {
+            const totalTpn = rawData.reduce((a,c) => a + c.t, 0);
+            const totalHosting = rawData.reduce((a,c) => a + c.h, 0);
+            const totalCx = rawData.reduce((a,c) => a + c.cx, 0);
+            
+            document.getElementById('viewAbs').className = `btn-toggle ${currentView === 'abs' ? 'btn-active' : 'btn-inactive'}`;
+            document.getElementById('viewTpn').className = `btn-toggle ${currentView === 'tpn' ? 'btn-active' : 'btn-inactive'}`;
+
+            if (currentTab === 'hosting') {
+                renderHosting(totalHosting, totalTpn);
+            } else {
+                renderCX(totalCx, totalTpn);
+            }
+        }
+
+        function renderHosting(totalH, totalT) {
+            document.getElementById('cost-label-title').innerText = "Total Hosting Cost (MLB)";
+            document.getElementById('totalCostLabel').innerText = formatCurrency(totalH, 0);
+            document.getElementById('totalTpnLabel').innerText = Math.round(totalT).toLocaleString('pt-BR');
+            document.getElementById('view-toggle-container').style.display = 'flex';
+            document.getElementById('chart-sub').innerText = "Distribuição proporcional por meio de pagamento";
+            
+            document.getElementById('table-comment').innerHTML = `
+                Efeito <span class="font-bold text-blue-700">VC%</span> em <span class="font-bold">BS Pix</span>: 
+                <span class="text-green-600 font-extrabold">+0,03bps</span> saindo de <span class="font-bold">0,17%</span> para <span class="font-bold">0,20%</span> 
+                enquanto <span class="font-bold">BS Crédito</span>: 
+                <span class="text-red-600 font-extrabold">-0,03bps</span> saindo de <span class="font-bold">0,57%</span> para <span class="font-bold">0,54%</span>.
+            `;
+
+            document.getElementById('concept-content').innerHTML = `
+                <table class="w-full text-sm">
+                    <thead><tr class="text-left border-b text-slate-500"><th class="pb-2">Meio</th><th class="text-right pb-2">MLB (s/TPN)</th></tr></thead>
+                    <tbody class="text-slate-700 font-medium">
+                        <tr><td class="py-2">Pix</td><td class="text-right font-semibold">0,66</td></tr>
+                        <tr><td class="py-2">Crédito</td><td class="text-right font-semibold">2,30</td></tr>
+                        <tr><td class="py-2">Débito</td><td class="text-right font-semibold">1,88</td></tr>
+                        <tr><td class="py-2">Others</td><td class="text-right font-semibold">0,58</td></tr>
+                    </tbody>
+                </table>`;
+
+            const hWeightedSum = rawData.reduce((a,c) => a + (c.t * hWeights[c.m]), 0);
+            const kH = totalH / hWeightedSum;
+            const dataH = rawData.map(d => ({...d, prop: d.t * hWeights[d.m] * kH }));
+
+            ["BIG SELLERS", "SMB", "LONGTAIL"].forEach(s => {
+                const filtered = dataH.filter(d => d.s === s);
+                const cost = filtered.reduce((a,c) => a + c.prop, 0);
+                const tpn = filtered.reduce((a,c) => a + c.t, 0);
+                const key = s === "BIG SELLERS" ? "BS" : s === "LONGTAIL" ? "LT" : "SMB";
+                document.getElementById('kpi'+key).innerText = formatCurrency(cost, 0);
+                document.getElementById('kpiTpn'+key).innerText = Math.round(tpn).toLocaleString('pt-BR');
+            });
+
+            const chartGroups = {};
+            Object.keys(hWeights).forEach(m => chartGroups[m] = { a: 0, p: 0, t: 0 });
+            dataH.forEach(d => { chartGroups[d.m].a += d.h; chartGroups[d.m].p += d.prop; chartGroups[d.m].t += d.t; });
+            renderChartBars(Object.keys(chartGroups), chartGroups);
+            renderHostingTable(dataH);
+        }
+
+        function renderCX(totalCX, totalT) {
+            document.getElementById('cost-label-title').innerText = "Total CX Cost (MLB)";
+            document.getElementById('totalCostLabel').innerText = formatCurrency(totalCX, 0);
+            document.getElementById('totalTpnLabel').innerText = Math.round(totalT).toLocaleString('pt-BR');
+            document.getElementById('view-toggle-container').style.display = 'none';
+            document.getElementById('chart-sub').innerText = "Análise de distribuição por segmento (Calibrado MLB)";
+
+            document.getElementById('table-comment').innerHTML = `
+                Efeito <span class="font-bold text-blue-700">VC%</span> em <span class="font-bold">BS</span>: 
+                <span class="text-green-600 font-extrabold">+0,005 bps</span> saindo de <span class="font-bold">0,447%</span> para <span class="font-bold">0,452%</span>.
+            `;
+
+            // Ordem atualizada na tabela de conceito: Big Sellers, SMB, Longtail
+            document.getElementById('concept-content').innerHTML = `
+                <table class="w-full text-sm">
+                    <thead><tr class="text-left border-b text-slate-500"><th class="pb-2">Segmento</th><th class="text-right pb-2">Part. MLB</th></tr></thead>
+                    <tbody class="text-slate-700 font-medium">
+                        <tr><td class="py-2">BIG SELLERS</td><td class="text-right font-semibold">7,68%</td></tr>
+                        <tr><td class="py-2">SMB</td><td class="text-right font-semibold">30,34%</td></tr>
+                        <tr><td class="py-2">LONGTAIL</td><td class="text-right font-semibold">61,98%</td></tr>
+                    </tbody>
+                </table>`;
+
+            // Ordem atualizada: Big Sellers, SMB, Longtail
+            const segs = ["BIG SELLERS", "SMB", "LONGTAIL"];
+            const dataCX = segs.map(s => {
+                const actual = rawData.filter(d => d.s === s).reduce((a,c) => a + c.cx, 0);
+                const tpn = rawData.filter(d => d.s === s).reduce((a,c) => a + c.t, 0);
+                return { s: s, a: actual, p: totalCX * cxWeights[s], t: tpn };
+            });
+
+            segs.forEach(s => {
+                const item = dataCX.find(x => x.s === s);
+                const key = s === "BIG SELLERS" ? "BS" : s === "LONGTAIL" ? "LT" : "SMB";
+                document.getElementById('kpi'+key).innerText = formatCurrency(item.p, 0);
+                document.getElementById('kpiTpn'+key).innerText = Math.round(item.t).toLocaleString('pt-BR');
+            });
+
+            const groups = {};
+            dataCX.forEach(d => groups[d.s] = { a: d.a, p: d.p, t: d.t });
+            renderChartBars(segs, groups);
+            renderCXTable(dataCX, totalCX);
+        }
+
+        function renderChartBars(labels, data) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Custo Atual', data: labels.map(l => currentTab === 'hosting' && currentView === 'tpn' ? data[l].a / data[l].t : data[l].a), backgroundColor: '#e2e8f0', borderRadius: 6, datalabels: { display: false } },
+                        { label: 'Custo Proposto', data: labels.map(l => currentTab === 'hosting' && currentView === 'tpn' ? data[l].p / data[l].t : data[l].p), backgroundColor: '#3483FA', borderRadius: 6, datalabels: {
+                            anchor: 'end', align: 'top', offset: 4, formatter: (val, ctx) => {
+                                const l = labels[ctx.dataIndex];
+                                const diff = ((data[l].p / data[l].a - 1) * 100).toFixed(0);
+                                return (isNaN(diff) ? '0' : (diff > 0 ? '+' : '') + diff) + '%';
+                            },
+                            font: { weight: 'bold', size: 12 }, color: (ctx) => data[labels[ctx.dataIndex]].p > data[labels[ctx.dataIndex]].a ? '#ef4444' : '#10b981'
+                        }}
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, layout: { padding: { top: 40 } },
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: '#f1f5f9' }, 
+                            ticks: { 
+                                callback: function(value) { return formatTick(value); } 
+                            } 
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { usePointStyle: true, font: { weight: '600' } } },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw, 2)}` } }
+                    }
+                }
+            });
+        }
+
+        function renderHostingTable(data) {
+            const head = document.getElementById('table-head');
+            const tpnClass = showTpnColumn ? "" : "hidden-col";
+            const unitClass = showUnitColumn ? "" : "hidden-col";
+            head.innerHTML = `
+                <tr class="bg-slate-50 border-b text-slate-500 font-semibold">
+                    <th class="p-3 text-left">Segmento</th><th class="p-3 text-left">Meio</th>
+                    <th class="p-3 text-right ${tpnClass}">TPN</th><th class="p-3 text-right">Part. TPN</th>
+                    <th class="p-3 text-right">Hosting Atual</th><th class="p-3 text-right bg-blue-50/50">Hosting Proposta</th>
+                    <th class="p-3 text-right text-slate-400 font-normal ${unitClass}">Hosting/TPN</th>
+                    <th class="p-3 text-right">Var %</th>
+                </tr>`;
+
+            const segmentsList = ["BIG SELLERS", "SMB", "LONGTAIL"];
+            let html = "";
+            segmentsList.forEach(s => {
+                const sRows = data.filter(d => d.s === s);
+                const sTpn = sRows.reduce((a,c) => a + c.t, 0);
+                const sAct = sRows.reduce((a,c) => a + c.h, 0);
+                const sProp = sRows.reduce((a,c) => a + c.prop, 0);
+
+                ["Pix", "Crédito", "Débito", "Others"].forEach(m => {
+                    const mRows = sRows.filter(r => r.m === m);
+                    if (!mRows.length) return;
+                    const mTpn = mRows.reduce((a,c) => a + c.t, 0);
+                    const mAct = mRows.reduce((a,c) => a + c.h, 0);
+                    const mProp = mRows.reduce((a,c) => a + c.prop, 0);
+                    const varPct = ((mProp/mAct-1)*100).toFixed(1);
+                    html += `
+                        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors text-[12px]">
+                            <td class="p-3 pl-8 text-slate-400 font-medium">${s}</td><td class="p-3 font-semibold text-slate-700">${m}</td>
+                            <td class="p-3 text-right ${tpnClass}">${Math.round(mTpn).toLocaleString('pt-BR')}</td>
+                            <td class="p-3 text-right text-slate-500 font-semibold">${(mTpn/sTpn*100).toFixed(1)}%</td>
+                            <td class="p-3 text-right text-slate-400">${formatCurrency(mAct)}</td>
+                            <td class="p-3 text-right text-blue-600 font-bold">${formatCurrency(mProp)}</td>
+                            <td class="p-3 text-right text-slate-400 text-[10px] ${unitClass}">${formatCurrency(mProp/mTpn, 4)}</td>
+                            <td class="p-3 text-right font-bold ${varPct > 0 ? 'text-red-500' : 'text-green-600'}">${varPct > 0 ? '+' : ''}${varPct}%</td>
+                        </tr>`;
+                });
+                const sVar = ((sProp/sAct-1)*100).toFixed(1);
+                html += `
+                    <tr class="row-subtotal text-[12px]">
+                        <td class="p-3 text-blue-900" colspan="2">TOTAL ${s}</td>
+                        <td class="p-3 text-right ${tpnClass}">${Math.round(sTpn).toLocaleString('pt-BR')}</td>
+                        <td class="p-3 text-right text-blue-900/30">100%</td>
+                        <td class="p-3 text-right text-slate-500">${formatCurrency(sAct)}</td>
+                        <td class="p-3 text-right text-blue-800 bg-blue-50/50">${formatCurrency(sProp)}</td>
+                        <td class="p-3 text-right text-slate-400 text-xs ${unitClass}">${formatCurrency(sProp/sTpn, 4)}</td>
+                        <td class="p-3 text-right ${sVar > 0 ? 'text-red-600' : 'text-green-600'}">${sVar > 0 ? '+' : ''}${sVar}%</td>
+                    </tr>`;
+            });
+            document.getElementById('table-body').innerHTML = html;
+            const totalA = rawData.reduce((a,c) => a + c.h, 0), totalP = data.reduce((a,c) => a + c.prop, 0), totalT = rawData.reduce((a,c) => a + c.t, 0);
+            document.getElementById('table-footer').innerHTML = `
+                <tr class="text-[13px] text-slate-900">
+                    <td class="p-5 uppercase tracking-tighter" colspan="2">TOTAL GERAL MLB</td>
+                    <td class="p-5 text-right font-extrabold ${tpnClass}">${Math.round(totalT).toLocaleString('pt-BR')}</td>
+                    <td class="p-5 text-right opacity-20">—</td>
+                    <td class="p-5 text-right">${formatCurrency(totalA)}</td>
+                    <td class="p-5 text-right text-blue-900 font-extrabold">${formatCurrency(totalP)}</td>
+                    <td class="p-5 text-right text-slate-400 text-xs ${unitClass}">${formatCurrency(totalP/totalT, 4)}</td>
+                    <td class="p-5 text-right font-extrabold">${((totalP/totalA-1)*100).toFixed(1)}%</td>
+                </tr>`;
+        }
+
+        function renderCXTable(data, totalCX) {
+            const head = document.getElementById('table-head');
+            const tpnClass = showTpnColumn ? "" : "hidden-col";
+            const unitClass = showUnitColumn ? "" : "hidden-col";
+            head.innerHTML = `
+                <tr class="bg-slate-50 border-b text-slate-500 font-semibold">
+                    <th class="p-3 text-left" colspan="2">Segmento</th>
+                    <th class="p-3 text-right ${tpnClass}">TPN</th>
+                    <th class="p-3 text-right">Part. MLB Proposta</th>
+                    <th class="p-3 text-right">CX Variable Atual</th>
+                    <th class="p-3 text-right bg-blue-50/50">CX Variable Proposta</th>
+                    <th class="p-3 text-right text-slate-400 font-normal ${unitClass}">Custo/TPN</th>
+                    <th class="p-3 text-right">Var %</th>
+                </tr>`;
+            let html = "";
+            let totalA = rawData.reduce((a,c) => a + c.cx, 0);
+            data.forEach(d => {
+                const varPct = ((d.p/d.a-1)*100).toFixed(1);
+                html += `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors text-[13px]">
+                        <td class="p-4 font-bold text-slate-700" colspan="2">${d.s}</td>
+                        <td class="p-4 text-right ${tpnClass}">${Math.round(d.t).toLocaleString('pt-BR')}</td>
+                        <td class="p-4 text-right text-blue-500 font-semibold">${(cxWeights[d.s]*100).toFixed(2)}%</td>
+                        <td class="p-4 text-right text-slate-400">${formatCurrency(d.a)}</td>
+                        <td class="p-4 text-right text-blue-600 font-bold bg-blue-50/20">${formatCurrency(d.p)}</td>
+                        <td class="p-4 text-right text-slate-400 text-xs ${unitClass}">${formatCurrency(d.p/d.t, 4)}</td>
+                        <td class="p-4 text-right font-bold ${varPct > 0 ? 'text-red-500' : 'text-green-600'}">${varPct > 0 ? '+' : ''}${varPct}%</td>
+                    </tr>`;
+            });
+            document.getElementById('table-body').innerHTML = html;
+            const totalT = rawData.reduce((a,c) => a+c.t, 0);
+            document.getElementById('table-footer').innerHTML = `
+                <tr class="text-[14px] text-slate-900">
+                    <td class="p-5 uppercase tracking-tighter" colspan="2">TOTAL GERAL MLB</td>
+                    <td class="p-5 text-right font-extrabold ${tpnClass}">${Math.round(totalT).toLocaleString('pt-BR')}</td>
+                    <td class="p-5 text-right opacity-20">100%</td>
+                    <td class="p-5 text-right">${formatCurrency(totalA)}</td>
+                    <td class="p-5 text-right text-blue-900 font-extrabold">${formatCurrency(totalCX)}</td>
+                    <td class="p-5 text-right text-slate-400 text-xs ${unitClass}">${formatCurrency(totalCX/totalT, 4)}</td>
+                    <td class="p-5 text-right font-extrabold">${((totalCX/totalA-1)*100).toFixed(1)}%</td>
+                </tr>`;
+        }
+
+        window.onload = () => { updateDashboard(); };
+    </script>
+</body>
+</html>
