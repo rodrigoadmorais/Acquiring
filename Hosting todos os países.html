@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meli Acquiring Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Pequenos ajustes para garantir uma renderização suave */
+        body { -webkit-font-smoothing: antialiased; }
+        .hide-calc .calc-col { display: none; }
+        /* Barra de scroll elegante e fina para as tabelas */
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* Fixar a linha de Total em baixo se houver muito scroll vertical */
+        tfoot { position: sticky; bottom: 0; z-index: 20; }
+    </style>
+</head>
+<body class="min-h-screen bg-white text-gray-800 font-sans flex flex-col">
+
+    <!-- Header Meli Style -->
+    <header class="bg-[#FFE600] px-6 py-3 shadow-sm border-b border-yellow-400 flex justify-between items-center sticky top-0 z-30">
+        <div class="flex items-center gap-3">
+            <div class="bg-white p-1.5 rounded-full shadow-sm">
+                <i data-lucide="dollar-sign" class="text-[#2D3277] w-5 h-5"></i>
+            </div>
+            <h1 class="text-xl font-bold text-[#2D3277] tracking-tight">
+                Acquiring VC% <span class="font-light">Analytics</span>
+            </h1>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <!-- Seletor agora é de SUBBU -->
+            <div class="flex bg-gray-50 rounded-md shadow-sm border border-yellow-300 p-1" id="subbu-selectors">
+                <!-- Botões de SUBBU serão gerados via JS -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="p-4 w-full max-w-[1600px] mx-auto space-y-4 flex-1 flex flex-col">
+        
+        <!-- Controls Bar -->
+        <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200 shrink-0">
+            <div class="flex items-center gap-2 text-gray-700">
+                <i data-lucide="activity" class="text-[#2D3277] w-5 h-5"></i>
+                <span class="text-sm">A exibir dados Acquiring consolidados para a SUBBU: <strong id="current-subbu-label" class="text-base text-[#2D3277]">POINT</strong></span>
+            </div>
+            <button id="toggle-calc-btn" class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-md font-medium transition-colors border bg-white text-gray-700 border-gray-300 hover:bg-gray-100">
+                <i data-lucide="calculator" class="w-4 h-4"></i>
+                <span id="toggle-calc-text">Ver Abertura de Cálculo</span>
+            </button>
+        </div>
+
+        <!-- Container para as tabelas (Quadrantes) - Layout em Grelha 2x2 -->
+        <div id="tables-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch hide-calc flex-1 pb-8">
+            <!-- As tabelas serão injectadas aqui via JS -->
+        </div>
+
+    </main>
+
+    <script>
+        // --- MOCK DATA ---
+        const rawData = [
+            // --- MLA (Argentina) ---
+            { site: 'MLA', subbu: 'ONLINE PAYMENTS', meio: 'Account Money', tpv: 650997148, tpn: 42918765, vcUsd: 12056272, hostUsd: 235709, seg: 0.52 },
+            { site: 'MLA', subbu: 'ONLINE PAYMENTS', meio: 'Credit Card', tpv: 401556608, tpn: 8384862, vcUsd: 11022829, hostUsd: 44227, seg: 2.25 },
+            { site: 'MLA', subbu: 'ONLINE PAYMENTS', meio: 'Debit Card', tpv: 120784059, tpn: 5313056, vcUsd: 1742248, hostUsd: 27956, seg: 2.32 },
+            { site: 'MLA', subbu: 'ONLINE PAYMENTS', meio: 'Digital Currency', tpv: 9389150, tpn: 364568, vcUsd: 249254, hostUsd: 2003, seg: 2.28 },
+            { site: 'MLA', subbu: 'ONLINE PAYMENTS', meio: 'Prepaid Card', tpv: 20652471, tpn: 1219421, vcUsd: 518115, hostUsd: 6299, seg: 2.41 },
+            { site: 'MLA', subbu: 'ONLINE PAYMENTS', meio: 'Ticket', tpv: 3967929, tpn: 140615, vcUsd: 70294, hostUsd: 763, seg: 0.56 },
+            
+            { site: 'MLA', subbu: 'POINT', meio: 'Account Money', tpv: 1336935, tpn: 183729, vcUsd: 26439, hostUsd: 681, seg: 0.52 },
+            { site: 'MLA', subbu: 'POINT', meio: 'Credit Card', tpv: 407910450, tpn: 10809794, vcUsd: 13193500, hostUsd: 40078, seg: 2.25 },
+            { site: 'MLA', subbu: 'POINT', meio: 'Debit Card', tpv: 482854021, tpn: 37717286, vcUsd: 7590695, hostUsd: 139839, seg: 2.32 },
+            { site: 'MLA', subbu: 'POINT', meio: 'Others', tpv: 0, tpn: 35005, vcUsd: 0, hostUsd: 122, seg: 1.00 },
+            { site: 'MLA', subbu: 'POINT', meio: 'Prepaid Card', tpv: 68660866, tpn: 7933289, vcUsd: 1039513, hostUsd: 29413, seg: 2.41 },
+
+            { site: 'MLA', subbu: 'QR', meio: 'Account Money', tpv: 1404620637, tpn: 99696397, vcUsd: 8789555, hostUsd: 458361, seg: 0.52 },
+            { site: 'MLA', subbu: 'QR', meio: 'Bank Transfer', tpv: 345440154, tpn: 28142953, vcUsd: 1085291, hostUsd: 129389, seg: 1.04 },
+            { site: 'MLA', subbu: 'QR', meio: 'Credit Card', tpv: 206887230, tpn: 8817228, vcUsd: 3249924, hostUsd: 39304, seg: 2.25 },
+            { site: 'MLA', subbu: 'QR', meio: 'Debit Card', tpv: 93799717, tpn: 7257424, vcUsd: -34414, hostUsd: 32808, seg: 2.32 },
+            { site: 'MLA', subbu: 'QR', meio: 'Digital Currency', tpv: 11693633, tpn: 996428, vcUsd: 128606, hostUsd: 4581, seg: 2.28 },
+            { site: 'MLA', subbu: 'QR', meio: 'Prepaid Card', tpv: 5639336, tpn: 415138, vcUsd: 84306, hostUsd: 1785, seg: 2.41 },
+
+            // --- MLB (Brasil) ---
+            { site: 'MLB', subbu: 'ONLINE PAYMENTS', meio: 'Account Money', tpv: 20202498, tpn: 11398435, vcUsd: 428861, hostUsd: 67768, seg: 0.47 },
+            { site: 'MLB', subbu: 'ONLINE PAYMENTS', meio: 'Bank Transfer', tpv: 305954914, tpn: 18365095, vcUsd: 795193, hostUsd: 109188, seg: 0.46 },
+            { site: 'MLB', subbu: 'ONLINE PAYMENTS', meio: 'Credit Card', tpv: 692715193, tpn: 16731590, vcUsd: 14189844, hostUsd: 96996, seg: 2.27 },
+            { site: 'MLB', subbu: 'ONLINE PAYMENTS', meio: 'Debit Card', tpv: 7341, tpn: 2502, vcUsd: 59, hostUsd: 15, seg: 1.83 },
+            { site: 'MLB', subbu: 'ONLINE PAYMENTS', meio: 'Digital Currency', tpv: 1978506, tpn: 60913, vcUsd: 34876, hostUsd: 362, seg: 1.09 },
+            { site: 'MLB', subbu: 'ONLINE PAYMENTS', meio: 'Prepaid Card', tpv: 0, tpn: 70, vcUsd: 0, hostUsd: 0, seg: 0 },
+            { site: 'MLB', subbu: 'ONLINE PAYMENTS', meio: 'Ticket', tpv: 23700523, tpn: 508962, vcUsd: 10602, hostUsd: 3026, seg: 2.33 },
+
+            { site: 'MLB', subbu: 'POINT', meio: 'Account Money', tpv: 1549394, tpn: 395074, vcUsd: 53155, hostUsd: 1805, seg: 0.47 },
+            { site: 'MLB', subbu: 'POINT', meio: 'Credit Card', tpv: 1529389222, tpn: 64788505, vcUsd: 38371015, hostUsd: 295978, seg: 2.27 },
+            { site: 'MLB', subbu: 'POINT', meio: 'Debit Card', tpv: 853582274, tpn: 158209450, vcUsd: 2463689, hostUsd: 722761, seg: 1.83 },
+            { site: 'MLB', subbu: 'POINT', meio: 'Others', tpv: 0, tpn: 387598, vcUsd: 5418, hostUsd: 1770, seg: 1.00 },
+
+            { site: 'MLB', subbu: 'QR', meio: 'Account Money', tpv: 71753600, tpn: 8468456, vcUsd: 93, hostUsd: 42836, seg: 0.47 },
+            { site: 'MLB', subbu: 'QR', meio: 'Bank Transfer', tpv: 640436211, tpn: 100191844, vcUsd: 1040619, hostUsd: 506799, seg: 0.46 },
+            { site: 'MLB', subbu: 'QR', meio: 'Credit Card', tpv: 5694535, tpn: 1326524, vcUsd: 86028, hostUsd: 6497, seg: 2.27 },
+            { site: 'MLB', subbu: 'QR', meio: 'Digital Currency', tpv: 1781778, tpn: 161746, vcUsd: -4200, hostUsd: 818, seg: 1.09 },
+
+            // --- MLC (Chile) ---
+            { site: 'MLC', subbu: 'ONLINE PAYMENTS', meio: 'Account Money', tpv: 22568913, tpn: 977907, vcUsd: 387656, hostUsd: 4334, seg: 0.51 },
+            { site: 'MLC', subbu: 'ONLINE PAYMENTS', meio: 'Bank Transfer', tpv: 389222, tpn: 7938, vcUsd: 3619, hostUsd: 35, seg: 0.29 },
+            { site: 'MLC', subbu: 'ONLINE PAYMENTS', meio: 'Credit Card', tpv: 134727360, tpn: 2529640, vcUsd: 1767788, hostUsd: 11052, seg: 2.24 },
+            { site: 'MLC', subbu: 'ONLINE PAYMENTS', meio: 'Debit Card', tpv: 77321374, tpn: 4134645, vcUsd: 796842, hostUsd: 18182, seg: 1.98 },
+            { site: 'MLC', subbu: 'ONLINE PAYMENTS', meio: 'Digital Currency', tpv: 185956, tpn: 6785, vcUsd: 3242, hostUsd: 30, seg: 1.01 },
+            { site: 'MLC', subbu: 'ONLINE PAYMENTS', meio: 'Prepaid Card', tpv: 5321644, tpn: 512798, vcUsd: 24456, hostUsd: 2253, seg: 2.37 },
+
+            { site: 'MLC', subbu: 'POINT', meio: 'Account Money', tpv: 130996, tpn: 39168, vcUsd: 5268, hostUsd: 117, seg: 0.51 },
+            { site: 'MLC', subbu: 'POINT', meio: 'Credit Card', tpv: 136869824, tpn: 6869225, vcUsd: 1084557, hostUsd: 20451, seg: 2.24 },
+            { site: 'MLC', subbu: 'POINT', meio: 'Debit Card', tpv: 578387576, tpn: 65667878, vcUsd: 4978534, hostUsd: 195507, seg: 1.98 },
+            { site: 'MLC', subbu: 'POINT', meio: 'Others', tpv: 0, tpn: 81496, vcUsd: 1284, hostUsd: 243, seg: 1.00 },
+            { site: 'MLC', subbu: 'POINT', meio: 'Prepaid Card', tpv: 36375448, tpn: 4461572, vcUsd: 138999, hostUsd: 13283, seg: 2.37 },
+
+            { site: 'MLC', subbu: 'QR', meio: 'Account Money', tpv: 1496419, tpn: 146193, vcUsd: 11294, hostUsd: 1802, seg: 0.51 },
+            { site: 'MLC', subbu: 'QR', meio: 'Credit Card', tpv: 616241, tpn: 9503, vcUsd: 16866, hostUsd: 114, seg: 2.24 },
+            { site: 'MLC', subbu: 'QR', meio: 'Debit Card', tpv: 106096, tpn: 11907, vcUsd: 318, hostUsd: 143, seg: 1.98 },
+            { site: 'MLC', subbu: 'QR', meio: 'Prepaid Card', tpv: 4197, tpn: 691, vcUsd: -36, hostUsd: 7, seg: 2.37 },
+
+            // --- MLM (México) ---
+            { site: 'MLM', subbu: 'ONLINE PAYMENTS', meio: 'Account Money', tpv: 81165423, tpn: 5366016, vcUsd: 1355421, hostUsd: 32116, seg: 0.45 },
+            { site: 'MLM', subbu: 'ONLINE PAYMENTS', meio: 'Bank Transfer', tpv: 12179540, tpn: 69650, vcUsd: 113926, hostUsd: 402, seg: 0.25 },
+            { site: 'MLM', subbu: 'ONLINE PAYMENTS', meio: 'Credit Card', tpv: 313611786, tpn: 3670271, vcUsd: 4347234, hostUsd: 21963, seg: 2.13 },
+            { site: 'MLM', subbu: 'ONLINE PAYMENTS', meio: 'Debit Card', tpv: 99843527, tpn: 4185310, vcUsd: 1158929, hostUsd: 24718, seg: 1.93 },
+            { site: 'MLM', subbu: 'ONLINE PAYMENTS', meio: 'Digital Currency', tpv: 14536914, tpn: 452985, vcUsd: 229386, hostUsd: 2714, seg: 0.92 },
+            { site: 'MLM', subbu: 'ONLINE PAYMENTS', meio: 'Others', tpv: 632802, tpn: 30338, vcUsd: 40301, hostUsd: 178, seg: 1.00 },
+            { site: 'MLM', subbu: 'ONLINE PAYMENTS', meio: 'Ticket', tpv: 3534602, tpn: 149023, vcUsd: 58111, hostUsd: 875, seg: 0.64 },
+
+            { site: 'MLM', subbu: 'POINT', meio: 'Account Money', tpv: 25250394, tpn: 6756422, vcUsd: 97167, hostUsd: 27469, seg: 0.45 },
+            { site: 'MLM', subbu: 'POINT', meio: 'Credit Card', tpv: 794018814, tpn: 19752513, vcUsd: 11829780, hostUsd: 80304, seg: 2.13 },
+            { site: 'MLM', subbu: 'POINT', meio: 'Debit Card', tpv: 746323606, tpn: 62755923, vcUsd: 13189900, hostUsd: 255139, seg: 1.93 },
+            { site: 'MLM', subbu: 'POINT', meio: 'Others', tpv: 0, tpn: 86152, vcUsd: 0, hostUsd: 341, seg: 1.00 }
+        ];
+
+        // --- FORMATTERS ---
+        const fmtPct = (val) => new Intl.NumberFormat('pt-PT', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+        const fmtNum = (val) => new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val);
+        const fmtHost = (val) => new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(val);
+        const fmtSeg = (val) => new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+
+        // --- STATE ---
+        let selectedSubbu = 'POINT';
+        let showCalculation = false;
+        
+        const subbus = ['POINT', 'ONLINE PAYMENTS', 'QR'];
+        const displaySites = ['MLA', 'MLB', 'MLM', 'MLC'];
+        
+        const siteNames = {
+            'MLA': 'AR MLA - Argentina',
+            'MLB': 'BR MLB - Brasil',
+            'MLM': 'MX MLM - México',
+            'MLC': 'CL MLC - Chile'
+        };
+
+        // --- DOM ELEMENTS ---
+        const subbuSelectorsContainer = document.getElementById('subbu-selectors');
+        const currentSubbuLabel = document.getElementById('current-subbu-label');
+        const toggleCalcBtn = document.getElementById('toggle-calc-btn');
+        const toggleCalcText = document.getElementById('toggle-calc-text');
+        const tablesContainer = document.getElementById('tables-container');
+
+        // --- LOGIC & RENDERING ---
+        
+        function initApp() {
+            renderSubbuSelectors();
+            lucide.createIcons();
+            updateDashboard();
+            
+            toggleCalcBtn.addEventListener('click', () => {
+                showCalculation = !showCalculation;
+                
+                if (showCalculation) {
+                    toggleCalcBtn.classList.remove('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-100');
+                    toggleCalcBtn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                    toggleCalcText.innerText = 'Ocultar Abertura de Cálculo';
+                    tablesContainer.classList.remove('hide-calc');
+                } else {
+                    toggleCalcBtn.classList.add('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-100');
+                    toggleCalcBtn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                    toggleCalcText.innerText = 'Ver Abertura de Cálculo';
+                    tablesContainer.classList.add('hide-calc');
+                }
+            });
+        }
+
+        function renderSubbuSelectors() {
+            subbuSelectorsContainer.innerHTML = '';
+            subbus.forEach(subbu => {
+                const btn = document.createElement('button');
+                btn.innerText = subbu;
+                btn.className = `px-4 py-1.5 text-xs font-semibold rounded transition-colors ${
+                    selectedSubbu === subbu 
+                    ? 'bg-[#2D3277] text-white' 
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`;
+                btn.onclick = () => {
+                    selectedSubbu = subbu;
+                    currentSubbuLabel.innerText = subbu;
+                    renderSubbuSelectors();
+                    updateDashboard();
+                };
+                subbuSelectorsContainer.appendChild(btn);
+            });
+        }
+
+        function processData() {
+            const subbuData = rawData.filter(d => {
+                if (d.subbu !== selectedSubbu) return false;
+                const vcPctAtual = d.tpv > 0 ? d.vcUsd / d.tpv : 0;
+                return Math.abs(vcPctAtual) >= 0.00005;
+            });
+            
+            const result = {};
+
+            displaySites.forEach(site => {
+                const siteRows = subbuData.filter(d => d.site === site);
+                
+                if (siteRows.length === 0) {
+                    result[site] = { rows: [], totals: null, totalHostUsd: 0, totalWeightedTime: 0 };
+                    return;
+                }
+
+                let totalHostUsd = 0;
+                let totalWeightedTime = 0;
+
+                siteRows.forEach(row => {
+                    totalHostUsd += row.hostUsd;
+                    totalWeightedTime += row.tpn * row.seg;
+                });
+
+                const enrichedRows = siteRows.map(row => {
+                    const rowWeightedTime = row.tpn * row.seg;
+                    const hostUsdProposto = totalWeightedTime > 0 ? (rowWeightedTime / totalWeightedTime) * totalHostUsd : 0;
+                    const hostTpnAtual = row.tpn > 0 ? row.hostUsd / row.tpn : 0;
+                    const hostTpnProposto = row.tpn > 0 ? hostUsdProposto / row.tpn : 0;
+                    const vcPctAtual = row.tpv > 0 ? row.vcUsd / row.tpv : 0;
+                    
+                    const vcUsdProposta = row.vcUsd + row.hostUsd - hostUsdProposto;
+                    const vcPctProposta = row.tpv > 0 ? vcUsdProposta / row.tpv : 0;
+                    const vcDelta = vcPctProposta - vcPctAtual;
+
+                    return { ...row, hostTpnAtual, hostTpnProposto, vcPctAtual, vcUsdProposta, vcPctProposta, hostUsdProposto, rowWeightedTime, vcDelta };
+                });
+
+                const totalTpv = siteRows.reduce((acc, row) => acc + row.tpv, 0);
+                const totalTpn = siteRows.reduce((acc, row) => acc + row.tpn, 0);
+                const totalVcUsdAtual = siteRows.reduce((acc, row) => acc + row.vcUsd, 0);
+                const totalVcUsdProposta = enrichedRows.reduce((acc, row) => acc + row.vcUsdProposta, 0);
+                const totalHostUsdProposto = enrichedRows.reduce((acc, row) => acc + row.hostUsdProposto, 0);
+
+                const totals = {
+                    tpv: totalTpv,
+                    tpn: totalTpn,
+                    vcUsd: totalVcUsdAtual,
+                    hostUsd: totalHostUsd,
+                    rowWeightedTime: totalWeightedTime,
+                    hostUsdProposto: totalHostUsdProposto,
+                    vcUsdProposta: totalVcUsdProposta,
+                    vcPctAtual: totalTpv > 0 ? totalVcUsdAtual / totalTpv : 0,
+                    hostTpnAtual: totalTpn > 0 ? totalHostUsd / totalTpn : 0,
+                    seg: totalTpn > 0 ? totalWeightedTime / totalTpn : 0,
+                    hostTpnProposto: totalTpn > 0 ? totalHostUsdProposto / totalTpn : 0,
+                    vcPctProposta: totalTpv > 0 ? totalVcUsdProposta / totalTpv : 0,
+                    vcDelta: (totalTpv > 0 ? totalVcUsdProposta / totalTpv : 0) - (totalTpv > 0 ? totalVcUsdAtual / totalTpv : 0)
+                };
+
+                result[site] = { rows: enrichedRows, totals, totalHostUsd, totalWeightedTime };
+            });
+
+            return result;
+        }
+
+        function updateDashboard() {
+            const processedData = processData();
+            let html = '';
+
+            displaySites.forEach(site => {
+                const data = processedData[site];
+                const fullSiteName = siteNames[site];
+                
+                if (!data || data.rows.length === 0) {
+                    html += `
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col items-center justify-center min-h-[300px] text-gray-400">
+                            <i data-lucide="inbox" class="w-8 h-8 mb-2 opacity-50"></i>
+                            <p class="text-sm font-medium">Sem dados de ${selectedSubbu} para ${fullSiteName}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let rowsHTML = '';
+                data.rows.forEach(row => {
+                    const strAtual = fmtPct(row.vcPctAtual);
+                    const strProp = fmtPct(row.vcPctProposta);
+                    const hasVisualChange = strAtual !== strProp;
+                    
+                    // Configuração padrão Neutra para VC% Proposta
+                    let propTextClass = 'text-gray-900';
+                    let propBgClass = 'bg-white group-hover:bg-gray-50';
+                    let propIcon = '';
+                    
+                    if (hasVisualChange) {
+                        if (row.vcDelta > 0) {
+                            propTextClass = 'text-green-700';
+                            propBgClass = 'bg-green-50/60 group-hover:bg-green-100/60';
+                            propIcon = `<i data-lucide="chevron-up" class="w-3.5 h-3.5 text-green-600"></i>`;
+                        } else if (row.vcDelta < 0) {
+                            propTextClass = 'text-red-700';
+                            propBgClass = 'bg-red-50/60 group-hover:bg-red-100/60';
+                            propIcon = `<i data-lucide="chevron-down" class="w-3.5 h-3.5 text-red-600"></i>`;
+                        }
+                    }
+                    
+                    rowsHTML += `
+                        <tr class="hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-0 bg-white group">
+                            <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">${row.meio}</td>
+                            
+                            <!-- Colunas de Cálculo -->
+                            <td class="px-3 py-3 text-center text-gray-500 border-l border-dashed border-gray-200 bg-gray-50/50 calc-col">${fmtNum(row.tpv)}</td>
+                            <td class="px-3 py-3 text-center text-gray-500 bg-gray-50/50 calc-col">${fmtNum(row.tpn)}</td>
+                            <td class="px-3 py-3 text-center text-gray-500 bg-gray-50/50 calc-col">${fmtNum(row.vcUsd)}</td>
+                            <td class="px-3 py-3 text-center text-gray-500 bg-gray-50/50 calc-col">${fmtNum(row.hostUsd)}</td>
+                            <td class="px-3 py-3 text-center text-blue-600/70 bg-blue-50/30 calc-col">${fmtNum(row.rowWeightedTime)}</td>
+                            <td class="px-3 py-3 text-center text-blue-600/70 bg-blue-50/30 calc-col">${fmtNum(row.hostUsdProposto)}</td>
+                            <td class="px-3 py-3 text-center text-blue-600/70 bg-blue-50/30 border-r border-dashed border-gray-200 calc-col">${fmtNum(row.vcUsdProposta)}</td>
+
+                            <!-- Visão Principal -->
+                            <td class="px-3 py-3 text-center font-bold text-gray-900 bg-red-50/60 group-hover:bg-red-100/60 transition-colors">${strAtual}</td>
+                            <td class="px-3 py-3 text-center text-gray-500">${fmtHost(row.hostTpnAtual)}</td>
+                            <td class="px-3 py-3 text-center font-bold text-[#2D3277] transition-colors">${fmtSeg(row.seg)}</td>
+                            <td class="px-3 py-3 text-center font-medium text-gray-600">${fmtHost(row.hostTpnProposto)}</td>
+                            <td class="px-3 py-3 text-center font-bold flex items-center justify-center gap-1 min-w-[80px] transition-colors ${propTextClass} ${propBgClass}">
+                                ${strProp}
+                                ${propIcon}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                const tStrAtual = fmtPct(data.totals.vcPctAtual);
+                const tStrProp = fmtPct(data.totals.vcPctProposta);
+                const tHasVisualChange = tStrAtual !== tStrProp;
+                
+                let tPropTextClass = 'text-gray-900';
+                let tPropBgClass = 'bg-gray-50';
+                let tPropIcon = '';
+                
+                if (tHasVisualChange) {
+                    if (data.totals.vcDelta > 0) {
+                        tPropTextClass = 'text-green-700';
+                        tPropBgClass = 'bg-green-100/50';
+                        tPropIcon = `<i data-lucide="chevron-up" class="w-3.5 h-3.5 text-green-600"></i>`;
+                    } else if (data.totals.vcDelta < 0) {
+                        tPropTextClass = 'text-red-700';
+                        tPropBgClass = 'bg-red-100/50';
+                        tPropIcon = `<i data-lucide="chevron-down" class="w-3.5 h-3.5 text-red-600"></i>`;
+                    }
+                }
+
+                html += `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden">
+                        
+                        <!-- Header do Cartão -->
+                        <div class="bg-white px-5 py-4 flex justify-between items-center shrink-0">
+                            <h2 class="text-base font-bold text-[#2D3277] flex items-center gap-2">
+                                <span class="w-1.5 h-5 bg-[#00A650] rounded-[2px]"></span>
+                                ${fullSiteName}
+                            </h2>
+                            <div class="text-[11px] text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-200 flex items-center gap-1 calc-col">
+                                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                Host Mantido: USD ${fmtNum(data.totalHostUsd)}
+                            </div>
+                        </div>
+
+                        <!-- Contentor da Tabela - tbody e tfoot unificados garantem alinhamento perfeito -->
+                        <div class="overflow-x-auto overflow-y-auto flex-1 relative border-t border-gray-100">
+                            <table class="w-full text-xs text-left whitespace-nowrap min-w-max">
+                                <thead class="text-[10px] text-gray-500 uppercase tracking-wider bg-white sticky top-0 shadow-[0_1px_2px_rgba(0,0,0,0.05)] z-10">
+                                    <tr>
+                                        <th class="px-4 py-3 font-bold bg-white">Meio de Pgto.</th>
+                                        
+                                        <th class="px-3 py-3 font-bold border-l border-dashed border-gray-200 bg-gray-50 calc-col">TPV USD</th>
+                                        <th class="px-3 py-3 font-bold bg-gray-50 calc-col">TPN</th>
+                                        <th class="px-3 py-3 font-bold bg-gray-50 calc-col">VC USD Atual</th>
+                                        <th class="px-3 py-3 font-bold bg-gray-50 calc-col">Host USD Atual</th>
+                                        <th class="px-3 py-3 font-bold text-blue-500 bg-blue-50/50 calc-col">Tempo Pond.</th>
+                                        <th class="px-3 py-3 font-bold text-blue-500 bg-blue-50/50 calc-col">Host USD Prop.</th>
+                                        <th class="px-3 py-3 font-bold text-blue-500 bg-blue-50/50 border-r border-dashed border-gray-200 calc-col">VC USD Prop.</th>
+
+                                        <th class="px-3 py-3 font-bold text-center text-gray-900 bg-red-50">VC% Atual</th>
+                                        <th class="px-3 py-3 font-bold text-center bg-white">Host/TPN Atual</th>
+                                        <th class="px-3 py-3 font-bold text-center text-[#2D3277] bg-white">Segundos/TPN</th>
+                                        <th class="px-3 py-3 font-bold text-center text-[#00A650] bg-white">Host/TPN Prop.</th>
+                                        <th class="px-3 py-3 font-bold text-center text-gray-900 bg-gray-50">VC% Prop.</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    ${rowsHTML}
+                                </tbody>
+                                <tfoot class="bg-gray-50 font-bold border-t-2 border-gray-200 sticky bottom-0 z-10">
+                                    <tr>
+                                        <td class="px-4 py-3.5 text-gray-900 w-[140px]">Total ${site}</td>
+                                        
+                                        <td class="px-3 py-3.5 text-center text-gray-700 border-l border-dashed border-gray-300 bg-gray-100 calc-col">${fmtNum(data.totals.tpv)}</td>
+                                        <td class="px-3 py-3.5 text-center text-gray-700 bg-gray-100 calc-col">${fmtNum(data.totals.tpn)}</td>
+                                        <td class="px-3 py-3.5 text-center text-gray-700 bg-gray-100 calc-col">${fmtNum(data.totals.vcUsd)}</td>
+                                        <td class="px-3 py-3.5 text-center text-gray-700 bg-gray-100 calc-col">${fmtNum(data.totals.hostUsd)}</td>
+                                        <td class="px-3 py-3.5 text-center text-blue-800 bg-blue-100/50 calc-col">${fmtNum(data.totals.rowWeightedTime)}</td>
+                                        <td class="px-3 py-3.5 text-center text-blue-800 bg-blue-100/50 calc-col">${fmtNum(data.totals.hostUsdProposto)}</td>
+                                        <td class="px-3 py-3.5 text-center text-blue-800 bg-blue-100/50 border-r border-dashed border-gray-300 calc-col">${fmtNum(data.totals.vcUsdProposta)}</td>
+
+                                        <td class="px-3 py-3.5 text-center text-gray-900 bg-red-100/50">${tStrAtual}</td>
+                                        <td class="px-3 py-3.5 text-center text-gray-800">${fmtHost(data.totals.hostTpnAtual)}</td>
+                                        <td class="px-3 py-3.5 text-center font-bold text-[#2D3277] bg-gray-50">${fmtSeg(data.totals.seg)}</td>
+                                        <td class="px-3 py-3.5 text-center text-[#00A650]">${fmtHost(data.totals.hostTpnProposto)}</td>
+                                        <td class="px-3 py-3.5 text-center flex items-center justify-center gap-1 min-w-[80px] ${tPropTextClass} ${tPropBgClass}">
+                                            ${tStrProp}
+                                            ${tPropIcon}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            });
+
+            tablesContainer.innerHTML = html;
+            
+            lucide.createIcons();
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
