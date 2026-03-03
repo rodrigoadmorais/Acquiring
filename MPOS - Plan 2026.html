@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meli Forecast | Dashboard Pro</title>
+    <title>Meli Forecast | Dashboard Pro Interativo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -37,11 +37,20 @@
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d1d1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
 
         .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
     </style>
 </head>
 <body>
@@ -72,7 +81,7 @@
                 </div>
                 <button onclick="fetchData(true)" class="flex items-center gap-2 ml-button-blue text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
                     <i data-lucide="refresh-ccw" class="w-4 h-4" id="refresh-icon"></i>
-                    Sincronizar Agora
+                    Sincronizar
                 </button>
             </div>
         </div>
@@ -80,6 +89,7 @@
 
     <main class="max-w-7xl mx-auto px-4 py-8">
         
+        <!-- Alerta de Erro -->
         <div id="env-notice" class="hidden mb-8 p-5 card bg-red-50 border-red-200">
             <div class="flex gap-4">
                 <div class="bg-red-500 p-2 rounded-lg text-white">
@@ -87,58 +97,86 @@
                 </div>
                 <div class="flex-1">
                     <h3 class="text-red-900 font-bold text-sm uppercase">Falha na Conexão com o Verdi</h3>
-                    <p class="text-red-700 text-xs mt-1">Verifique se o Webhook está ativo e a URL está correta. Exibindo dados de fallback.</p>
+                    <p class="text-red-700 text-xs mt-1">Exibindo dados de fallback. Verifique a URL do Webhook.</p>
                 </div>
                 <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
         </div>
 
+        <!-- Seção de Filtros Interativos -->
+        <section class="card p-4 mb-8 flex flex-wrap items-center gap-4 bg-white">
+            <div class="flex items-center gap-2 text-gray-400">
+                <i data-lucide="filter" class="w-4 h-4"></i>
+                <span class="text-[10px] font-black uppercase tracking-widest">Filtros Analíticos:</span>
+            </div>
+            
+            <div class="flex flex-1 gap-4 min-w-[300px]">
+                <div class="relative flex-1">
+                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Canal de Venda</label>
+                    <select id="filter-canal" onchange="applyFilters()" class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
+                        <option value="ALL">Todos os Canais</option>
+                    </select>
+                </div>
+
+                <div class="relative flex-1">
+                    <label class="block text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Modelo de Dispositivo</label>
+                    <select id="filter-device" onchange="applyFilters()" class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
+                        <option value="ALL">Todos os Modelos</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="resetFilters()" class="text-[10px] font-black text-blue-600 uppercase hover:underline">Limpar Filtros</button>
+        </section>
+
+        <!-- KPIS -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="card p-6">
+            <div class="card p-6 border-l-4 border-l-blue-500">
                 <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Total Forecast</span>
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Volume Filtrado</span>
                     <i data-lucide="package-search" class="text-blue-500 w-5 h-5"></i>
                 </div>
                 <h3 id="total-qty" class="text-3xl font-black text-gray-800">0</h3>
-                <p class="text-[10px] text-gray-500 font-bold mt-2 uppercase tracking-tighter">Volume anual projetado</p>
+                <p class="text-[10px] text-gray-500 font-bold mt-2 uppercase tracking-tighter">Total no período selecionado</p>
             </div>
 
             <div class="card p-6">
                 <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Média / Mês</span>
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Média Mensal</span>
                     <i data-lucide="trending-up" class="text-green-500 w-5 h-5"></i>
                 </div>
                 <h3 id="avg-monthly" class="text-3xl font-black text-gray-800">0</h3>
-                <p class="text-[10px] text-gray-500 font-bold mt-2 uppercase tracking-tighter">unidades por período</p>
+                <p class="text-[10px] text-gray-500 font-bold mt-2 uppercase tracking-tighter">unidades / mês</p>
             </div>
 
             <div class="card p-6">
                 <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Top Dispositivo</span>
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Share de Mix</span>
                     <h3 id="top-device" class="text-xl font-black text-gray-800 uppercase truncate max-w-[120px]">---</h3>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span id="top-device-val" class="text-xs font-bold text-blue-600">0 un.</span>
+                    <span id="top-device-val" class="text-xs font-bold text-blue-600">0% do total</span>
                     <i data-lucide="smartphone" class="text-gray-200 w-8 h-8"></i>
                 </div>
             </div>
 
             <div class="card p-6">
                 <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Última Att.</span>
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Status Sync</span>
                     <span id="source-indicator" class="status-badge bg-gray-100 text-gray-500">Standby</span>
                 </div>
                 <div class="flex flex-col">
                     <span id="sync-time" class="text-sm font-bold text-gray-700">--:--:--</span>
-                    <span class="text-[10px] text-gray-400 font-mono mt-2 uppercase tracking-widest text-xs">Conexão Verdi (n8n)</span>
+                    <span class="text-[10px] text-gray-400 font-mono mt-2 uppercase tracking-widest text-xs">Última atualização</span>
                 </div>
             </div>
         </div>
 
+        <!-- Gráficos -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
             <div class="card p-8 lg:col-span-2">
-                <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2">
-                    <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Curva de Crescimento Safra 2026
+                <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2 uppercase tracking-tight">
+                    <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Projeção Temporal do Segmento
                 </h4>
                 <div class="h-80">
                     <canvas id="forecastChart"></canvas>
@@ -146,8 +184,8 @@
             </div>
 
             <div class="card p-8">
-                <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Mix por Modelo
+                <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2 uppercase tracking-tight">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Representatividade de Modelos
                 </h4>
                 <div class="h-80 flex flex-col justify-center">
                     <canvas id="deviceChart"></canvas>
@@ -155,41 +193,48 @@
             </div>
         </div>
 
+        <!-- Tabela -->
         <div class="card overflow-hidden">
             <div class="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <h4 class="text-sm font-black text-gray-800">Detalhamento por Canal e Dispositivo</h4>
-                <div class="flex gap-2">
-                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                <h4 class="text-sm font-black text-gray-800 uppercase tracking-tight">Visão Analítica por Linha</h4>
+                <div class="flex gap-2 items-center">
+                    <span id="row-count" class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded">0 registros</span>
                     <span class="text-[10px] font-black text-gray-400 uppercase">Safra 2026</span>
                 </div>
             </div>
             <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full text-left">
+                <table class="w-full text-left border-collapse">
                     <thead class="bg-white border-b border-gray-100">
                         <tr id="table-headers" class="text-[11px] font-black text-gray-400 uppercase tracking-widest">
-                            <th class="px-8 py-5">Canal de Origem</th>
-                            <th class="px-8 py-5">Modelo de Device</th>
+                            <th class="px-8 py-5">Canal</th>
+                            <th class="px-8 py-5">Modelo</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-gray-50 bg-white">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
     </main>
 
     <script>
-        // ==========================================
-        // COLE A SUA PRODUCTION URL DO VERDI AQUI 👇
-        // ==========================================
+        // Configuração
         const VERDI_WEBHOOK_URL = "dados.json"; 
         
-        // Dados de Fallback (Mock caso o Verdi caia)
         const MOCK_DATA = [
-            { "SAFRA_VENDACANAL_DEVICE": "APP MP", "POINT_DEVICE": "AIR", "202601": "5.016", "202602": "4.976", "202603": "5.097" },
-            { "SAFRA_VENDACANAL_DEVICE": "FDV Propria", "POINT_DEVICE": "SMART", "202601": "10.823", "202602": "10.581", "202603": "14.002" }
+            { "SAFRA_VENDACANAL_DEVICE": "APP MP", "POINT_DEVICE": "AIR", "202601": "5016", "202602": "4976", "202603": "5097", "202604": "5200", "202605": "5150", "202606": "5300" },
+            { "SAFRA_VENDACANAL_DEVICE": "APP MP", "POINT_DEVICE": "SMART", "202601": "2100", "202602": "2250", "202603": "2400", "202604": "2350", "202605": "2500", "202606": "2600" },
+            { "SAFRA_VENDACANAL_DEVICE": "FDV Propria", "POINT_DEVICE": "SMART", "202601": "10823", "202602": "10581", "202603": "14002", "202604": "13500", "202605": "14200", "202606": "15000" },
+            { "SAFRA_VENDACANAL_DEVICE": "FDV Propria", "POINT_DEVICE": "PRO", "202601": "3500", "202602": "3600", "202603": "3800", "202604": "3750", "202605": "3900", "202606": "4100" },
+            { "SAFRA_VENDACANAL_DEVICE": "Desktop", "POINT_DEVICE": "AIR", "202601": "1200", "202602": "1150", "202603": "1300", "202604": "1250", "202605": "1400", "202606": "1450" }
         ];
 
+        // Estado Global
+        let rawDataset = [];
+        let filteredDataset = [];
+        let months = [];
+        let colCanal = "";
+        let colDevice = "";
         let forecastChart = null;
         let deviceChart = null;
 
@@ -216,21 +261,19 @@
             envNotice.classList.add('hidden');
 
             try {
-                // Tenta puxar do Verdi, forçando quebra de cache do navegador
                 const response = await fetch(`${VERDI_WEBHOOK_URL}?_=${new Date().getTime()}`);
-                if (!response.ok) throw new Error("Falha ao comunicar com o Verdi");
-                
+                if (!response.ok) throw new Error("API Offline");
                 const jsonData = await response.json();
                 
                 if (jsonData && jsonData.length > 0) {
-                    processVerdiData(jsonData, "LIVE");
+                    initDataProcessing(jsonData, "LIVE");
                 } else {
-                    throw new Error("Planilha vazia");
+                    throw new Error("Vazio");
                 }
             } catch (err) {
-                console.error("Erro na request:", err);
+                console.warn("Usando Fallback...");
                 envNotice.classList.remove('hidden');
-                processVerdiData(MOCK_DATA, "MOCK");
+                initDataProcessing(MOCK_DATA, "MOCK");
             } finally {
                 setTimeout(() => {
                     if(showLoadingUI) loading.style.display = 'none';
@@ -239,41 +282,77 @@
             }
         }
 
-        function processVerdiData(data, type) {
-            // Se vier vazio, aborta
-            if(!data || data.length === 0) return;
-            
-            // Console log para depuração (aperte F12 para ver os dados brutos chegando)
-            console.log("Dados recebidos via Verdi:", data);
-
-            // 1. Encontrar todos os meses automaticamente (tudo que tiver 6 números, ex: 202601)
+        function initDataProcessing(data, type) {
+            // Detectar Colunas e Meses
             let monthsSet = new Set();
             data.forEach(row => {
                 Object.keys(row).forEach(k => {
                     if (/^\d{6}$/.test(k)) monthsSet.add(k);
                 });
             });
-            const months = Array.from(monthsSet).sort();
+            months = Array.from(monthsSet).sort();
 
-            // 2. Encontrar os nomes das colunas de texto, ignorando o "row_number" do Verdi
             const sampleRow = data[0];
             const textKeys = Object.keys(sampleRow).filter(k => k !== "row_number" && !/^\d{6}$/.test(k));
+            colCanal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
+            colDevice = textKeys.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE')) || textKeys[1];
+
+            rawDataset = data.filter(row => row[colCanal]);
             
-            const colCanal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
-            const colDevice = textKeys.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE')) || textKeys[1];
-
-            // 3. Filtrar os dados: só mantém a linha se ela tiver alguma projeção no primeiro mês
-            const validData = data.filter(row => row[months[0]] !== undefined && row[months[0]] !== "" && row[colCanal]);
-
-            renderUI(validData, type, months, colCanal, colDevice);
+            populateFilters();
+            applyFilters(type);
         }
 
-        function renderUI(data, type, months, colCanal, colDevice) {
+        function populateFilters() {
+            const selectCanal = document.getElementById('filter-canal');
+            const selectDevice = document.getElementById('filter-device');
+            
+            const canals = [...new Set(rawDataset.map(r => r[colCanal]))].sort();
+            const devices = [...new Set(rawDataset.map(r => r[colDevice]))].sort();
+
+            // Salvar valores atuais para não perder seleção ao atualizar
+            const currentCanal = selectCanal.value;
+            const currentDevice = selectDevice.value;
+
+            selectCanal.innerHTML = '<option value="ALL">Todos os Canais</option>';
+            canals.forEach(c => {
+                selectCanal.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+
+            selectDevice.innerHTML = '<option value="ALL">Todos os Modelos</option>';
+            devices.forEach(d => {
+                selectDevice.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+
+            selectCanal.value = currentCanal;
+            selectDevice.value = currentDevice;
+        }
+
+        function applyFilters(type = 'LIVE') {
+            const filterCanal = document.getElementById('filter-canal').value;
+            const filterDevice = document.getElementById('filter-device').value;
+
+            filteredDataset = rawDataset.filter(row => {
+                const matchCanal = filterCanal === 'ALL' || row[colCanal] === filterCanal;
+                const matchDevice = filterDevice === 'ALL' || row[colDevice] === filterDevice;
+                return matchCanal && matchDevice;
+            });
+
+            renderUI(type);
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-canal').value = 'ALL';
+            document.getElementById('filter-device').value = 'ALL';
+            applyFilters();
+        }
+
+        function renderUI(type) {
             let totalForecast = 0;
             const deviceMap = {};
             const monthlySum = {};
-
-            data.forEach(row => {
+            
+            filteredDataset.forEach(row => {
                 const dev = row[colDevice] || 'Outros';
                 months.forEach(m => {
                     const val = parseMeliNumber(row[m]);
@@ -283,50 +362,58 @@
                 });
             });
 
+            // Update KPIs
             document.getElementById('total-qty').innerText = Math.round(totalForecast).toLocaleString('pt-PT');
             document.getElementById('avg-monthly').innerText = Math.round(totalForecast / (months.length || 1)).toLocaleString('pt-PT');
             
             const sortedDevices = Object.entries(deviceMap).sort((a,b) => b[1] - a[1]);
             if(sortedDevices.length > 0) {
-                document.getElementById('top-device').innerText = sortedDevices[0][0];
-                document.getElementById('top-device-val').innerText = Math.round(sortedDevices[0][1]).toLocaleString('pt-PT') + " un.";
+                const topDev = sortedDevices[0];
+                const percentage = totalForecast > 0 ? ((topDev[1] / totalForecast) * 100).toFixed(1) : 0;
+                document.getElementById('top-device').innerText = topDev[0];
+                document.getElementById('top-device-val').innerText = `${percentage}% do volume filtrado`;
+            } else {
+                document.getElementById('top-device').innerText = "N/A";
+                document.getElementById('top-device-val').innerText = "0%";
             }
 
-            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-PT');
+            document.getElementById('row-count').innerText = `${filteredDataset.length} registros`;
             
             const pill = document.getElementById('source-indicator');
-            pill.innerText = type === 'LIVE' ? 'VERDI API' : 'FALLBACK';
+            pill.innerText = type === 'LIVE' ? 'CONECTADO' : 'MOCK/OFFLINE';
             pill.className = `status-badge ${type === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
 
-            updateCharts(months, monthlySum, deviceMap);
-            updateTable(data, months, colCanal, colDevice);
+            updateCharts(monthlySum, deviceMap);
+            updateTable();
         }
 
-        function updateCharts(months, monthlySum, devices) {
+        function updateCharts(monthlySum, devices) {
+            // Line Chart
             if (forecastChart) forecastChart.destroy();
             forecastChart = new Chart(document.getElementById('forecastChart'), {
                 type: 'line',
                 data: {
                     labels: months.map(m => m.substring(4) + '/' + m.substring(2,4)),
                     datasets: [{
-                        label: 'Volume',
+                        label: 'Volume Projetado',
                         data: months.map(m => monthlySum[m]),
                         borderColor: '#3483FA', backgroundColor: 'rgba(52, 131, 250, 0.05)',
-                        fill: true, tension: 0.4, borderWidth: 5, pointRadius: 6,
-                        pointBackgroundColor: '#fff', pointBorderColor: '#3483FA', pointBorderWidth: 3
+                        fill: true, tension: 0.4, borderWidth: 4, pointRadius: 4,
+                        pointBackgroundColor: '#fff', pointBorderColor: '#3483FA', pointBorderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10, weight: '700' }, callback: v => v.toLocaleString('pt-PT') } },
-                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: '700' } } }
-                    },
-                    animation: { duration: 500 }
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 }, callback: v => v.toLocaleString('pt-PT') } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
+                    }
                 }
             });
 
+            // Doughnut Chart
             if (deviceChart) deviceChart.destroy();
             deviceChart = new Chart(document.getElementById('deviceChart'), {
                 type: 'doughnut',
@@ -334,37 +421,43 @@
                     labels: Object.keys(devices),
                     datasets: [{
                         data: Object.values(devices),
-                        backgroundColor: ['#3483FA', '#00A650', '#FF7733', '#F2C12E', '#9B51E0'],
-                        borderWidth: 3, borderColor: '#fff'
+                        backgroundColor: ['#3483FA', '#00A650', '#FF7733', '#F2C12E', '#9B51E0', '#E5E7EB'],
+                        borderWidth: 2, borderColor: '#fff'
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: '700' } } } },
-                    cutout: '70%', animation: { duration: 500 }
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } },
+                    cutout: '75%'
                 }
             });
         }
 
-        function updateTable(data, months, colCanal, colDevice) {
+        function updateTable() {
             const head = document.getElementById('table-headers');
-            head.innerHTML = `<th class="px-8 py-5">Canal de Origem</th><th class="px-8 py-5">Modelo de Device</th>`;
+            head.innerHTML = `<th class="px-8 py-5">Canal</th><th class="px-8 py-5">Modelo</th>`;
             months.forEach(m => {
                 head.innerHTML += `<th class="px-4 py-5 text-center">${m.substring(4)}/${m.substring(2,4)}</th>`;
             });
 
             const body = document.getElementById('table-body');
             body.innerHTML = '';
-            data.forEach(row => {
+            
+            if(filteredDataset.length === 0) {
+                body.innerHTML = '<tr><td colspan="100%" class="px-8 py-10 text-center text-gray-400 font-medium">Nenhum dado encontrado para os filtros selecionados.</td></tr>';
+                return;
+            }
+
+            filteredDataset.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-blue-50/30 transition-colors";
+                tr.className = "hover:bg-blue-50/20 transition-colors group";
                 let cells = `
-                    <td class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-tighter">${row[colCanal] || '-'}</td>
-                    <td class="px-8 py-5 text-xs font-black text-gray-800">${row[colDevice] || '-'}</td>
+                    <td class="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-tighter group-hover:text-blue-600">${row[colCanal] || '-'}</td>
+                    <td class="px-8 py-4 text-xs font-black text-gray-700">${row[colDevice] || '-'}</td>
                 `;
                 months.forEach(m => {
                     const val = Math.round(parseMeliNumber(row[m]));
-                    cells += `<td class="px-4 py-5 text-center text-[11px] font-bold text-gray-600">${val.toLocaleString('pt-PT')}</td>`;
+                    cells += `<td class="px-4 py-4 text-center text-[11px] font-bold text-gray-500">${val.toLocaleString('pt-PT')}</td>`;
                 });
                 tr.innerHTML = cells;
                 body.appendChild(tr);
@@ -373,22 +466,13 @@
 
         window.onload = () => {
             lucide.createIcons();
-            
-            // 1. Carga inicial com tela de loading
             fetchData(true); 
 
-            if(window.location.hostname.includes('github.io') || window.location.hostname.includes('fury')) {
-                document.getElementById('github-badge').classList.remove('hidden');
-            }
-
-            // 2. ATUALIZAÇÃO EM TEMPO REAL: Bate no Verdi a cada 60 segundos
+            // Auto-refresh a cada 5 minutos
             setInterval(() => {
-                fetchData(false); // false = não trava a tela inteira do usuário
-            }, 60000); 
+                fetchData(false);
+            }, 300000); 
         };
     </script>
 </body>
 </html>
-
-
-
