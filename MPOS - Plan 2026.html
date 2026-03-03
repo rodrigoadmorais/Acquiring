@@ -72,7 +72,6 @@
 </head>
 <body>
 
-    <!-- Overlay de Carregamento -->
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center">
             <div class="spinner mb-4"></div>
@@ -80,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Header Principal -->
     <header class="ml-yellow w-full py-3 px-6 shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-4">
@@ -96,11 +94,11 @@
             <div class="flex items-center gap-4">
                 <div id="github-badge" class="hidden lg:flex items-center gap-2 bg-white/50 px-3 py-1.5 rounded-full border border-black/5">
                     <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span class="text-[10px] font-bold text-gray-700 uppercase">Dados em Direto</span>
+                    <span class="text-[10px] font-bold text-gray-700 uppercase">Auto-Sync Ativo</span>
                 </div>
-                <button onclick="fetchData()" class="flex items-center gap-2 ml-button-blue text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
+                <button onclick="fetchData(true)" class="flex items-center gap-2 ml-button-blue text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
                     <i data-lucide="refresh-ccw" class="w-4 h-4" id="refresh-icon"></i>
-                    Sincronizar Planilha
+                    Sincronizar Agora
                 </button>
             </div>
         </div>
@@ -108,21 +106,19 @@
 
     <main class="max-w-7xl mx-auto px-4 py-8">
         
-        <!-- Zona de Aviso de Ambiente (CORS) -->
-        <div id="env-notice" class="hidden mb-8 p-5 card bg-blue-50 border-blue-200">
+        <div id="env-notice" class="hidden mb-8 p-5 card bg-red-50 border-red-200">
             <div class="flex gap-4">
-                <div class="bg-blue-500 p-2 rounded-lg text-white">
-                    <i data-lucide="info" class="w-5 h-5"></i>
+                <div class="bg-red-500 p-2 rounded-lg text-white">
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-blue-900 font-bold text-sm uppercase">Nota de Sincronização</h3>
-                    <p class="text-blue-700 text-xs mt-1">O navegador bloqueou a sincronização automática devido a restrições de segurança (CORS) neste ambiente de pré-visualização. No seu domínio do GitHub Pages, os dados serão carregados normalmente.</p>
+                    <h3 class="text-red-900 font-bold text-sm uppercase">Falha na Sincronização</h3>
+                    <p class="text-red-700 text-xs mt-1">Não foi possível carregar os dados reais do Google Sheets. Exibindo dados de simulação (Mock).</p>
                 </div>
-                <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="text-blue-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
         </div>
 
-        <!-- KPIs Principais -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="card p-6">
                 <div class="flex justify-between items-start mb-4">
@@ -155,17 +151,16 @@
 
             <div class="card p-6">
                 <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Fonte Dados</span>
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Última Att.</span>
                     <span id="source-indicator" class="status-badge bg-gray-100 text-gray-500">Standby</span>
                 </div>
                 <div class="flex flex-col">
-                    <span id="sync-time" class="text-sm font-bold text-gray-700">--:--</span>
+                    <span id="sync-time" class="text-sm font-bold text-gray-700">--:--:--</span>
                     <span class="text-[10px] text-gray-400 font-mono mt-2 uppercase tracking-widest text-xs">Sincronia Estável</span>
                 </div>
             </div>
         </div>
 
-        <!-- Gráficos -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
             <div class="card p-8 lg:col-span-2">
                 <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2">
@@ -186,7 +181,6 @@
             </div>
         </div>
 
-        <!-- Tabela -->
         <div class="card overflow-hidden">
             <div class="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <h4 class="text-sm font-black text-gray-800">Detalhamento por Canal e Dispositivo</h4>
@@ -201,12 +195,10 @@
                         <tr id="table-headers" class="text-[11px] font-black text-gray-400 uppercase tracking-widest">
                             <th class="px-8 py-5">Canal de Origem</th>
                             <th class="px-8 py-5">Modelo de Device</th>
-                            <!-- Colunas de Meses dinâmicas -->
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-gray-50 bg-white">
-                        <!-- Gerado por JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -218,7 +210,7 @@
 
     <script>
         // LINK DA PLANILHA (CSV)
-        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-J2Uo8cl9qgquEWVvHWir1kn8a9ZfJMBnp6TaZBkAwRiG0P17DM-8Hpu5yhVDmolgzlvJXnd9KZ0f/pubhtml?gid=417844394&single=true";
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-J2Uo8cl9qgquEWVvHWir1kn8a9ZfJMBnp6TaZBkAwRiG0P17DM-8Hpu5yhVDmolgzlvJXnd9KZ0f/pub?gid=417844394&single=true&output=csv";
 
         // Dados de Fallback (Mock)
         const MOCK_DATA = [
@@ -228,80 +220,61 @@
             ["APP MP", "MINI", "5.685", "5.640", "5.607", "5.801", "5.735", "5.393", "5.499", "5.835", "5.972", "5.682", "6.133", "6.665"],
             ["APP MP", "PRO", "5.852", "5.805", "5.947", "6.152", "5.909", "5.915", "6.032", "6.399", "6.742", "6.415", "6.925", "6.861"],
             ["APP MP", "SMART", "5.518", "5.474", "5.607", "5.801", "5.735", "5.741", "5.854", "6211", "6.357", "6.048", "6.529", "6.469"],
-            ["FDV Propria", "SMART", "100.823", "10.581", "14.002", "13.153", "13.732", "14.511", "15.392", "15.575", "15.664", "15.747", "14.268", "13.473"]
+            ["FDV Propria", "SMART", "10.823", "10.581", "14.002", "13.153", "13.732", "14.511", "15.392", "15.575", "15.664", "15.747", "14.268", "13.473"]
         ];
 
         let forecastChart = null;
         let deviceChart = null;
 
-        /**
-         * Limpeza de Números Inteligente
-         * Resolve formatos variados como "5.016", "5,016", "10.823"
-         */
         function parseMeliNumber(val) {
             if (!val || val === "0") return 0;
             let s = String(val).trim().replace(/\s/g, ''); 
             
-            // Verifica se o valor tem formato de milhares com vírgula (ex: 5,016)
             const parts = s.split(/[.,]/);
             if (parts.length === 2 && parts[1].length === 3) {
-                // Se houver exatamente 3 dígitos após o separador, tratamos como milhar
                 return parseFloat(s.replace(/[.,]/g, '')) || 0;
             }
             
-            // Tratamento geral para separadores decimais e de milhar
             if (s.includes('.') && s.includes(',')) {
                 if (s.indexOf('.') < s.indexOf(',')) {
-                    // Padrão 1.234,56
                     return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
                 } else {
-                    // Padrão 1,234.56
                     return parseFloat(s.replace(/,/g, '')) || 0;
                 }
             }
-            
-            // Fallback simples
             return parseFloat(s.replace(',', '.')) || 0;
         }
 
-        async function fetchData() {
+        // Função principal de captura (Otimizada para GSheets)
+        function fetchData(showLoadingUI = false) {
             const loading = document.getElementById('loading');
             const icon = document.getElementById('refresh-icon');
             const envNotice = document.getElementById('env-notice');
             
-            loading.style.display = 'flex';
+            if(showLoadingUI) loading.style.display = 'flex';
             if(icon) icon.classList.add('animate-spin');
             envNotice.classList.add('hidden');
 
-            const timestamp = new Date().getTime();
-            const finalUrl = `${SHEET_CSV_URL}&cb=${timestamp}`;
+            // Cache buster agressivo para garantir que pega o dado mais recente do GSheet
+            const finalUrl = `${SHEET_CSV_URL}&_=${new Date().getTime()}`;
 
-            try {
-                // Tentativa via fetch direto para melhor detecção de CORS
-                const response = await fetch(finalUrl);
-                if (!response.ok) throw new Error("Erro na rede.");
-                
-                const csvData = await response.text();
-                Papa.parse(csvData, {
-                    skipEmptyLines: true,
-                    complete: (results) => handleResults(results, "LIVE"),
-                    error: () => handleResults({ data: MOCK_DATA }, "MOCK-ERROR")
-                });
-            } catch (err) {
-                // Se falhar (provável CORS ou erro de fetch), usamos PapaParse com modo download
-                // ou apenas caímos no Mock se estivermos em ambiente restrito
-                if (window.location.protocol === 'blob:' || window.location.hostname.includes('usercontent.goog')) {
+            // Usando PapaParse diretamente em modo download (MUITO mais estável que fetch manual para GSheets)
+            Papa.parse(finalUrl, {
+                download: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    handleResults(results, "LIVE");
+                    if(showLoadingUI) loading.style.display = 'none';
+                    if(icon) icon.classList.remove('animate-spin');
+                },
+                error: function(err) {
+                    console.error("Erro ao puxar dados: ", err);
                     envNotice.classList.remove('hidden');
+                    handleResults({ data: MOCK_DATA }, "MOCK");
+                    if(showLoadingUI) loading.style.display = 'none';
+                    if(icon) icon.classList.remove('animate-spin');
                 }
-                
-                // Tentativa secundária via PapaParse nativo (menos sensível em alguns casos)
-                Papa.parse(finalUrl, {
-                    download: true,
-                    skipEmptyLines: true,
-                    error: () => handleResults({ data: MOCK_DATA }, "MOCK-FALLBACK"),
-                    complete: (results) => handleResults(results, "LIVE")
-                });
-            }
+            });
         }
 
         function handleResults(results, type) {
@@ -310,13 +283,6 @@
             } else {
                 processRawRows(MOCK_DATA, "MOCK-EMPTY");
             }
-            
-            const loading = document.getElementById('loading');
-            const icon = document.getElementById('refresh-icon');
-            setTimeout(() => { 
-                loading.style.display = 'none';
-                if(icon) icon.classList.remove('animate-spin');
-            }, 600);
         }
 
         function processRawRows(rows, type) {
@@ -371,9 +337,11 @@
                 document.getElementById('top-device-val').innerText = Math.round(sortedDevices[0][1]).toLocaleString('pt-PT') + " un.";
             }
 
-            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit'});
+            // Mostra a hora exata da última sincronização
+            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            
             const pill = document.getElementById('source-indicator');
-            pill.innerText = type.includes('MOCK') ? 'PREVIEW' : type;
+            pill.innerText = type.includes('MOCK') ? 'FALLBACK' : 'LIVE';
             pill.className = `status-badge ${type === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
 
             updateCharts(months, monthlySum, deviceMap);
@@ -403,11 +371,12 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
                     scales: {
                         y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10, weight: '700' }, callback: v => v.toLocaleString('pt-PT') } },
                         x: { grid: { display: false }, ticks: { font: { size: 10, weight: '700' } } }
-                    }
+                    },
+                    animation: { duration: 500 } // Animação mais rápida para att em tempo real
                 }
             });
 
@@ -427,7 +396,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: '700' } } } },
-                    cutout: '70%'
+                    cutout: '70%',
+                    animation: { duration: 500 }
                 }
             });
         }
@@ -459,13 +429,20 @@
 
         window.onload = () => {
             lucide.createIcons();
-            fetchData();
+            
+            // 1. Faz a primeira carga com a tela de loading
+            fetchData(true); 
+
+            // Mostra o badge apenas se estiver no GitHub
             if(window.location.hostname.includes('github.io')) {
                 document.getElementById('github-badge').classList.remove('hidden');
             }
+
+            // 2. POLLING PARA TEMPO REAL: Atualiza silenciosamente a cada 60 segundos (60000 ms)
+            setInterval(() => {
+                fetchData(false); // false = não mostra a tela inteira branca de loading
+            }, 60000); 
         };
     </script>
 </body>
 </html>
-
-
