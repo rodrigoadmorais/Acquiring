@@ -181,4 +181,353 @@
 
             <div class="card p-8">
                 <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2 uppercase tracking-tight">
-                    <i data-lucide="pie-chart"
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Representatividade de Modelos
+                </h4>
+                <div class="h-80 flex flex-col justify-center">
+                    <canvas id="deviceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Configuração
+        const VERDI_WEBHOOK_URL = "dados.json"; 
+        
+        const MOCK_DATA = [
+            { "SAFRA_VENDACANAL_DEVICE": "APP MP", "POINT_DEVICE": "AIR", "202601": "5016", "202602": "4976", "202612": "5300" },
+            { "SAFRA_VENDACANAL_DEVICE": "FDV Propria", "POINT_DEVICE": "SMART", "202601": "10823", "202602": "10581", "202612": "9000" }
+        ];
+
+        // Estado Global
+        let rawDataset = [];
+        let filteredDataset = [];
+        let months = [];
+        let colCanal = "";
+        let colDevice = "";
+        let forecastChart = null;
+        let deviceChart = null;
+
+        function parseMeliNumber(val) {
+            if (!val || val === "0") return 0;
+            let s = String(val).trim().replace(/\s/g, ''); 
+            const parts = s.split(/[.,]/);
+            if (parts.length === 2 && parts[1].length === 3) return parseFloat(s.replace(/[.,]/g, '')) || 0;
+            if (s.includes('.') && s.includes(',')) {
+                return s.indexOf('.') < s.indexOf(',') 
+                    ? parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0 
+                    : parseFloat(s.replace(/,/g, '')) || 0;
+            }
+            return parseFloat(s.replace(',', '.')) || 0;
+        }
+
+        async function fetchData(showLoadingUI = false) {
+            const loading = document.getElementById('loading');
+            const envNotice = document.getElementById('env-notice');
+            
+            if(showLoadingUI) loading.style.display = 'flex';
+            envNotice.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${VERDI_WEBHOOK_URL}?_=${new Date().getTime()}`);
+                if (!response.ok) throw new Error("API Offline");
+                const jsonData = await response.json();
+                
+                if (jsonData && jsonData.length > 0) {
+                    initDataProcessing(jsonData, "LIVE");
+                } else {
+                    throw new Error("Vazio");
+                }
+            } catch (err) {
+                console.warn("Usando Fallback...");
+                envNotice.classList.remove('hidden');
+                initDataProcessing(MOCK_DATA, "MOCK");
+            } finally {
+                setTimeout(() => {
+                    if(showLoadingUI) loading.style.display = 'none';
+                }, 500);
+            }
+        }
+
+        function initDataProcessing(data, type) {
+            // Detectar Colunas e Meses
+            let monthsSet = new Set();
+            data.forEach(row => {
+                Object.keys(row).forEach(k => {
+                    if (/^\d{6}$/.test(k)) monthsSet.add(k);
+                });
+            });
+            months = Array.from(monthsSet).sort();
+
+            const sampleRow = data[0];
+            const textKeys = Object.keys(sampleRow).filter(k => k !== "row_number" && !/^\d{6}$/.test(k));
+            
+            // Corrige a leitura: Encontra o Canal primeiro
+            colCanal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
+            
+            // Força achar o POINT, se não achar, pega a coluna que não for a mesma do Canal
+            colDevice = textKeys.find(k => k.toUpperCase().includes('POINT')) || textKeys.find(k => k !== colCanal);
+
+            rawDataset = data.filter(row => row[colCanal]);
+            
+            populateFilters();
+            applyFilters(type);
+        }
+
+        function populateFilters() {
+            const selectCanal = document.getElementById('filter-canal');
+            const selectDevice = document.getElementById('filter-device');
+            
+            const canals = [...new Set(rawDataset.map(r => r[colCanal]))].sort();
+            const devices = [...new Set(rawDataset.map(r => r[colDevice]))].sort();
+
+            const currentCanal = selectCanal.value;
+            const currentDevice = selectDevice.value;
+
+            selectCanal.innerHTML = '<option value="ALL">Todos os Canais</option>';
+            canals.forEach(c => { selectCanal.innerHTML += `<option value="${c}">${c}</option>`; });
+
+            selectDevice.innerHTML = '<option value="ALL">Todos os Modelos</option>';
+            devices.forEach(d => { selectDevice.innerHTML += `<option value="${d}">${d}</option>`; });
+
+            selectCanal.value = currentCanal;
+            selectDevice.value = currentDevice;
+        }
+
+        function applyFilters(type = 'LIVE') {
+            const filterCanal = document.getElementById('filter-canal').value;
+            const filterDevice = document.getElementById('filter-device').value;
+
+            filteredDataset = rawDataset.filter(row => {
+                const matchCanal = filterCanal === 'ALL' || row[colCanal] === filterCanal;
+                const matchDevice = filterDevice === 'ALL' || row[colDevice] === filterDevice;
+                return matchCanal && matchDevice;
+            });
+
+            renderUI(type);
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-canal').value = 'ALL';
+            document.getElementById('filter-device').value = 'ALL';
+            applyFilters();
+        }
+
+        function exportToCSV() {
+            if (filteredDataset.length === 0) {
+                alert("Não há dados para exportar.");
+                return;
+            }
+
+            // Montar Cabeçalhos
+            const headers = ["Canal", "Modelo", ...months.map(m => m.substring(4) + '/' + m.substring(2,4))];
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n";
+            
+            // Montar Linhas (Ponto e Vírgula para abrir fácil no Excel BR)
+            filteredDataset.forEach(row => {
+                const rowData = [row[colCanal] || 'Outros', row[colDevice] || 'Outros'];
+                months.forEach(m => {
+                    rowData.push(Math.round(parseMeliNumber(row[m])));
+                });
+                csvContent += rowData.join(";") + "\n";
+            });
+
+            // Disparar Download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Projecao_Meli_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function generateAIAnalysis() {
+            const container = document.getElementById('ai-insights');
+            
+            if(months.length < 2 || filteredDataset.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-500 italic p-4">Dados insuficientes ou período muito curto para análise matemática de tendência.</p>';
+                return;
+            }
+
+            const firstMonth = months[0];
+            const lastMonth = months[months.length - 1];
+            
+            // Agrupar volumes do primeiro e último mês por Canal
+            const channelStats = {};
+            filteredDataset.forEach(row => {
+                const canal = row[colCanal] || 'Outros';
+                if(!channelStats[canal]) channelStats[canal] = { first: 0, last: 0 };
+                channelStats[canal].first += parseMeliNumber(row[firstMonth]);
+                channelStats[canal].last += parseMeliNumber(row[lastMonth]);
+            });
+
+            // Calcular crescimento percentual
+            const trends = [];
+            for (const [canal, data] of Object.entries(channelStats)) {
+                if(data.first > 0) {
+                    const growth = ((data.last - data.first) / data.first) * 100;
+                    trends.push({ canal, growth, absDiff: data.last - data.first });
+                }
+            }
+
+            // Ordenar do que mais cresceu para o que mais caiu
+            trends.sort((a, b) => b.growth - a.growth);
+
+            if(trends.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-500 italic p-4">Variações não detectadas.</p>';
+                return;
+            }
+
+            const topGrowth = trends[0];
+            const topDecline = trends[trends.length - 1];
+            let html = '';
+            
+            // Card de Crescimento
+            if (topGrowth.growth > 0) {
+                html += `
+                <div class="bg-white p-4 rounded-xl border border-green-100 shadow-sm flex items-start gap-4">
+                    <div class="bg-green-100 p-2.5 rounded-full"><i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i></div>
+                    <div>
+                        <span class="text-[10px] font-black text-green-600 uppercase tracking-widest">Maior Crescimento</span>
+                        <h5 class="text-sm font-bold text-gray-800 mt-1">${topGrowth.canal}</h5>
+                        <p class="text-xs text-gray-500 mt-1">Este canal lidera a tendência de alta do período com <strong class="text-green-600 font-bold">+${topGrowth.growth.toFixed(1)}%</strong> de crescimento projetado.</p>
+                    </div>
+                </div>`;
+            } else {
+                 html += `
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-start gap-4">
+                    <div class="bg-gray-100 p-2.5 rounded-full"><i data-lucide="minus" class="w-5 h-5 text-gray-600"></i></div>
+                    <div>
+                        <span class="text-[10px] font-black text-gray-600 uppercase tracking-widest">Estabilidade Tensa</span>
+                        <p class="text-xs text-gray-500 mt-1">Nenhum canal no recorte atual apresenta projeção de crescimento positiva.</p>
+                    </div>
+                </div>`;
+            }
+
+            // Card de Queda / Alerta
+            if (trends.length > 1 || trends.length === 1 && topDecline.growth < 0) {
+                if (topDecline.growth < 0) {
+                    html += `
+                    <div class="bg-white p-4 rounded-xl border border-red-100 shadow-sm flex items-start gap-4">
+                        <div class="bg-red-100 p-2.5 rounded-full"><i data-lucide="trending-down" class="w-5 h-5 text-red-600"></i></div>
+                        <div>
+                            <span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Ponto de Atenção</span>
+                            <h5 class="text-sm font-bold text-gray-800 mt-1">${topDecline.canal}</h5>
+                            <p class="text-xs text-gray-500 mt-1">Apresenta o maior risco de queda, com uma retração estimada de <strong class="text-red-600 font-bold">${topDecline.growth.toFixed(1)}%</strong> ao longo do ano.</p>
+                        </div>
+                    </div>`;
+                } else if (trends.length > 1) {
+                     html += `
+                    <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm flex items-start gap-4">
+                        <div class="bg-yellow-100 p-2.5 rounded-full"><i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600"></i></div>
+                        <div>
+                            <span class="text-[10px] font-black text-yellow-600 uppercase tracking-widest">Menor Ritmo</span>
+                            <h5 class="text-sm font-bold text-gray-800 mt-1">${topDecline.canal}</h5>
+                            <p class="text-xs text-gray-500 mt-1">Apesar de positivo, apresenta o ritmo mais lento do grupo analisado, com <strong class="text-yellow-600 font-bold">+${topDecline.growth.toFixed(1)}%</strong>.</p>
+                        </div>
+                    </div>`;
+                }
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderUI(type) {
+            let totalForecast = 0;
+            const deviceMap = {};
+            const monthlySum = {};
+            
+            filteredDataset.forEach(row => {
+                const dev = row[colDevice] || 'Outros';
+                months.forEach(m => {
+                    const val = parseMeliNumber(row[m]);
+                    totalForecast += val;
+                    deviceMap[dev] = (deviceMap[dev] || 0) + val;
+                    monthlySum[m] = (monthlySum[m] || 0) + val;
+                });
+            });
+
+            // Update KPIs
+            document.getElementById('total-qty').innerText = Math.round(totalForecast).toLocaleString('pt-PT');
+            document.getElementById('avg-monthly').innerText = Math.round(totalForecast / (months.length || 1)).toLocaleString('pt-PT');
+            
+            const sortedDevices = Object.entries(deviceMap).sort((a,b) => b[1] - a[1]);
+            if(sortedDevices.length > 0) {
+                const topDev = sortedDevices[0];
+                const percentage = totalForecast > 0 ? ((topDev[1] / totalForecast) * 100).toFixed(1) : 0;
+                document.getElementById('top-device').innerText = topDev[0];
+                document.getElementById('top-device-val').innerText = `${percentage}% do volume filtrado`;
+            } else {
+                document.getElementById('top-device').innerText = "N/A";
+                document.getElementById('top-device-val').innerText = "0%";
+            }
+
+            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-PT');
+            
+            const pill = document.getElementById('source-indicator');
+            pill.innerText = type === 'LIVE' ? 'CONECTADO' : 'MOCK/OFFLINE';
+            pill.className = `status-badge ${type === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
+
+            // Executa tudo na tela
+            generateAIAnalysis();
+            updateCharts(monthlySum, deviceMap);
+            lucide.createIcons();
+        }
+
+        function updateCharts(monthlySum, devices) {
+            if (forecastChart) forecastChart.destroy();
+            forecastChart = new Chart(document.getElementById('forecastChart'), {
+                type: 'line',
+                data: {
+                    labels: months.map(m => m.substring(4) + '/' + m.substring(2,4)),
+                    datasets: [{
+                        label: 'Volume Projetado',
+                        data: months.map(m => monthlySum[m]),
+                        borderColor: '#3483FA', backgroundColor: 'rgba(52, 131, 250, 0.05)',
+                        fill: true, tension: 0.4, borderWidth: 4, pointRadius: 4,
+                        pointBackgroundColor: '#fff', pointBorderColor: '#3483FA', pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 }, callback: v => v.toLocaleString('pt-PT') } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
+                    }
+                }
+            });
+
+            if (deviceChart) deviceChart.destroy();
+            deviceChart = new Chart(document.getElementById('deviceChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(devices),
+                    datasets: [{
+                        data: Object.values(devices),
+                        backgroundColor: ['#3483FA', '#00A650', '#FF7733', '#F2C12E', '#9B51E0', '#E5E7EB'],
+                        borderWidth: 2, borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } },
+                    cutout: '75%'
+                }
+            });
+        }
+
+        window.onload = () => {
+            lucide.createIcons();
+            fetchData(true); 
+
+            // Auto-refresh a cada 5 minutos silenciosamente
+            setInterval(() => {
+                fetchData(false);
+            }, 300000); 
+        };
+    </script>
+</body>
+</html>
