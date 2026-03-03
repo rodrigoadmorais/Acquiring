@@ -59,6 +59,10 @@
             overflow-y: auto;
             font-family: monospace;
             font-size: 10px;
+            background: #1a1a1a;
+            color: #4ade80;
+            padding: 10px;
+            border-radius: 4px;
         }
 
         .status-pill {
@@ -75,7 +79,7 @@
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center">
             <div class="spinner mb-2"></div>
-            <p class="text-xs font-bold text-gray-500 font-mono uppercase tracking-widest">Sincronizando Dashboard...</p>
+            <p class="text-xs font-bold text-gray-500 font-mono uppercase tracking-widest">Sincronizando com GSheets...</p>
         </div>
     </div>
 
@@ -99,7 +103,7 @@
                 </div>
                 <button onclick="fetchData()" class="flex items-center gap-2 ml-button-blue text-white px-4 py-1.5 rounded font-bold text-sm transition-all active:scale-95 shadow-sm">
                     <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refresh-icon"></i>
-                    Sincronizar Planilha
+                    Atualizar Dados (No Cache)
                 </button>
             </div>
         </div>
@@ -107,11 +111,11 @@
 
     <main class="max-w-7xl mx-auto px-4 py-6">
         
-        <!-- Console de Diagnóstico (Oculto por padrão) -->
-        <div id="debug-area" class="hidden mb-6 card p-4 bg-gray-900 text-green-400 border-none shadow-inner">
+        <!-- Console de Diagnóstico -->
+        <div id="debug-area" class="hidden mb-6 card p-4 border-none shadow-inner">
             <div class="flex justify-between items-center mb-2">
-                <p class="text-[10px] font-bold uppercase tracking-widest">Diagnóstico de Conexão</p>
-                <button onclick="toggleDebug()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-3 h-3"></i></button>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Monitor de Sistema</p>
+                <button onclick="toggleDebug()" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
             </div>
             <div id="debug-console"></div>
         </div>
@@ -122,7 +126,7 @@
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Forecast 2026</p>
                 <h3 id="total-qty" class="text-2xl font-black text-gray-800">0</h3>
                 <div class="mt-4 flex items-center justify-between">
-                    <span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded tracking-tighter">Vendas Projetadas</span>
+                    <span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded tracking-tighter">Unidades Totais</span>
                     <i data-lucide="boxes" class="text-gray-200 w-5 h-5"></i>
                 </div>
             </div>
@@ -131,7 +135,7 @@
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Média Mensal</p>
                 <h3 id="avg-monthly" class="text-2xl font-black text-gray-800">0</h3>
                 <div class="mt-4 flex items-center justify-between">
-                    <span class="text-[10px] text-gray-500 font-medium tracking-tighter">Projeção por mês</span>
+                    <span class="text-[10px] text-gray-500 font-medium tracking-tighter">Projeção un./mês</span>
                     <i data-lucide="calendar" class="text-gray-200 w-5 h-5"></i>
                 </div>
             </div>
@@ -146,13 +150,13 @@
             </div>
 
             <div class="card p-5">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Fonte de Dados</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Sincronização</p>
                 <div class="flex items-center gap-2 mt-1">
-                    <h3 id="sync-status-text" class="text-sm font-bold text-gray-600 uppercase">Aguardando</h3>
+                    <h3 id="sync-status-text" class="text-sm font-bold text-gray-600 uppercase">Standby</h3>
                 </div>
                 <div class="mt-5 flex items-center justify-between">
                     <span id="data-source-pill" class="status-pill bg-gray-100 text-gray-400">---</span>
-                    <span id="sync-time" class="text-[10px] text-gray-400 font-mono">--:--</span>
+                    <span id="sync-time" class="text-[10px] text-gray-400 font-mono tracking-tighter">--:--</span>
                 </div>
             </div>
         </div>
@@ -162,11 +166,8 @@
             <div class="card p-6 lg:col-span-2">
                 <div class="flex justify-between items-center mb-6">
                     <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                        <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Curva de Vendas Forecast
+                        <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Evolução Mensal da Safra
                     </h4>
-                    <div class="flex gap-2">
-                         <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="text-[9px] font-bold text-gray-400">TOTAL</span></div>
-                    </div>
                 </div>
                 <div class="h-64">
                     <canvas id="forecastChart"></canvas>
@@ -175,7 +176,7 @@
 
             <div class="card p-6">
                 <h4 class="text-sm font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Mix por Modelo
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Share por Modelo
                 </h4>
                 <div class="h-64">
                     <canvas id="deviceChart"></canvas>
@@ -187,9 +188,12 @@
         <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <i data-lucide="table-2" class="w-4 h-4 text-blue-500"></i> Visão Detalhada por Canal e Modelo
+                    <i data-lucide="table-2" class="w-4 h-4 text-blue-500"></i> Dados Consolidados
                 </h4>
-                <button onclick="toggleDebug()" class="text-[9px] font-bold text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors">Abrir Debug</button>
+                <div class="flex gap-4">
+                    <button onclick="toggleDebug()" class="text-[9px] font-bold text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors">Ver Logs</button>
+                    <span class="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Dashboard V4.0</span>
+                </div>
             </div>
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="w-full text-left">
@@ -197,7 +201,6 @@
                         <tr id="table-headers" class="text-[10px] font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-white">
                             <th class="px-6 py-4">Canal / Safra</th>
                             <th class="px-6 py-4">Modelo Device</th>
-                            <!-- Meses dinâmicos -->
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-gray-50 bg-white">
@@ -208,23 +211,21 @@
         </div>
     </main>
 
-    <footer class="text-center py-12 opacity-40">
-        <p class="text-[10px] font-black uppercase tracking-[0.4em] mb-2">Meli Forecast Dashboard</p>
-        <p class="text-[9px] font-bold text-gray-400">Atualizado via Google Sheets API (CSV)</p>
+    <footer class="text-center py-12 opacity-30">
+        <p class="text-[10px] font-black uppercase tracking-[0.4em] mb-2">Meli Forecast Pro</p>
+        <p class="text-[8px] font-bold text-gray-400">Nota: O Google Sheets pode demorar até 5 minutos para atualizar o link público após edição.</p>
     </footer>
 
     <script>
-        // URL da sua planilha publicada (CSV)
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-J2Uo8cl9qgquEWVvHWir1kn8a9ZfJMBnp6TaZBkAwRiG0P17DM-8Hpu5yhVDmolgzlvJXnd9KZ0f/pub?gid=417844394&single=true&output=csv";
 
-        // Backup robusto caso ocorra erro de CORS no preview ou conexão instável
         const MOCK_DATA = [
             ["SUM of QTD_DEV_SOLD_FORECAST_TOTAL", "", "", "", "", "", "", "", "", "", "", "", "", ""],
             ["SAFRA_VENDACANAL_DEVICE", "POINT_DEVICE", "202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608", "202609", "202610", "202611", "202612"],
             ["APP MP", "AIR", "5.016", "4.976", "5.097", "4.746", "4.345", "4.349", "4.435", "4.705", "4.816", "4.582", "4.946", "4.901"],
             ["APP MP", "MINI", "5.685", "5.640", "5.607", "5.801", "5.735", "5.393", "5.499", "5.835", "5.972", "5.682", "6.133", "6.665"],
             ["APP MP", "PRO", "5.852", "5.805", "5.947", "6.152", "5.909", "5.915", "6.032", "6.399", "6.742", "6.415", "6.925", "6.861"],
-            ["APP MP", "SMART", "5.518", "5.474", "5.607", "5.801", "5.735", "5.741", "5.854", "6.211", "6.357", "6.048", "6.529", "6.469"],
+            ["APP MP", "SMART", "5.518", "5.474", "5.607", "5.801", "5.735", "5.741", "5.854", "6211", "6.357", "6.048", "6.529", "6.469"],
             ["FDV Propria", "SMART", "10.823", "10.581", "14.002", "13.153", "13.732", "14.511", "15.392", "15.575", "15.664", "15.747", "14.268", "13.473"]
         ];
 
@@ -235,7 +236,7 @@
             const consoleEl = document.getElementById('debug-console');
             const time = new Date().toLocaleTimeString();
             const color = type === "error" ? "text-red-400" : "text-green-400";
-            consoleEl.innerHTML += `<div class="mb-1"><span class="text-gray-600">[${time}]</span> <span class="${color}">${msg}</span></div>`;
+            consoleEl.innerHTML += `<div class="mb-1"><span class="text-gray-500">[${time}]</span> <span class="${color}">${msg}</span></div>`;
             consoleEl.scrollTop = consoleEl.scrollHeight;
         }
 
@@ -243,81 +244,85 @@
             document.getElementById('debug-area').classList.toggle('hidden');
         }
 
+        function cleanNumber(valStr) {
+            if (!valStr) return 0;
+            // Remove espaços e limpa formatação regional
+            let s = String(valStr).replace(/\s/g, '');
+            
+            // Caso 5.016 ou 5,016 (com 3 casas depois, assumimos milhar)
+            const parts = s.split(/[.,]/);
+            if (parts.length === 2 && parts[1].length === 3) {
+                return parseFloat(s.replace(/[.,]/g, '')) || 0;
+            }
+            
+            // Tratamento geral para decimais/milhares
+            if (s.includes('.') && s.includes(',')) {
+                if (s.indexOf('.') < s.indexOf(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+                else return parseFloat(s.replace(/,/g, '')) || 0;
+            }
+            
+            return parseFloat(s.replace(',', '.')) || 0;
+        }
+
         async function fetchData() {
             const loading = document.getElementById('loading');
             loading.style.display = 'flex';
-            addLog("Solicitando dados à nuvem...");
+            addLog("A tentar sincronizar dados em tempo real...");
 
-            try {
-                // Adicionamos um timestamp para forçar o bypass de qualquer cache de servidor
-                const fetchUrl = `${SHEET_CSV_URL}&cb=${new Date().getTime()}`;
-                
-                // No ambiente do Canvas, o Fetch costuma falhar por CORS. 
-                // Usamos uma lógica de timeout e catch para mudar para o Mock sem "travar" a tela.
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
+            // Cache busting agressivo
+            const nocacheUrl = `${SHEET_CSV_URL}&timestamp=${new Date().getTime()}`;
 
-                const response = await fetch(fetchUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                if (!response.ok) throw new Error("A planilha não retornou dados válidos.");
-                
-                const csvText = await response.text();
-                addLog("Dados recebidos da planilha com sucesso.");
-
-                Papa.parse(csvText, {
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        if (results.data && results.data.length > 3) {
-                            processData(results.data, "LIVE");
-                        } else {
-                            addLog("Planilha com dados insuficientes, usando backup.");
-                            processData(MOCK_DATA, "BACKUP");
-                        }
+            Papa.parse(nocacheUrl, {
+                download: true,
+                header: false,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    addLog(`Recebidas ${results.data.length} linhas.`);
+                    if (results.data && results.data.length > 5) {
+                        processData(results.data, "LIVE");
+                    } else {
+                        addLog("Aviso: Link ativo mas dados insuficientes. Verifique a publicação.", "error");
+                        processData(MOCK_DATA, "MOCK/BACKUP");
                     }
-                });
-            } catch (err) {
-                addLog("Nota: Conexão bloqueada/falhou (CORS/Timeout). Usando Dados de Backup.", "error");
-                processData(MOCK_DATA, "MOCK/PREVIEW");
-            } finally {
-                setTimeout(() => { loading.style.display = 'none'; }, 600);
-            }
+                    loading.style.display = 'none';
+                },
+                error: function(err) {
+                    addLog("Erro de conexão (CORS ou URL inválida). Usando dados locais.", "error");
+                    processData(MOCK_DATA, "PREVIEW");
+                    loading.style.display = 'none';
+                }
+            });
         }
 
         function processData(rows, source) {
-            // Busca a linha de cabeçalho (a que contém os meses 2026XX)
             let headerIndex = -1;
             for(let i = 0; i < rows.length; i++) {
-                const rowStr = JSON.stringify(rows[i]);
-                if(rowStr.includes("202601") || rowStr.toLowerCase().includes("point_device")) {
+                const rowStr = JSON.stringify(rows[i]).toLowerCase();
+                if(rowStr.includes("202601") || rowStr.includes("device")) {
                     headerIndex = i;
                     break;
                 }
             }
 
             if(headerIndex === -1) {
-                addLog("Estrutura da planilha não reconhecida.", "error");
+                addLog("Cabeçalho não identificado. Estrutura de dados desconhecida.", "error");
                 return;
             }
 
             const headers = rows[headerIndex].map(h => String(h || '').trim());
             const dataRows = rows.slice(headerIndex + 1);
 
-            // Converter linhas para objetos mapeados
             const cleanData = dataRows.map(row => {
                 let obj = {};
                 headers.forEach((h, i) => { obj[h] = row[i]; });
                 return obj;
-            }).filter(d => d[headers[1]]); // Garante que a coluna de dispositivo não esteja vazia
+            }).filter(d => d[headers[1]]);
 
             renderDashboard(cleanData, headers, source);
         }
 
         function renderDashboard(data, headers, source) {
-            // Identificar colunas de data (Ex: 202601)
             const dateKeys = headers.filter(k => /^\d{6}$/.test(k)).sort();
-            
-            // Colunas de texto
             const colCanal = headers[0];
             const colDevice = headers[1];
 
@@ -328,33 +333,13 @@
             data.forEach(row => {
                 const devName = row[colDevice] || 'Outros';
                 dateKeys.forEach(date => {
-                    // Limpeza de número: remove pontos e trata vírgulas (Ex: "5.016" -> 5016)
-                    let valStr = String(row[date] || "0").replace(/\s/g, '');
-                    
-                    // Se o número vier como "5.016" (padrão Brasil milhar com ponto)
-                    // Ou se vier como "5,016" (padrão americano decimal ou brasileiro milhar com vírgula)
-                    // Vamos tentar normalizar para o JS entender.
-                    let val = 0;
-                    if (valStr.includes('.') && valStr.includes(',')) {
-                        // Formato 5.000,00
-                        val = parseFloat(valStr.replace(/\./g, '').replace(',', '.')) || 0;
-                    } else if (valStr.includes('.') && valStr.split('.').pop().length === 3) {
-                        // Formato 5.016 (provável milhar)
-                        val = parseFloat(valStr.replace(/\./g, '')) || 0;
-                    } else if (valStr.includes(',') && valStr.split(',').pop().length === 3) {
-                        // Formato 5,016 (provável milhar)
-                        val = parseFloat(valStr.replace(/,/g, '')) || 0;
-                    } else {
-                        val = parseFloat(valStr.replace(',', '.')) || 0;
-                    }
-
+                    const val = cleanNumber(row[date]);
                     totalForecast += val;
                     deviceMap[devName] = (deviceMap[devName] || 0) + val;
                     monthlyTotals[date] = (monthlyTotals[date] || 0) + val;
                 });
             });
 
-            // Atualizar KPIs
             document.getElementById('total-qty').innerText = Math.round(totalForecast).toLocaleString('pt-BR');
             document.getElementById('avg-monthly').innerText = Math.round(totalForecast / dateKeys.length).toLocaleString('pt-BR');
             
@@ -364,11 +349,10 @@
                 document.getElementById('top-device-val').innerText = Math.round(topDev[1]).toLocaleString('pt-BR') + " un.";
             }
 
-            // Status UI
             document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
             document.getElementById('data-source-pill').innerText = source;
             document.getElementById('data-source-pill').className = `status-pill ${source === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
-            document.getElementById('sync-status-text').innerText = source === 'LIVE' ? 'Sincronizado' : 'Modo Preview';
+            document.getElementById('sync-status-text').innerText = source === 'LIVE' ? 'Sincronizado' : 'Modo Backup';
             
             const dot = document.getElementById('status-dot');
             dot.className = `w-1.5 h-1.5 rounded-full ${source === 'LIVE' ? 'bg-green-500 animate-pulse' : 'bg-orange-400'}`;
@@ -378,14 +362,13 @@
         }
 
         function updateCharts(dates, monthlyData, devices) {
-            // Line Chart
             if (forecastChart) forecastChart.destroy();
             forecastChart = new Chart(document.getElementById('forecastChart'), {
                 type: 'line',
                 data: {
                     labels: dates.map(d => d.substring(4) + '/' + d.substring(0,4)),
                     datasets: [{
-                        label: 'Total Forecast',
+                        label: 'Volume Projetado',
                         data: dates.map(d => monthlyData[d]),
                         borderColor: '#3483FA',
                         backgroundColor: 'rgba(52, 131, 250, 0.05)',
@@ -393,7 +376,6 @@
                         tension: 0.4,
                         borderWidth: 4,
                         pointRadius: 4,
-                        pointHoverRadius: 6,
                         pointBackgroundColor: '#fff',
                         pointBorderColor: '#3483FA',
                         pointBorderWidth: 2
@@ -404,17 +386,12 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { 
-                            beginAtZero: false, 
-                            grid: { color: '#f0f0f0' },
-                            ticks: { font: { size: 10, weight: '600' } }
-                        },
+                        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10, weight: '600' } } },
                         x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
                     }
                 }
             });
 
-            // Doughnut Chart
             if (deviceChart) deviceChart.destroy();
             deviceChart = new Chart(document.getElementById('deviceChart'), {
                 type: 'doughnut',
@@ -423,7 +400,6 @@
                     datasets: [{
                         data: Object.values(devices),
                         backgroundColor: ['#3483FA', '#00A650', '#FF7733', '#F2C12E', '#9B51E0'],
-                        hoverOffset: 10,
                         borderWidth: 2,
                         borderColor: '#fff'
                     }]
@@ -431,12 +407,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { 
-                            position: 'bottom', 
-                            labels: { boxWidth: 8, padding: 15, font: { size: 10, weight: '700' } } 
-                        } 
-                    },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 15, font: { size: 10, weight: '700' } } } },
                     cutout: '70%'
                 }
             });
@@ -446,7 +417,7 @@
             const headRow = document.getElementById('table-headers');
             headRow.innerHTML = `<th class="px-6 py-4">Canal</th><th class="px-6 py-4">Modelo</th>`;
             dates.forEach(d => {
-                headRow.innerHTML += `<th class="px-2 py-4 text-center">${d.substring(4)}/${d.substring(2,4)}</th>`;
+                headRow.innerHTML += `<th class="px-2 py-4 text-center font-bold">${d.substring(4)}/${d.substring(2,4)}</th>`;
             });
 
             const body = document.getElementById('table-body');
@@ -462,13 +433,8 @@
                 `;
 
                 dates.forEach(d => {
-                    let valStr = String(row[d] || "0").replace(/\s/g, '');
-                    let val = 0;
-                    if (valStr.includes('.') && valStr.split('.').pop().length === 3) val = parseFloat(valStr.replace(/\./g, '')) || 0;
-                    else if (valStr.includes(',') && valStr.split(',').pop().length === 3) val = parseFloat(valStr.replace(/,/g, '')) || 0;
-                    else val = parseFloat(valStr.replace(',', '.')) || 0;
-
-                    cells += `<td class="px-2 py-4 text-center text-[11px] font-medium text-gray-600">${Math.round(val).toLocaleString('pt-BR')}</td>`;
+                    const val = Math.round(cleanNumber(row[d]));
+                    cells += `<td class="px-2 py-4 text-center text-[11px] font-medium text-gray-600">${val.toLocaleString('pt-BR')}</td>`;
                 });
 
                 tr.innerHTML = cells;
@@ -482,7 +448,7 @@
             
             if(window.location.hostname.includes('github.io')) {
                 document.getElementById('connection-status').classList.remove('hidden');
-                addLog("Ambiente GitHub Pages detectado.");
+                addLog("Ambiente GitHub Pages detetado. Conexão real ativa.");
             }
         };
     </script>
