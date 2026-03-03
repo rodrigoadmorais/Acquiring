@@ -51,15 +51,6 @@
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .status-badge {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.65rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        /* Custom scrollbar para tabelas largas */
         .custom-scrollbar::-webkit-scrollbar { height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 10px; }
     </style>
@@ -69,11 +60,11 @@
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center">
             <div class="spinner mb-2"></div>
-            <p class="text-xs font-bold text-gray-500 font-mono">PROCESSANDO SAFRAS...</p>
+            <p class="text-xs font-bold text-gray-500 font-mono uppercase">Sincronizando com a nuvem...</p>
         </div>
     </div>
 
-    <!-- Header Estilo Mercado Livre -->
+    <!-- Header -->
     <header class="ml-yellow w-full py-2 px-4 shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -82,18 +73,18 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-black text-gray-800 leading-tight">Mercado <span class="text-blue-600">Forecast</span></h1>
-                    <p class="text-[9px] font-bold text-gray-600 uppercase tracking-tighter">Projeção de Vendas por Dispositivo</p>
+                    <p class="text-[9px] font-bold text-gray-600 uppercase tracking-tighter">Análise de Safras 2026</p>
                 </div>
             </div>
             
             <div class="flex items-center gap-3">
                 <div id="connection-status" class="hidden md:flex items-center gap-2 px-2 py-1 bg-white/40 rounded border border-black/5">
                     <div class="w-1.5 h-1.5 rounded-full bg-gray-400" id="status-dot"></div>
-                    <span class="text-[9px] font-bold text-gray-600 uppercase" id="status-text">Conectando...</span>
+                    <span class="text-[9px] font-bold text-gray-600 uppercase" id="status-text">GitHub Pages</span>
                 </div>
                 <button onclick="fetchData()" class="flex items-center gap-2 ml-button-blue text-white px-4 py-1.5 rounded font-bold text-sm transition-all active:scale-95 shadow-sm">
                     <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refresh-icon"></i>
-                    Sincronizar GitHub
+                    Recarregar Dados
                 </button>
             </div>
         </div>
@@ -101,13 +92,13 @@
 
     <main class="max-w-7xl mx-auto px-4 py-6">
         
-        <!-- Alerta de CORS (Aparece apenas se falhar no preview) -->
-        <div id="cors-notice" class="hidden bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded shadow-sm">
+        <!-- Alerta de Modo Demonstração (CORS) -->
+        <div id="demo-notice" class="hidden bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded shadow-sm">
             <div class="flex items-start gap-3">
                 <i data-lucide="info" class="text-blue-500 w-5 h-5 mt-0.5"></i>
                 <div class="text-xs leading-relaxed text-blue-800">
-                    <p class="font-bold mb-1">Nota de Ambiente:</p>
-                    Utilizando dados de demonstração (modelo Safra 2026). No <strong>GitHub Pages</strong>, os dados da sua planilha serão carregados automaticamente.
+                    <p class="font-bold mb-1">Modo de Demonstração Ativo:</p>
+                    A conexão direta com a planilha foi bloqueada pelo navegador (CORS). Isso é comum em ambientes de pré-visualização. No seu link do <strong>GitHub Pages</strong>, os dados reais aparecerão.
                 </div>
             </div>
         </div>
@@ -115,10 +106,10 @@
         <!-- KPIs -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div class="card p-5">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Forecast 2026</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Forecast Anual</p>
                 <h3 id="total-qty" class="text-2xl font-black text-gray-800">0</h3>
                 <div class="mt-4 flex items-center justify-between">
-                    <span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">Qtd. Total</span>
+                    <span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">Previsão un.</span>
                     <i data-lucide="boxes" class="text-gray-300 w-4 h-4"></i>
                 </div>
             </div>
@@ -127,13 +118,13 @@
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Média Mensal</p>
                 <h3 id="avg-monthly" class="text-2xl font-black text-gray-800">0</h3>
                 <div class="mt-4 flex items-center justify-between">
-                    <span class="text-[10px] text-gray-500 font-medium">Previsão por mês</span>
+                    <span class="text-[10px] text-gray-500 font-medium">un. / mês</span>
                     <i data-lucide="calendar" class="text-gray-300 w-4 h-4"></i>
                 </div>
             </div>
 
             <div class="card p-5">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Top Dispositivo</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Top Device</p>
                 <h3 id="top-device" class="text-xl font-black text-gray-800 uppercase">---</h3>
                 <div class="mt-4 flex items-center justify-between">
                     <span id="top-device-val" class="text-[10px] text-green-600 font-bold">0 un.</span>
@@ -142,20 +133,20 @@
             </div>
 
             <div class="card p-5">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status Base</p>
-                <h3 id="sync-status" class="text-lg font-bold text-gray-600 uppercase">--</h3>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Última Atualização</p>
+                <h3 id="sync-time" class="text-lg font-bold text-gray-600 uppercase">--:--</h3>
                 <div class="mt-4 flex items-center justify-between">
-                    <span id="data-source" class="status-badge bg-gray-100 text-gray-500 font-mono tracking-tighter">Standby</span>
-                    <i data-lucide="database" class="text-gray-300 w-4 h-4"></i>
+                    <span id="data-source" class="px-2 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-bold uppercase">Aguardando</span>
+                    <i data-lucide="clock" class="text-gray-300 w-4 h-4"></i>
                 </div>
             </div>
         </div>
 
-        <!-- Charts Row -->
+        <!-- Charts -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <div class="card p-6 lg:col-span-2">
                 <h4 class="text-sm font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Evolução Mensal da Safra (Forecast)
+                    <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Evolução das Safras
                 </h4>
                 <div class="h-64">
                     <canvas id="forecastChart"></canvas>
@@ -175,29 +166,16 @@
         <!-- Tabela -->
         <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <h4 class="text-sm font-bold text-gray-800">Planilha de Previsão Detalhada</h4>
-                <div class="flex gap-2">
-                    <span class="text-[9px] font-bold text-gray-400 uppercase">Safra 2026</span>
-                </div>
+                <h4 class="text-sm font-bold text-gray-800">Base de Dados Forecast</h4>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Atualizado via Google Sheets</span>
             </div>
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="text-[10px] font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-white">
-                            <th class="px-6 py-4">Canal</th>
-                            <th class="px-6 py-4">Dispositivo</th>
-                            <th class="px-6 py-4 text-center">JAN</th>
-                            <th class="px-6 py-4 text-center">FEV</th>
-                            <th class="px-6 py-4 text-center">MAR</th>
-                            <th class="px-6 py-4 text-center">ABR</th>
-                            <th class="px-6 py-4 text-center">MAI</th>
-                            <th class="px-6 py-4 text-center">JUN</th>
-                            <th class="px-6 py-4 text-center">JUL</th>
-                            <th class="px-6 py-4 text-center">AGO</th>
-                            <th class="px-6 py-4 text-center">SET</th>
-                            <th class="px-6 py-4 text-center">OUT</th>
-                            <th class="px-6 py-4 text-center">NOV</th>
-                            <th class="px-6 py-4 text-center">DEZ</th>
+                        <tr id="table-headers" class="text-[10px] font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-white">
+                            <th class="px-6 py-4">Canal / Device</th>
+                            <th class="px-6 py-4">Point Device</th>
+                            <!-- Meses dinâmicos -->
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-gray-50 bg-white">
@@ -209,19 +187,21 @@
     </main>
 
     <footer class="text-center py-10 opacity-30">
-        <p class="text-[10px] font-black uppercase tracking-[0.3em]">Meli Forecast System &bull; 2026 Strategy</p>
+        <p class="text-[10px] font-black uppercase tracking-[0.3em]">Meli Strategy &bull; Dashboard V3.2</p>
     </footer>
 
     <script>
         const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-J2Uo8cl9qgquEWVvHWir1kn8a9ZfJMBnp6TaZBkAwRiG0P17DM-8Hpu5yhVDmolgzlvJXnd9KZ0f/pub?gid=417844394&single=true&output=csv";
 
-        // Mock dos dados fornecidos pelo usuário para o preview
-        const DEMO_DATA = [
-            { CANAL_DEVICE: 'APP MP', POINT_DEVICE: 'AIR', '202601': 5016, '202602': 4976, '202603': 5097, '202604': 4746, '202605': 4345, '202606': 4349, '202607': 4435, '202608': 4705, '202609': 4816, '202610': 4582, '202611': 4946, '202612': 4901 },
-            { CANAL_DEVICE: 'APP MP', POINT_DEVICE: 'MINI', '202601': 5685, '202602': 5640, '202603': 5607, '202604': 5801, '202605': 5735, '202606': 5393, '202607': 5499, '202608': 5835, '202609': 5972, '202610': 5682, '202611': 6133, '202612': 6665 },
-            { CANAL_DEVICE: 'APP MP', POINT_DEVICE: 'PRO', '202601': 5852, '202602': 5805, '202603': 5947, '202604': 6152, '202605': 5909, '202606': 5915, '202607': 6032, '202608': 6399, '202609': 6742, '202610': 6415, '202611': 6925, '202612': 6861 },
-            { CANAL_DEVICE: 'APP MP', POINT_DEVICE: 'SMART', '202601': 5518, '202602': 5474, '202603': 5607, '202604': 5801, '202605': 5735, '202606': 5741, '202607': 5854, '202608': 6211, '202609': 6357, '202610': 6048, '202611': 6529, '202612': 6469 },
-            { CANAL_DEVICE: 'FDV Propria', POINT_DEVICE: 'SMART', '202601': 10823, '202602': 10581, '202603': 14002, '202604': 13153, '202605': 13732, '202606': 14511, '202607': 15392, '202608': 15575, '202609': 15664, '202610': 15747, '202611': 14268, '202612': 13473 }
+        // Dados de Exemplo para evitar o erro de Fetch no Preview
+        const MOCK_DATA = [
+            ["SUM of QTD_DEV_SOLD_FORECAST_TOTAL", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+            ["SAFRA_VENDACANAL_DEVICE", "POINT_DEVICE", "202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608", "202609", "202610", "202611", "202612"],
+            ["APP MP", "AIR", "5016", "4976", "5097", "4746", "4345", "4349", "4435", "4705", "4816", "4582", "4946", "4901"],
+            ["APP MP", "MINI", "5685", "5640", "5607", "5801", "5735", "5393", "5499", "5835", "5972", "5682", "6133", "6665"],
+            ["APP MP", "PRO", "5852", "5805", "5947", "6152", "5909", "5915", "6032", "6399", "6742", "6415", "6925", "6861"],
+            ["APP MP", "SMART", "5518", "5474", "5607", "5801", "5735", "5741", "5854", "6211", "6357", "6048", "6529", "6469"],
+            ["FDV Propria", "SMART", "10823", "10581", "14002", "13153", "13732", "14511", "15392", "15575", "15664", "15747", "14268", "13473"]
         ];
 
         let forecastChart = null;
@@ -229,97 +209,127 @@
 
         async function fetchData() {
             const loading = document.getElementById('loading');
-            const notice = document.getElementById('cors-notice');
+            const demoNotice = document.getElementById('demo-notice');
             loading.style.display = 'flex';
-            notice.classList.add('hidden');
+            demoNotice.classList.add('hidden');
 
             try {
-                const response = await fetch(CSV_URL, { cache: 'no-store' });
-                if (!response.ok) throw new Error("CORS/Connection Error");
+                // Tenta buscar os dados com cache busting
+                const response = await fetch(`${CSV_URL}&t=${new Date().getTime()}`);
+                
+                if (!response.ok) throw new Error("CORS ou Erro de Rede");
                 
                 const csvText = await response.text();
                 Papa.parse(csvText, {
-                    header: true,
                     skipEmptyLines: true,
-                    dynamicTyping: true,
                     complete: function(results) {
-                        if (results.data.length > 0) renderDashboard(results.data, "REAL");
-                        else useDemoData();
-                    },
-                    error: () => useDemoData()
+                        if (results.data && results.data.length > 5) {
+                            processRawData(results.data, "LIVE");
+                        } else {
+                            processRawData(MOCK_DATA, "DEMO (Dados insuficientes)");
+                        }
+                    }
                 });
             } catch (err) {
-                console.warn("Utilizando dados de demonstração.");
-                notice.classList.remove('hidden');
-                useDemoData();
+                console.warn("Erro de busca, carregando dados locais:", err);
+                demoNotice.classList.remove('hidden');
+                processRawData(MOCK_DATA, "DEMO");
             } finally {
-                setTimeout(() => { loading.style.display = 'none'; }, 600);
+                setTimeout(() => { loading.style.display = 'none'; }, 800);
             }
         }
 
-        function useDemoData() {
-            renderDashboard(DEMO_DATA, "DEMO");
+        function processRawData(rows, source) {
+            // Encontrar o cabeçalho real
+            let headerIndex = -1;
+            for(let i = 0; i < rows.length; i++) {
+                const rowStr = JSON.stringify(rows[i]).toLowerCase();
+                if(rowStr.includes("202601") || rowStr.includes("device")) {
+                    headerIndex = i;
+                    break;
+                }
+            }
+
+            if(headerIndex === -1) {
+                if (source === "LIVE") {
+                    processRawData(MOCK_DATA, "DEMO (Erro Header)");
+                    return;
+                }
+                alert("Erro estrutural na planilha.");
+                return;
+            }
+
+            const headers = rows[headerIndex].map(h => String(h || '').trim());
+            const dataRows = rows.slice(headerIndex + 1);
+
+            // Filtro para remover linhas de "Total" ou vazias no final
+            const formattedData = dataRows.map(row => {
+                let obj = {};
+                headers.forEach((h, i) => { obj[h] = row[i]; });
+                return obj;
+            }).filter(d => d[headers[0]] && d[headers[0]] !== "Total" && d[headers[1]]);
+
+            renderDashboard(formattedData, headers, source);
         }
 
-        function renderDashboard(data, type) {
-            // Identificar colunas de data (Ex: 202601)
-            const allKeys = Object.keys(data[0]);
-            const dateKeys = allKeys.filter(k => /^\d{6}$/.test(k)).sort();
-            
-            // 1. Processar KPIs
+        function renderDashboard(data, headers, source) {
+            const dateKeys = headers.filter(k => /^\d{6}$/.test(k)).sort();
+            const colCanal = headers.find(h => h.toLowerCase().includes('canal')) || headers[0];
+            const colDevice = headers.find(h => h.toLowerCase().includes('point')) || headers[1];
+
             let totalQty = 0;
             const deviceMap = {};
             const monthlyTotals = {};
 
             data.forEach(row => {
-                const device = row.POINT_DEVICE || 'Outros';
+                const deviceName = row[colDevice] || 'Outros';
                 dateKeys.forEach(date => {
-                    const val = parseFloat(String(row[date] || 0).replace(',', '.'));
+                    // Limpeza pesada de caracteres numéricos
+                    let rawVal = String(row[date] || "0").replace(/\s/g, '');
+                    if (rawVal.includes(',') && rawVal.includes('.')) {
+                        rawVal = rawVal.replace(/\./g, '');
+                    }
+                    const val = parseFloat(rawVal.replace(',', '.')) || 0;
+                    
                     totalQty += val;
-                    deviceMap[device] = (deviceMap[device] || 0) + val;
+                    deviceMap[deviceName] = (deviceMap[deviceName] || 0) + val;
                     monthlyTotals[date] = (monthlyTotals[date] || 0) + val;
                 });
             });
 
-            // Update UI KPIs
+            // KPIs
             document.getElementById('total-qty').innerText = Math.round(totalQty).toLocaleString('pt-BR');
-            document.getElementById('avg-monthly').innerText = Math.round(totalQty / dateKeys.length).toLocaleString('pt-BR');
+            document.getElementById('avg-monthly').innerText = Math.round(totalQty / (dateKeys.length || 1)).toLocaleString('pt-BR');
             
-            const topDevEntry = Object.entries(deviceMap).sort((a,b) => b[1] - a[1])[0];
-            document.getElementById('top-device').innerText = topDevEntry[0];
-            document.getElementById('top-device-val').innerText = Math.round(topDevEntry[1]).toLocaleString('pt-BR') + " un.";
+            const sortedDevices = Object.entries(deviceMap).sort((a,b) => b[1] - a[1]);
+            if(sortedDevices.length > 0) {
+                document.getElementById('top-device').innerText = sortedDevices[0][0];
+                document.getElementById('top-device-val').innerText = Math.round(sortedDevices[0][1]).toLocaleString('pt-BR') + " un.";
+            }
 
-            document.getElementById('sync-status').innerText = type === "REAL" ? "Ativo" : "Preview";
-            const sourceBadge = document.getElementById('data-source');
-            sourceBadge.innerText = type;
-            sourceBadge.className = `status-badge ${type === "REAL" ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
+            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('data-source').innerText = source;
+            document.getElementById('data-source').className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase ${source === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
 
-            // 2. Gráficos
             updateCharts(dateKeys, monthlyTotals, deviceMap);
-            
-            // 3. Tabela
-            updateTable(data, dateKeys);
-            
-            // Status Header
-            document.getElementById('status-dot').className = `w-1.5 h-1.5 rounded-full ${type === "REAL" ? 'bg-green-500 animate-pulse' : 'bg-orange-400'}`;
-            document.getElementById('status-text').innerText = type === "REAL" ? "Online" : "Mockup";
+            updateTable(data, dateKeys, colCanal, colDevice);
         }
 
         function updateCharts(dates, monthlyMap, devices) {
-            // Line Chart
             if (forecastChart) forecastChart.destroy();
             forecastChart = new Chart(document.getElementById('forecastChart'), {
                 type: 'line',
                 data: {
                     labels: dates.map(d => d.substring(4) + '/' + d.substring(2,4)),
                     datasets: [{
-                        label: 'Total Forecast',
+                        label: 'Vendas Totais',
                         data: dates.map(d => monthlyMap[d]),
                         borderColor: '#3483FA',
                         backgroundColor: 'rgba(52, 131, 250, 0.05)',
                         fill: true,
                         tension: 0.4,
-                        borderWidth: 3
+                        borderWidth: 3,
+                        pointRadius: 4
                     }]
                 },
                 options: {
@@ -333,7 +343,6 @@
                 }
             });
 
-            // Doughnut Chart
             if (deviceChart) deviceChart.destroy();
             deviceChart = new Chart(document.getElementById('deviceChart'), {
                 type: 'doughnut',
@@ -348,13 +357,19 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10, weight: '700' } } } },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: '700' } } } },
                     cutout: '70%'
                 }
             });
         }
 
-        function updateTable(data, dates) {
+        function updateTable(data, dates, colCanal, colDevice) {
+            const headerRow = document.getElementById('table-headers');
+            headerRow.innerHTML = `<th class="px-6 py-4">Canal</th><th class="px-6 py-4">Device</th>`;
+            dates.forEach(d => {
+                headerRow.innerHTML += `<th class="px-2 py-4 text-center">${d.substring(4)}/${d.substring(2,4)}</th>`;
+            });
+
             const body = document.getElementById('table-body');
             body.innerHTML = '';
             
@@ -363,12 +378,15 @@
                 tr.className = "hover:bg-gray-50 transition-colors";
                 
                 let cells = `
-                    <td class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase">${row.CANAL_DEVICE || '-'}</td>
-                    <td class="px-6 py-4 text-xs font-black text-gray-800">${row.POINT_DEVICE || '-'}</td>
+                    <td class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase">${row[colCanal] || '-'}</td>
+                    <td class="px-6 py-4 text-xs font-black text-gray-800">${row[colDevice] || '-'}</td>
                 `;
 
                 dates.forEach(d => {
-                    const val = Math.round(row[d] || 0);
+                    let rawVal = String(row[d] || "0").replace(/\s/g, '');
+                    if (rawVal.includes(',') && rawVal.includes('.')) rawVal = rawVal.replace(/\./g, '');
+                    const val = Math.round(parseFloat(rawVal.replace(',', '.')) || 0);
+                    
                     cells += `<td class="px-2 py-4 text-center text-[11px] font-medium text-gray-600">${val.toLocaleString('pt-BR')}</td>`;
                 });
 
@@ -380,6 +398,11 @@
         window.onload = () => {
             lucide.createIcons();
             fetchData();
+            
+            if(window.location.hostname.includes('github.io')) {
+                document.getElementById('connection-status').classList.remove('hidden');
+                document.getElementById('status-dot').className = "w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse";
+            }
         };
     </script>
 </body>
