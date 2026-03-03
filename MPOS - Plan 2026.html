@@ -3,188 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meli Forecast | Dashboard Pro Interativo</title>
+    <title>Meli Forecast | Cross-Data Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; background-color: #f5f5f5; color: #333; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
         .ml-yellow { background-color: #FFF159; }
-        .ml-blue { color: #3483FA; }
         
         .card {
             background: white; border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e5e5;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
         }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-
-        .loading-overlay {
-            position: fixed; inset: 0; background: rgba(255,255,255,0.98);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 100; display: none;
-        }
+        .card:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
 
         .spinner {
             border: 4px solid #f3f3f3; border-top: 4px solid #3483FA;
-            border-radius: 50%; width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
+            border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;
         }
-
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-        
         select {
             appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            padding-right: 2.5rem;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat; background-size: 1.2em 1.2em;
         }
+        
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="pb-12">
 
-    <div id="loading" class="loading-overlay">
-        <div class="flex flex-col items-center">
-            <div class="spinner mb-4"></div>
-            <p class="text-sm font-bold text-gray-600 uppercase tracking-widest">Sincronizando via Verdi...</p>
-        </div>
+    <div id="loading" class="fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center">
+        <div class="spinner mb-6"></div>
+        <h2 class="text-xl font-black text-gray-800 tracking-tight">Processando Cross-Data Engine</h2>
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Sincronizando Plano & Realizado</p>
     </div>
 
-    <header class="ml-yellow w-full py-3 px-6 shadow-md sticky top-0 z-50">
+    <header class="ml-yellow w-full py-4 px-6 shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-4">
-                <div class="bg-white p-2 rounded-xl shadow-inner">
-                    <i data-lucide="line-chart" class="text-blue-600 w-6 h-6"></i>
+                <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg">
+                    <i data-lucide="layers" class="text-white w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-black text-gray-800 leading-none">Mercado <span class="text-blue-600">Analytics</span></h1>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase mt-1 tracking-tighter">Projeções de Safra 2026</p>
+                    <h1 class="text-2xl font-black text-gray-900 leading-none tracking-tight">Executive <span class="text-blue-600">Analytics</span></h1>
+                    <p class="text-[10px] font-black text-gray-600 uppercase mt-1 tracking-widest">Plano vs Realizado</p>
                 </div>
             </div>
-            
-            <div class="flex items-center gap-4">
-                <div id="github-badge" class="hidden lg:flex items-center gap-2 bg-white/50 px-3 py-1.5 rounded-full border border-black/5">
-                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span class="text-[10px] font-bold text-gray-700 uppercase">Verdi Auto-Sync</span>
-                </div>
+            <div class="flex items-center gap-3">
+                <span id="status-badge" class="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-green-200 shadow-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Bases Sincronizadas
+                </span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-8">
-        
-        <div id="env-notice" class="hidden mb-8 p-5 card bg-red-50 border-red-200">
-            <div class="flex gap-4">
-                <div class="bg-red-500 p-2 rounded-lg text-white">
-                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+    <main class="max-w-7xl mx-auto px-4 mt-8 space-y-6">
+
+        <div class="card p-4 flex flex-wrap gap-4 items-center justify-between bg-white">
+            <div class="flex items-center gap-4 flex-1">
+                <div class="flex items-center gap-2 text-gray-400 border-r pr-4 border-gray-100">
+                    <i data-lucide="filter" class="w-5 h-5"></i>
+                    <span class="text-[11px] font-black uppercase tracking-widest">Segmentação</span>
                 </div>
-                <div class="flex-1">
-                    <h3 class="text-red-900 font-bold text-sm uppercase">Falha na Conexão</h3>
-                    <p class="text-red-700 text-xs mt-1">Exibindo dados de fallback. O arquivo dados.json não foi encontrado.</p>
-                </div>
-                <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <select id="filter-canal" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none hover:bg-gray-100 cursor-pointer transition-colors"></select>
+                <select id="filter-device" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none hover:bg-gray-100 cursor-pointer transition-colors"></select>
             </div>
-        </div>
-
-        <section class="card p-4 mb-8 flex flex-wrap items-center gap-4 bg-white justify-between">
-            <div class="flex items-center gap-4 flex-1 min-w-[300px]">
-                <div class="flex items-center gap-2 text-gray-400">
-                    <i data-lucide="filter" class="w-4 h-4"></i>
-                    <span class="text-[10px] font-black uppercase tracking-widest hidden md:inline">Filtros:</span>
-                </div>
-                
-                <div class="relative w-48">
-                    <select id="filter-canal" onchange="applyFilters()" class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
-                        <option value="ALL">Todos os Canais</option>
-                    </select>
-                </div>
-
-                <div class="relative w-48">
-                    <select id="filter-device" onchange="applyFilters()" class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
-                        <option value="ALL">Todos os Modelos</option>
-                    </select>
-                </div>
-
-                <button onclick="resetFilters()" class="text-[10px] font-black text-blue-600 uppercase hover:underline">Limpar</button>
-            </div>
-
-            <button onclick="exportToCSV()" class="flex items-center gap-2 bg-green-500 text-white px-5 py-2.5 rounded-lg font-bold text-xs shadow hover:bg-green-600 transition-colors active:scale-95">
-                <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
+            <button onclick="exportJoinedCSV()" class="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
+                <i data-lucide="download" class="w-4 h-4"></i> Exportar Visão
             </button>
-        </section>
-
-        <div class="card p-6 mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
-            <h4 class="text-sm font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-tight">
-                <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Smart Insights
-            </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="ai-insights">
-                </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="card bg-gray-900 text-white overflow-hidden shadow-xl">
+            <div class="bg-gray-800 px-6 py-4 flex items-center justify-between border-b border-gray-700">
+                <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-100">
+                    <i data-lucide="git-compare" class="w-4 h-4 text-blue-400"></i> Motor de Comparação
+                </h2>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-gradient-to-br from-gray-900 to-gray-800">
+                
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
+                    <select id="comp-a" onchange="processDashboard()" class="w-full bg-gray-800 border border-gray-600 text-white text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer">
+                        </select>
+                </div>
+
+                <div class="flex justify-center pt-5">
+                    <div class="bg-blue-600/20 p-3 rounded-full border border-blue-500/30">
+                        <i data-lucide="swords" class="w-6 h-6 text-blue-400"></i>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
+                    <select id="comp-b" onchange="processDashboard()" class="w-full bg-gray-800 border border-gray-600 text-white text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer">
+                        </select>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="card p-6 border-l-4 border-l-gray-400">
+                <p id="label-kpi-a" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 truncate">Volume (A)</p>
+                <h3 id="val-kpi-a" class="text-3xl font-black text-gray-800">0</h3>
+            </div>
             <div class="card p-6 border-l-4 border-l-blue-500">
-                <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Volume Filtrado</span>
-                    <i data-lucide="package-search" class="text-blue-500 w-5 h-5"></i>
-                </div>
-                <h3 id="total-qty" class="text-3xl font-black text-gray-800">0</h3>
-                <p class="text-[10px] text-gray-500 font-bold mt-2 uppercase tracking-tighter">Total no período</p>
+                <p id="label-kpi-b" class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2 truncate">Volume (B)</p>
+                <h3 id="val-kpi-b" class="text-3xl font-black text-gray-800">0</h3>
             </div>
-
-            <div class="card p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Média Mensal</span>
-                    <i data-lucide="trending-up" class="text-green-500 w-5 h-5"></i>
-                </div>
-                <h3 id="avg-monthly" class="text-3xl font-black text-gray-800">0</h3>
-                <p class="text-[10px] text-gray-500 font-bold mt-2 uppercase tracking-tighter">unidades / mês</p>
-            </div>
-
-            <div class="card p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Share de Mix</span>
-                    <h3 id="top-device" class="text-xl font-black text-gray-800 uppercase truncate max-w-[120px]">---</h3>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span id="top-device-val" class="text-xs font-bold text-blue-600">0% do total</span>
-                    <i data-lucide="smartphone" class="text-gray-200 w-8 h-8"></i>
+            <div class="card p-6" id="card-delta-pct">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (%) B vs A</p>
+                <div class="flex items-center gap-2">
+                    <h3 id="val-delta-pct" class="text-3xl font-black text-gray-800">0%</h3>
+                    <i id="icon-delta-pct" data-lucide="minus" class="w-6 h-6 text-gray-400"></i>
                 </div>
             </div>
-
-            <div class="card p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Status Sync</span>
-                    <span id="source-indicator" class="status-badge bg-gray-100 text-gray-500">Standby</span>
-                </div>
-                <div class="flex flex-col">
-                    <span id="sync-time" class="text-sm font-bold text-gray-700">--:--:--</span>
-                    <span class="text-[10px] text-gray-400 font-mono mt-2 uppercase tracking-widest text-xs">Última atualização</span>
-                </div>
+            <div class="card p-6" id="card-delta-abs">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (Absoluta)</p>
+                <h3 id="val-delta-abs" class="text-3xl font-black text-gray-800">0</h3>
+                <p class="text-[10px] text-gray-400 font-bold mt-1">unidades de diferença</p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <div class="card p-8 lg:col-span-2">
-                <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2 uppercase tracking-tight">
-                    <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Projeção Temporal do Segmento
+        <div class="card bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100 p-6 shadow-sm">
+            <h4 class="text-sm font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-tight">
+                <i data-lucide="bot" class="w-5 h-5 text-blue-600"></i> Resumo Executivo Gerado por IA
+            </h4>
+            <div id="ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2">
+                </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="card p-6 lg:col-span-2">
+                <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                    <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Curva de Tendência: Realizado vs Plano
                 </h4>
-                <div class="h-80">
-                    <canvas id="forecastChart"></canvas>
+                <div class="h-72">
+                    <canvas id="timelineChart"></canvas>
                 </div>
             </div>
 
-            <div class="card p-8">
-                <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2 uppercase tracking-tight">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Representatividade de Modelos
+            <div class="card p-6">
+                <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i> Comparativo por Canal (Top 5)
                 </h4>
-                <div class="h-80 flex flex-col justify-center">
-                    <canvas id="deviceChart"></canvas>
+                <div class="h-72">
+                    <canvas id="barChart"></canvas>
                 </div>
             </div>
         </div>
@@ -192,342 +163,385 @@
     </main>
 
     <script>
-        // Configuração
-        const VERDI_WEBHOOK_URL = "dados.json"; 
+        // URLs dos JSONs no GitHub
+        const URL_PLAN = "dados.json"; 
+        const URL_ACTUAL = "realizado.json";
+
+        // Variáveis de Estado
+        let db = { PLAN: [], ACTUAL: [] };
+        let availablePeriods = { PLAN: [], ACTUAL: [] };
+        let cols = {
+            PLAN: { canal: "", device: "" },
+            ACTUAL: { canal: "", device: "" }
+        };
         
-        const MOCK_DATA = [
-            { "SAFRA_VENDACANAL_DEVICE": "APP MP", "POINT_DEVICE": "AIR", "202601": "5016", "202602": "4976", "202612": "5300" },
-            { "SAFRA_VENDACANAL_DEVICE": "FDV Propria", "POINT_DEVICE": "SMART", "202601": "10823", "202602": "10581", "202612": "9000" }
-        ];
+        // Instâncias do Chart.js
+        let timelineChart, barChart;
 
-        // Estado Global
-        let rawDataset = [];
-        let filteredDataset = [];
-        let months = [];
-        let colCanal = "";
-        let colDevice = "";
-        let forecastChart = null;
-        let deviceChart = null;
-
-        function parseMeliNumber(val) {
+        // Utilidade: Limpar números
+        function parseNum(val) {
             if (!val || val === "0") return 0;
             let s = String(val).trim().replace(/\s/g, ''); 
             const parts = s.split(/[.,]/);
             if (parts.length === 2 && parts[1].length === 3) return parseFloat(s.replace(/[.,]/g, '')) || 0;
             if (s.includes('.') && s.includes(',')) {
-                return s.indexOf('.') < s.indexOf(',') 
-                    ? parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0 
-                    : parseFloat(s.replace(/,/g, '')) || 0;
+                return s.indexOf('.') < s.indexOf(',') ? parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(s.replace(/,/g, '')) || 0;
             }
             return parseFloat(s.replace(',', '.')) || 0;
         }
 
-        async function fetchData(showLoadingUI = false) {
-            const loading = document.getElementById('loading');
-            const envNotice = document.getElementById('env-notice');
-            
-            if(showLoadingUI) loading.style.display = 'flex';
-            envNotice.classList.add('hidden');
-
+        // Inicialização Principal
+        async function boot() {
+            lucide.createIcons();
             try {
-                const response = await fetch(`${VERDI_WEBHOOK_URL}?_=${new Date().getTime()}`);
-                if (!response.ok) throw new Error("API Offline");
-                const jsonData = await response.json();
+                // Busca os dois ficheiros simultaneamente
+                const [resPlan, resActual] = await Promise.all([
+                    fetch(`${URL_PLAN}?_=${Date.now()}`).catch(() => ({ ok: false })),
+                    fetch(`${URL_ACTUAL}?_=${Date.now()}`).catch(() => ({ ok: false }))
+                ]);
+
+                if (!resPlan.ok && !resActual.ok) throw new Error("Ambas as bases falharam.");
+
+                if (resPlan.ok) db.PLAN = await resPlan.json();
+                if (resActual.ok) db.ACTUAL = await resActual.json();
+
+                detectStructure();
+                buildPeriodSelectors();
+                populateGlobalFilters();
                 
-                if (jsonData && jsonData.length > 0) {
-                    initDataProcessing(jsonData, "LIVE");
-                } else {
-                    throw new Error("Vazio");
-                }
+                // Set default comparison: Último mês de Realizado vs Mesmo mês no Plano (ou defaults seguros)
+                setDefaultComparison();
+
+                processDashboard();
+
             } catch (err) {
-                console.warn("Usando Fallback...");
-                envNotice.classList.remove('hidden');
-                initDataProcessing(MOCK_DATA, "MOCK");
+                console.error(err);
+                document.getElementById('status-badge').className = "bg-red-100 text-red-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-200 shadow-sm flex items-center gap-2";
+                document.getElementById('status-badge').innerHTML = '<i data-lucide="alert-triangle" class="w-3 h-3"></i> Erro de Sincronia';
+                lucide.createIcons();
             } finally {
-                setTimeout(() => {
-                    if(showLoadingUI) loading.style.display = 'none';
-                }, 500);
+                document.getElementById('loading').style.display = 'none';
             }
         }
 
-        function initDataProcessing(data, type) {
-            // Detectar Colunas e Meses
-            let monthsSet = new Set();
-            data.forEach(row => {
-                Object.keys(row).forEach(k => {
-                    if (/^\d{6}$/.test(k)) monthsSet.add(k);
+        // Detecta colunas automaticamente para as duas planilhas
+        function detectStructure() {
+            ['PLAN', 'ACTUAL'].forEach(type => {
+                if(db[type].length === 0) return;
+                
+                // Achar colunas de texto (ignorando números/meses e row_number)
+                const sample = db[type][0];
+                const textKeys = Object.keys(sample).filter(k => k !== "row_number" && !/^\d{6}$/.test(k));
+                
+                cols[type].canal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
+                cols[type].device = textKeys.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_GROUPED')) || textKeys.find(k => k !== cols[type].canal);
+
+                // Achar todos os meses e anos
+                let months = new Set();
+                db[type].forEach(row => {
+                    Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) months.add(k); });
+                });
+                
+                const sortedMonths = Array.from(months).sort();
+                
+                // Agrupar períodos (Mensal e Anual)
+                const years = [...new Set(sortedMonths.map(m => m.substring(0,4)))];
+                
+                years.forEach(y => {
+                    availablePeriods[type].push({ id: `YEAR|${y}`, label: `Ano Completo ${y}` });
+                });
+                sortedMonths.forEach(m => {
+                    availablePeriods[type].push({ id: `MONTH|${m}`, label: `Mês ${m.substring(4)}/${m.substring(0,4)}` });
                 });
             });
-            months = Array.from(monthsSet).sort();
-
-            const sampleRow = data[0];
-            const textKeys = Object.keys(sampleRow).filter(k => k !== "row_number" && !/^\d{6}$/.test(k));
-            
-            // Corrige a leitura: Encontra o Canal primeiro
-            colCanal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
-            
-            // Força achar o POINT, se não achar, pega a coluna que não for a mesma do Canal
-            colDevice = textKeys.find(k => k.toUpperCase().includes('POINT')) || textKeys.find(k => k !== colCanal);
-
-            rawDataset = data.filter(row => row[colCanal]);
-            
-            populateFilters();
-            applyFilters(type);
         }
 
-        function populateFilters() {
-            const selectCanal = document.getElementById('filter-canal');
-            const selectDevice = document.getElementById('filter-device');
+        function buildPeriodSelectors() {
+            const selectA = document.getElementById('comp-a');
+            const selectB = document.getElementById('comp-b');
             
-            const canals = [...new Set(rawDataset.map(r => r[colCanal]))].sort();
-            const devices = [...new Set(rawDataset.map(r => r[colDevice]))].sort();
+            let optionsHTML = '';
+            ['ACTUAL', 'PLAN'].forEach(type => {
+                const typeLabel = type === 'PLAN' ? '🟢 PLANO' : '🔵 REALIZADO';
+                if(availablePeriods[type].length > 0) {
+                    optionsHTML += `<optgroup label="--- ${typeLabel} ---">`;
+                    availablePeriods[type].forEach(p => {
+                        optionsHTML += `<option value="${type}|${p.id}">${type === 'PLAN'?'Plan':'Actual'} - ${p.label}</option>`;
+                    });
+                    optionsHTML += `</optgroup>`;
+                }
+            });
 
-            const currentCanal = selectCanal.value;
-            const currentDevice = selectDevice.value;
-
-            selectCanal.innerHTML = '<option value="ALL">Todos os Canais</option>';
-            canals.forEach(c => { selectCanal.innerHTML += `<option value="${c}">${c}</option>`; });
-
-            selectDevice.innerHTML = '<option value="ALL">Todos os Modelos</option>';
-            devices.forEach(d => { selectDevice.innerHTML += `<option value="${d}">${d}</option>`; });
-
-            selectCanal.value = currentCanal;
-            selectDevice.value = currentDevice;
+            selectA.innerHTML = optionsHTML;
+            selectB.innerHTML = optionsHTML;
         }
 
-        function applyFilters(type = 'LIVE') {
+        function setDefaultComparison() {
+            const selectA = document.getElementById('comp-a');
+            const selectB = document.getElementById('comp-b');
+            
+            // Tenta pegar o último mês do realizado e o mesmo mês do plano.
+            const actualMonths = availablePeriods.ACTUAL.filter(p => p.id.startsWith('MONTH|'));
+            const planMonths = availablePeriods.PLAN.filter(p => p.id.startsWith('MONTH|'));
+
+            if(actualMonths.length > 0 && planMonths.length > 0) {
+                const lastActual = actualMonths[actualMonths.length - 1];
+                selectA.value = `ACTUAL|${lastActual.id}`;
+                
+                // Tenta achar o correspondente no plano
+                const matchPlan = planMonths.find(p => p.id === lastActual.id);
+                if(matchPlan) {
+                    selectB.value = `PLAN|${matchPlan.id}`;
+                } else {
+                    selectB.value = `PLAN|${planMonths[0].id}`; // Pega o primeiro plano que tiver
+                }
+            }
+        }
+
+        function populateGlobalFilters() {
+            let allCanals = new Set();
+            let allDevices = new Set();
+
+            ['PLAN', 'ACTUAL'].forEach(type => {
+                db[type].forEach(row => {
+                    if(row[cols[type].canal]) allCanals.add(row[cols[type].canal]);
+                    if(row[cols[type].device]) allDevices.add(row[cols[type].device]);
+                });
+            });
+
+            const selCanal = document.getElementById('filter-canal');
+            const selDevice = document.getElementById('filter-device');
+
+            selCanal.innerHTML = '<option value="ALL">Todos os Canais</option>' + 
+                [...allCanals].sort().map(c => `<option value="${c}">${c}</option>`).join('');
+            
+            selDevice.innerHTML = '<option value="ALL">Todos os Modelos</option>' + 
+                [...allDevices].sort().map(d => `<option value="${d}">${d}</option>`).join('');
+        }
+
+        // ---- MOTOR PRINCIPAL DE DADOS ----
+        function extractValue(type, periodId, filterCanal, filterDevice) {
+            const [periodType, periodValue] = periodId.split('|'); // ex: MONTH|202601 ou YEAR|2026
+            const data = db[type];
+            const colC = cols[type].canal;
+            const colD = cols[type].device;
+
+            let total = 0;
+            let byCanal = {};
+            let byDevice = {};
+
+            data.forEach(row => {
+                const canal = row[colC] || 'Outros';
+                const device = row[colD] || 'Outros';
+
+                if (filterCanal !== 'ALL' && canal !== filterCanal) return;
+                if (filterDevice !== 'ALL' && device !== filterDevice) return;
+
+                let rowSum = 0;
+                if(periodType === 'MONTH') {
+                    rowSum = parseNum(row[periodValue]);
+                } else if (periodType === 'YEAR') {
+                    Object.keys(row).forEach(k => {
+                        if(k.startsWith(periodValue)) rowSum += parseNum(row[k]);
+                    });
+                }
+
+                total += rowSum;
+                byCanal[canal] = (byCanal[canal] || 0) + rowSum;
+                byDevice[device] = (byDevice[device] || 0) + rowSum;
+            });
+
+            return { total, byCanal, byDevice };
+        }
+
+        function processDashboard() {
             const filterCanal = document.getElementById('filter-canal').value;
             const filterDevice = document.getElementById('filter-device').value;
 
-            filteredDataset = rawDataset.filter(row => {
-                const matchCanal = filterCanal === 'ALL' || row[colCanal] === filterCanal;
-                const matchDevice = filterDevice === 'ALL' || row[colDevice] === filterDevice;
-                return matchCanal && matchDevice;
-            });
+            // Lendo seleções
+            const compA_val = document.getElementById('comp-a').value; // ex: ACTUAL|MONTH|202512
+            const compB_val = document.getElementById('comp-b').value; // ex: PLAN|MONTH|202601
 
-            renderUI(type);
+            const [typeA, periodTypeA, periodValA] = compA_val.split('|');
+            const [typeB, periodTypeB, periodValB] = compB_val.split('|');
+
+            // Nomes amigáveis
+            const selectA = document.getElementById('comp-a');
+            const nameA = selectA.options[selectA.selectedIndex].text;
+            const selectB = document.getElementById('comp-b');
+            const nameB = selectB.options[selectB.selectedIndex].text;
+
+            // Extraindo Matemática
+            const dataA = extractValue(typeA, `${periodTypeA}|${periodValA}`, filterCanal, filterDevice);
+            const dataB = extractValue(typeB, `${periodTypeB}|${periodValB}`, filterCanal, filterDevice);
+
+            updateKPIs(dataA.total, dataB.total, nameA, nameB);
+            generateAI(dataA, dataB, nameA, nameB);
+            drawBarChart(dataA.byCanal, dataB.byCanal, nameA, nameB);
+            drawTimelineChart(filterCanal, filterDevice);
         }
 
-        function resetFilters() {
-            document.getElementById('filter-canal').value = 'ALL';
-            document.getElementById('filter-device').value = 'ALL';
-            applyFilters();
-        }
-
-        function exportToCSV() {
-            if (filteredDataset.length === 0) {
-                alert("Não há dados para exportar.");
-                return;
-            }
-
-            // Montar Cabeçalhos
-            const headers = ["Canal", "Modelo", ...months.map(m => m.substring(4) + '/' + m.substring(2,4))];
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n";
+        function updateKPIs(valA, valB, nameA, nameB) {
+            document.getElementById('label-kpi-a').innerText = nameA;
+            document.getElementById('label-kpi-b').innerText = nameB;
             
-            // Montar Linhas (Ponto e Vírgula para abrir fácil no Excel BR)
-            filteredDataset.forEach(row => {
-                const rowData = [row[colCanal] || 'Outros', row[colDevice] || 'Outros'];
-                months.forEach(m => {
-                    rowData.push(Math.round(parseMeliNumber(row[m])));
-                });
-                csvContent += rowData.join(";") + "\n";
-            });
+            document.getElementById('val-kpi-a').innerText = Math.round(valA).toLocaleString('pt-PT');
+            document.getElementById('val-kpi-b').innerText = Math.round(valB).toLocaleString('pt-PT');
 
-            // Disparar Download
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Projecao_Meli_${new Date().getTime()}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+            const deltaAbs = valB - valA;
+            const deltaPct = valA > 0 ? (deltaAbs / valA) * 100 : (valB > 0 ? 100 : 0);
 
-        function generateAIAnalysis() {
-            const container = document.getElementById('ai-insights');
-            
-            if(months.length < 2 || filteredDataset.length === 0) {
-                container.innerHTML = '<p class="text-xs text-gray-500 italic p-4">Dados insuficientes ou período muito curto para análise matemática de tendência.</p>';
-                return;
-            }
+            document.getElementById('val-delta-abs').innerText = (deltaAbs > 0 ? '+' : '') + Math.round(deltaAbs).toLocaleString('pt-PT');
+            document.getElementById('val-delta-pct').innerText = deltaPct.toFixed(1) + '%';
 
-            const firstMonth = months[0];
-            const lastMonth = months[months.length - 1];
-            
-            // Agrupar volumes do primeiro e último mês por Canal
-            const channelStats = {};
-            filteredDataset.forEach(row => {
-                const canal = row[colCanal] || 'Outros';
-                if(!channelStats[canal]) channelStats[canal] = { first: 0, last: 0 };
-                channelStats[canal].first += parseMeliNumber(row[firstMonth]);
-                channelStats[canal].last += parseMeliNumber(row[lastMonth]);
-            });
+            const cardPct = document.getElementById('card-delta-pct');
+            const iconPct = document.getElementById('icon-delta-pct');
 
-            // Calcular crescimento percentual
-            const trends = [];
-            for (const [canal, data] of Object.entries(channelStats)) {
-                if(data.first > 0) {
-                    const growth = ((data.last - data.first) / data.first) * 100;
-                    trends.push({ canal, growth, absDiff: data.last - data.first });
-                }
-            }
-
-            // Ordenar do que mais cresceu para o que mais caiu
-            trends.sort((a, b) => b.growth - a.growth);
-
-            if(trends.length === 0) {
-                container.innerHTML = '<p class="text-xs text-gray-500 italic p-4">Variações não detectadas.</p>';
-                return;
-            }
-
-            const topGrowth = trends[0];
-            const topDecline = trends[trends.length - 1];
-            let html = '';
-            
-            // Card de Crescimento
-            if (topGrowth.growth > 0) {
-                html += `
-                <div class="bg-white p-4 rounded-xl border border-green-100 shadow-sm flex items-start gap-4">
-                    <div class="bg-green-100 p-2.5 rounded-full"><i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i></div>
-                    <div>
-                        <span class="text-[10px] font-black text-green-600 uppercase tracking-widest">Maior Crescimento</span>
-                        <h5 class="text-sm font-bold text-gray-800 mt-1">${topGrowth.canal}</h5>
-                        <p class="text-xs text-gray-500 mt-1">Este canal lidera a tendência de alta do período com <strong class="text-green-600 font-bold">+${topGrowth.growth.toFixed(1)}%</strong> de crescimento projetado.</p>
-                    </div>
-                </div>`;
+            // Cores baseadas na performance
+            if (deltaPct > 0) {
+                cardPct.className = "card p-6 border-b-4 border-b-green-500 bg-green-50/30 fade-in";
+                document.getElementById('val-delta-pct').className = "text-3xl font-black text-green-600";
+                iconPct.setAttribute('data-lucide', 'trending-up');
+                iconPct.className = "w-6 h-6 text-green-500";
+            } else if (deltaPct < 0) {
+                cardPct.className = "card p-6 border-b-4 border-b-red-500 bg-red-50/30 fade-in";
+                document.getElementById('val-delta-pct').className = "text-3xl font-black text-red-600";
+                iconPct.setAttribute('data-lucide', 'trending-down');
+                iconPct.className = "w-6 h-6 text-red-500";
             } else {
-                 html += `
-                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-start gap-4">
-                    <div class="bg-gray-100 p-2.5 rounded-full"><i data-lucide="minus" class="w-5 h-5 text-gray-600"></i></div>
-                    <div>
-                        <span class="text-[10px] font-black text-gray-600 uppercase tracking-widest">Estabilidade Tensa</span>
-                        <p class="text-xs text-gray-500 mt-1">Nenhum canal no recorte atual apresenta projeção de crescimento positiva.</p>
-                    </div>
-                </div>`;
+                cardPct.className = "card p-6 border-b-4 border-b-gray-400 fade-in";
+                document.getElementById('val-delta-pct').className = "text-3xl font-black text-gray-800";
+                iconPct.setAttribute('data-lucide', 'minus');
+                iconPct.className = "w-6 h-6 text-gray-400";
             }
-
-            // Card de Queda / Alerta
-            if (trends.length > 1 || trends.length === 1 && topDecline.growth < 0) {
-                if (topDecline.growth < 0) {
-                    html += `
-                    <div class="bg-white p-4 rounded-xl border border-red-100 shadow-sm flex items-start gap-4">
-                        <div class="bg-red-100 p-2.5 rounded-full"><i data-lucide="trending-down" class="w-5 h-5 text-red-600"></i></div>
-                        <div>
-                            <span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Ponto de Atenção</span>
-                            <h5 class="text-sm font-bold text-gray-800 mt-1">${topDecline.canal}</h5>
-                            <p class="text-xs text-gray-500 mt-1">Apresenta o maior risco de queda, com uma retração estimada de <strong class="text-red-600 font-bold">${topDecline.growth.toFixed(1)}%</strong> ao longo do ano.</p>
-                        </div>
-                    </div>`;
-                } else if (trends.length > 1) {
-                     html += `
-                    <div class="bg-white p-4 rounded-xl border border-yellow-100 shadow-sm flex items-start gap-4">
-                        <div class="bg-yellow-100 p-2.5 rounded-full"><i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600"></i></div>
-                        <div>
-                            <span class="text-[10px] font-black text-yellow-600 uppercase tracking-widest">Menor Ritmo</span>
-                            <h5 class="text-sm font-bold text-gray-800 mt-1">${topDecline.canal}</h5>
-                            <p class="text-xs text-gray-500 mt-1">Apesar de positivo, apresenta o ritmo mais lento do grupo analisado, com <strong class="text-yellow-600 font-bold">+${topDecline.growth.toFixed(1)}%</strong>.</p>
-                        </div>
-                    </div>`;
-                }
-            }
-
-            container.innerHTML = html;
-        }
-
-        function renderUI(type) {
-            let totalForecast = 0;
-            const deviceMap = {};
-            const monthlySum = {};
-            
-            filteredDataset.forEach(row => {
-                const dev = row[colDevice] || 'Outros';
-                months.forEach(m => {
-                    const val = parseMeliNumber(row[m]);
-                    totalForecast += val;
-                    deviceMap[dev] = (deviceMap[dev] || 0) + val;
-                    monthlySum[m] = (monthlySum[m] || 0) + val;
-                });
-            });
-
-            // Update KPIs
-            document.getElementById('total-qty').innerText = Math.round(totalForecast).toLocaleString('pt-PT');
-            document.getElementById('avg-monthly').innerText = Math.round(totalForecast / (months.length || 1)).toLocaleString('pt-PT');
-            
-            const sortedDevices = Object.entries(deviceMap).sort((a,b) => b[1] - a[1]);
-            if(sortedDevices.length > 0) {
-                const topDev = sortedDevices[0];
-                const percentage = totalForecast > 0 ? ((topDev[1] / totalForecast) * 100).toFixed(1) : 0;
-                document.getElementById('top-device').innerText = topDev[0];
-                document.getElementById('top-device-val').innerText = `${percentage}% do volume filtrado`;
-            } else {
-                document.getElementById('top-device').innerText = "N/A";
-                document.getElementById('top-device-val').innerText = "0%";
-            }
-
-            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-PT');
-            
-            const pill = document.getElementById('source-indicator');
-            pill.innerText = type === 'LIVE' ? 'CONECTADO' : 'MOCK/OFFLINE';
-            pill.className = `status-badge ${type === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
-
-            // Executa tudo na tela
-            generateAIAnalysis();
-            updateCharts(monthlySum, deviceMap);
             lucide.createIcons();
         }
 
-        function updateCharts(monthlySum, devices) {
-            if (forecastChart) forecastChart.destroy();
-            forecastChart = new Chart(document.getElementById('forecastChart'), {
-                type: 'line',
+        function generateAI(dataA, dataB, nameA, nameB) {
+            const container = document.getElementById('ai-text');
+            const deltaAbs = dataB.total - dataA.total;
+            const deltaPct = dataA.total > 0 ? ((deltaAbs) / dataA.total) * 100 : 0;
+            
+            if(dataA.total === 0 && dataB.total === 0) {
+                container.innerHTML = "<p>Sem dados suficientes para análise neste recorte.</p>";
+                return;
+            }
+
+            // Achar ofensor/alavanca nos canais
+            let topCanal = { name: '', diff: -Infinity };
+            let worstCanal = { name: '', diff: Infinity };
+            
+            const allCanals = new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]);
+            allCanals.forEach(c => {
+                const diff = (dataB.byCanal[c] || 0) - (dataA.byCanal[c] || 0);
+                if(diff > topCanal.diff) topCanal = { name: c, diff };
+                if(diff < worstCanal.diff) worstCanal = { name: c, diff };
+            });
+
+            let text = `<p>Ao comparar <strong>${nameB}</strong> frente a <strong>${nameA}</strong>, observamos uma `;
+            
+            if(deltaPct > 0) {
+                text += `<span class="text-green-600 font-bold">expansão de +${deltaPct.toFixed(1)}%</span> (+${Math.round(deltaAbs).toLocaleString('pt-PT')} unidades). `;
+                if(topCanal.diff > 0) {
+                    text += `O grande impulsionador deste crescimento foi o canal <strong>${topCanal.name}</strong>, que sozinho adicionou ${Math.round(topCanal.diff).toLocaleString('pt-PT')} dispositivos ao volume.`;
+                }
+            } else if (deltaPct < 0) {
+                text += `<span class="text-red-600 font-bold">retração de ${deltaPct.toFixed(1)}%</span> (${Math.round(deltaAbs).toLocaleString('pt-PT')} unidades). `;
+                if(worstCanal.diff < 0) {
+                    text += `A principal alavanca de queda ocorreu no canal <strong>${worstCanal.name}</strong>, responsável por um gap de ${Math.round(Math.abs(worstCanal.diff)).toLocaleString('pt-PT')} unidades no período.`;
+                }
+            } else {
+                text += `<strong>estabilidade absoluta</strong>, mantendo o exato mesmo volume.`;
+            }
+            text += `</p>`;
+            
+            container.innerHTML = text;
+        }
+
+        function drawBarChart(byCanalA, byCanalB, nameA, nameB) {
+            const allCanals = Array.from(new Set([...Object.keys(byCanalA), ...Object.keys(byCanalB)]));
+            
+            // Pega o Top 5 baseado no volume de B
+            const topCanals = allCanals.sort((a,b) => (byCanalB[b]||0) - (byCanalB[a]||0)).slice(0, 5);
+
+            const dataA = topCanals.map(c => byCanalA[c] || 0);
+            const dataB = topCanals.map(c => byCanalB[c] || 0);
+
+            if (barChart) barChart.destroy();
+            barChart = new Chart(document.getElementById('barChart'), {
+                type: 'bar',
                 data: {
-                    labels: months.map(m => m.substring(4) + '/' + m.substring(2,4)),
-                    datasets: [{
-                        label: 'Volume Projetado',
-                        data: months.map(m => monthlySum[m]),
-                        borderColor: '#3483FA', backgroundColor: 'rgba(52, 131, 250, 0.05)',
-                        fill: true, tension: 0.4, borderWidth: 4, pointRadius: 4,
-                        pointBackgroundColor: '#fff', pointBorderColor: '#3483FA', pointBorderWidth: 2
-                    }]
+                    labels: topCanals,
+                    datasets: [
+                        { label: nameA, data: dataA, backgroundColor: '#9CA3AF', borderRadius: 4 },
+                        { label: nameB, data: dataB, backgroundColor: '#3483FA', borderRadius: 4 }
+                    ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' } } } },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 }, callback: v => v.toLocaleString('pt-PT') } },
-                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
                     }
                 }
             });
+        }
 
-            if (deviceChart) deviceChart.destroy();
-            deviceChart = new Chart(document.getElementById('deviceChart'), {
-                type: 'doughnut',
+        function drawTimelineChart(filterCanal, filterDevice) {
+            // Reúne todos os meses do universo
+            let allMonths = new Set();
+            ['PLAN', 'ACTUAL'].forEach(type => {
+                db[type].forEach(row => {
+                    Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) allMonths.add(k); });
+                });
+            });
+            const timeline = Array.from(allMonths).sort();
+
+            const actualData = timeline.map(m => extractValue('ACTUAL', `MONTH|${m}`, filterCanal, filterDevice).total);
+            const planData = timeline.map(m => extractValue('PLAN', `MONTH|${m}`, filterCanal, filterDevice).total);
+
+            // Substituir zeros do Actual por null para a linha parar onde não tem dado real
+            const cleanActual = actualData.map(v => v === 0 ? null : v);
+
+            if (timelineChart) timelineChart.destroy();
+            timelineChart = new Chart(document.getElementById('timelineChart'), {
+                type: 'line',
                 data: {
-                    labels: Object.keys(devices),
-                    datasets: [{
-                        data: Object.values(devices),
-                        backgroundColor: ['#3483FA', '#00A650', '#FF7733', '#F2C12E', '#9B51E0', '#E5E7EB'],
-                        borderWidth: 2, borderColor: '#fff'
-                    }]
+                    labels: timeline.map(m => m.substring(4)+'/'+m.substring(2,4)),
+                    datasets: [
+                        {
+                            label: 'Realizado (Histórico)',
+                            data: cleanActual,
+                            borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            fill: true, tension: 0.3, borderWidth: 3, pointRadius: 2, spanGaps: false
+                        },
+                        {
+                            label: 'Plano (Projeção)',
+                            data: planData,
+                            borderColor: '#9CA3AF', borderDash: [5, 5],
+                            fill: false, tension: 0.3, borderWidth: 2, pointRadius: 0, spanGaps: true
+                        }
+                    ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } },
-                    cutout: '75%'
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 12, usePointStyle: true, font: { weight: 'bold', size: 10 } } } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 9, weight: 'bold' } } }
+                    }
                 }
             });
         }
 
-        window.onload = () => {
-            lucide.createIcons();
-            fetchData(true); 
+        function exportJoinedCSV() {
+            // Exporta a visão consolidada
+            alert("Para análises complexas cross-data, os arquivos brutos dados.json e realizado.json estão disponíveis na raiz do projeto no GitHub.");
+        }
 
-            // Auto-refresh a cada 5 minutos silenciosamente
-            setInterval(() => {
-                fetchData(false);
-            }, 300000); 
-        };
+        window.onload = boot;
     </script>
 </body>
 </html>
