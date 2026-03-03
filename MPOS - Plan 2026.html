@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mercado Dashboard | Forecast Safra</title>
+    <title>Meli Forecast | Dashboard Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -24,51 +24,46 @@
         
         .card {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 2px 0 rgba(0,0,0,.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border: 1px solid #e5e5e5;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .loading-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.98);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 100;
-            display: none;
         }
 
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3483FA;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3483FA;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 10px; }
-        
-        #debug-console {
-            max-height: 150px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 10px;
-            background: #1a1a1a;
-            color: #4ade80;
-            padding: 10px;
-            border-radius: 4px;
-        }
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d1d1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
 
-        .status-pill {
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 10px;
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
             font-weight: 800;
             text-transform: uppercase;
         }
@@ -76,109 +71,115 @@
 </head>
 <body>
 
+    <!-- Overlay de Carregamento -->
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center">
-            <div class="spinner mb-2"></div>
-            <p class="text-xs font-bold text-gray-500 font-mono uppercase tracking-widest">Sincronizando com GSheets...</p>
+            <div class="spinner mb-4"></div>
+            <p class="text-sm font-bold text-gray-600 uppercase tracking-widest">A Sincronizar Forecast...</p>
         </div>
     </div>
 
-    <!-- Header -->
-    <header class="ml-yellow w-full py-2 px-4 shadow-sm sticky top-0 z-50">
+    <!-- Header Principal -->
+    <header class="ml-yellow w-full py-3 px-6 shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="bg-white p-1.5 rounded shadow-sm">
-                    <i data-lucide="trending-up" class="text-blue-600 w-5 h-5"></i>
+            <div class="flex items-center gap-4">
+                <div class="bg-white p-2 rounded-xl shadow-inner">
+                    <i data-lucide="line-chart" class="text-blue-600 w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-black text-gray-800 leading-tight">Mercado <span class="text-blue-600">Forecast</span></h1>
-                    <p class="text-[9px] font-bold text-gray-600 uppercase tracking-tighter">Análise de Safras 2026</p>
+                    <h1 class="text-xl font-black text-gray-800 leading-none">Mercado <span class="text-blue-600">Analytics</span></h1>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase mt-1 tracking-tighter">Projeções de Safra 2026</p>
                 </div>
             </div>
             
-            <div class="flex items-center gap-3">
-                <div id="connection-status" class="hidden md:flex items-center gap-2 px-2 py-1 bg-white/40 rounded border border-black/5">
-                    <div class="w-1.5 h-1.5 rounded-full bg-gray-400" id="status-dot"></div>
-                    <span class="text-[9px] font-bold text-gray-600 uppercase" id="status-text">GitHub Live</span>
+            <div class="flex items-center gap-4">
+                <div id="github-badge" class="hidden lg:flex items-center gap-2 bg-white/50 px-3 py-1.5 rounded-full border border-black/5">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-[10px] font-bold text-gray-700 uppercase">Ligação em Direto</span>
                 </div>
-                <button onclick="fetchData()" class="flex items-center gap-2 ml-button-blue text-white px-4 py-1.5 rounded font-bold text-sm transition-all active:scale-95 shadow-sm">
-                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refresh-icon"></i>
-                    Atualizar Dados (No Cache)
+                <button onclick="fetchData()" class="flex items-center gap-2 ml-button-blue text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
+                    <i data-lucide="refresh-ccw" class="w-4 h-4" id="refresh-icon"></i>
+                    Atualizar Agora
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6">
+    <main class="max-w-7xl mx-auto px-4 py-8">
         
-        <!-- Console de Diagnóstico -->
-        <div id="debug-area" class="hidden mb-6 card p-4 border-none shadow-inner">
-            <div class="flex justify-between items-center mb-2">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Monitor de Sistema</p>
-                <button onclick="toggleDebug()" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
-            </div>
-            <div id="debug-console"></div>
-        </div>
-
-        <!-- KPIs Row -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="card p-5">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Forecast 2026</p>
-                <h3 id="total-qty" class="text-2xl font-black text-gray-800">0</h3>
-                <div class="mt-4 flex items-center justify-between">
-                    <span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded tracking-tighter">Unidades Totais</span>
-                    <i data-lucide="boxes" class="text-gray-200 w-5 h-5"></i>
+        <!-- Zona de Erro/Debug -->
+        <div id="error-zone" class="hidden mb-8 p-5 card bg-red-50 border-red-200">
+            <div class="flex gap-4">
+                <div class="bg-red-500 p-2 rounded-lg text-white">
+                    <i data-lucide="alert-octagon" class="w-5 h-5"></i>
                 </div>
-            </div>
-
-            <div class="card p-5">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Média Mensal</p>
-                <h3 id="avg-monthly" class="text-2xl font-black text-gray-800">0</h3>
-                <div class="mt-4 flex items-center justify-between">
-                    <span class="text-[10px] text-gray-500 font-medium tracking-tighter">Projeção un./mês</span>
-                    <i data-lucide="calendar" class="text-gray-200 w-5 h-5"></i>
+                <div class="flex-1">
+                    <h3 class="text-red-900 font-bold text-sm uppercase">Falha na Ligação GSheets</h3>
+                    <p class="text-red-700 text-xs mt-1" id="error-text">O navegador bloqueou a requisição (CORS). Certifique-se que publicou a folha como CSV.</p>
                 </div>
-            </div>
-
-            <div class="card p-5">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Top Dispositivo</p>
-                <h3 id="top-device" class="text-xl font-black text-gray-800 uppercase truncate">---</h3>
-                <div class="mt-4 flex items-center justify-between">
-                    <span id="top-device-val" class="text-[10px] text-green-600 font-bold tracking-tighter">0 un.</span>
-                    <i data-lucide="smartphone" class="text-gray-200 w-5 h-5"></i>
-                </div>
-            </div>
-
-            <div class="card p-5">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Sincronização</p>
-                <div class="flex items-center gap-2 mt-1">
-                    <h3 id="sync-status-text" class="text-sm font-bold text-gray-600 uppercase">Standby</h3>
-                </div>
-                <div class="mt-5 flex items-center justify-between">
-                    <span id="data-source-pill" class="status-pill bg-gray-100 text-gray-400">---</span>
-                    <span id="sync-time" class="text-[10px] text-gray-400 font-mono tracking-tighter">--:--</span>
-                </div>
+                <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
         </div>
 
-        <!-- Charts Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="card p-6 lg:col-span-2">
-                <div class="flex justify-between items-center mb-6">
-                    <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                        <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Evolução Mensal da Safra
-                    </h4>
+        <!-- KPIs Principais -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Total Forecast</span>
+                    <i data-lucide="package-search" class="text-blue-500 w-5 h-5"></i>
                 </div>
-                <div class="h-64">
-                    <canvas id="forecastChart"></canvas>
+                <h3 id="total-qty" class="text-3xl font-black text-gray-800">0</h3>
+                <p class="text-[10px] text-gray-500 font-bold mt-2 uppercase tracking-tighter">Volume anual projetado</p>
+            </div>
+
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Média / Mês</span>
+                    <i data-lucide="trending-up" class="text-green-500 w-5 h-5"></i>
+                </div>
+                <h3 id="avg-monthly" class="text-3xl font-black text-gray-800">0</h3>
+                <p class="text-[10px] text-gray-500 font-bold mt-2 uppercase tracking-tighter">unidades por período</p>
+            </div>
+
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Top Dispositivo</span>
+                    <h3 id="top-device" class="text-xl font-black text-gray-800 uppercase truncate max-w-[120px]">---</h3>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span id="top-device-val" class="text-xs font-bold text-blue-600">0 un.</span>
+                    <i data-lucide="smartphone" class="text-gray-200 w-8 h-8"></i>
                 </div>
             </div>
 
             <div class="card p-6">
-                <h4 class="text-sm font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Share por Modelo
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest">Fonte Dados</span>
+                    <span id="source-indicator" class="status-badge bg-gray-100 text-gray-500">Standby</span>
+                </div>
+                <div class="flex flex-col">
+                    <span id="sync-time" class="text-sm font-bold text-gray-700">--:--</span>
+                    <span class="text-[10px] text-gray-400 font-mono mt-2">Versão 5.5 Stable</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div class="card p-8 lg:col-span-2">
+                <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Curva de Crescimento Safra 2026
                 </h4>
-                <div class="h-64">
+                <div class="h-80">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card p-8">
+                <h4 class="text-sm font-black text-gray-800 mb-8 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Mix por Modelo
+                </h4>
+                <div class="h-80 flex flex-col justify-center">
                     <canvas id="deviceChart"></canvas>
                 </div>
             </div>
@@ -186,76 +187,67 @@
 
         <!-- Tabela -->
         <div class="card overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <i data-lucide="table-2" class="w-4 h-4 text-blue-500"></i> Dados Consolidados
-                </h4>
-                <div class="flex gap-4">
-                    <button onclick="toggleDebug()" class="text-[9px] font-bold text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors">Ver Logs</button>
-                    <span class="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Dashboard V4.0</span>
+            <div class="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h4 class="text-sm font-black text-gray-800">Detalhamento por Canal e Dispositivo</h4>
+                <div class="flex gap-2">
+                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <span class="text-[10px] font-black text-gray-400 uppercase">Safra 202601 - 202612</span>
                 </div>
             </div>
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="w-full text-left">
-                    <thead>
-                        <tr id="table-headers" class="text-[10px] font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-white">
-                            <th class="px-6 py-4">Canal / Safra</th>
-                            <th class="px-6 py-4">Modelo Device</th>
+                    <thead class="bg-white border-b border-gray-100">
+                        <tr id="table-headers" class="text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                            <th class="px-8 py-5">Canal de Origem</th>
+                            <th class="px-8 py-5">Modelo de Device</th>
+                            <!-- Colunas de Meses dinâmicas -->
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-gray-50 bg-white">
-                        <!-- Conteúdo Gerado -->
+                        <!-- Gerado por JS -->
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <footer class="text-center py-12 opacity-30">
-        <p class="text-[10px] font-black uppercase tracking-[0.4em] mb-2">Meli Forecast Pro</p>
-        <p class="text-[8px] font-bold text-gray-400">Nota: O Google Sheets pode demorar até 5 minutos para atualizar o link público após edição.</p>
+    <footer class="text-center py-16 opacity-30">
+        <p class="text-[10px] font-black uppercase tracking-[0.5em]">Mercado Livre Strategy &bull; Business Unit</p>
     </footer>
 
     <script>
+        // LINK DA PLANILHA (CSV)
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-J2Uo8cl9qgquEWVvHWir1kn8a9ZfJMBnp6TaZBkAwRiG0P17DM-8Hpu5yhVDmolgzlvJXnd9KZ0f/pub?gid=417844394&single=true&output=csv";
 
+        // Dados de Fallback (Mock) caso o CORS bloqueie no preview
         const MOCK_DATA = [
             ["SUM of QTD_DEV_SOLD_FORECAST_TOTAL", "", "", "", "", "", "", "", "", "", "", "", "", ""],
             ["SAFRA_VENDACANAL_DEVICE", "POINT_DEVICE", "202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608", "202609", "202610", "202611", "202612"],
             ["APP MP", "AIR", "5.016", "4.976", "5.097", "4.746", "4.345", "4.349", "4.435", "4.705", "4.816", "4.582", "4.946", "4.901"],
             ["APP MP", "MINI", "5.685", "5.640", "5.607", "5.801", "5.735", "5.393", "5.499", "5.835", "5.972", "5.682", "6.133", "6.665"],
             ["APP MP", "PRO", "5.852", "5.805", "5.947", "6.152", "5.909", "5.915", "6.032", "6.399", "6.742", "6.415", "6.925", "6.861"],
-            ["APP MP", "SMART", "5.518", "5.474", "5.607", "5.801", "5.735", "5.741", "5.854", "6211", "6.357", "6.048", "6.529", "6.469"],
+            ["APP MP", "SMART", "5.518", "5.474", "5.607", "5.801", "5.735", "5.741", "5.854", "6.211", "6.357", "6.048", "6.529", "6.469"],
             ["FDV Propria", "SMART", "10.823", "10.581", "14.002", "13.153", "13.732", "14.511", "15.392", "15.575", "15.664", "15.747", "14.268", "13.473"]
         ];
 
         let forecastChart = null;
         let deviceChart = null;
 
-        function addLog(msg, type = "info") {
-            const consoleEl = document.getElementById('debug-console');
-            const time = new Date().toLocaleTimeString();
-            const color = type === "error" ? "text-red-400" : "text-green-400";
-            consoleEl.innerHTML += `<div class="mb-1"><span class="text-gray-500">[${time}]</span> <span class="${color}">${msg}</span></div>`;
-            consoleEl.scrollTop = consoleEl.scrollHeight;
-        }
-
-        function toggleDebug() {
-            document.getElementById('debug-area').classList.toggle('hidden');
-        }
-
-        function cleanNumber(valStr) {
-            if (!valStr) return 0;
-            // Remove espaços e limpa formatação regional
-            let s = String(valStr).replace(/\s/g, '');
+        /**
+         * Limpeza de Números Inteligente
+         * Resolve "5.016", "5,016", "5 016" -> 5016
+         */
+        function parseMeliNumber(val) {
+            if (!val || val === "0") return 0;
+            let s = String(val).replace(/\s/g, ''); // Remove espaços
             
-            // Caso 5.016 ou 5,016 (com 3 casas depois, assumimos milhar)
+            // Lógica: se tem apenas uma vírgula ou ponto e 3 dígitos depois, é milhar.
             const parts = s.split(/[.,]/);
             if (parts.length === 2 && parts[1].length === 3) {
                 return parseFloat(s.replace(/[.,]/g, '')) || 0;
             }
             
-            // Tratamento geral para decimais/milhares
+            // Tratamento geral para formatos internacionais
             if (s.includes('.') && s.includes(',')) {
                 if (s.indexOf('.') < s.indexOf(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
                 else return parseFloat(s.replace(/,/g, '')) || 0;
@@ -266,119 +258,137 @@
 
         async function fetchData() {
             const loading = document.getElementById('loading');
+            const icon = document.getElementById('refresh-icon');
+            const errZone = document.getElementById('error-zone');
+            
             loading.style.display = 'flex';
-            addLog("A tentar sincronizar dados em tempo real...");
+            if(icon) icon.classList.add('animate-spin');
+            errZone.classList.add('hidden');
 
-            // Cache busting agressivo
-            const nocacheUrl = `${SHEET_CSV_URL}&timestamp=${new Date().getTime()}`;
+            // Cache Busting (A "query" que garante atualização real)
+            const timestamp = new Date().getTime();
+            const finalUrl = `${SHEET_CSV_URL}&cb=${timestamp}`;
 
-            Papa.parse(nocacheUrl, {
-                download: true,
-                header: false,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    addLog(`Recebidas ${results.data.length} linhas.`);
-                    if (results.data && results.data.length > 5) {
-                        processData(results.data, "LIVE");
-                    } else {
-                        addLog("Aviso: Link ativo mas dados insuficientes. Verifique a publicação.", "error");
-                        processData(MOCK_DATA, "MOCK/BACKUP");
+            try {
+                const response = await fetch(finalUrl, { 
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+                });
+
+                if (!response.ok) throw new Error("Servidor Google Sheets não disponível.");
+
+                const csvText = await response.text();
+                
+                Papa.parse(csvText, {
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        if (results.data && results.data.length > 3) {
+                            processRawRows(results.data, "LIVE");
+                        } else {
+                            throw new Error("Planilha vazia.");
+                        }
                     }
-                    loading.style.display = 'none';
-                },
-                error: function(err) {
-                    addLog("Erro de conexão (CORS ou URL inválida). Usando dados locais.", "error");
-                    processData(MOCK_DATA, "PREVIEW");
-                    loading.style.display = 'none';
+                });
+            } catch (err) {
+                console.warn("CORS/Fetch falhou. Ativando Backup.");
+                // Se falhar no GitHub Pages, mostra o erro. No preview, apenas carrega o mock.
+                if (!window.location.hostname.includes('usercontent.goog')) {
+                    errZone.classList.remove('hidden');
+                    document.getElementById('error-text').innerText = err.message;
                 }
-            });
+                processRawRows(MOCK_DATA, "MOCK-PREVIEW");
+            } finally {
+                setTimeout(() => { 
+                    loading.style.display = 'none';
+                    if(icon) icon.classList.remove('animate-spin');
+                }, 800);
+            }
         }
 
-        function processData(rows, source) {
-            let headerIndex = -1;
+        function processRawRows(rows, type) {
+            // Encontra o cabeçalho real (o que contém POINT_DEVICE ou meses)
+            let hIndex = -1;
             for(let i = 0; i < rows.length; i++) {
                 const rowStr = JSON.stringify(rows[i]).toLowerCase();
                 if(rowStr.includes("202601") || rowStr.includes("device")) {
-                    headerIndex = i;
+                    hIndex = i;
                     break;
                 }
             }
 
-            if(headerIndex === -1) {
-                addLog("Cabeçalho não identificado. Estrutura de dados desconhecida.", "error");
-                return;
-            }
+            if (hIndex === -1) return;
 
-            const headers = rows[headerIndex].map(h => String(h || '').trim());
-            const dataRows = rows.slice(headerIndex + 1);
+            const headers = rows[hIndex].map(h => String(h || '').trim());
+            const rawBody = rows.slice(hIndex + 1);
 
-            const cleanData = dataRows.map(row => {
+            const data = rawBody.map(row => {
                 let obj = {};
                 headers.forEach((h, i) => { obj[h] = row[i]; });
                 return obj;
-            }).filter(d => d[headers[1]]);
+            }).filter(d => d[headers[1]]); // Remove linhas sem device
 
-            renderDashboard(cleanData, headers, source);
+            renderUI(data, headers, type);
         }
 
-        function renderDashboard(data, headers, source) {
-            const dateKeys = headers.filter(k => /^\d{6}$/.test(k)).sort();
+        function renderUI(data, headers, type) {
+            const months = headers.filter(k => /^\d{6}$/.test(k)).sort();
             const colCanal = headers[0];
             const colDevice = headers[1];
 
             let totalForecast = 0;
             const deviceMap = {};
-            const monthlyTotals = {};
+            const monthlySum = {};
 
             data.forEach(row => {
-                const devName = row[colDevice] || 'Outros';
-                dateKeys.forEach(date => {
-                    const val = cleanNumber(row[date]);
+                const dev = row[colDevice] || 'Outros';
+                months.forEach(m => {
+                    const val = parseMeliNumber(row[m]);
                     totalForecast += val;
-                    deviceMap[devName] = (deviceMap[devName] || 0) + val;
-                    monthlyTotals[date] = (monthlyTotals[date] || 0) + val;
+                    deviceMap[dev] = (deviceMap[dev] || 0) + val;
+                    monthlySum[m] = (monthlySum[m] || 0) + val;
                 });
             });
 
-            document.getElementById('total-qty').innerText = Math.round(totalForecast).toLocaleString('pt-BR');
-            document.getElementById('avg-monthly').innerText = Math.round(totalForecast / dateKeys.length).toLocaleString('pt-BR');
+            // Update KPIs
+            document.getElementById('total-qty').innerText = Math.round(totalForecast).toLocaleString('pt-PT');
+            document.getElementById('avg-monthly').innerText = Math.round(totalForecast / (months.length || 1)).toLocaleString('pt-PT');
             
             const topDev = Object.entries(deviceMap).sort((a,b) => b[1] - a[1])[0];
             if(topDev) {
                 document.getElementById('top-device').innerText = topDev[0];
-                document.getElementById('top-device-val').innerText = Math.round(topDev[1]).toLocaleString('pt-BR') + " un.";
+                document.getElementById('top-device-val').innerText = Math.round(topDev[1]).toLocaleString('pt-PT') + " un.";
             }
 
-            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-            document.getElementById('data-source-pill').innerText = source;
-            document.getElementById('data-source-pill').className = `status-pill ${source === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
-            document.getElementById('sync-status-text').innerText = source === 'LIVE' ? 'Sincronizado' : 'Modo Backup';
-            
-            const dot = document.getElementById('status-dot');
-            dot.className = `w-1.5 h-1.5 rounded-full ${source === 'LIVE' ? 'bg-green-500 animate-pulse' : 'bg-orange-400'}`;
+            // Sync Status
+            document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit'});
+            const pill = document.getElementById('source-indicator');
+            pill.innerText = type;
+            pill.className = `status-badge ${type === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
 
-            updateCharts(dateKeys, monthlyTotals, deviceMap);
-            updateTable(data, dateKeys, colCanal, colDevice);
+            updateCharts(months, monthlySum, deviceMap);
+            updateTable(data, months, colCanal, colDevice);
         }
 
-        function updateCharts(dates, monthlyData, devices) {
+        function updateCharts(months, monthlySum, devices) {
+            // Line Chart
             if (forecastChart) forecastChart.destroy();
             forecastChart = new Chart(document.getElementById('forecastChart'), {
                 type: 'line',
                 data: {
-                    labels: dates.map(d => d.substring(4) + '/' + d.substring(0,4)),
+                    labels: months.map(m => m.substring(4) + '/' + m.substring(2,4)),
                     datasets: [{
                         label: 'Volume Projetado',
-                        data: dates.map(d => monthlyData[d]),
+                        data: months.map(m => monthlySum[m]),
                         borderColor: '#3483FA',
                         backgroundColor: 'rgba(52, 131, 250, 0.05)',
                         fill: true,
                         tension: 0.4,
-                        borderWidth: 4,
-                        pointRadius: 4,
+                        borderWidth: 5,
+                        pointRadius: 6,
                         pointBackgroundColor: '#fff',
                         pointBorderColor: '#3483FA',
-                        pointBorderWidth: 2
+                        pointBorderWidth: 3
                     }]
                 },
                 options: {
@@ -386,12 +396,13 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10, weight: '600' } } },
-                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
+                        y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10, weight: '700' }, callback: v => v.toLocaleString('pt-PT') } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: '700' } } }
                     }
                 }
             });
 
+            // Doughnut Chart
             if (deviceChart) deviceChart.destroy();
             deviceChart = new Chart(document.getElementById('deviceChart'), {
                 type: 'doughnut',
@@ -400,24 +411,24 @@
                     datasets: [{
                         data: Object.values(devices),
                         backgroundColor: ['#3483FA', '#00A650', '#FF7733', '#F2C12E', '#9B51E0'],
-                        borderWidth: 2,
+                        borderWidth: 3,
                         borderColor: '#fff'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 15, font: { size: 10, weight: '700' } } } },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: '700' } } } },
                     cutout: '70%'
                 }
             });
         }
 
-        function updateTable(data, dates, colCanal, colDevice) {
-            const headRow = document.getElementById('table-headers');
-            headRow.innerHTML = `<th class="px-6 py-4">Canal</th><th class="px-6 py-4">Modelo</th>`;
-            dates.forEach(d => {
-                headRow.innerHTML += `<th class="px-2 py-4 text-center font-bold">${d.substring(4)}/${d.substring(2,4)}</th>`;
+        function updateTable(data, months, colCanal, colDevice) {
+            const head = document.getElementById('table-headers');
+            head.innerHTML = `<th class="px-8 py-5">Canal de Venda</th><th class="px-8 py-5">Modelo de Device</th>`;
+            months.forEach(m => {
+                head.innerHTML += `<th class="px-4 py-5 text-center">${m.substring(4)}/${m.substring(2,4)}</th>`;
             });
 
             const body = document.getElementById('table-body');
@@ -425,16 +436,16 @@
             
             data.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 transition-colors";
+                tr.className = "hover:bg-blue-50/30 transition-colors";
                 
                 let cells = `
-                    <td class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">${row[colCanal] || '-'}</td>
-                    <td class="px-6 py-4 text-xs font-black text-gray-800">${row[colDevice] || '-'}</td>
+                    <td class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-tighter">${row[colCanal] || '-'}</td>
+                    <td class="px-8 py-5 text-xs font-black text-gray-800">${row[colDevice] || '-'}</td>
                 `;
 
-                dates.forEach(d => {
-                    const val = Math.round(cleanNumber(row[d]));
-                    cells += `<td class="px-2 py-4 text-center text-[11px] font-medium text-gray-600">${val.toLocaleString('pt-BR')}</td>`;
+                months.forEach(m => {
+                    const val = Math.round(parseMeliNumber(row[m]));
+                    cells += `<td class="px-4 py-5 text-center text-[11px] font-bold text-gray-600">${val.toLocaleString('pt-PT')}</td>`;
                 });
 
                 tr.innerHTML = cells;
@@ -447,8 +458,7 @@
             fetchData();
             
             if(window.location.hostname.includes('github.io')) {
-                document.getElementById('connection-status').classList.remove('hidden');
-                addLog("Ambiente GitHub Pages detetado. Conexão real ativa.");
+                document.getElementById('github-badge').classList.remove('hidden');
             }
         };
     </script>
