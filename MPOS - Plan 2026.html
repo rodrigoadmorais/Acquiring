@@ -240,17 +240,30 @@
         }
 
         function processVerdiData(data, type) {
-            // Filtra o JSON removendo linhas que não tem dados úteis
-            const validData = data.filter(row => row["POINT_DEVICE"] && row["SAFRA_VENDACANAL_DEVICE"] && row["POINT_DEVICE"] !== "POINT_DEVICE");
-
-            if(validData.length === 0) return;
-
-            const headers = Object.keys(validData[0]);
-            const months = headers.filter(k => /^\d{6}$/.test(k)).sort();
+            // Se vier vazio, aborta
+            if(!data || data.length === 0) return;
             
-            // Colunas exatas do seu GSheet
-            const colCanal = "SAFRA_VENDACANAL_DEVICE"; 
-            const colDevice = "POINT_DEVICE"; 
+            // Console log para depuração (aperte F12 para ver os dados brutos chegando)
+            console.log("Dados recebidos via Verdi:", data);
+
+            // 1. Encontrar todos os meses automaticamente (tudo que tiver 6 números, ex: 202601)
+            let monthsSet = new Set();
+            data.forEach(row => {
+                Object.keys(row).forEach(k => {
+                    if (/^\d{6}$/.test(k)) monthsSet.add(k);
+                });
+            });
+            const months = Array.from(monthsSet).sort();
+
+            // 2. Encontrar os nomes das colunas de texto, ignorando o "row_number" do Verdi
+            const sampleRow = data[0];
+            const textKeys = Object.keys(sampleRow).filter(k => k !== "row_number" && !/^\d{6}$/.test(k));
+            
+            const colCanal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
+            const colDevice = textKeys.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE')) || textKeys[1];
+
+            // 3. Filtrar os dados: só mantém a linha se ela tiver alguma projeção no primeiro mês
+            const validData = data.filter(row => row[months[0]] !== undefined && row[months[0]] !== "" && row[colCanal]);
 
             renderUI(validData, type, months, colCanal, colDevice);
         }
@@ -376,5 +389,6 @@
     </script>
 </body>
 </html>
+
 
 
