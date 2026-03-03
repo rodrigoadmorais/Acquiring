@@ -6,52 +6,32 @@
     <title>Meli Forecast | Dashboard Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
         
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-        }
-
+        body { font-family: 'Inter', sans-serif; background-color: #f5f5f5; color: #333; }
         .ml-yellow { background-color: #FFF159; }
         .ml-blue { color: #3483FA; }
         .ml-button-blue { background-color: #3483FA; }
         .ml-button-blue:hover { background-color: #2968c8; }
         
         .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border: 1px solid #e5e5e5;
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e5e5;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
         .loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(255,255,255,0.98);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            display: none;
+            position: fixed; inset: 0; background: rgba(255,255,255,0.98);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; display: none;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3483FA;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            border: 4px solid #f3f3f3; border-top: 4px solid #3483FA;
+            border-radius: 50%; width: 40px; height: 40px;
             animation: spin 1s linear infinite;
         }
 
@@ -61,13 +41,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d1d1; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
 
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
+        .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -75,7 +49,7 @@
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center">
             <div class="spinner mb-4"></div>
-            <p class="text-sm font-bold text-gray-600 uppercase tracking-widest">Sincronizando Dados...</p>
+            <p class="text-sm font-bold text-gray-600 uppercase tracking-widest">Sincronizando via Verdi...</p>
         </div>
     </div>
 
@@ -94,7 +68,7 @@
             <div class="flex items-center gap-4">
                 <div id="github-badge" class="hidden lg:flex items-center gap-2 bg-white/50 px-3 py-1.5 rounded-full border border-black/5">
                     <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span class="text-[10px] font-bold text-gray-700 uppercase">Auto-Sync Ativo</span>
+                    <span class="text-[10px] font-bold text-gray-700 uppercase">Verdi Auto-Sync</span>
                 </div>
                 <button onclick="fetchData(true)" class="flex items-center gap-2 ml-button-blue text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
                     <i data-lucide="refresh-ccw" class="w-4 h-4" id="refresh-icon"></i>
@@ -112,8 +86,8 @@
                     <i data-lucide="alert-circle" class="w-5 h-5"></i>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-red-900 font-bold text-sm uppercase">Falha na Sincronização</h3>
-                    <p class="text-red-700 text-xs mt-1">Não foi possível carregar os dados reais do Google Sheets. Exibindo dados de simulação (Mock).</p>
+                    <h3 class="text-red-900 font-bold text-sm uppercase">Falha na Conexão com o Verdi</h3>
+                    <p class="text-red-700 text-xs mt-1">Verifique se o Webhook está ativo e a URL está correta. Exibindo dados de fallback.</p>
                 </div>
                 <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="text-red-400"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
@@ -156,7 +130,7 @@
                 </div>
                 <div class="flex flex-col">
                     <span id="sync-time" class="text-sm font-bold text-gray-700">--:--:--</span>
-                    <span class="text-[10px] text-gray-400 font-mono mt-2 uppercase tracking-widest text-xs">Sincronia Estável</span>
+                    <span class="text-[10px] text-gray-400 font-mono mt-2 uppercase tracking-widest text-xs">Conexão Verdi (n8n)</span>
                 </div>
             </div>
         </div>
@@ -186,7 +160,7 @@
                 <h4 class="text-sm font-black text-gray-800">Detalhamento por Canal e Dispositivo</h4>
                 <div class="flex gap-2">
                     <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <span class="text-[10px] font-black text-gray-400 uppercase">Safra 202601 - 202612</span>
+                    <span class="text-[10px] font-black text-gray-400 uppercase">Safra 2026</span>
                 </div>
             </div>
             <div class="overflow-x-auto custom-scrollbar">
@@ -204,23 +178,16 @@
         </div>
     </main>
 
-    <footer class="text-center py-16 opacity-30">
-        <p class="text-[10px] font-black uppercase tracking-[0.5em]">Mercado Livre Strategy &bull; Business Unit</p>
-    </footer>
-
     <script>
-        // LINK DA PLANILHA (CSV)
-        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-J2Uo8cl9qgquEWVvHWir1kn8a9ZfJMBnp6TaZBkAwRiG0P17DM-8Hpu5yhVDmolgzlvJXnd9KZ0f/pub?gid=417844394&single=true&output=csv";
-
-        // Dados de Fallback (Mock)
+        // ==========================================
+        // COLE A SUA PRODUCTION URL DO VERDI AQUI 👇
+        // ==========================================
+        const VERDI_WEBHOOK_URL = "http://verdi-flows.melisystems.com/webhook/867d459f-100d-415e-813d-0142bc27335c"; 
+        
+        // Dados de Fallback (Mock caso o Verdi caia)
         const MOCK_DATA = [
-            ["SUM of QTD_DEV_SOLD_FORECAST_TOTAL", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-            ["SAFRA_VENDACANAL_DEVICE", "POINT_DEVICE", "202601", "202602", "202603", "202604", "202605", "202606", "202607", "202608", "202609", "202610", "202611", "202612"],
-            ["APP MP", "AIR", "5.016", "4.976", "5.097", "4.746", "4.345", "4.349", "4.435", "4.705", "4.816", "4.582", "4.946", "4.901"],
-            ["APP MP", "MINI", "5.685", "5.640", "5.607", "5.801", "5.735", "5.393", "5.499", "5.835", "5.972", "5.682", "6.133", "6.665"],
-            ["APP MP", "PRO", "5.852", "5.805", "5.947", "6.152", "5.909", "5.915", "6.032", "6.399", "6.742", "6.415", "6.925", "6.861"],
-            ["APP MP", "SMART", "5.518", "5.474", "5.607", "5.801", "5.735", "5.741", "5.854", "6211", "6.357", "6.048", "6.529", "6.469"],
-            ["FDV Propria", "SMART", "10.823", "10.581", "14.002", "13.153", "13.732", "14.511", "15.392", "15.575", "15.664", "15.747", "14.268", "13.473"]
+            { "SAFRA_VENDACANAL_DEVICE": "APP MP", "POINT_DEVICE": "AIR", "202601": "5.016", "202602": "4.976", "202603": "5.097" },
+            { "SAFRA_VENDACANAL_DEVICE": "FDV Propria", "POINT_DEVICE": "SMART", "202601": "10.823", "202602": "10.581", "202603": "14.002" }
         ];
 
         let forecastChart = null;
@@ -229,24 +196,17 @@
         function parseMeliNumber(val) {
             if (!val || val === "0") return 0;
             let s = String(val).trim().replace(/\s/g, ''); 
-            
             const parts = s.split(/[.,]/);
-            if (parts.length === 2 && parts[1].length === 3) {
-                return parseFloat(s.replace(/[.,]/g, '')) || 0;
-            }
-            
+            if (parts.length === 2 && parts[1].length === 3) return parseFloat(s.replace(/[.,]/g, '')) || 0;
             if (s.includes('.') && s.includes(',')) {
-                if (s.indexOf('.') < s.indexOf(',')) {
-                    return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
-                } else {
-                    return parseFloat(s.replace(/,/g, '')) || 0;
-                }
+                return s.indexOf('.') < s.indexOf(',') 
+                    ? parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0 
+                    : parseFloat(s.replace(/,/g, '')) || 0;
             }
             return parseFloat(s.replace(',', '.')) || 0;
         }
 
-        // Função principal de captura (Otimizada para GSheets)
-        function fetchData(showLoadingUI = false) {
+        async function fetchData(showLoadingUI = false) {
             const loading = document.getElementById('loading');
             const icon = document.getElementById('refresh-icon');
             const envNotice = document.getElementById('env-notice');
@@ -255,65 +215,47 @@
             if(icon) icon.classList.add('animate-spin');
             envNotice.classList.add('hidden');
 
-            // Cache buster agressivo para garantir que pega o dado mais recente do GSheet
-            const finalUrl = `${SHEET_CSV_URL}&_=${new Date().getTime()}`;
-
-            // Usando PapaParse diretamente em modo download (MUITO mais estável que fetch manual para GSheets)
-            Papa.parse(finalUrl, {
-                download: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    handleResults(results, "LIVE");
-                    if(showLoadingUI) loading.style.display = 'none';
-                    if(icon) icon.classList.remove('animate-spin');
-                },
-                error: function(err) {
-                    console.error("Erro ao puxar dados: ", err);
-                    envNotice.classList.remove('hidden');
-                    handleResults({ data: MOCK_DATA }, "MOCK");
-                    if(showLoadingUI) loading.style.display = 'none';
-                    if(icon) icon.classList.remove('animate-spin');
+            try {
+                // Tenta puxar do Verdi, forçando quebra de cache do navegador
+                const response = await fetch(`${VERDI_WEBHOOK_URL}?_=${new Date().getTime()}`);
+                if (!response.ok) throw new Error("Falha ao comunicar com o Verdi");
+                
+                const jsonData = await response.json();
+                
+                if (jsonData && jsonData.length > 0) {
+                    processVerdiData(jsonData, "LIVE");
+                } else {
+                    throw new Error("Planilha vazia");
                 }
-            });
-        }
-
-        function handleResults(results, type) {
-            if (results.data && results.data.length > 2) {
-                processRawRows(results.data, type);
-            } else {
-                processRawRows(MOCK_DATA, "MOCK-EMPTY");
+            } catch (err) {
+                console.error("Erro na request:", err);
+                envNotice.classList.remove('hidden');
+                processVerdiData(MOCK_DATA, "MOCK");
+            } finally {
+                setTimeout(() => {
+                    if(showLoadingUI) loading.style.display = 'none';
+                    if(icon) icon.classList.remove('animate-spin');
+                }, 500);
             }
         }
 
-        function processRawRows(rows, type) {
-            let hIndex = -1;
-            for(let i = 0; i < rows.length; i++) {
-                const rowStr = JSON.stringify(rows[i]).toLowerCase();
-                if(rowStr.includes("202601") || rowStr.includes("device")) {
-                    hIndex = i;
-                    break;
-                }
-            }
+        function processVerdiData(data, type) {
+            // Filtra o JSON removendo linhas que não tem dados úteis
+            const validData = data.filter(row => row["POINT_DEVICE"] && row["SAFRA_VENDACANAL_DEVICE"] && row["POINT_DEVICE"] !== "POINT_DEVICE");
 
-            if (hIndex === -1) return;
+            if(validData.length === 0) return;
 
-            const headers = rows[hIndex].map(h => String(h || '').trim());
-            const rawBody = rows.slice(hIndex + 1);
-
-            const data = rawBody.map(row => {
-                let obj = {};
-                headers.forEach((h, i) => { obj[h] = row[i]; });
-                return obj;
-            }).filter(d => d[headers[1]] && d[headers[1]].length > 0);
-
-            renderUI(data, headers, type);
-        }
-
-        function renderUI(data, headers, type) {
+            const headers = Object.keys(validData[0]);
             const months = headers.filter(k => /^\d{6}$/.test(k)).sort();
-            const colCanal = headers[0];
-            const colDevice = headers[1];
+            
+            // Colunas exatas do seu GSheet
+            const colCanal = "SAFRA_VENDACANAL_DEVICE"; 
+            const colDevice = "POINT_DEVICE"; 
 
+            renderUI(validData, type, months, colCanal, colDevice);
+        }
+
+        function renderUI(data, type, months, colCanal, colDevice) {
             let totalForecast = 0;
             const deviceMap = {};
             const monthlySum = {};
@@ -337,11 +279,10 @@
                 document.getElementById('top-device-val').innerText = Math.round(sortedDevices[0][1]).toLocaleString('pt-PT') + " un.";
             }
 
-            // Mostra a hora exata da última sincronização
             document.getElementById('sync-time').innerText = new Date().toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
             
             const pill = document.getElementById('source-indicator');
-            pill.innerText = type.includes('MOCK') ? 'FALLBACK' : 'LIVE';
+            pill.innerText = type === 'LIVE' ? 'VERDI API' : 'FALLBACK';
             pill.className = `status-badge ${type === 'LIVE' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
 
             updateCharts(months, monthlySum, deviceMap);
@@ -357,26 +298,19 @@
                     datasets: [{
                         label: 'Volume',
                         data: months.map(m => monthlySum[m]),
-                        borderColor: '#3483FA',
-                        backgroundColor: 'rgba(52, 131, 250, 0.05)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 5,
-                        pointRadius: 6,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#3483FA',
-                        pointBorderWidth: 3
+                        borderColor: '#3483FA', backgroundColor: 'rgba(52, 131, 250, 0.05)',
+                        fill: true, tension: 0.4, borderWidth: 5, pointRadius: 6,
+                        pointBackgroundColor: '#fff', pointBorderColor: '#3483FA', pointBorderWidth: 3
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
                     scales: {
                         y: { grid: { color: '#f0f0f0' }, ticks: { font: { size: 10, weight: '700' }, callback: v => v.toLocaleString('pt-PT') } },
                         x: { grid: { display: false }, ticks: { font: { size: 10, weight: '700' } } }
                     },
-                    animation: { duration: 500 } // Animação mais rápida para att em tempo real
+                    animation: { duration: 500 }
                 }
             });
 
@@ -388,16 +322,13 @@
                     datasets: [{
                         data: Object.values(devices),
                         backgroundColor: ['#3483FA', '#00A650', '#FF7733', '#F2C12E', '#9B51E0'],
-                        borderWidth: 3,
-                        borderColor: '#fff'
+                        borderWidth: 3, borderColor: '#fff'
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: '700' } } } },
-                    cutout: '70%',
-                    animation: { duration: 500 }
+                    cutout: '70%', animation: { duration: 500 }
                 }
             });
         }
@@ -430,17 +361,16 @@
         window.onload = () => {
             lucide.createIcons();
             
-            // 1. Faz a primeira carga com a tela de loading
+            // 1. Carga inicial com tela de loading
             fetchData(true); 
 
-            // Mostra o badge apenas se estiver no GitHub
-            if(window.location.hostname.includes('github.io')) {
+            if(window.location.hostname.includes('github.io') || window.location.hostname.includes('fury')) {
                 document.getElementById('github-badge').classList.remove('hidden');
             }
 
-            // 2. POLLING PARA TEMPO REAL: Atualiza silenciosamente a cada 60 segundos (60000 ms)
+            // 2. ATUALIZAÇÃO EM TEMPO REAL: Bate no Verdi a cada 60 segundos
             setInterval(() => {
-                fetchData(false); // false = não mostra a tela inteira branca de loading
+                fetchData(false); // false = não trava a tela inteira do usuário
             }, 60000); 
         };
     </script>
