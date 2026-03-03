@@ -10,7 +10,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        /* Fundo Totalmente Branco */
+        
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1f2937; }
         .ml-yellow { background-color: #FFF159; }
         
@@ -84,10 +84,20 @@
         </div>
 
         <div class="card overflow-hidden">
-            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
                 <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
                     <i data-lucide="git-compare" class="w-4 h-4 text-blue-500"></i> Motor de Comparação
                 </h2>
+                <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="comp-type" value="MONTH" checked onchange="handleTypeChange()" class="peer sr-only">
+                        <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Comparar Meses</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="comp-type" value="YEAR" onchange="handleTypeChange()" class="peer sr-only">
+                        <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Comparar Anos</div>
+                    </label>
+                </div>
             </div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-white">
                 
@@ -147,7 +157,7 @@
             
             <div class="card p-6 lg:col-span-2">
                 <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
-                    <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Curva de Tendência: Realizado vs Plano
+                    <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Evolução Focada (A vs B)
                 </h4>
                 <div class="h-80">
                     <canvas id="timelineChart"></canvas>
@@ -208,7 +218,6 @@
         
         let timelineChart, barChart;
 
-        // Limpar números
         function parseNum(val) {
             if (!val || val === "0") return 0;
             let s = String(val).trim().replace(/\s/g, ''); 
@@ -220,7 +229,7 @@
             return parseFloat(s.replace(',', '.')) || 0;
         }
 
-        // --- FUNÇÃO ESCUDO: Conserta planilhas mal formatadas pelo n8n automaticamente ---
+        // --- FUNÇÃO ESCUDO: Conserta planilhas mal formatadas pelo n8n ---
         function normalizeData(data) {
             if (!data || data.length === 0) return [];
             
@@ -229,7 +238,7 @@
             const isHeaderRow = vals.some(v => /^\d{6}$/.test(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
             
             if (isHeaderRow) {
-                console.log("🛠️ Normalizador IA ativado: Corrigindo cabeçalhos do JSON...");
+                console.log("🛠️ Normalizador IA ativado: Corrigindo cabeçalhos...");
                 const mappedData = [];
                 for (let i = 1; i < data.length; i++) {
                     let obj = {};
@@ -247,7 +256,6 @@
             return data;
         }
 
-        // Inicialização Principal
         async function boot() {
             lucide.createIcons();
             try {
@@ -262,10 +270,8 @@
                 if (resActual.ok) db.ACTUAL = normalizeData(await resActual.json());
 
                 detectStructure();
-                buildPeriodSelectors();
+                handleTypeChange(); // Inicia construindo os menus baseado no Radio Button
                 populateGlobalFilters();
-                setDefaultComparison();
-                processDashboard();
 
             } catch (err) {
                 console.error(err);
@@ -277,7 +283,6 @@
             }
         }
 
-        // Detecta colunas
         function detectStructure() {
             ['PLAN', 'ACTUAL'].forEach(type => {
                 if(db[type].length === 0) return;
@@ -305,16 +310,27 @@
             });
         }
 
+        // Acionado quando o usuário muda a chave de Mês para Ano
+        function handleTypeChange() {
+            buildPeriodSelectors();
+            setDefaultComparison();
+            processDashboard();
+        }
+
         function buildPeriodSelectors() {
+            const compType = document.querySelector('input[name="comp-type"]:checked').value;
             const selectA = document.getElementById('comp-a');
             const selectB = document.getElementById('comp-b');
             
             let optionsHTML = '';
             ['ACTUAL', 'PLAN'].forEach(type => {
                 const typeLabel = type === 'PLAN' ? '🟢 PLANO' : '🔵 REALIZADO';
-                if(availablePeriods[type].length > 0) {
+                // Filtra para exibir apenas MESES ou apenas ANOS, travando a seleção errada
+                const filteredPeriods = availablePeriods[type].filter(p => p.id.startsWith(compType));
+                
+                if(filteredPeriods.length > 0) {
                     optionsHTML += `<optgroup label="--- ${typeLabel} ---">`;
-                    availablePeriods[type].forEach(p => {
+                    filteredPeriods.forEach(p => {
                         optionsHTML += `<option value="${type}|${p.id}">${type === 'PLAN'?'Plan':'Actual'} - ${p.label}</option>`;
                     });
                     optionsHTML += `</optgroup>`;
@@ -326,22 +342,26 @@
         }
 
         function setDefaultComparison() {
+            const compType = document.querySelector('input[name="comp-type"]:checked').value;
             const selectA = document.getElementById('comp-a');
             const selectB = document.getElementById('comp-b');
             
-            const actualMonths = availablePeriods.ACTUAL.filter(p => p.id.startsWith('MONTH|'));
-            const planMonths = availablePeriods.PLAN.filter(p => p.id.startsWith('MONTH|'));
+            const actualPeriods = availablePeriods.ACTUAL.filter(p => p.id.startsWith(compType));
+            const planPeriods = availablePeriods.PLAN.filter(p => p.id.startsWith(compType));
 
-            if(actualMonths.length > 0 && planMonths.length > 0) {
-                const lastActual = actualMonths[actualMonths.length - 1];
+            if(actualPeriods.length > 0 && planPeriods.length > 0) {
+                const lastActual = actualPeriods[actualPeriods.length - 1];
                 selectA.value = `ACTUAL|${lastActual.id}`;
                 
-                const matchPlan = planMonths.find(p => p.id === lastActual.id);
+                const matchPlan = planPeriods.find(p => p.id === lastActual.id);
                 if(matchPlan) {
                     selectB.value = `PLAN|${matchPlan.id}`;
                 } else {
-                    selectB.value = `PLAN|${planMonths[0].id}`; 
+                    selectB.value = `PLAN|${planPeriods[0].id}`; 
                 }
+            } else if (planPeriods.length >= 2) {
+                selectA.value = `PLAN|${planPeriods[0].id}`;
+                selectB.value = `PLAN|${planPeriods[planPeriods.length-1].id}`;
             }
         }
 
@@ -366,7 +386,6 @@
                 [...allDevices].sort().map(d => `<option value="${d}">${d}</option>`).join('');
         }
 
-        // ---- MOTOR PRINCIPAL DE DADOS ----
         function extractValue(type, periodId, filterCanal, filterDevice) {
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type];
@@ -426,7 +445,10 @@
             updateKPIs(dataA.total, dataB.total, nameA, nameB);
             generateAI(dataA, dataB, nameA, nameB);
             drawBarChart(dataA.byCanal, dataB.byCanal, nameA, nameB);
-            drawTimelineChart(filterCanal, filterDevice);
+            
+            // Passa as variáveis para o gráfico Evolutivo dinâmico
+            drawTimelineChart(compA_val, compB_val, nameA, nameB, filterCanal, filterDevice);
+            
             drawTable(dataA, dataB, nameA, nameB);
         }
 
@@ -488,14 +510,14 @@
             let text = `<p>Ao comparar <strong>${nameB}</strong> frente a <strong>${nameA}</strong>, observamos uma `;
             
             if(deltaPct > 0) {
-                text += `<span class="text-green-600 font-bold">expansão de +${deltaPct.toFixed(1)}%</span> (+${Math.round(deltaAbs).toLocaleString('pt-PT')} unidades). `;
+                text += `<span class="text-green-600 font-bold">expansão de +${deltaPct.toFixed(1)}%</span> (+${Math.round(deltaAbs).toLocaleString('pt-PT')} un.). `;
                 if(topCanal.diff > 0) {
-                    text += `O grande impulsionador deste crescimento foi o canal <strong>${topCanal.name}</strong>, que sozinho adicionou ${Math.round(topCanal.diff).toLocaleString('pt-PT')} dispositivos ao volume.`;
+                    text += `O grande impulsionador deste crescimento foi o canal <strong>${topCanal.name}</strong>, que sozinho adicionou ${Math.round(topCanal.diff).toLocaleString('pt-PT')} dispositivos.`;
                 }
             } else if (deltaPct < 0) {
-                text += `<span class="text-red-600 font-bold">retração de ${deltaPct.toFixed(1)}%</span> (${Math.round(deltaAbs).toLocaleString('pt-PT')} unidades). `;
+                text += `<span class="text-red-600 font-bold">retração de ${deltaPct.toFixed(1)}%</span> (${Math.round(deltaAbs).toLocaleString('pt-PT')} un.). `;
                 if(worstCanal.diff < 0) {
-                    text += `A principal alavanca de queda ocorreu no canal <strong>${worstCanal.name}</strong>, responsável por um gap de ${Math.round(Math.abs(worstCanal.diff)).toLocaleString('pt-PT')} unidades no período.`;
+                    text += `A principal alavanca de queda ocorreu no canal <strong>${worstCanal.name}</strong>, responsável por um gap de ${Math.round(Math.abs(worstCanal.diff)).toLocaleString('pt-PT')} dispositivos.`;
                 }
             } else {
                 text += `<strong>estabilidade absoluta</strong>, mantendo o exato mesmo volume.`;
@@ -507,7 +529,6 @@
 
         function drawBarChart(byCanalA, byCanalB, nameA, nameB) {
             const allCanals = Array.from(new Set([...Object.keys(byCanalA), ...Object.keys(byCanalB)]));
-            
             const topCanals = allCanals.sort((a,b) => (byCanalB[b]||0) - (byCanalB[a]||0)).slice(0, 5);
 
             const dataA = topCanals.map(c => byCanalA[c] || 0);
@@ -527,7 +548,7 @@
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
                         legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' } } },
-                        datalabels: { display: false } // Desliga datalabels nas barras para não poluir
+                        datalabels: { display: false } // Desliga datalabels nas barras para evitar poluição visual
                     },
                     scales: {
                         y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } },
@@ -537,69 +558,103 @@
             });
         }
 
-        function drawTimelineChart(filterCanal, filterDevice) {
-            let allMonths = new Set();
-            ['PLAN', 'ACTUAL'].forEach(type => {
-                db[type].forEach(row => {
-                    Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) allMonths.add(k); });
+        // Gráfico Evolutivo Dinâmico Focado
+        function drawTimelineChart(compA_val, compB_val, nameA, nameB, filterCanal, filterDevice) {
+            const compType = document.querySelector('input[name="comp-type"]:checked').value;
+            
+            let labels = [];
+            let datasets = [];
+
+            if (compType === 'YEAR') {
+                // Modo Ano vs Ano (Sobreposto 1 a 12)
+                labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                const [typeA, , yearA] = compA_val.split('|');
+                const [typeB, , yearB] = compB_val.split('|');
+
+                const dataA = labels.map((m, i) => {
+                    const monthStr = String(i + 1).padStart(2, '0');
+                    return extractValue(typeA, `MONTH|${yearA}${monthStr}`, filterCanal, filterDevice).total;
                 });
-            });
-            const timeline = Array.from(allMonths).sort();
+                const dataB = labels.map((m, i) => {
+                    const monthStr = String(i + 1).padStart(2, '0');
+                    return extractValue(typeB, `MONTH|${yearB}${monthStr}`, filterCanal, filterDevice).total;
+                });
 
-            const actualData = timeline.map(m => extractValue('ACTUAL', `MONTH|${m}`, filterCanal, filterDevice).total);
-            const planData = timeline.map(m => extractValue('PLAN', `MONTH|${m}`, filterCanal, filterDevice).total);
+                // Substitui 0 por null para a linha não cair a zero em meses que não aconteceram ainda
+                const cleanA = dataA.map(v => v === 0 ? null : v);
+                const cleanB = dataB.map(v => v === 0 ? null : v);
 
-            const cleanActual = actualData.map(v => v === 0 ? null : v);
+                datasets = [
+                    {
+                        label: nameA,
+                        data: cleanA,
+                        borderColor: '#9CA3AF', backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                        fill: false, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff'
+                    },
+                    {
+                        label: nameB,
+                        data: cleanB,
+                        borderColor: '#3483FA', backgroundColor: 'rgba(52, 131, 250, 0.1)',
+                        fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff'
+                    }
+                ];
+            } else {
+                // Modo Mês vs Mês (Evolutivo entre dois pontos)
+                labels = [nameA, nameB];
+                
+                const [typeA, , monthA] = compA_val.split('|');
+                const [typeB, , monthB] = compB_val.split('|');
+                
+                const valA = extractValue(typeA, `MONTH|${monthA}`, filterCanal, filterDevice).total;
+                const valB = extractValue(typeB, `MONTH|${monthB}`, filterCanal, filterDevice).total;
+
+                datasets = [
+                    {
+                        label: 'Evolução de Volume',
+                        data: [valA, valB],
+                        borderColor: '#3483FA', backgroundColor: 'rgba(52, 131, 250, 0.1)',
+                        fill: true, tension: 0, borderWidth: 3, pointRadius: 6, pointBackgroundColor: '#fff'
+                    }
+                ];
+            }
 
             if (timelineChart) timelineChart.destroy();
             timelineChart = new Chart(document.getElementById('timelineChart'), {
                 type: 'line',
-                data: {
-                    labels: timeline.map(m => m.substring(4)+'/'+m.substring(2,4)),
-                    datasets: [
-                        {
-                            label: 'Realizado',
-                            data: cleanActual,
-                            borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff', spanGaps: false
-                        },
-                        {
-                            label: 'Plano',
-                            data: planData,
-                            borderColor: '#9CA3AF', borderDash: [5, 5],
-                            fill: false, tension: 0.3, borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#fff', spanGaps: true
-                        }
-                    ]
-                },
+                data: { labels, datasets },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: { 
                         legend: { position: 'top', align: 'end', labels: { boxWidth: 12, usePointStyle: true, font: { weight: 'bold', size: 10 } } },
-                        // Configuração Mágica dos Rótulos (120k)
+                        
+                        // Configuração dos Rótulos (ex: 120k)
                         datalabels: {
                             display: true,
                             align: 'top',
-                            offset: 4,
+                            offset: 6,
                             formatter: function(value) {
                                 if (value === null || value === 0) return '';
                                 if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
                                 if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
                                 return Math.round(value);
                             },
-                            font: { size: 9, weight: 'bold' },
-                            color: function(context) {
-                                return context.dataset.borderColor;
-                            }
+                            font: { size: 10, weight: 'bold' },
+                            color: function(context) { return context.dataset.borderColor; }
                         },
-                        // Tooltip mostra o número inteiro exato
+
+                        // Tooltip para o número exato ao passar o mouse
                         tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 12 },
+                            bodyFont: { size: 12, weight: 'bold' },
+                            padding: 10,
                             callbacks: {
                                 label: function(context) {
                                     let label = context.dataset.label || '';
                                     if (label) label += ': ';
                                     if (context.parsed.y !== null) {
-                                        label += context.parsed.y.toLocaleString('pt-PT');
+                                        label += context.parsed.y.toLocaleString('pt-PT') + ' un.';
                                     }
                                     return label;
                                 }
@@ -607,9 +662,10 @@
                         }
                     },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
-                        x: { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 9, weight: 'bold' } } }
-                    }
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { display: false } }, // Esconde o eixo Y numérico para ficar clean
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
+                    },
+                    layout: { padding: { top: 25 } } // Espaço extra para o rótulo não cortar no topo
                 }
             });
         }
@@ -620,7 +676,6 @@
             
             const allCanals = new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]);
             
-            // Ordena pelo maior volume na Base B (Se B for 0, usa a Base A)
             const sortedCanals = Array.from(allCanals).sort((a,b) => {
                 let valB = (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0);
                 if(valB !== 0) return valB;
@@ -639,7 +694,6 @@
                 const pctColor = deltaPct > 0 ? 'text-green-600' : (deltaPct < 0 ? 'text-red-600' : 'text-gray-400');
                 const absSign = deltaAbs > 0 ? '+' : '';
 
-                // Linha Pai (Canal)
                 html += `
                     <tr class="border-b border-gray-100 hover:bg-blue-50/50 cursor-pointer transition-colors group" onclick="toggleDrilldown('drill-${idx}')">
                         <td class="p-4 flex items-center gap-2 font-black text-xs text-gray-800">
@@ -653,12 +707,10 @@
                     </tr>
                 `;
 
-                // Linhas Filhas (Devices dentro do Canal)
                 const devicesA = dataA.byCanalDevice[canal] || {};
                 const devicesB = dataB.byCanalDevice[canal] || {};
                 const allDevices = new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]);
                 
-                // Ordena os devices dentro do canal
                 const sortedDevices = Array.from(allDevices).sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
 
                 sortedDevices.forEach(dev => {
@@ -687,7 +739,6 @@
             lucide.createIcons();
         }
 
-        // Função de Abrir/Fechar Drilldown
         function toggleDrilldown(className) {
             const rows = document.querySelectorAll('.' + className);
             const icon = document.getElementById('icon-' + className);
@@ -702,11 +753,8 @@
                 }
             });
             
-            if (!isHidden) {
-                icon.classList.add('rotate-90');
-            } else {
-                icon.classList.remove('rotate-90');
-            }
+            if (!isHidden) icon.classList.add('rotate-90');
+            else icon.classList.remove('rotate-90');
         }
 
         function exportJoinedCSV() {
