@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado Dashboard | Forecast Safra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .ml-yellow { background-color: #FFF159; }
+        .ml-blue { color: #3483FA; }
+        .ml-button-blue { background-color: #3483FA; }
+        .ml-button-blue:hover { background-color: #2968c8; }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,.1);
+            border: 1px solid #e5e5e5;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3483FA;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        /* Custom scrollbar para tabelas largas */
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="loading" class="loading-overlay">
+        <div class="flex flex-col items-center">
+            <div class="spinner mb-2"></div>
+            <p class="text-xs font-bold text-gray-500 font-mono">PROCESSANDO SAFRAS...</p>
+        </div>
+    </div>
+
+    <!-- Header Estilo Mercado Livre -->
+    <header class="ml-yellow w-full py-2 px-4 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-white p-1.5 rounded shadow-sm">
+                    <i data-lucide="trending-up" class="text-blue-600 w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black text-gray-800 leading-tight">Mercado <span class="text-blue-600">Forecast</span></h1>
+                    <p class="text-[9px] font-bold text-gray-600 uppercase tracking-tighter">Projeção de Vendas por Dispositivo</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <div id="connection-status" class="hidden md:flex items-center gap-2 px-2 py-1 bg-white/40 rounded border border-black/5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-gray-400" id="status-dot"></div>
+                    <span class="text-[9px] font-bold text-gray-600 uppercase" id="status-text">Conectando...</span>
+                </div>
+                <button onclick="fetchData()" class="flex items-center gap-2 ml-button-blue text-white px-4 py-1.5 rounded font-bold text-sm transition-all active:scale-95 shadow-sm">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refresh-icon"></i>
+                    Sincronizar GitHub
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        
+        <!-- Alerta de CORS (Aparece apenas se falhar no preview) -->
+        <div id="cors-notice" class="hidden bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded shadow-sm">
+            <div class="flex items-start gap-3">
+                <i data-lucide="info" class="text-blue-500 w-5 h-5 mt-0.5"></i>
+                <div class="text-xs leading-relaxed text-blue-800">
+                    <p class="font-bold mb-1">Nota de Ambiente:</p>
+                    Utilizando dados de demonstração (modelo Safra 2026). No <strong>GitHub Pages</strong>, os dados da sua planilha serão carregados automaticamente.
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="card p-5">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Forecast 2026</p>
+                <h3 id="total-qty" class="text-2xl font-black text-gray-800">0</h3>
+                <div class="mt-4 flex items-center justify-between">
+                    <span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">Qtd. Total</span>
+                    <i data-lucide="boxes" class="text-gray-300 w-4 h-4"></i>
+                </div>
+            </div>
+
+            <div class="card p-5">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Média Mensal</p>
+                <h3 id="avg-monthly" class="text-2xl font-black text-gray-800">0</h3>
+                <div class="mt-4 flex items-center justify-between">
+                    <span class="text-[10px] text-gray-500 font-medium">Previsão por mês</span>
+                    <i data-lucide="calendar" class="text-gray-300 w-4 h-4"></i>
+                </div>
+            </div>
+
+            <div class="card p-5">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Top Dispositivo</p>
+                <h3 id="top-device" class="text-xl font-black text-gray-800 uppercase">---</h3>
+                <div class="mt-4 flex items-center justify-between">
+                    <span id="top-device-val" class="text-[10px] text-green-600 font-bold">0 un.</span>
+                    <i data-lucide="smartphone" class="text-gray-300 w-4 h-4"></i>
+                </div>
+            </div>
+
+            <div class="card p-5">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status Base</p>
+                <h3 id="sync-status" class="text-lg font-bold text-gray-600 uppercase">--</h3>
+                <div class="mt-4 flex items-center justify-between">
+                    <span id="data-source" class="status-badge bg-gray-100 text-gray-500 font-mono tracking-tighter">Standby</span>
+                    <i data-lucide="database" class="text-gray-300 w-4 h-4"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="card p-6 lg:col-span-2">
+                <h4 class="text-sm font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Evolução Mensal da Safra (Forecast)
+                </h4>
+                <div class="h-64">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card p-6">
+                <h4 class="text-sm font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Share por Dispositivo
+                </h4>
+                <div class="h-64">
+                    <canvas id="deviceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela -->
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h4 class="text-sm font-bold text-gray-800">Planilha de Previsão Detalhada</h4>
+                <div class="flex gap-2">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase">Safra 2026</span>
+                </div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-[10px] font-black text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-white">
+                            <th class="px-6 py-4">Canal</th>
+                            <th class="px-6 py-4">Dispositivo</th>
+                            <th class="px-6 py-4 text-center">JAN</th>
+                            <th class="px-6 py-4 text-center">FEV</th>
+                            <th class="px-6 py-4 text-center">MAR</th>
+                            <th class="px-6 py-4 text-center">ABR</th>
+                            <th class="px-6 py-4 text-center">MAI</th>
+                            <th class="px-6 py-4 text-center">JUN</th>
+                            <th class="px-6 py-4 text-center">JUL</th>
+                            <th class="px-6 py-4 text-center">AGO</th>
+                            <th class="px-6 py-4 text-center">SET</th>
+                            <th class="px-6 py-4 text-center">OUT</th>
+                            <th class="px-6 py-4 text-center">NOV</th>
+                            <th class="px-6 py-4 text-center">DEZ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-gray-50 bg-white">
+                        <!-- Gerado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-10 opacity-30">
+        <p class="text-[10px] font-black uppercase tracking-[0.3em]">Meli Forecast System &bull; 2026 Strategy</p>
+    </footer>
+
+    <script>
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-J2Uo8cl9qgquEWVvHWir1kn8a9ZfJMBnp6TaZBkAwRiG0P17DM-8Hpu5yhVDmolgzlvJXnd9KZ0f/pub?gid=417844394&single=true&output=csv";
+
+        // Mock dos dados fornecidos pelo usuário para o preview
+        const DEMO_DATA = [
+            { CANAL_DEVICE: 'APP MP', POINT_DEVICE: 'AIR', '202601': 5016, '202602': 4976, '202603': 5097, '202604': 4746, '202605': 4345, '202606': 4349, '202607': 4435, '202608': 4705, '202609': 4816, '202610': 4582, '202611': 4946, '202612': 4901 },
+            { CANAL_DEVICE: 'APP MP', POINT_DEVICE: 'MINI', '202601': 5685, '202602': 5640, '202603': 5607, '202604': 5801, '202605': 5735, '202606': 5393, '202607': 5499, '202608': 5835, '202609': 5972, '202610': 5682, '202611': 6133, '202612': 6665 },
+            { CANAL_DEVICE: 'APP MP', POINT_DEVICE: 'PRO', '202601': 5852, '202602': 5805, '202603': 5947, '202604': 6152, '202605': 5909, '202606': 5915, '202607': 6032, '202608': 6399, '202609': 6742, '202610': 6415, '202611': 6925, '202612': 6861 },
+            { CANAL_DEVICE: 'APP MP', POINT_DEVICE: 'SMART', '202601': 5518, '202602': 5474, '202603': 5607, '202604': 5801, '202605': 5735, '202606': 5741, '202607': 5854, '202608': 6211, '202609': 6357, '202610': 6048, '202611': 6529, '202612': 6469 },
+            { CANAL_DEVICE: 'FDV Propria', POINT_DEVICE: 'SMART', '202601': 10823, '202602': 10581, '202603': 14002, '202604': 13153, '202605': 13732, '202606': 14511, '202607': 15392, '202608': 15575, '202609': 15664, '202610': 15747, '202611': 14268, '202612': 13473 }
+        ];
+
+        let forecastChart = null;
+        let deviceChart = null;
+
+        async function fetchData() {
+            const loading = document.getElementById('loading');
+            const notice = document.getElementById('cors-notice');
+            loading.style.display = 'flex';
+            notice.classList.add('hidden');
+
+            try {
+                const response = await fetch(CSV_URL, { cache: 'no-store' });
+                if (!response.ok) throw new Error("CORS/Connection Error");
+                
+                const csvText = await response.text();
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    dynamicTyping: true,
+                    complete: function(results) {
+                        if (results.data.length > 0) renderDashboard(results.data, "REAL");
+                        else useDemoData();
+                    },
+                    error: () => useDemoData()
+                });
+            } catch (err) {
+                console.warn("Utilizando dados de demonstração.");
+                notice.classList.remove('hidden');
+                useDemoData();
+            } finally {
+                setTimeout(() => { loading.style.display = 'none'; }, 600);
+            }
+        }
+
+        function useDemoData() {
+            renderDashboard(DEMO_DATA, "DEMO");
+        }
+
+        function renderDashboard(data, type) {
+            // Identificar colunas de data (Ex: 202601)
+            const allKeys = Object.keys(data[0]);
+            const dateKeys = allKeys.filter(k => /^\d{6}$/.test(k)).sort();
+            
+            // 1. Processar KPIs
+            let totalQty = 0;
+            const deviceMap = {};
+            const monthlyTotals = {};
+
+            data.forEach(row => {
+                const device = row.POINT_DEVICE || 'Outros';
+                dateKeys.forEach(date => {
+                    const val = parseFloat(String(row[date] || 0).replace(',', '.'));
+                    totalQty += val;
+                    deviceMap[device] = (deviceMap[device] || 0) + val;
+                    monthlyTotals[date] = (monthlyTotals[date] || 0) + val;
+                });
+            });
+
+            // Update UI KPIs
+            document.getElementById('total-qty').innerText = Math.round(totalQty).toLocaleString('pt-BR');
+            document.getElementById('avg-monthly').innerText = Math.round(totalQty / dateKeys.length).toLocaleString('pt-BR');
+            
+            const topDevEntry = Object.entries(deviceMap).sort((a,b) => b[1] - a[1])[0];
+            document.getElementById('top-device').innerText = topDevEntry[0];
+            document.getElementById('top-device-val').innerText = Math.round(topDevEntry[1]).toLocaleString('pt-BR') + " un.";
+
+            document.getElementById('sync-status').innerText = type === "REAL" ? "Ativo" : "Preview";
+            const sourceBadge = document.getElementById('data-source');
+            sourceBadge.innerText = type;
+            sourceBadge.className = `status-badge ${type === "REAL" ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`;
+
+            // 2. Gráficos
+            updateCharts(dateKeys, monthlyTotals, deviceMap);
+            
+            // 3. Tabela
+            updateTable(data, dateKeys);
+            
+            // Status Header
+            document.getElementById('status-dot').className = `w-1.5 h-1.5 rounded-full ${type === "REAL" ? 'bg-green-500 animate-pulse' : 'bg-orange-400'}`;
+            document.getElementById('status-text').innerText = type === "REAL" ? "Online" : "Mockup";
+        }
+
+        function updateCharts(dates, monthlyMap, devices) {
+            // Line Chart
+            if (forecastChart) forecastChart.destroy();
+            forecastChart = new Chart(document.getElementById('forecastChart'), {
+                type: 'line',
+                data: {
+                    labels: dates.map(d => d.substring(4) + '/' + d.substring(2,4)),
+                    datasets: [{
+                        label: 'Total Forecast',
+                        data: dates.map(d => monthlyMap[d]),
+                        borderColor: '#3483FA',
+                        backgroundColor: 'rgba(52, 131, 250, 0.05)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: false, grid: { color: '#f0f0f0' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Doughnut Chart
+            if (deviceChart) deviceChart.destroy();
+            deviceChart = new Chart(document.getElementById('deviceChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(devices),
+                    datasets: [{
+                        data: Object.values(devices),
+                        backgroundColor: ['#3483FA', '#00A650', '#FF7733', '#F2C12E', '#9B51E0'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10, weight: '700' } } } },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        function updateTable(data, dates) {
+            const body = document.getElementById('table-body');
+            body.innerHTML = '';
+            
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition-colors";
+                
+                let cells = `
+                    <td class="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase">${row.CANAL_DEVICE || '-'}</td>
+                    <td class="px-6 py-4 text-xs font-black text-gray-800">${row.POINT_DEVICE || '-'}</td>
+                `;
+
+                dates.forEach(d => {
+                    const val = Math.round(row[d] || 0);
+                    cells += `<td class="px-2 py-4 text-center text-[11px] font-medium text-gray-600">${val.toLocaleString('pt-BR')}</td>`;
+                });
+
+                tr.innerHTML = cells;
+                body.appendChild(tr);
+            });
+        }
+
+        window.onload = () => {
+            lucide.createIcons();
+            fetchData();
+        };
+    </script>
+</body>
+</html>
