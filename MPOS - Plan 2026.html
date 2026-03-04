@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meli Forecast | Executive Cross-Data</title>
+    <title>MPOS Analytics | Executive Cross-Data</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -44,7 +44,7 @@
 
     <div id="loading" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <div class="spinner mb-6"></div>
-        <h2 class="text-xl font-black text-gray-800 tracking-tight">Processando Cross-Data Engine</h2>
+        <h2 class="text-xl font-black text-gray-800 tracking-tight">Iniciando MPOS Analytics...</h2>
         <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Sincronizando Plano & Realizado</p>
     </div>
 
@@ -55,7 +55,7 @@
                     <i data-lucide="bar-chart-2" class="text-white w-6 h-6"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-black text-gray-900 leading-none tracking-tight">Executive <span class="text-blue-600">Analytics</span></h1>
+                    <h1 class="text-2xl font-black text-gray-900 leading-none tracking-tight">MPOS <span class="text-blue-600">Analytics</span></h1>
                     <p class="text-[10px] font-black text-gray-600 uppercase mt-1 tracking-widest">Plano vs Realizado</p>
                 </div>
             </div>
@@ -219,6 +219,9 @@
         const URL_PLAN = "dados.json"; 
         const URL_ACTUAL = "realizado.json";
 
+        const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
+
         let db = { PLAN: [], ACTUAL: [] };
         let scenarioList = []; 
         let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" } };
@@ -235,26 +238,50 @@
             return parseFloat(s.replace(',', '.')) || 0;
         }
 
+        // AUTO-CONVERSOR DE MESES (Ex: 2025-Jan vira 202501)
+        function standardizeMonth(val) {
+            let v = String(val).trim();
+            if (/^\d{6}$/.test(v)) return v; 
+            let match = v.match(/^(\d{4})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i);
+            if (match) {
+                let m = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+                return match[1] + EN_TO_NUM[m];
+            }
+            return v;
+        }
+
+        // ESCUDO DE PROTEÇÃO E CONVERSÃO
         function normalizeData(data) {
             if (!data || data.length === 0) return [];
             const firstRow = data[0];
             const vals = Object.values(firstRow).map(String);
-            const isHeaderRow = vals.some(v => /^\d{6}$/.test(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
             
+            const isHeaderRow = vals.some(v => /^\d{6}$/.test(v) || /^\d{4}-[A-Za-z]{3}$/.test(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
+            
+            let mappedData = [];
             if (isHeaderRow) {
-                const mappedData = [];
                 for (let i = 1; i < data.length; i++) {
                     let obj = {};
                     for (let k in data[i]) {
                         if (k === 'row_number') continue;
                         let realKey = firstRow[k]; 
-                        if (realKey && String(realKey).trim() !== "") obj[String(realKey)] = data[i][k];
+                        if (realKey && String(realKey).trim() !== "") {
+                            obj[standardizeMonth(realKey)] = data[i][k];
+                        }
                     }
                     mappedData.push(obj);
                 }
-                return mappedData;
+            } else {
+                for (let i = 0; i < data.length; i++) {
+                    let obj = {};
+                    for (let k in data[i]) {
+                        if (k === 'row_number') continue;
+                        obj[standardizeMonth(k)] = data[i][k];
+                    }
+                    mappedData.push(obj);
+                }
             }
-            return data;
+            return mappedData;
         }
 
         async function boot() {
@@ -283,7 +310,7 @@
             }
         }
 
-        // AUTO-DETECT 100% BLINDADO
+        // DETECÇÃO AUTOMÁTICA BLINDADA
         function detectStructure() {
             scenarioList = [];
             ['PLAN', 'ACTUAL'].forEach(type => {
@@ -294,9 +321,8 @@
                 
                 cols[type].canal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
                 
-                // Exclui obrigatoriamente a coluna Canal antes de buscar o Device
                 const possibleDevices = textKeys.filter(k => k !== cols[type].canal);
-                cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
+                cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
 
                 let months = new Set();
                 db[type].forEach(row => {
@@ -313,7 +339,6 @@
             });
         }
 
-        // Monta os seletores dinamicamente (Ano/Cenário -> Mês)
         function handleTypeChange() {
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
             const selectScA = document.getElementById('scenario-a');
@@ -322,11 +347,9 @@
             const monthB = document.getElementById('month-b');
 
             if (compType === 'YEAR') {
-                monthA.style.display = 'none';
-                monthB.style.display = 'none';
+                monthA.style.display = 'none'; monthB.style.display = 'none';
             } else {
-                monthA.style.display = 'block';
-                monthB.style.display = 'block';
+                monthA.style.display = 'block'; monthB.style.display = 'block';
             }
 
             let htmlA = '', htmlB = '';
@@ -344,7 +367,6 @@
             selectScA.innerHTML = htmlA;
             selectScB.innerHTML = htmlB;
 
-            // Define Defaults Lógicos
             if(scenarioList.length > 0) {
                 const actuals = scenarioList.filter(s => s.type === 'ACTUAL');
                 const plans = scenarioList.filter(s => s.type === 'PLAN');
@@ -370,9 +392,7 @@
             const scenario = scenarioList.find(s => s.id === scSelect.value);
             if (scenario) {
                 moSelect.innerHTML = scenario.months.map(m => `<option value="${m}">${m}</option>`).join('');
-                if (scenario.months.length > 0) {
-                    moSelect.value = scenario.months[scenario.months.length - 1]; // Pega o último mês por padrão
-                }
+                if (scenario.months.length > 0) moSelect.value = scenario.months[scenario.months.length - 1];
             }
             if (runProcess) processDashboard();
         }
@@ -444,7 +464,13 @@
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
 
             updateKPIs(dataA.total, dataB.total, nameA, nameB);
-            generateGeminiAI(dataA, dataB, nameA, nameB);
+            
+            const prefixB = typeB === 'PLAN' ? 'O Plano' : 'O Realizado';
+            const prefixA = typeA === 'PLAN' ? 'ao Plano' : 'ao Realizado';
+            const aiStrB = compType === 'YEAR' ? `${prefixB} de ${yearB}` : `${prefixB} ${yearB} de ${PT_MONTHS[parseInt(moB.value)-1]}`;
+            const aiStrA = compType === 'YEAR' ? `${prefixA} de ${yearA}` : `${prefixA} ${yearA} de ${PT_MONTHS[parseInt(moA.value)-1]}`;
+            generateGeminiAI(dataA, dataB, aiStrA, aiStrB);
+
             drawBarChart(dataA.byCanal, dataB.byCanal, nameA, nameB);
             drawTimelineChart(typeA, yearA, moA.value, typeB, yearB, moB.value, nameA, nameB, filterCanal, filterDevice, compType);
             drawTable(dataA, dataB, nameA, nameB);
@@ -453,13 +479,13 @@
         function updateKPIs(valA, valB, nameA, nameB) {
             document.getElementById('label-kpi-a').innerText = nameA;
             document.getElementById('label-kpi-b').innerText = nameB;
-            document.getElementById('val-kpi-a').innerText = Math.round(valA).toLocaleString('pt-PT');
-            document.getElementById('val-kpi-b').innerText = Math.round(valB).toLocaleString('pt-PT');
+            document.getElementById('val-kpi-a').innerText = Math.round(valA).toLocaleString('pt-BR');
+            document.getElementById('val-kpi-b').innerText = Math.round(valB).toLocaleString('pt-BR');
 
             const deltaAbs = valB - valA;
             const deltaPct = valA > 0 ? (deltaAbs / valA) * 100 : (valB > 0 ? 100 : 0);
 
-            document.getElementById('val-delta-abs').innerText = (deltaAbs > 0 ? '+' : '') + Math.round(deltaAbs).toLocaleString('pt-PT');
+            document.getElementById('val-delta-abs').innerText = (deltaAbs > 0 ? '+' : '') + Math.round(deltaAbs).toLocaleString('pt-BR');
             document.getElementById('val-delta-pct').innerText = deltaPct.toFixed(1) + '%';
 
             const cardPct = document.getElementById('card-delta-pct');
@@ -481,8 +507,8 @@
             lucide.createIcons();
         }
 
-        // IA GEMINI - REGRA DE 80% DA VARIAÇÃO
-        function generateGeminiAI(dataA, dataB, nameA, nameB) {
+        // IA GEMINI - REGRA DE 85% 
+        function generateGeminiAI(dataA, dataB, aiStrA, aiStrB) {
             const container = document.getElementById('ai-text');
             const targetDiff = dataB.total - dataA.total;
             const deltaPct = dataA.total > 0 ? (targetDiff / dataA.total) * 100 : 0;
@@ -493,7 +519,7 @@
             }
 
             if (targetDiff === 0) {
-                container.innerHTML = `<p>O cenário apresentou <strong>estabilidade absoluta</strong>, mantendo o exato mesmo volume de ${Math.round(dataA.total).toLocaleString('pt-PT')} dispositivos em ambos os períodos analisados.</p>`;
+                container.innerHTML = `<p>${aiStrB} frente ${aiStrA} apresentou <strong>estabilidade absoluta</strong>, mantendo o exato mesmo volume de ${Math.round(dataA.total).toLocaleString('pt-BR')} dispositivos.</p>`;
                 return;
             }
 
@@ -513,23 +539,31 @@
             for (let i = 0; i < contributors.length; i++) {
                 let c = contributors[i];
                 explained += c.diff;
-                let pctOfVariance = (c.diff / targetDiff) * 100;
                 
-                let textPart = `<strong class="text-gray-900">${c.name}</strong>, que sozinho representou <strong>${pctOfVariance.toFixed(1)}% da variação</strong> (${c.diff > 0 ? '+' : ''}${Math.round(c.diff).toLocaleString('pt-PT')} un.)`;
+                let vA = dataA.byCanal[c.name] || 0;
+                let vB = dataB.byCanal[c.name] || 0;
+                let cPct = vA > 0 ? (c.diff / vA) * 100 : (vB > 0 ? 100 : 0);
+                
+                let pctStr = cPct > 0 ? `+${cPct.toFixed(1)}%` : `${cPct.toFixed(1)}%`;
+                let absStr = c.diff > 0 ? `+${Math.round(c.diff).toLocaleString('pt-BR')}` : Math.round(c.diff).toLocaleString('pt-BR');
+                
+                let textPart = `o canal ${c.name}, com <strong class="text-gray-900">${absStr} unidades</strong> (${pctStr} vs cenário base)`;
                 driversText.push(textPart);
 
-                if ((explained / targetDiff) >= 0.80) break; // Trava de 80% atingida
+                if ((explained / targetDiff) >= 0.85) break; 
             }
 
-            let text = `<p>Ao comparar <strong>${nameB}</strong> frente a <strong>${nameA}</strong>, o cenário aponta para uma `;
-            text += isGrowth ? `<span class="text-green-600 font-bold">expansão de +${deltaPct.toFixed(1)}%</span> (+${Math.round(targetDiff).toLocaleString('pt-PT')} un.). ` : `<span class="text-red-600 font-bold">retração de ${deltaPct.toFixed(1)}%</span> (${Math.round(targetDiff).toLocaleString('pt-PT')} un.). `;
+            let text = `<p>${aiStrB} frente ${aiStrA}, aponta para uma `;
+            text += isGrowth ? `<span class="text-green-600 font-bold">expansão de +${deltaPct.toFixed(1)}%</span> (+${Math.round(targetDiff).toLocaleString('pt-BR')} un.). ` : `<span class="text-red-600 font-bold">retração de ${deltaPct.toFixed(1)}%</span> (${Math.round(targetDiff).toLocaleString('pt-BR')} un.). `;
             
             if (driversText.length > 0) {
-                text += `O canal que mais impulsionou este movimento foi ${driversText[0]}`;
+                text += `A principal contribuição para este movimento veio de ${driversText[0]}`;
                 if (driversText.length > 1) {
-                    text += `, seguido por ${driversText.slice(1).join(' e por ')}`;
+                    let last = driversText.pop();
+                    if(driversText.length > 0) text += `, seguido por ${driversText.join(', ')}`;
+                    text += ` e por ${last}`;
                 }
-                text += `. Juntos, estes canais explicam a maior parte da flutuação observada no período.</p>`;
+                text += `.</p>`;
             }
 
             container.innerHTML = text;
@@ -556,7 +590,6 @@
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
                         legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' } } },
-                        // Rótulo Dinâmico com Delta % em cima da Barra B
                         datalabels: {
                             display: function(context) { return context.datasetIndex === 1; },
                             align: 'top', anchor: 'end', offset: 2,
@@ -634,7 +667,7 @@
                                 label: function(context) {
                                     let label = context.dataset.label || '';
                                     if (label) label += ': ';
-                                    if (context.parsed.y !== null) label += context.parsed.y.toLocaleString('pt-PT') + ' un.';
+                                    if (context.parsed.y !== null) label += context.parsed.y.toLocaleString('pt-BR') + ' un.';
                                     return label;
                                 }
                             }
@@ -675,10 +708,10 @@
                 html += `
                     <tr class="border-b border-gray-100 hover:bg-blue-50/50 cursor-pointer transition-colors group" onclick="toggleDrilldown('drill-${idx}')">
                         <td class="p-4 flex items-center gap-2 font-black text-xs text-gray-800"><i data-lucide="chevron-right" id="icon-drill-${idx}" class="w-4 h-4 text-blue-500 transition-transform"></i>${canal}</td>
-                        <td class="p-4 text-xs font-semibold text-gray-500">${Math.round(valA).toLocaleString('pt-PT')}</td>
-                        <td class="p-4 text-xs font-black text-blue-600">${Math.round(valB).toLocaleString('pt-PT')}</td>
+                        <td class="p-4 text-xs font-semibold text-gray-500">${Math.round(valA).toLocaleString('pt-BR')}</td>
+                        <td class="p-4 text-xs font-black text-blue-600">${Math.round(valB).toLocaleString('pt-BR')}</td>
                         <td class="p-4 text-xs font-bold ${pctColor} bg-gray-50/30">${absSign}${deltaPct.toFixed(1)}%</td>
-                        <td class="p-4 text-xs font-semibold ${pctColor} bg-gray-50/30">${absSign}${Math.round(deltaAbs).toLocaleString('pt-PT')}</td>
+                        <td class="p-4 text-xs font-semibold ${pctColor} bg-gray-50/30">${absSign}${Math.round(deltaAbs).toLocaleString('pt-BR')}</td>
                     </tr>
                 `;
 
@@ -698,10 +731,10 @@
                     html += `
                         <tr class="drill-${idx} hidden bg-gray-50 border-b border-white">
                             <td class="p-3 pl-12 text-[11px] font-bold text-gray-600 flex items-center gap-2 border-l-2 border-l-blue-200"><i data-lucide="smartphone" class="w-3 h-3 text-gray-400"></i> ${dev}</td>
-                            <td class="p-3 text-[11px] text-gray-500">${Math.round(dValA).toLocaleString('pt-PT')}</td>
-                            <td class="p-3 text-[11px] font-bold text-gray-700">${Math.round(dValB).toLocaleString('pt-PT')}</td>
+                            <td class="p-3 text-[11px] text-gray-500">${Math.round(dValA).toLocaleString('pt-BR')}</td>
+                            <td class="p-3 text-[11px] font-bold text-gray-700">${Math.round(dValB).toLocaleString('pt-BR')}</td>
                             <td class="p-3 text-[11px] font-bold ${dPctColor}">${dAbsSign}${dDeltaPct.toFixed(1)}%</td>
-                            <td class="p-3 text-[11px] text-gray-500">${dAbsSign}${Math.round(dDeltaAbs).toLocaleString('pt-PT')}</td>
+                            <td class="p-3 text-[11px] text-gray-500">${dAbsSign}${Math.round(dDeltaAbs).toLocaleString('pt-BR')}</td>
                         </tr>
                     `;
                 });
@@ -709,12 +742,11 @@
 
             tbody.innerHTML = html;
             
-            // Renderiza o Total Geral do Rodapé
             const totalAbs = dataB.total - dataA.total;
             const totalPct = dataA.total > 0 ? (totalAbs / dataA.total) * 100 : (dataB.total > 0 ? 100 : 0);
-            document.getElementById('total-table-a').innerText = Math.round(dataA.total).toLocaleString('pt-PT');
-            document.getElementById('total-table-b').innerText = Math.round(dataB.total).toLocaleString('pt-PT');
-            document.getElementById('total-table-abs').innerText = (totalAbs > 0 ? '+' : '') + Math.round(totalAbs).toLocaleString('pt-PT');
+            document.getElementById('total-table-a').innerText = Math.round(dataA.total).toLocaleString('pt-BR');
+            document.getElementById('total-table-b').innerText = Math.round(dataB.total).toLocaleString('pt-BR');
+            document.getElementById('total-table-abs').innerText = (totalAbs > 0 ? '+' : '') + Math.round(totalAbs).toLocaleString('pt-BR');
             document.getElementById('total-table-pct').innerText = (totalAbs > 0 ? '+' : '') + totalPct.toFixed(1) + '%';
             
             const pctClass = totalPct > 0 ? 'text-green-600' : (totalPct < 0 ? 'text-red-600' : 'text-gray-500');
