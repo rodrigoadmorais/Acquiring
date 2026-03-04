@@ -226,7 +226,6 @@
         let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" } };
         let timelineChart, barChart;
         
-        // Memória para exportação
         window.currentExportData = null;
 
         function formatBRPct(num) { return num.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '%'; }
@@ -360,8 +359,8 @@
                 const actuals = scenarioList.filter(s => s.type === 'ACTUAL');
                 const plans = scenarioList.filter(s => s.type === 'PLAN');
                 if (actuals.length > 0 && plans.length > 0) {
-                    selectScA.value = plans[0].id; // Plan in A by default
-                    selectScB.value = actuals[actuals.length - 1].id; // Actual in B by default
+                    selectScA.value = plans[0].id; 
+                    selectScB.value = actuals[actuals.length - 1].id; 
                 } else {
                     selectScA.value = scenarioList[0].id;
                     selectScB.value = scenarioList[scenarioList.length - 1].id;
@@ -735,7 +734,6 @@
                 const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
                 const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
                 
-                // Exportando inteiros limpos para evitar conflito de milhar no Excel
                 csvContent += `${canal};TOTAL CANAL;${Math.round(cA)};${Math.round(cB)};${cPct.toFixed(1).replace('.',',')}%;${Math.round(cAbs)}\n`;
 
                 const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
@@ -749,7 +747,6 @@
                 });
             });
 
-            // \uFEFF força o BOM UTF-8 (mantém os acentos perfeitos no Excel pt-BR)
             const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -760,7 +757,7 @@
             document.body.removeChild(link);
         }
 
-        // MOTOR DE INTELIGÊNCIA EXECUTIVA
+        // RELATÓRIO EXECUTIVO CORRIGIDO 
         function generateExecutiveReport() {
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
             if (compType !== 'MONTH') {
@@ -768,11 +765,11 @@
                 return;
             }
 
-            // Acha inteligentemente onde está a base REALIZADO nas caixinhas A/B
             let yearTarget, monthTarget;
             const [typeA, yA] = document.getElementById('scenario-a').value.split('|');
             const [typeB, yB] = document.getElementById('scenario-b').value.split('|');
             
+            // Procura quem é o Realizado para ser o alvo do relatório
             if (typeB === 'ACTUAL') {
                 yearTarget = yB;
                 monthTarget = document.getElementById('month-b').value;
@@ -780,13 +777,13 @@
                 yearTarget = yA;
                 monthTarget = document.getElementById('month-a').value;
             } else {
-                alert("Para gerar a Visão Executiva, pelo menos um dos cenários selecionados precisa ser da base Realizado (ACTUAL).");
+                alert("Para gerar a Visão Executiva, pelo menos um dos cenários selecionados precisa ser o Realizado.");
                 return;
             }
             
             const currentYM = `${yearTarget}${monthTarget}`;
             
-            // Máquina do Tempo (Calcula Mês Anterior e Ano Anterior)
+            // Matemática da Linha do Tempo
             let prevMoM_YM = "";
             let mInt = parseInt(monthTarget);
             if (mInt === 1) prevMoM_YM = `${parseInt(yearTarget)-1}12`;
@@ -802,12 +799,12 @@
             const tituloMes = `${PT_MONTHS[parseInt(monthTarget)-1]} / ${yearTarget}`;
 
             function getVarHTML(val, base) {
-                if(base===0 && val===0) return `<span style="color:#6b7280; font-weight:bold;">-</span>`;
-                if(base===0) return `<span style="color:#16a34a; font-weight:bold;">+100,0%</span>`;
+                if(base===0 && val===0) return `<span style="color:#6b7280;">-</span>`;
+                if(base===0) return `<span style="color:#16a34a;">+100,0%</span>`;
                 let pct = ((val-base)/base)*100;
                 let color = pct > 0 ? '#16a34a' : (pct < 0 ? '#dc2626' : '#6b7280');
                 let sign = pct > 0 ? '+' : '';
-                return `<span style="color:${color}; font-weight:bold;">${sign}${pct.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}%</span>`;
+                return `<span style="color:${color};">${sign}${pct.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}%</span>`;
             }
 
             let html = `
@@ -815,38 +812,50 @@
             <head>
                 <title>Relatório Executivo - ${tituloMes}</title>
                 <style>
-                    body { font-family: 'Arial', sans-serif; color: #333; margin: 40px; font-size: 13px; line-height: 1.6; }
-                    h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 5px; }
-                    .subtitle { font-size: 11px; color: #6b7280; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
-                    h2 { color: #1f2937; margin-top: 30px; font-size: 16px; border-left: 4px solid #3b82f6; padding-left: 10px; }
+                    body { font-family: 'Arial', sans-serif; color: #333; margin: 0; background: #f9fafb; padding: 20px; }
+                    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+                    h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 5px; font-size: 24px; }
+                    .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
+                    h2 { color: #1f2937; margin-top: 30px; font-size: 18px; border-left: 4px solid #3b82f6; padding-left: 10px; }
                     .kpi-box { display: flex; gap: 15px; margin-top: 15px; }
-                    .kpi { background: #f3f4f6; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #e5e7eb; }
-                    .kpi span { display: block; font-size: 10px; text-transform: uppercase; color: #6b7280; font-weight: bold; margin-bottom: 5px; }
-                    .kpi strong { font-size: 20px; color: #111827; }
-                    .comment { background: #eff6ff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2563eb; color: #1e40af; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-                    th, td { padding: 10px; text-align: right; border-bottom: 1px solid #e5e7eb; }
-                    th { background: #f9fafb; font-size: 10px; text-transform: uppercase; color: #4b5563; }
+                    .kpi { background: #f3f4f6; padding: 20px 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #e5e7eb; }
+                    .kpi-label { display: block; font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: bold; margin-bottom: 8px; }
+                    .kpi-val { font-size: 24px; color: #111827; font-weight: 900; }
+                    .comment { background: #eff6ff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2563eb; color: #1e40af; font-size: 14px; line-height: 1.6; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+                    th, td { padding: 12px 10px; text-align: right; border-bottom: 1px solid #e5e7eb; }
+                    th { background: #f9fafb; font-size: 11px; text-transform: uppercase; color: #4b5563; }
                     th:first-child, td:first-child { text-align: left; }
                     .page-break { page-break-after: always; }
+                    
+                    /* Estilo do Botão Flutuante que Some na Impressão */
+                    .no-print-btn { display: block; width: fit-content; margin: 0 auto 30px auto; padding: 12px 24px; background: #4f46e5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; text-decoration: none; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
+                    .no-print-btn:hover { background: #4338ca; transform: scale(0.98); }
+                    @media print {
+                        body { background: white; margin: 0; padding: 0; }
+                        .container { box-shadow: none; padding: 0; max-width: 100%; }
+                        .no-print-btn { display: none !important; }
+                    }
                 </style>
             </head>
-            <body onload="setTimeout(() => window.print(), 500)">
-                <h1>MPOS Analytics: Visão Executiva</h1>
-                <div class="subtitle">Cenário Analisado: Realizado de ${tituloMes}</div>
+            <body>
+                <button class="no-print-btn" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
+                <div class="container">
+                    <h1>MPOS Analytics: Visão Executiva</h1>
+                    <div class="subtitle">Cenário Analisado: Realizado de ${tituloMes}</div>
 
-                <h2>Visão Geral do Negócio</h2>
-                <div class="kpi-box">
-                    <div class="kpi"><span>Volume Total</span><strong>${formatBRNum(dTarget.total)}</strong></div>
-                    <div class="kpi"><span>vs. Plano (Mesmo Mês)</span><strong>${getVarHTML(dTarget.total, dPlan.total)}</strong></div>
-                    <div class="kpi"><span>vs. Mês Anterior (MoM)</span><strong>${getVarHTML(dTarget.total, dMoM.total)}</strong></div>
-                    <div class="kpi"><span>vs. Ano Anterior (YoY)</span><strong>${getVarHTML(dTarget.total, dYoY.total)}</strong></div>
-                </div>
-                <div class="comment">
-                    <p>O volume consolidado atingiu <strong>${formatBRNum(dTarget.total)} dispositivos</strong>. 
-                    Comparado ao Plano projetado para este mês, o resultado representa uma variação de ${getVarHTML(dTarget.total, dPlan.total)} (${formatBRNum(dTarget.total - dPlan.total)} un.). 
-                    Na visão sequencial (Mês sobre Mês), o movimento foi de ${getVarHTML(dTarget.total, dMoM.total)}, enquanto a variação histórica (Ano contra Ano) fechou em ${getVarHTML(dTarget.total, dYoY.total)}.</p>
-                </div>
+                    <h2>Visão Geral do Negócio</h2>
+                    <div class="kpi-box">
+                        <div class="kpi"><span class="kpi-label">Volume Total</span><div class="kpi-val">${formatBRNum(dTarget.total)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. Plano (Mesmo Mês)</span><div class="kpi-val">${getVarHTML(dTarget.total, dPlan.total)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. Mês Anterior (MoM)</span><div class="kpi-val">${getVarHTML(dTarget.total, dMoM.total)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. Ano Anterior (YoY)</span><div class="kpi-val">${getVarHTML(dTarget.total, dYoY.total)}</div></div>
+                    </div>
+                    <div class="comment">
+                        <p>O volume consolidado atingiu <strong>${formatBRNum(dTarget.total)} dispositivos</strong>. 
+                        Comparado ao Plano projetado para este mês, o resultado representa uma variação de <strong>${getVarHTML(dTarget.total, dPlan.total)}</strong> (${formatBRNum(dTarget.total - dPlan.total)} un.). 
+                        Na visão sequencial (Mês sobre Mês), o movimento foi de <strong>${getVarHTML(dTarget.total, dMoM.total)}</strong>, enquanto a variação histórica (Ano contra Ano) fechou em <strong>${getVarHTML(dTarget.total, dYoY.total)}</strong>.</p>
+                    </div>
             `;
 
             const allCanals = Array.from(new Set([...Object.keys(dTarget.byCanal)]));
@@ -864,14 +873,14 @@
                 <div style="page-break-inside: avoid;">
                     <h2>Canal: ${canal}</h2>
                     <div class="kpi-box">
-                        <div class="kpi"><span>Volume</span><strong>${formatBRNum(cT)}</strong></div>
-                        <div class="kpi"><span>vs. Plano</span><strong>${getVarHTML(cT, cP)}</strong></div>
-                        <div class="kpi"><span>vs. MoM</span><strong>${getVarHTML(cT, cM)}</strong></div>
-                        <div class="kpi"><span>vs. YoY</span><strong>${getVarHTML(cT, cY)}</strong></div>
+                        <div class="kpi"><span class="kpi-label">Volume</span><div class="kpi-val">${formatBRNum(cT)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. Plano</span><div class="kpi-val">${getVarHTML(cT, cP)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. MoM</span><div class="kpi-val">${getVarHTML(cT, cM)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. YoY</span><div class="kpi-val">${getVarHTML(cT, cY)}</div></div>
                     </div>
                     <div class="comment">
                         <p>O canal <strong>${canal}</strong> contribuiu com <strong>${formatBRNum(cT)} dispositivos</strong> no período. 
-                        Sua aderência frente ao plano foi de ${getVarHTML(cT, cP)}. Em comparação ao ritmo do mês anterior, a variação foi de ${getVarHTML(cT, cM)} e, frente ao ano passado, variou ${getVarHTML(cT, cY)}.</p>
+                        Sua aderência frente ao plano foi de <strong>${getVarHTML(cT, cP)}</strong>. Em comparação ao ritmo do mês anterior, a variação foi de <strong>${getVarHTML(cT, cM)}</strong> e, frente ao ano passado, variou <strong>${getVarHTML(cT, cY)}</strong>.</p>
                     </div>
                     <table>
                         <thead>
@@ -902,11 +911,11 @@
                     html += `
                             <tr>
                                 <td><strong>${dev}</strong></td>
-                                <td>${formatBRNum(dTV)}</td>
-                                <td style="color:${devAbsPlan > 0 ? '#16a34a' : (devAbsPlan < 0 ? '#dc2626' : '#6b7280')}">${sign}${formatBRNum(devAbsPlan)}</td>
-                                <td>${getVarHTML(dTV, dPV)}</td>
-                                <td>${getVarHTML(dTV, dMV)}</td>
-                                <td>${getVarHTML(dTV, dYV)}</td>
+                                <td><strong>${formatBRNum(dTV)}</strong></td>
+                                <td style="color:${devAbsPlan > 0 ? '#16a34a' : (devAbsPlan < 0 ? '#dc2626' : '#6b7280')}; font-weight:bold;">${sign}${formatBRNum(devAbsPlan)}</td>
+                                <td><strong>${getVarHTML(dTV, dPV)}</strong></td>
+                                <td><strong>${getVarHTML(dTV, dMV)}</strong></td>
+                                <td><strong>${getVarHTML(dTV, dYV)}</strong></td>
                             </tr>
                     `;
                 });
@@ -914,9 +923,8 @@
                 html += `</tbody></table></div>`;
             });
 
-            html += `</body></html>`;
+            html += `</div></body></html>`;
             
-            // Abre nova guia para impressão
             const printWindow = window.open('', '_blank');
             printWindow.document.write(html);
             printWindow.document.close();
