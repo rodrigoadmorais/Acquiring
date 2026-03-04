@@ -36,7 +36,6 @@
         
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
         .rotate-90 { transform: rotate(90deg); }
     </style>
 </head>
@@ -78,9 +77,14 @@
                 <select id="filter-canal" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
                 <select id="filter-device" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
             </div>
-            <button onclick="exportJoinedCSV()" class="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
-                <i data-lucide="download" class="w-4 h-4"></i> Exportar Visão
-            </button>
+            <div class="flex gap-3">
+                <button onclick="generateExecutiveReport()" class="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-indigo-700 transition-all active:scale-95">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> Visão Executiva (PDF)
+                </button>
+                <button onclick="exportJoinedCSV()" class="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
+                </button>
+            </div>
         </div>
 
         <div class="card overflow-hidden">
@@ -100,7 +104,6 @@
                 </div>
             </div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-white">
-                
                 <div class="space-y-2">
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
                     <div class="flex gap-2">
@@ -108,13 +111,11 @@
                         <select id="month-a" onchange="processDashboard()" class="w-24 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
                     </div>
                 </div>
-
                 <div class="flex justify-center pt-5">
                     <div class="bg-blue-50 p-3 rounded-full border border-blue-100 shadow-sm">
                         <i data-lucide="swords" class="w-6 h-6 text-blue-500"></i>
                     </div>
                 </div>
-
                 <div class="space-y-2">
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
                     <div class="flex gap-2">
@@ -122,7 +123,6 @@
                         <select id="month-b" onchange="processDashboard()" class="w-24 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -154,11 +154,10 @@
                 <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo gerado pelo Gemini
             </h4>
             <div id="ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2">
-                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
             <div class="card p-6 lg:col-span-2">
                 <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
                     <i data-lucide="line-chart" class="w-4 h-4 text-blue-500"></i> Evolução Focada (A vs B)
@@ -167,7 +166,6 @@
                     <canvas id="timelineChart"></canvas>
                 </div>
             </div>
-
             <div class="card p-6">
                 <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
                     <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i> Comparativo por Canal (Top 5)
@@ -197,7 +195,7 @@
                         </tr>
                     </thead>
                     <tbody id="drilldown-tbody" class="divide-y divide-gray-100 bg-white">
-                        </tbody>
+                    </tbody>
                     <tfoot class="bg-blue-50">
                         <tr class="border-t border-blue-200">
                             <td class="p-4 font-black text-xs text-gray-800 uppercase tracking-widest">Total Geral</td>
@@ -226,6 +224,12 @@
         let scenarioList = []; 
         let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" } };
         let timelineChart, barChart;
+        
+        // Memória global para o Botão de Exportação CSV
+        window.currentExportData = null;
+
+        function formatBRPct(num) { return num.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '%'; }
+        function formatBRNum(num) { return Math.round(num).toLocaleString('pt-BR'); }
 
         function parseNum(val) {
             if (!val || val === "0") return 0;
@@ -238,7 +242,6 @@
             return parseFloat(s.replace(',', '.')) || 0;
         }
 
-        // AUTO-CONVERSOR DE MESES (Ex: 2025-Jan vira 202501)
         function standardizeMonth(val) {
             let v = String(val).trim();
             if (/^\d{6}$/.test(v)) return v; 
@@ -250,12 +253,10 @@
             return v;
         }
 
-        // ESCUDO DE PROTEÇÃO E CONVERSÃO
         function normalizeData(data) {
             if (!data || data.length === 0) return [];
             const firstRow = data[0];
             const vals = Object.values(firstRow).map(String);
-            
             const isHeaderRow = vals.some(v => /^\d{6}$/.test(v) || /^\d{4}-[A-Za-z]{3}$/.test(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
             
             let mappedData = [];
@@ -265,9 +266,7 @@
                     for (let k in data[i]) {
                         if (k === 'row_number') continue;
                         let realKey = firstRow[k]; 
-                        if (realKey && String(realKey).trim() !== "") {
-                            obj[standardizeMonth(realKey)] = data[i][k];
-                        }
+                        if (realKey && String(realKey).trim() !== "") obj[standardizeMonth(realKey)] = data[i][k];
                     }
                     mappedData.push(obj);
                 }
@@ -291,9 +290,6 @@
                     fetch(`${URL_PLAN}?_=${Date.now()}`).catch(() => ({ ok: false })),
                     fetch(`${URL_ACTUAL}?_=${Date.now()}`).catch(() => ({ ok: false }))
                 ]);
-
-                if (!resPlan.ok && !resActual.ok) throw new Error("Falha total");
-
                 if (resPlan.ok) db.PLAN = normalizeData(await resPlan.json());
                 if (resActual.ok) db.ACTUAL = normalizeData(await resActual.json());
 
@@ -310,7 +306,6 @@
             }
         }
 
-        // DETECÇÃO AUTOMÁTICA BLINDADA
         function detectStructure() {
             scenarioList = [];
             ['PLAN', 'ACTUAL'].forEach(type => {
@@ -320,14 +315,11 @@
                 const textKeys = Object.keys(sample).filter(k => k !== "row_number" && !/^\d{6}$/.test(k));
                 
                 cols[type].canal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
-                
                 const possibleDevices = textKeys.filter(k => k !== cols[type].canal);
                 cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
 
                 let months = new Set();
-                db[type].forEach(row => {
-                    Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) months.add(k); });
-                });
+                db[type].forEach(row => { Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) months.add(k); }); });
                 
                 const sortedMonths = Array.from(months).sort();
                 const years = [...new Set(sortedMonths.map(m => m.substring(0,4)))];
@@ -346,11 +338,8 @@
             const monthA = document.getElementById('month-a');
             const monthB = document.getElementById('month-b');
 
-            if (compType === 'YEAR') {
-                monthA.style.display = 'none'; monthB.style.display = 'none';
-            } else {
-                monthA.style.display = 'block'; monthB.style.display = 'block';
-            }
+            monthA.style.display = compType === 'YEAR' ? 'none' : 'block';
+            monthB.style.display = compType === 'YEAR' ? 'none' : 'block';
 
             let htmlA = '', htmlB = '';
             ['PLAN', 'ACTUAL'].forEach(t => {
@@ -364,13 +353,11 @@
                 }
             });
 
-            selectScA.innerHTML = htmlA;
-            selectScB.innerHTML = htmlB;
+            selectScA.innerHTML = htmlA; selectScB.innerHTML = htmlB;
 
             if(scenarioList.length > 0) {
                 const actuals = scenarioList.filter(s => s.type === 'ACTUAL');
                 const plans = scenarioList.filter(s => s.type === 'PLAN');
-                
                 if (actuals.length > 0 && plans.length > 0) {
                     selectScA.value = actuals[actuals.length - 1].id;
                     selectScB.value = plans[0].id;
@@ -380,15 +367,13 @@
                 }
             }
 
-            handleScenarioChange('a', false);
-            handleScenarioChange('b', false);
+            handleScenarioChange('a', false); handleScenarioChange('b', false);
             processDashboard();
         }
 
         function handleScenarioChange(side, runProcess = true) {
             const scSelect = document.getElementById(`scenario-${side}`);
             const moSelect = document.getElementById(`month-${side}`);
-            
             const scenario = scenarioList.find(s => s.id === scSelect.value);
             if (scenario) {
                 moSelect.innerHTML = scenario.months.map(m => `<option value="${m}">${m}</option>`).join('');
@@ -398,41 +383,32 @@
         }
 
         function populateGlobalFilters() {
-            let allCanals = new Set();
-            let allDevices = new Set();
+            let allCanals = new Set(); let allDevices = new Set();
             ['PLAN', 'ACTUAL'].forEach(type => {
                 db[type].forEach(row => {
                     if(row[cols[type].canal]) allCanals.add(row[cols[type].canal]);
                     if(row[cols[type].device]) allDevices.add(row[cols[type].device]);
                 });
             });
-            const selCanal = document.getElementById('filter-canal');
-            const selDevice = document.getElementById('filter-device');
-            selCanal.innerHTML = '<option value="ALL">Todos os Canais</option>' + [...allCanals].sort().map(c => `<option value="${c}">${c}</option>`).join('');
-            selDevice.innerHTML = '<option value="ALL">Todos os Modelos</option>' + [...allDevices].sort().map(d => `<option value="${d}">${d}</option>`).join('');
+            document.getElementById('filter-canal').innerHTML = '<option value="ALL">Todos os Canais</option>' + [...allCanals].sort().map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('filter-device').innerHTML = '<option value="ALL">Todos os Modelos</option>' + [...allDevices].sort().map(d => `<option value="${d}">${d}</option>`).join('');
         }
 
         function extractValue(type, periodId, filterCanal, filterDevice) {
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type];
-            const colC = cols[type].canal;
-            const colD = cols[type].device;
+            const colC = cols[type].canal; const colD = cols[type].device;
 
             let total = 0; let byCanal = {}; let byDevice = {}; let byCanalDevice = {};
 
             data.forEach(row => {
-                const canal = row[colC] || 'Outros';
-                const device = row[colD] || 'Outros';
-
+                const canal = row[colC] || 'Outros'; const device = row[colD] || 'Outros';
                 if (filterCanal !== 'ALL' && canal !== filterCanal) return;
                 if (filterDevice !== 'ALL' && device !== filterDevice) return;
 
                 let rowSum = 0;
-                if(periodType === 'MONTH') {
-                    rowSum = parseNum(row[periodValue]);
-                } else if (periodType === 'YEAR') {
-                    Object.keys(row).forEach(k => { if(k.startsWith(periodValue)) rowSum += parseNum(row[k]); });
-                }
+                if(periodType === 'MONTH') rowSum = parseNum(row[periodValue]);
+                else if (periodType === 'YEAR') Object.keys(row).forEach(k => { if(k.startsWith(periodValue)) rowSum += parseNum(row[k]); });
 
                 total += rowSum;
                 byCanal[canal] = (byCanal[canal] || 0) + rowSum;
@@ -448,20 +424,21 @@
             const filterDevice = document.getElementById('filter-device').value;
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
 
-            const scA = document.getElementById('scenario-a');
-            const moA = document.getElementById('month-a');
+            const scA = document.getElementById('scenario-a'); const moA = document.getElementById('month-a');
             const [typeA, yearA] = scA.value.split('|');
             const periodA = compType === 'YEAR' ? `YEAR|${yearA}` : `MONTH|${yearA}${moA.value}`;
             const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${moA.value})`;
 
-            const scB = document.getElementById('scenario-b');
-            const moB = document.getElementById('month-b');
+            const scB = document.getElementById('scenario-b'); const moB = document.getElementById('month-b');
             const [typeB, yearB] = scB.value.split('|');
             const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `MONTH|${yearB}${moB.value}`;
             const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${moB.value})`;
 
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
+
+            // Grava na memória para exportação CSV
+            window.currentExportData = { dataA, dataB, nameA, nameB };
 
             updateKPIs(dataA.total, dataB.total, nameA, nameB);
             
@@ -479,18 +456,16 @@
         function updateKPIs(valA, valB, nameA, nameB) {
             document.getElementById('label-kpi-a').innerText = nameA;
             document.getElementById('label-kpi-b').innerText = nameB;
-            document.getElementById('val-kpi-a').innerText = Math.round(valA).toLocaleString('pt-BR');
-            document.getElementById('val-kpi-b').innerText = Math.round(valB).toLocaleString('pt-BR');
+            document.getElementById('val-kpi-a').innerText = formatBRNum(valA);
+            document.getElementById('val-kpi-b').innerText = formatBRNum(valB);
 
             const deltaAbs = valB - valA;
             const deltaPct = valA > 0 ? (deltaAbs / valA) * 100 : (valB > 0 ? 100 : 0);
 
-            document.getElementById('val-delta-abs').innerText = (deltaAbs > 0 ? '+' : '') + Math.round(deltaAbs).toLocaleString('pt-BR');
-            document.getElementById('val-delta-pct').innerText = deltaPct.toFixed(1) + '%';
+            document.getElementById('val-delta-abs').innerText = (deltaAbs > 0 ? '+' : '') + formatBRNum(deltaAbs);
+            document.getElementById('val-delta-pct').innerText = (deltaAbs > 0 ? '+' : '') + formatBRPct(deltaPct);
 
-            const cardPct = document.getElementById('card-delta-pct');
-            const iconPct = document.getElementById('icon-delta-pct');
-
+            const cardPct = document.getElementById('card-delta-pct'); const iconPct = document.getElementById('icon-delta-pct');
             if (deltaPct > 0) {
                 cardPct.className = "card p-6 border-b-4 border-b-green-500 bg-green-50/30 fade-in";
                 document.getElementById('val-delta-pct').className = "text-3xl font-black text-green-600";
@@ -507,46 +482,35 @@
             lucide.createIcons();
         }
 
-        // IA GEMINI - REGRA DE 85% 
         function generateGeminiAI(dataA, dataB, aiStrA, aiStrB) {
             const container = document.getElementById('ai-text');
             const targetDiff = dataB.total - dataA.total;
             const deltaPct = dataA.total > 0 ? (targetDiff / dataA.total) * 100 : 0;
             
             if(dataA.total === 0 && dataB.total === 0) {
-                container.innerHTML = "<p>Dados insuficientes para gerar insights neste recorte.</p>";
-                return;
+                container.innerHTML = "<p>Dados insuficientes para gerar insights neste recorte.</p>"; return;
             }
 
             if (targetDiff === 0) {
-                container.innerHTML = `<p>${aiStrB} frente ${aiStrA} apresentou <strong>estabilidade absoluta</strong>, mantendo o exato mesmo volume de ${Math.round(dataA.total).toLocaleString('pt-BR')} dispositivos.</p>`;
-                return;
+                container.innerHTML = `<p>${aiStrB} frente ${aiStrA} apresentou <strong>estabilidade absoluta</strong>, mantendo o exato mesmo volume de ${formatBRNum(dataA.total)} dispositivos.</p>`; return;
             }
 
             const isGrowth = targetDiff > 0;
             const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
-            
-            let diffs = allCanals.map(c => {
-                return { name: c, diff: (dataB.byCanal[c] || 0) - (dataA.byCanal[c] || 0) };
-            });
-
+            let diffs = allCanals.map(c => { return { name: c, diff: (dataB.byCanal[c] || 0) - (dataA.byCanal[c] || 0) }; });
             let contributors = diffs.filter(c => isGrowth ? c.diff > 0 : c.diff < 0);
             contributors.sort((a, b) => isGrowth ? b.diff - a.diff : a.diff - b.diff);
 
-            let explained = 0;
-            let driversText = [];
+            let explained = 0; let driversText = [];
             
             for (let i = 0; i < contributors.length; i++) {
                 let c = contributors[i];
                 explained += c.diff;
-                
-                let vA = dataA.byCanal[c.name] || 0;
-                let vB = dataB.byCanal[c.name] || 0;
+                let vA = dataA.byCanal[c.name] || 0; let vB = dataB.byCanal[c.name] || 0;
                 let cPct = vA > 0 ? (c.diff / vA) * 100 : (vB > 0 ? 100 : 0);
                 
-                let pctStr = cPct > 0 ? `+${cPct.toFixed(1)}%` : `${cPct.toFixed(1)}%`;
-                let absStr = c.diff > 0 ? `+${Math.round(c.diff).toLocaleString('pt-BR')}` : Math.round(c.diff).toLocaleString('pt-BR');
-                
+                let pctStr = cPct > 0 ? `+${formatBRPct(cPct)}` : `${formatBRPct(cPct)}`;
+                let absStr = c.diff > 0 ? `+${formatBRNum(c.diff)}` : formatBRNum(c.diff);
                 let textPart = `o canal ${c.name}, com <strong class="text-gray-900">${absStr} unidades</strong> (${pctStr} vs cenário base)`;
                 driversText.push(textPart);
 
@@ -554,7 +518,7 @@
             }
 
             let text = `<p>${aiStrB} frente ${aiStrA}, aponta para uma `;
-            text += isGrowth ? `<span class="text-green-600 font-bold">expansão de +${deltaPct.toFixed(1)}%</span> (+${Math.round(targetDiff).toLocaleString('pt-BR')} un.). ` : `<span class="text-red-600 font-bold">retração de ${deltaPct.toFixed(1)}%</span> (${Math.round(targetDiff).toLocaleString('pt-BR')} un.). `;
+            text += isGrowth ? `<span class="text-green-600 font-bold">expansão de +${formatBRPct(deltaPct)}</span> (+${formatBRNum(targetDiff)} un.). ` : `<span class="text-red-600 font-bold">retração de ${formatBRPct(deltaPct)}</span> (${formatBRNum(targetDiff)} un.). `;
             
             if (driversText.length > 0) {
                 text += `A principal contribuição para este movimento veio de ${driversText[0]}`;
@@ -565,16 +529,13 @@
                 }
                 text += `.</p>`;
             }
-
             container.innerHTML = text;
         }
 
         function drawBarChart(byCanalA, byCanalB, nameA, nameB) {
             const allCanals = Array.from(new Set([...Object.keys(byCanalA), ...Object.keys(byCanalB)]));
             const topCanals = allCanals.sort((a,b) => (byCanalB[b]||0) - (byCanalB[a]||0)).slice(0, 5);
-
-            const dataA = topCanals.map(c => byCanalA[c] || 0);
-            const dataB = topCanals.map(c => byCanalB[c] || 0);
+            const dataA = topCanals.map(c => byCanalA[c] || 0); const dataB = topCanals.map(c => byCanalB[c] || 0);
 
             if (barChart) barChart.destroy();
             barChart = new Chart(document.getElementById('barChart'), {
@@ -594,16 +555,14 @@
                             display: function(context) { return context.datasetIndex === 1; },
                             align: 'top', anchor: 'end', offset: 2,
                             formatter: function(value, context) {
-                                let valA = context.chart.data.datasets[0].data[context.dataIndex];
-                                let valB = value;
+                                let valA = context.chart.data.datasets[0].data[context.dataIndex]; let valB = value;
                                 if (valA === 0 && valB === 0) return '';
                                 if (valA === 0) return '+100%';
                                 let delta = ((valB - valA) / valA) * 100;
-                                return (delta > 0 ? '+' : '') + delta.toFixed(1) + '%';
+                                return (delta > 0 ? '+' : '') + formatBRPct(delta);
                             },
                             color: function(context) {
-                                let valA = context.chart.data.datasets[0].data[context.dataIndex];
-                                let valB = context.dataset.data[context.dataIndex];
+                                let valA = context.chart.data.datasets[0].data[context.dataIndex]; let valB = context.dataset.data[context.dataIndex];
                                 return (valB - valA) > 0 ? '#16a34a' : ((valB - valA) < 0 ? '#dc2626' : '#6b7280');
                             },
                             font: { weight: 'bold', size: 10 }
@@ -654,9 +613,9 @@
                             display: true, align: 'top', offset: 6,
                             formatter: function(value) {
                                 if (value === null || value === 0) return '';
-                                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                                if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
-                                return Math.round(value);
+                                if (value >= 1000000) return (value / 1000000).toLocaleString('pt-BR', {maximumFractionDigits:1}) + 'M';
+                                if (value >= 1000) return (value / 1000).toLocaleString('pt-BR', {maximumFractionDigits:0}) + 'k';
+                                return formatBRNum(value);
                             },
                             font: { size: 10, weight: 'bold' },
                             color: function(context) { return context.dataset.borderColor; }
@@ -667,7 +626,7 @@
                                 label: function(context) {
                                     let label = context.dataset.label || '';
                                     if (label) label += ': ';
-                                    if (context.parsed.y !== null) label += context.parsed.y.toLocaleString('pt-BR') + ' un.';
+                                    if (context.parsed.y !== null) label += formatBRNum(context.parsed.y) + ' un.';
                                     return label;
                                 }
                             }
@@ -697,10 +656,8 @@
             document.getElementById('th-b').innerText = nameB;
 
             sortedCanals.forEach((canal, idx) => {
-                const valA = dataA.byCanal[canal] || 0;
-                const valB = dataB.byCanal[canal] || 0;
-                const deltaAbs = valB - valA;
-                const deltaPct = valA > 0 ? (deltaAbs / valA) * 100 : (valB > 0 ? 100 : 0);
+                const valA = dataA.byCanal[canal] || 0; const valB = dataB.byCanal[canal] || 0;
+                const deltaAbs = valB - valA; const deltaPct = valA > 0 ? (deltaAbs / valA) * 100 : (valB > 0 ? 100 : 0);
                 
                 const pctColor = deltaPct > 0 ? 'text-green-600' : (deltaPct < 0 ? 'text-red-600' : 'text-gray-400');
                 const absSign = deltaAbs > 0 ? '+' : '';
@@ -708,33 +665,30 @@
                 html += `
                     <tr class="border-b border-gray-100 hover:bg-blue-50/50 cursor-pointer transition-colors group" onclick="toggleDrilldown('drill-${idx}')">
                         <td class="p-4 flex items-center gap-2 font-black text-xs text-gray-800"><i data-lucide="chevron-right" id="icon-drill-${idx}" class="w-4 h-4 text-blue-500 transition-transform"></i>${canal}</td>
-                        <td class="p-4 text-xs font-semibold text-gray-500">${Math.round(valA).toLocaleString('pt-BR')}</td>
-                        <td class="p-4 text-xs font-black text-blue-600">${Math.round(valB).toLocaleString('pt-BR')}</td>
-                        <td class="p-4 text-xs font-bold ${pctColor} bg-gray-50/30">${absSign}${deltaPct.toFixed(1)}%</td>
-                        <td class="p-4 text-xs font-semibold ${pctColor} bg-gray-50/30">${absSign}${Math.round(deltaAbs).toLocaleString('pt-BR')}</td>
+                        <td class="p-4 text-xs font-semibold text-gray-500">${formatBRNum(valA)}</td>
+                        <td class="p-4 text-xs font-black text-blue-600">${formatBRNum(valB)}</td>
+                        <td class="p-4 text-xs font-bold ${pctColor} bg-gray-50/30">${absSign}${formatBRPct(deltaPct)}</td>
+                        <td class="p-4 text-xs font-semibold ${pctColor} bg-gray-50/30">${absSign}${formatBRNum(deltaAbs)}</td>
                     </tr>
                 `;
 
-                const devicesA = dataA.byCanalDevice[canal] || {};
-                const devicesB = dataB.byCanalDevice[canal] || {};
+                const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
                 const allDevices = new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]);
                 const sortedDevices = Array.from(allDevices).sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
 
                 sortedDevices.forEach(dev => {
-                    const dValA = devicesA[dev] || 0;
-                    const dValB = devicesB[dev] || 0;
-                    const dDeltaAbs = dValB - dValA;
-                    const dDeltaPct = dValA > 0 ? (dDeltaAbs / dValA) * 100 : (dValB > 0 ? 100 : 0);
+                    const dValA = devicesA[dev] || 0; const dValB = devicesB[dev] || 0;
+                    const dDeltaAbs = dValB - dValA; const dDeltaPct = dValA > 0 ? (dDeltaAbs / dValA) * 100 : (dValB > 0 ? 100 : 0);
                     const dPctColor = dDeltaPct > 0 ? 'text-green-600' : (dDeltaPct < 0 ? 'text-red-600' : 'text-gray-400');
                     const dAbsSign = dDeltaAbs > 0 ? '+' : '';
 
                     html += `
                         <tr class="drill-${idx} hidden bg-gray-50 border-b border-white">
                             <td class="p-3 pl-12 text-[11px] font-bold text-gray-600 flex items-center gap-2 border-l-2 border-l-blue-200"><i data-lucide="smartphone" class="w-3 h-3 text-gray-400"></i> ${dev}</td>
-                            <td class="p-3 text-[11px] text-gray-500">${Math.round(dValA).toLocaleString('pt-BR')}</td>
-                            <td class="p-3 text-[11px] font-bold text-gray-700">${Math.round(dValB).toLocaleString('pt-BR')}</td>
-                            <td class="p-3 text-[11px] font-bold ${dPctColor}">${dAbsSign}${dDeltaPct.toFixed(1)}%</td>
-                            <td class="p-3 text-[11px] text-gray-500">${dAbsSign}${Math.round(dDeltaAbs).toLocaleString('pt-BR')}</td>
+                            <td class="p-3 text-[11px] text-gray-500">${formatBRNum(dValA)}</td>
+                            <td class="p-3 text-[11px] font-bold text-gray-700">${formatBRNum(dValB)}</td>
+                            <td class="p-3 text-[11px] font-bold ${dPctColor}">${dAbsSign}${formatBRPct(dDeltaPct)}</td>
+                            <td class="p-3 text-[11px] text-gray-500">${dAbsSign}${formatBRNum(dDeltaAbs)}</td>
                         </tr>
                     `;
                 });
@@ -744,10 +698,10 @@
             
             const totalAbs = dataB.total - dataA.total;
             const totalPct = dataA.total > 0 ? (totalAbs / dataA.total) * 100 : (dataB.total > 0 ? 100 : 0);
-            document.getElementById('total-table-a').innerText = Math.round(dataA.total).toLocaleString('pt-BR');
-            document.getElementById('total-table-b').innerText = Math.round(dataB.total).toLocaleString('pt-BR');
-            document.getElementById('total-table-abs').innerText = (totalAbs > 0 ? '+' : '') + Math.round(totalAbs).toLocaleString('pt-BR');
-            document.getElementById('total-table-pct').innerText = (totalAbs > 0 ? '+' : '') + totalPct.toFixed(1) + '%';
+            document.getElementById('total-table-a').innerText = formatBRNum(dataA.total);
+            document.getElementById('total-table-b').innerText = formatBRNum(dataB.total);
+            document.getElementById('total-table-abs').innerText = (totalAbs > 0 ? '+' : '') + formatBRNum(totalAbs);
+            document.getElementById('total-table-pct').innerText = (totalAbs > 0 ? '+' : '') + formatBRPct(totalPct);
             
             const pctClass = totalPct > 0 ? 'text-green-600' : (totalPct < 0 ? 'text-red-600' : 'text-gray-500');
             document.getElementById('total-table-abs').className = `p-4 text-xs font-black ${pctClass}`;
@@ -760,18 +714,200 @@
             const rows = document.querySelectorAll('.' + className);
             const icon = document.getElementById('icon-' + className);
             let isHidden = true;
-            
             rows.forEach(r => {
                 if (r.classList.contains('hidden')) { r.classList.remove('hidden'); isHidden = false; } 
                 else { r.classList.add('hidden'); }
             });
-            
             if (!isHidden) icon.classList.add('rotate-90');
             else icon.classList.remove('rotate-90');
         }
 
+        // NOVO: GERAÇÃO DA TABELA CSV REAL BASEADA NA TELA
         function exportJoinedCSV() {
-            alert("Para análises complexas cross-data, os arquivos brutos dados.json e realizado.json estão disponíveis na raiz do projeto no GitHub.");
+            if(!window.currentExportData) return;
+            const { dataA, dataB, nameA, nameB } = window.currentExportData;
+            
+            const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
+            allCanals.sort((a,b) => (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0));
+
+            let csvContent = `Canal;Modelo;${nameA};${nameB};Var (%);Var (Abs)\n`;
+
+            allCanals.forEach(canal => {
+                const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
+                const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
+                
+                // Formatação: usa vírgula apenas nas porcentagens (como texto)
+                csvContent += `${canal};TOTAL CANAL;${cA};${cB};${cPct.toFixed(1).replace('.',',')}%;${cAbs}\n`;
+
+                const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
+                const allDevices = Array.from(new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]));
+                allDevices.sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
+
+                allDevices.forEach(dev => {
+                    const dA = devicesA[dev] || 0; const dB = devicesB[dev] || 0;
+                    const dAbs = dB - dA; const dPct = dA > 0 ? (dAbs/dA)*100 : (dB > 0 ? 100 : 0);
+                    csvContent += `${canal};${dev};${dA};${dB};${dPct.toFixed(1).replace('.',',')}%;${dAbs}\n`;
+                });
+            });
+
+            // O "\uFEFF" força o Excel a entender os acentos do Português (BOM UTF-8)
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `MPOS_Analytics_Export_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // NOVO: RELATÓRIO EXECUTIVO EM PDF (NOVA JANELA PARA IMPRESSÃO)
+        function generateExecutiveReport() {
+            const compType = document.querySelector('input[name="comp-type"]:checked').value;
+            if (compType !== 'MONTH') {
+                alert("Por favor, selecione a chave 'Comparar Meses' no Motor de Comparação para gerar o Relatório Executivo focado.");
+                return;
+            }
+
+            const scB = document.getElementById('scenario-b');
+            const moB = document.getElementById('month-b');
+            const [typeTarget, yearTarget] = scB.value.split('|'); 
+            const monthTarget = moB.value;
+            
+            const currentYM = `${yearTarget}${monthTarget}`; // ex: 202602
+            
+            // Lógica de Volta no Tempo (MoM e YoY)
+            let prevMoM_YM = "";
+            let mInt = parseInt(monthTarget);
+            if (mInt === 1) prevMoM_YM = `${parseInt(yearTarget)-1}12`;
+            else prevMoM_YM = `${yearTarget}${String(mInt-1).padStart(2, '0')}`;
+            
+            let prevYoY_YM = `${parseInt(yearTarget)-1}${monthTarget}`;
+
+            const dTarget = extractValue(typeTarget, `MONTH|${currentYM}`, 'ALL', 'ALL');
+            const dPlan   = extractValue('PLAN', `MONTH|${currentYM}`, 'ALL', 'ALL');
+            const dMoM    = extractValue(typeTarget, `MONTH|${prevMoM_YM}`, 'ALL', 'ALL');
+            const dYoY    = extractValue(typeTarget, `MONTH|${prevYoY_YM}`, 'ALL', 'ALL');
+
+            const tituloMes = `${PT_MONTHS[parseInt(monthTarget)-1]} / ${yearTarget}`;
+
+            // Helper de renderização
+            function getVarHTML(val, base) {
+                if(base===0 && val===0) return `<span style="color:#6b7280; font-weight:bold;">-</span>`;
+                if(base===0) return `<span style="color:#16a34a; font-weight:bold;">+100%</span>`;
+                let pct = ((val-base)/base)*100;
+                let color = pct > 0 ? '#16a34a' : (pct < 0 ? '#dc2626' : '#6b7280');
+                let sign = pct > 0 ? '+' : '';
+                return `<span style="color:${color}; font-weight:bold;">${sign}${pct.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}%</span>`;
+            }
+
+            let html = `
+            <html>
+            <head>
+                <title>Relatório Executivo - ${tituloMes}</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; color: #333; margin: 40px; font-size: 13px; line-spacing: 1.5; }
+                    h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+                    h2 { color: #1f2937; margin-top: 30px; font-size: 18px; border-left: 4px solid #3b82f6; padding-left: 10px; }
+                    .kpi-box { display: flex; gap: 15px; margin-top: 15px; }
+                    .kpi { background: #f3f4f6; padding: 15px; border-radius: 8px; flex: 1; text-align: center; }
+                    .kpi span { display: block; font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: bold; margin-bottom: 5px; }
+                    .kpi strong { font-size: 20px; color: #111827; }
+                    .comment { background: #eff6ff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2563eb; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                    th, td { padding: 10px; text-align: right; border-bottom: 1px solid #e5e7eb; }
+                    th { background: #f9fafb; font-size: 11px; text-transform: uppercase; color: #4b5563; }
+                    th:first-child, td:first-child { text-align: left; }
+                    .page-break { page-break-after: always; }
+                </style>
+            </head>
+            <body onload="setTimeout(() => window.print(), 500)">
+                <h1>MPOS Analytics: Visão Executiva</h1>
+                <p><strong>Cenário Analisado:</strong> Realizado de ${tituloMes}</p>
+
+                <h2>Visão Geral do Negócio</h2>
+                <div class="kpi-box">
+                    <div class="kpi"><span>Volume Total (${tituloMes})</span><strong>${formatBRNum(dTarget.total)}</strong></div>
+                    <div class="kpi"><span>vs. Plano (Mesmo Mês)</span><strong>${getVarHTML(dTarget.total, dPlan.total)}</strong></div>
+                    <div class="kpi"><span>vs. Mês Anterior (MoM)</span><strong>${getVarHTML(dTarget.total, dMoM.total)}</strong></div>
+                    <div class="kpi"><span>vs. Ano Anterior (YoY)</span><strong>${getVarHTML(dTarget.total, dYoY.total)}</strong></div>
+                </div>
+                <div class="comment">
+                    <p>O volume consolidado atingiu <strong>${formatBRNum(dTarget.total)} dispositivos</strong>. 
+                    Comparado ao Plano projetado para este mês, o resultado representa uma variação de ${getVarHTML(dTarget.total, dPlan.total)} (${formatBRNum(dTarget.total - dPlan.total)} un.). 
+                    Na visão sequencial (Mês sobre Mês), o movimento foi de ${getVarHTML(dTarget.total, dMoM.total)}, enquanto a variação histórica (Ano contra Ano) fechou em ${getVarHTML(dTarget.total, dYoY.total)}.</p>
+                </div>
+            `;
+
+            const allCanals = Array.from(new Set([...Object.keys(dTarget.byCanal)]));
+            allCanals.sort((a,b) => (dTarget.byCanal[b] || 0) - (dTarget.byCanal[a] || 0));
+
+            allCanals.forEach(canal => {
+                const cT = dTarget.byCanal[canal] || 0;
+                if(cT === 0) return; // Ignora canais sem venda no mês atual
+                
+                const cP = dPlan.byCanal[canal] || 0;
+                const cM = dMoM.byCanal[canal] || 0;
+                const cY = dYoY.byCanal[canal] || 0;
+
+                html += `
+                <div style="page-break-inside: avoid;">
+                    <h2>Canal: ${canal}</h2>
+                    <div class="kpi-box">
+                        <div class="kpi"><span>Volume</span><strong>${formatBRNum(cT)}</strong></div>
+                        <div class="kpi"><span>vs. Plano</span><strong>${getVarHTML(cT, cP)}</strong></div>
+                        <div class="kpi"><span>vs. MoM</span><strong>${getVarHTML(cT, cM)}</strong></div>
+                        <div class="kpi"><span>vs. YoY</span><strong>${getVarHTML(cT, cY)}</strong></div>
+                    </div>
+                    <div class="comment">
+                        <p>O canal <strong>${canal}</strong> contribuiu com <strong>${formatBRNum(cT)} dispositivos</strong> no período. 
+                        Sua aderência frente ao plano foi de ${getVarHTML(cT, cP)}. Em comparação ao ritmo do mês anterior, oscilou ${getVarHTML(cT, cM)} e, frente ao ano passado, variou ${getVarHTML(cT, cY)}.</p>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Modelo de Dispositivo</th>
+                                <th>Volume Realizado</th>
+                                <th>Desvio vs Plano (Abs)</th>
+                                <th>Var vs Plano (%)</th>
+                                <th>Var MoM (%)</th>
+                                <th>Var YoY (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                const devices = Array.from(new Set(Object.keys(dTarget.byCanalDevice[canal] || {})));
+                devices.sort((a,b) => (dTarget.byCanalDevice[canal][b] || 0) - (dTarget.byCanalDevice[canal][a] || 0));
+
+                devices.forEach(dev => {
+                    let dTV = dTarget.byCanalDevice[canal][dev] || 0;
+                    let dPV = (dPlan.byCanalDevice[canal] && dPlan.byCanalDevice[canal][dev]) ? dPlan.byCanalDevice[canal][dev] : 0;
+                    let dMV = (dMoM.byCanalDevice[canal] && dMoM.byCanalDevice[canal][dev]) ? dMoM.byCanalDevice[canal][dev] : 0;
+                    let dYV = (dYoY.byCanalDevice[canal] && dYoY.byCanalDevice[canal][dev]) ? dYoY.byCanalDevice[canal][dev] : 0;
+                    
+                    let devAbsPlan = dTV - dPV;
+                    let sign = devAbsPlan > 0 ? '+' : '';
+
+                    html += `
+                            <tr>
+                                <td><strong>${dev}</strong></td>
+                                <td>${formatBRNum(dTV)}</td>
+                                <td style="color:${devAbsPlan > 0 ? '#16a34a' : (devAbsPlan < 0 ? '#dc2626' : '#6b7280')}">${sign}${formatBRNum(devAbsPlan)}</td>
+                                <td>${getVarHTML(dTV, dPV)}</td>
+                                <td>${getVarHTML(dTV, dMV)}</td>
+                                <td>${getVarHTML(dTV, dYV)}</td>
+                            </tr>
+                    `;
+                });
+
+                html += `</tbody></table></div>`;
+            });
+
+            html += `</body></html>`;
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
         }
 
         window.onload = boot;
