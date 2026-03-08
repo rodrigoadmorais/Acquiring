@@ -521,10 +521,12 @@
             
             if (driversText.length > 0) {
                 text += `A principal contribuição para este movimento veio de ${driversText[0]}`;
-                if (driversText.length > 1) {
-                    let last = driversText.pop();
-                    if(driversText.length > 0) text += `, seguido por ${driversText.join(', ')}`;
-                    text += ` e por ${last}`;
+                if (driversText.length === 2) {
+                    text += `, seguido por ${driversText[1]}`;
+                } else if (driversText.length > 2) {
+                    let rest = driversText.slice(1);
+                    let last = rest.pop();
+                    text += `, seguido por ${rest.join(', ')} e por ${last}`;
                 }
                 text += `.</p>`;
             }
