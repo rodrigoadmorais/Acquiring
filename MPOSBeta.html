@@ -278,7 +278,6 @@
             return null; 
         }
 
-        // MOTOR 1: O Extrator Flexível (Para Plano e Realizado)
         function parseStandardJSON(data) {
             if (!data || data.length === 0) return [];
             const firstRow = data[0];
@@ -309,7 +308,6 @@
             return mappedData;
         }
 
-        // MOTOR 2: O Trator de Limpeza (Apenas para o Forecast)
         function parseForecastJSON(dataArray) {
             if (!dataArray || dataArray.length === 0) return [];
             let cleanData = [];
@@ -318,7 +316,6 @@
                 let canal = row['Canal'];
                 let device = classifyDevice(row['DEVICE_TYPE']) || classifyDevice(row['TOTAL']);
                 
-                // Pula lixos e subtotais que não tem dispositivo especificado
                 if (!canal || canal === 0 || String(canal).trim() === '0' || !device) continue;
 
                 let obj = { 'Canal': String(canal).trim(), 'Device': device };
@@ -337,30 +334,23 @@
             return cleanData;
         }
 
-        // MÁGICA: Sobrepõe o passado do Forecast com os dados do Realizado
         function fuseActualIntoForecast(actualDb, forecastDb) {
             const today = new Date();
             const currentYYYYMM = String(today.getFullYear()) + String(today.getMonth() + 1).padStart(2, '0');
             
             let forecastMap = {};
             
-            // 1. Carrega o Forecast na memória
             forecastDb.forEach(row => {
                 let key = row.Canal + "|" + row.Device;
                 if(!forecastMap[key]) forecastMap[key] = { Canal: row.Canal, Device: row.Device };
                 for(let k in row) {
                     if(/^\d{6}$/.test(k)) {
-                        // Se o mês já passou, zera ele inicialmente (pois o realizado vai sobrescrever)
-                        if (k < currentYYYYMM) {
-                            forecastMap[key][k] = 0; 
-                        } else {
-                            forecastMap[key][k] = row[k];
-                        }
+                        if (k < currentYYYYMM) forecastMap[key][k] = 0; 
+                        else forecastMap[key][k] = row[k];
                     }
                 }
             });
 
-            // 2. Sobrepõe com a Realidade absoluta (ACTUAL)
             actualDb.forEach(row => {
                 let canal = row.Canal || row[cols.ACTUAL.canal];
                 let rawD = row.Device || row[cols.ACTUAL.device];
@@ -397,7 +387,6 @@
                 db.ACTUAL = parseStandardJSON(rawActual);
                 db.FORECAST = parseForecastJSON(rawForecast);
 
-                // Auto-Cura o Forecast usando o Realizado
                 if (db.ACTUAL.length > 0) {
                     db.FORECAST = fuseActualIntoForecast(db.ACTUAL, db.FORECAST);
                 }
@@ -477,20 +466,47 @@
             selectScA.innerHTML = htmlA; selectScB.innerHTML = htmlB;
 
             if(scenarioList.length > 0) {
-                const actuals = scenarioList.filter(s => s.type === 'ACTUAL');
-                const plans = scenarioList.filter(s => s.type === 'PLAN');
-                const forecasts = scenarioList.filter(s => s.type === 'FORECAST');
-                
-                if (actuals.length > 0 && plans.length > 0) {
-                    selectScA.value = plans[0].id; 
-                    selectScB.value = forecasts.length > 0 ? forecasts[forecasts.length - 1].id : actuals[actuals.length - 1].id; 
+                // --- DEFAULT INTELIGENTE PARA MÊS E ANO ATUAL ---
+                const currentYear = new Date().getFullYear().toString();
+                const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+
+                const planId = `PLAN|${currentYear}`;
+                const actualId = `ACTUAL|${currentYear}`;
+
+                const hasPlan = scenarioList.some(s => s.id === planId);
+                const hasActual = scenarioList.some(s => s.id === actualId);
+
+                if (hasPlan && hasActual) {
+                    selectScA.value = planId;
+                    selectScB.value = actualId;
                 } else {
-                    selectScA.value = scenarioList[0].id;
-                    selectScB.value = scenarioList[scenarioList.length - 1].id;
+                    // Fallback
+                    const actuals = scenarioList.filter(s => s.type === 'ACTUAL');
+                    const plans = scenarioList.filter(s => s.type === 'PLAN');
+                    
+                    if (actuals.length > 0 && plans.length > 0) {
+                        selectScA.value = plans[plans.length - 1].id; 
+                        selectScB.value = actuals[actuals.length - 1].id; 
+                    } else {
+                        selectScA.value = scenarioList[0].id;
+                        selectScB.value = scenarioList[scenarioList.length - 1].id;
+                    }
                 }
             }
 
-            handleScenarioChange('a', false); handleScenarioChange('b', false);
+            handleScenarioChange('a', false); 
+            handleScenarioChange('b', false);
+
+            if (compType !== 'YEAR') {
+                const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+                if (Array.from(monthA.options).some(o => o.value === currentMonth)) {
+                    monthA.value = currentMonth;
+                }
+                if (Array.from(monthB.options).some(o => o.value === currentMonth)) {
+                    monthB.value = currentMonth;
+                }
+            }
+
             processDashboard();
         }
 
@@ -999,7 +1015,7 @@
             document.body.removeChild(link);
         }
 
-        // RELATÓRIO EXECUTIVO
+        // RELATÓRIO EXECUTIVO DINÂMICO
         function generateExecutiveReport() {
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
             if (compType === 'YEAR') {
