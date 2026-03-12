@@ -245,7 +245,6 @@
             return parseFloat(s);
         }
 
-        // Tenta achar o mês de várias formas (202601, 2026-Jan, jan/26, 2026-01)
         function extractMonthFromKey(k) {
             const str = String(k).trim().toLowerCase();
             if (/^\d{6}$/.test(str)) return str;
@@ -279,12 +278,11 @@
             return null; 
         }
 
-        // MOTOR 1: O Extrator Padrão (Flexível para o Plan e o Actual)
+        // MOTOR 1: O Extrator Flexível (Para Plano e Realizado)
         function parseStandardJSON(data) {
             if (!data || data.length === 0) return [];
             const firstRow = data[0];
             const vals = Object.values(firstRow).map(String);
-            
             const isHeaderRow = vals.some(v => extractMonthFromKey(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
             
             let mappedData = [];
@@ -311,7 +309,7 @@
             return mappedData;
         }
 
-        // MOTOR 2: O Trator de Pivot (Específico para o arquivo sujo do Forecast)
+        // MOTOR 2: O Trator de Limpeza (Apenas para o Forecast)
         function parseForecastJSON(dataArray) {
             if (!dataArray || dataArray.length === 0) return [];
             let cleanData = [];
@@ -320,7 +318,7 @@
                 let canal = row['Canal'];
                 let device = classifyDevice(row['DEVICE_TYPE']) || classifyDevice(row['TOTAL']);
                 
-                // Se for linha de total, lixo ou não tiver device, pula.
+                // Pula lixos e subtotais que não tem dispositivo especificado
                 if (!canal || canal === 0 || String(canal).trim() === '0' || !device) continue;
 
                 let obj = { 'Canal': String(canal).trim(), 'Device': device };
@@ -339,6 +337,49 @@
             return cleanData;
         }
 
+        // MÁGICA: Sobrepõe o passado do Forecast com os dados do Realizado
+        function fuseActualIntoForecast(actualDb, forecastDb) {
+            const today = new Date();
+            const currentYYYYMM = String(today.getFullYear()) + String(today.getMonth() + 1).padStart(2, '0');
+            
+            let forecastMap = {};
+            
+            // 1. Carrega o Forecast na memória
+            forecastDb.forEach(row => {
+                let key = row.Canal + "|" + row.Device;
+                if(!forecastMap[key]) forecastMap[key] = { Canal: row.Canal, Device: row.Device };
+                for(let k in row) {
+                    if(/^\d{6}$/.test(k)) {
+                        // Se o mês já passou, zera ele inicialmente (pois o realizado vai sobrescrever)
+                        if (k < currentYYYYMM) {
+                            forecastMap[key][k] = 0; 
+                        } else {
+                            forecastMap[key][k] = row[k];
+                        }
+                    }
+                }
+            });
+
+            // 2. Sobrepõe com a Realidade absoluta (ACTUAL)
+            actualDb.forEach(row => {
+                let canal = row.Canal || row[cols.ACTUAL.canal];
+                let rawD = row.Device || row[cols.ACTUAL.device];
+                let device = classifyDevice(rawD) || rawD;
+                
+                if(!canal || !device) return;
+
+                let key = canal + "|" + device;
+                for(let k in row) {
+                    if(/^\d{6}$/.test(k) && k < currentYYYYMM) {
+                        if(!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
+                        forecastMap[key][k] = parseNum(row[k]); 
+                    }
+                }
+            });
+
+            return Object.values(forecastMap);
+        }
+
         async function boot() {
             lucide.createIcons();
             try {
@@ -352,10 +393,14 @@
                 let rawActual = resActual.ok ? await resActual.json() : [];
                 let rawForecast = resForecast.ok ? await resForecast.json() : [];
 
-                // O Plano e Actual passam pelo Extrator flexível, o Forecast pelo Trator.
                 db.PLAN = parseStandardJSON(rawPlan);
                 db.ACTUAL = parseStandardJSON(rawActual);
                 db.FORECAST = parseForecastJSON(rawForecast);
+
+                // Auto-Cura o Forecast usando o Realizado
+                if (db.ACTUAL.length > 0) {
+                    db.FORECAST = fuseActualIntoForecast(db.ACTUAL, db.FORECAST);
+                }
 
                 detectStructure();
                 handleTypeChange(); 
@@ -987,7 +1032,7 @@
             const dTarget = extractValue(typeTarget, `${compType}|${currentYM}`, 'ALL', 'ALL');
             const dPlan   = extractValue('PLAN', `${compType}|${currentYM}`, 'ALL', 'ALL');
             const dMoM    = extractValue(typeTarget, `${compType}|${prevMoM_YM}`, 'ALL', 'ALL');
-            const dYoY    = extractValue(typeTarget, `${compType}|${prevYoY_YM}`, 'ALL', 'ALL');
+            const dYoY    = extractValue('ACTUAL', `${compType}|${prevYoY_YM}`, 'ALL', 'ALL'); // YoY sempre usa o Actual como base
 
             const lblYtd = compType === 'YTD' ? 'Acumulado (YTD) até ' : '';
             const typeLabel = typeTarget === 'ACTUAL' ? 'Realizado' : 'Forecast';
