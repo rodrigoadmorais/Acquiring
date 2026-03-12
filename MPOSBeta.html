@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPOS Analytics | Executive Cross-Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1f2937; }
+        .ml-yellow { background-color: #FFF159; }
+        
+        .card {
+            background: #ffffff; border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        .card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.06); border-color: #d1d5db; }
+
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid #3483FA;
+            border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat; background-size: 1.2em 1.2em;
+        }
+        
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .rotate-90 { transform: rotate(90deg); }
+    </style>
+</head>
+<body class="pb-12">
+
+    <div id="loading" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
+        <div class="spinner mb-6"></div>
+        <h2 class="text-xl font-black text-gray-800 tracking-tight">Iniciando MPOS Analytics...</h2>
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Sincronizando Plano, Realizado & Forecast</p>
+    </div>
+
+    <header class="ml-yellow w-full py-4 px-6 shadow-sm sticky top-0 z-50 border-b border-yellow-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-600 p-2.5 rounded-xl shadow-md">
+                    <i data-lucide="bar-chart-2" class="text-white w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black text-gray-900 leading-none tracking-tight">MPOS <span class="text-blue-600">Analytics</span></h1>
+                    <p class="text-[10px] font-black text-gray-600 uppercase mt-1 tracking-widest">Cross-Data Engine</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="status-badge" class="bg-white text-green-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-green-200 shadow-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Bases Sincronizadas
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 mt-8 space-y-6">
+
+        <div class="card p-4 flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex items-center gap-4 flex-1">
+                <div class="flex items-center gap-2 text-gray-400 border-r pr-4 border-gray-100">
+                    <i data-lucide="filter" class="w-5 h-5"></i>
+                    <span class="text-[11px] font-black uppercase tracking-widest">Segmentação</span>
+                </div>
+                <select id="filter-canal" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                <select id="filter-device" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="generateExecutiveReport()" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-indigo-700 transition-all active:scale-95">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> PDF Executivo
+                </button>
+                <button onclick="exportExcel()" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel / GSheets
+                </button>
+                <button onclick="exportJoinedCSV()" class="flex items-center gap-2 bg-gray-500 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-gray-600 transition-all active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i> CSV
+                </button>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
+                <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
+                    <i data-lucide="git-compare" class="w-4 h-4 text-blue-500"></i> Motor de Comparação
+                </h2>
+                <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="comp-type" value="MONTH" checked onchange="handleTypeChange()" class="peer sr-only">
+                        <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Mês a Mês</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="comp-type" value="YTD" onchange="handleTypeChange()" class="peer sr-only">
+                        <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTD (Acumulado)</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="comp-type" value="YEAR" onchange="handleTypeChange()" class="peer sr-only">
+                        <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Anos (Fechado)</div>
+                    </label>
+                </div>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-white">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
+                    <div class="flex gap-2">
+                        <select id="scenario-a" onchange="handleScenarioChange('a')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                        <select id="month-a" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
+                    </div>
+                </div>
+                <div class="flex justify-center pt-5">
+                    <div class="bg-blue-50 p-3 rounded-full border border-blue-100 shadow-sm">
+                        <i data-lucide="swords" class="w-6 h-6 text-blue-500"></i>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
+                    <div class="flex gap-2">
+                        <select id="scenario-b" onchange="handleScenarioChange('b')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                        <select id="month-b" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="card p-6 border-l-4 border-l-gray-400">
+                <p id="label-kpi-a" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 truncate">Volume (A)</p>
+                <h3 id="val-kpi-a" class="text-3xl font-black text-gray-800">0</h3>
+            </div>
+            <div class="card p-6 border-l-4" id="kpi-b-container">
+                <p id="label-kpi-b" class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2 truncate">Volume (B)</p>
+                <h3 id="val-kpi-b" class="text-3xl font-black text-gray-800">0</h3>
+            </div>
+            <div class="card p-6" id="card-delta-pct">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (%) B vs A</p>
+                <div class="flex items-center gap-2">
+                    <h3 id="val-delta-pct" class="text-3xl font-black text-gray-800">0%</h3>
+                    <i id="icon-delta-pct" data-lucide="minus" class="w-6 h-6 text-gray-400"></i>
+                </div>
+            </div>
+            <div class="card p-6" id="card-delta-abs">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (Absoluta)</p>
+                <h3 id="val-delta-abs" class="text-3xl font-black text-gray-800">0</h3>
+                <p class="text-[10px] text-gray-400 font-bold mt-1">unidades de diferença</p>
+            </div>
+        </div>
+
+        <div class="card bg-gradient-to-r from-blue-50 to-white border-l-4 border-l-blue-500 p-6" id="ai-container">
+            <h4 class="text-sm font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-tight" id="ai-title">
+                <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo gerado pelo Gemini
+            </h4>
+            <div id="ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="card p-6 lg:col-span-2">
+                <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                    <i data-lucide="line-chart" class="w-4 h-4 text-gray-400" id="icon-chart-line"></i> Evolução Focada (A vs B)
+                </h4>
+                <div class="h-80">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+            <div class="card p-6">
+                <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-gray-400" id="icon-chart-bar"></i> Comparativo por Canal (Top 5)
+                </h4>
+                <div class="h-80">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden">
+            <div class="bg-gray-50 px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+                <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="table" class="w-4 h-4 text-gray-400"></i> Detalhamento por Canal e Modelo
+                </h4>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Clique no canal para expandir</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-white border-b border-gray-200">
+                        <tr class="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                            <th class="p-4 w-1/3">Canal de Origem</th>
+                            <th class="p-4" id="th-a">Volume (A)</th>
+                            <th class="p-4" id="th-b">Volume (B)</th>
+                            <th class="p-4">Var (%)</th>
+                            <th class="p-4">Var (Abs)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="drilldown-tbody" class="divide-y divide-gray-100 bg-white">
+                    </tbody>
+                    <tfoot class="bg-gray-50">
+                        <tr class="border-t border-gray-200">
+                            <td class="p-4 font-black text-xs text-gray-800 uppercase tracking-widest">Total Geral</td>
+                            <td class="p-4 text-xs font-black text-gray-800" id="total-table-a">0</td>
+                            <td class="p-4 text-xs font-black" id="total-table-b">0</td>
+                            <td class="p-4 text-xs font-black" id="total-table-pct">0%</td>
+                            <td class="p-4 text-xs font-black" id="total-table-abs">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        const URL_PLAN = "dados.json"; 
+        const URL_ACTUAL = "realizado.json";
+        const URL_FORECAST = "forecast.json"; 
+
+        const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
+        const BR_MONTH_MAP = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
+
+        let db = { PLAN: [], ACTUAL: [], FORECAST: [] };
+        let scenarioList = []; 
+        let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" }, FORECAST: { canal: "", device: "" } };
+        let canalRegistry = {}; // Guarda a capitalização correta dos canais
+        let timelineChart, barChart;
+        
+        window.currentExportData = null;
+
+        function formatBRPct(num) { return num.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '%'; }
+        function formatBRNum(num) { return Math.round(num).toLocaleString('pt-BR'); }
+
+        function parseNum(val) {
+            if (!val || val === "0") return 0;
+            let s = String(val).trim().replace(/\s/g, ''); 
+            const parts = s.split(/[.,]/);
+            if (parts.length === 2 && parts[1].length === 3) return parseFloat(s.replace(/[.,]/g, '')) || 0;
+            if (s.includes('.') && s.includes(',')) {
+                return s.indexOf('.') < s.indexOf(',') ? parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(s.replace(/,/g, '')) || 0;
+            }
+            return parseFloat(s.replace(',', '.')) || 0;
+        }
+
+        // Extrator inteligente de mês (Aceita: 202601, 2025-Jan, jan/26)
+        function standardizeMonth(val) {
+            if(!val) return "";
+            let v = String(val).trim();
+            if (/^\d{6}$/.test(v)) return v; 
+            
+            let matchEn = v.match(/^(\d{4})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i);
+            if (matchEn) {
+                let m = matchEn[2].charAt(0).toUpperCase() + matchEn[2].slice(1).toLowerCase();
+                return matchEn[1] + EN_TO_NUM[m];
+            }
+            
+            let matchBr = v.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\/(\d{2})$/i);
+            if (matchBr) {
+                let m = matchBr[1].toLowerCase();
+                let y = "20" + matchBr[2];
+                return y + BR_MONTH_MAP[m];
+            }
+            return v;
+        }
+
+        function normalizeData(data) {
+            if (!data || data.length === 0) return [];
+            const firstRow = data[0];
+            const vals = Object.values(firstRow).map(String);
+            const isHeaderRow = vals.some(v => /^\d{6}$/.test(v) || /^\d{4}-[A-Za-z]{3}$/.test(v) || /^[A-Za-z]{3}\/\d{2}$/.test(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
+            
+            let mappedData = [];
+            if (isHeaderRow) {
+                for (let i = 1; i < data.length; i++) {
+                    let obj = {};
+                    for (let k in data[i]) {
+                        if (k === 'row_number' || k === 'TOTAL') continue;
+                        let realKey = firstRow[k]; 
+                        if (realKey && String(realKey).trim() !== "") obj[standardizeMonth(realKey)] = data[i][k];
+                    }
+                    mappedData.push(obj);
+                }
+            } else {
+                for (let i = 0; i < data.length; i++) {
+                    let obj = {};
+                    for (let k in data[i]) {
+                        if (k === 'row_number' || k === 'TOTAL') continue;
+                        obj[standardizeMonth(k)] = data[i][k];
+                    }
+                    mappedData.push(obj);
+                }
+            }
+            return mappedData;
+        }
+
+        async function boot() {
+            lucide.createIcons();
+            try {
+                const [resPlan, resActual, resForecast] = await Promise.all([
+                    fetch(`${URL_PLAN}?_=${Date.now()}`).catch(() => ({ ok: false })),
+                    fetch(`${URL_ACTUAL}?_=${Date.now()}`).catch(() => ({ ok: false })),
+                    fetch(`${URL_FORECAST}?_=${Date.now()}`).catch(() => ({ ok: false }))
+                ]);
+                if (resPlan.ok) db.PLAN = normalizeData(await resPlan.json());
+                if (resActual.ok) db.ACTUAL = normalizeData(await resActual.json());
+                if (resForecast.ok) db.FORECAST = normalizeData(await resForecast.json());
+
+                detectStructure();
+                handleTypeChange(); 
+                populateGlobalFilters();
+
+            } catch (err) {
+                document.getElementById('status-badge').className = "bg-white text-red-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-200 shadow-sm flex items-center gap-2";
+                document.getElementById('status-badge').innerHTML = '<i data-lucide="alert-triangle" class="w-3 h-3 text-red-500"></i> Erro de Sincronia';
+                lucide.createIcons();
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function detectStructure() {
+            scenarioList = [];
+            canalRegistry = {};
+
+            // 1. Registra os nomes exatos de canais do Plano e Actual para usar como padrão
+            ['PLAN', 'ACTUAL'].forEach(type => {
+                if(db[type].length === 0) return;
+                const sample = db[type][0];
+                const textKeys = Object.keys(sample).filter(k => k !== "row_number" && !/^\d{6}$/.test(k));
+                cols[type].canal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
+                const possibleDevices = textKeys.filter(k => k !== cols[type].canal);
+                cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
+
+                db[type].forEach(row => {
+                    let c = String(row[cols[type].canal]||'').trim();
+                    if(c) canalRegistry[c.toUpperCase()] = c;
+                });
+            });
+
+            // 2. Extrai colunas e dados gerais
+            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
+                if(db[type].length === 0) return;
+                const sample = db[type][0];
+                const textKeys = Object.keys(sample).filter(k => k !== "row_number" && !/^\d{6}$/.test(k) && k !== 'TOTAL');
+                
+                cols[type].canal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
+                const possibleDevices = textKeys.filter(k => k !== cols[type].canal);
+                cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
+
+                let months = new Set();
+                db[type].forEach(row => { Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) months.add(k); }); });
+                
+                const sortedMonths = Array.from(months).sort();
+                const years = [...new Set(sortedMonths.map(m => m.substring(0,4)))];
+                
+                years.forEach(y => {
+                    const yMonths = sortedMonths.filter(m => m.startsWith(y)).map(m => m.substring(4));
+                    let labelType = type === 'PLAN' ? 'Plano' : (type === 'ACTUAL' ? 'Realizado' : 'Forecast');
+                    scenarioList.push({ id: `${type}|${y}`, label: `${labelType} ${y}`, type: type, months: yMonths });
+                });
+            });
+        }
+
+        function handleTypeChange() {
+            const compType = document.querySelector('input[name="comp-type"]:checked').value;
+            const selectScA = document.getElementById('scenario-a');
+            const selectScB = document.getElementById('scenario-b');
+            const monthA = document.getElementById('month-a');
+            const monthB = document.getElementById('month-b');
+
+            monthA.style.display = compType === 'YEAR' ? 'none' : 'block';
+            monthB.style.display = compType === 'YEAR' ? 'none' : 'block';
+
+            let htmlA = '', htmlB = '';
+            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                const group = scenarioList.filter(s => s.type === t);
+                if (group.length > 0) {
+                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                    let opts = `<optgroup label="--- ${label} ---">`;
+                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
+                    opts += `</optgroup>`;
+                    htmlA += opts; htmlB += opts;
+                }
+            });
+
+            selectScA.innerHTML = htmlA; selectScB.innerHTML = htmlB;
+
+            if(scenarioList.length > 0) {
+                const actuals = scenarioList.filter(s => s.type === 'ACTUAL');
+                const plans = scenarioList.filter(s => s.type === 'PLAN');
+                const forecasts = scenarioList.filter(s => s.type === 'FORECAST');
+                
+                if (actuals.length > 0 && plans.length > 0) {
+                    selectScA.value = plans[0].id; 
+                    selectScB.value = forecasts.length > 0 ? forecasts[forecasts.length - 1].id : actuals[actuals.length - 1].id; 
+                } else {
+                    selectScA.value = scenarioList[0].id;
+                    selectScB.value = scenarioList[scenarioList.length - 1].id;
+                }
+            }
+
+            handleScenarioChange('a', false); handleScenarioChange('b', false);
+            processDashboard();
+        }
+
+        function handleScenarioChange(side, runProcess = true) {
+            const scSelect = document.getElementById(`scenario-${side}`);
+            const moSelect = document.getElementById(`month-${side}`);
+            const scenario = scenarioList.find(s => s.id === scSelect.value);
+            if (scenario) {
+                moSelect.innerHTML = scenario.months.map(m => `<option value="${m}">${m} - ${PT_MONTHS[parseInt(m)-1].substring(0,3)}</option>`).join('');
+                if (scenario.months.length > 0) moSelect.value = scenario.months[scenario.months.length - 1];
+            }
+            if (runProcess) processDashboard();
+        }
+
+        // Padroniza as máquinas (Se a linha do Forecast for "Mini BT D175", extrai só "MINI")
+        function getStandardDevice(raw) {
+            if(!raw) return null;
+            let up = String(raw).toUpperCase();
+            if (up.includes('AIR')) return 'AIR';
+            if (up.includes('MINI')) return 'MINI';
+            if (up.includes('PRO')) return 'PRO';
+            if (up.includes('SMART')) return 'SMART';
+            return null; // Descarta linhas de somatório automático que não tenham nome de device
+        }
+
+        function populateGlobalFilters() {
+            let allCanals = new Set(); let allDevices = new Set();
+            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
+                if(!db[type]) return;
+                db[type].forEach(row => {
+                    let rawC = String(row[cols[type].canal]||'').trim().toUpperCase();
+                    let canal = canalRegistry[rawC] || String(row[cols[type].canal]||'').trim();
+                    let device = getStandardDevice(row[cols[type].device]);
+                    
+                    if(canal && device) {
+                        allCanals.add(canal);
+                        allDevices.add(device);
+                    }
+                });
+            });
+            document.getElementById('filter-canal').innerHTML = '<option value="ALL">Todos os Canais</option>' + [...allCanals].sort().map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('filter-device').innerHTML = '<option value="ALL">Todos os Modelos</option>' + [...allDevices].sort().map(d => `<option value="${d}">${d}</option>`).join('');
+        }
+
+        function extractValue(type, periodId, filterCanal, filterDevice) {
+            const [periodType, periodValue] = periodId.split('|');
+            const data = db[type] || [];
+            const colC = cols[type].canal; const colD = cols[type].device;
+
+            let total = 0; let byCanal = {}; let byDevice = {}; let byCanalDevice = {};
+
+            data.forEach(row => {
+                let device = getStandardDevice(row[colD]);
+                if(!device) return; // Ignora os totais agrupados do forecast
+                
+                let rawC = String(row[colC]||'').trim().toUpperCase();
+                let canal = canalRegistry[rawC] || String(row[colC]||'').trim();
+
+                if (filterCanal !== 'ALL' && canal !== filterCanal) return;
+                if (filterDevice !== 'ALL' && device !== filterDevice) return;
+
+                let rowSum = 0;
+                if (periodType === 'MONTH') {
+                    rowSum = parseNum(row[periodValue]);
+                } else if (periodType === 'YEAR') {
+                    Object.keys(row).forEach(k => { if(k.startsWith(periodValue)) rowSum += parseNum(row[k]); });
+                } else if (periodType === 'YTD') {
+                    const y = periodValue.substring(0,4);
+                    const targetM = parseInt(periodValue.substring(4,6), 10);
+                    Object.keys(row).forEach(k => {
+                        if(k.startsWith(y)) {
+                            const km = parseInt(k.substring(4,6), 10);
+                            if(km <= targetM) rowSum += parseNum(row[k]);
+                        }
+                    });
+                }
+
+                total += rowSum;
+                byCanal[canal] = (byCanal[canal] || 0) + rowSum;
+                byDevice[device] = (byDevice[device] || 0) + rowSum;
+                if (!byCanalDevice[canal]) byCanalDevice[canal] = {};
+                byCanalDevice[canal][device] = (byCanalDevice[canal][device] || 0) + rowSum;
+            });
+            return { total, byCanal, byDevice, byCanalDevice };
+        }
+
+        // Função de cor visual de acordo com a base selecionada
+        function getBaseColor(type, isBorder = false) {
+            if (type === 'PLAN') return isBorder ? '#10B981' : '#10B981'; // Verde
+            if (type === 'FORECAST') return isBorder ? '#F59E0B' : '#F59E0B'; // Laranja
+            return isBorder ? '#3B82F6' : '#3B82F6'; // Azul (Actual)
+        }
+        function getBaseBgColor(type) {
+            if (type === 'PLAN') return 'rgba(16, 185, 129, 0.1)';
+            if (type === 'FORECAST') return 'rgba(245, 158, 11, 0.1)';
+            return 'rgba(59, 130, 246, 0.1)'; 
+        }
+
+        function processDashboard() {
+            const filterCanal = document.getElementById('filter-canal').value;
+            const filterDevice = document.getElementById('filter-device').value;
+            const compType = document.querySelector('input[name="comp-type"]:checked').value;
+
+            const scA = document.getElementById('scenario-a'); const moA = document.getElementById('month-a');
+            const [typeA, yearA] = scA.value.split('|');
+            const periodA = compType === 'YEAR' ? `YEAR|${yearA}` : `${compType}|${yearA}${moA.value}`;
+            
+            const scB = document.getElementById('scenario-b'); const moB = document.getElementById('month-b');
+            const [typeB, yearB] = scB.value.split('|');
+            const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `${compType}|${yearB}${moB.value}`;
+
+            const labelPrefix = compType === 'YTD' ? 'YTD ' : 'Mês ';
+            const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${labelPrefix}${moA.value})`;
+            const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${labelPrefix}${moB.value})`;
+
+            const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
+            const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
+
+            window.currentExportData = { dataA, dataB, nameA, nameB, typeB };
+
+            updateKPIs(dataA.total, dataB.total, nameA, nameB, typeB);
+            
+            const pA = typeA === 'PLAN' ? 'ao Plano' : (typeA === 'FORECAST' ? 'ao Forecast' : 'ao Realizado');
+            const pB = typeB === 'PLAN' ? 'O Plano' : (typeB === 'FORECAST' ? 'O Forecast' : 'O Realizado');
+            
+            let aiStrB, aiStrA;
+            if(compType === 'YEAR') {
+                aiStrB = `${pB} de ${yearB}`;
+                aiStrA = `${pA} de ${yearA}`;
+            } else if (compType === 'YTD') {
+                aiStrB = `${pB} Acumulado (YTD) até ${PT_MONTHS[parseInt(moB.value)-1]} de ${yearB}`;
+                aiStrA = `${pA} Acumulado (YTD) até ${PT_MONTHS[parseInt(moA.value)-1]} de ${yearA}`;
+            } else {
+                aiStrB = `${pB} de ${PT_MONTHS[parseInt(moB.value)-1]} de ${yearB}`;
+                aiStrA = `${pA} de ${PT_MONTHS[parseInt(moA.value)-1]} de ${yearA}`;
+            }
+
+            generateGeminiAI(dataA, dataB, aiStrA, aiStrB, typeB);
+
+            drawBarChart(dataA.byCanal, dataB.byCanal, nameA, nameB, typeB);
+            drawTimelineChart(typeA, yearA, moA.value, typeB, yearB, moB.value, nameA, nameB, filterCanal, filterDevice, compType);
+            drawTable(dataA, dataB, nameA, nameB, typeB);
+        }
+
+        function updateKPIs(valA, valB, nameA, nameB, typeB) {
+            document.getElementById('label-kpi-a').innerText = nameA;
+            
+            // Dynamic B formatting based on Type B
+            const kpiB = document.getElementById('kpi-b-container');
+            const lblB = document.getElementById('label-kpi-b');
+            const thB = document.getElementById('th-b');
+            const ttB = document.getElementById('total-table-b');
+            const bColor = getBaseColor(typeB, true);
+            
+            lblB.innerText = nameB;
+            lblB.style.color = bColor;
+            kpiB.style.borderLeftColor = bColor;
+            thB.style.color = bColor;
+            ttB.style.color = bColor;
+
+            document.getElementById('val-kpi-a').innerText = formatBRNum(valA);
+            document.getElementById('val-kpi-b').innerText = formatBRNum(valB);
+
+            const deltaAbs = valB - valA;
+            const deltaPct = valA > 0 ? (deltaAbs / valA) * 100 : (valB > 0 ? 100 : 0);
+
+            document.getElementById('val-delta-abs').innerText = (deltaAbs > 0 ? '+' : '') + formatBRNum(deltaAbs);
+            document.getElementById('val-delta-pct').innerText = (deltaAbs > 0 ? '+' : '') + formatBRPct(deltaPct);
+
+            const cardPct = document.getElementById('card-delta-pct'); const iconPct = document.getElementById('icon-delta-pct');
+            if (deltaPct > 0) {
+                cardPct.className = "card p-6 border-b-4 border-b-green-500 bg-green-50/30 fade-in";
+                document.getElementById('val-delta-pct').className = "text-3xl font-black text-green-600";
+                iconPct.setAttribute('data-lucide', 'trending-up'); iconPct.className = "w-6 h-6 text-green-500";
+            } else if (deltaPct < 0) {
+                cardPct.className = "card p-6 border-b-4 border-b-red-500 bg-red-50/30 fade-in";
+                document.getElementById('val-delta-pct').className = "text-3xl font-black text-red-600";
+                iconPct.setAttribute('data-lucide', 'trending-down'); iconPct.className = "w-6 h-6 text-red-500";
+            } else {
+                cardPct.className = "card p-6 border-b-4 border-b-gray-400 fade-in";
+                document.getElementById('val-delta-pct').className = "text-3xl font-black text-gray-800";
+                iconPct.setAttribute('data-lucide', 'minus'); iconPct.className = "w-6 h-6 text-gray-400";
+            }
+            lucide.createIcons();
+        }
+
+        function generateGeminiAI(dataA, dataB, aiStrA, aiStrB, typeB) {
+            const container = document.getElementById('ai-text');
+            const aiCard = document.getElementById('ai-container');
+            const aiIcon = document.getElementById('ai-title');
+            
+            aiCard.style.borderLeftColor = getBaseColor(typeB, true);
+
+            const targetDiff = dataB.total - dataA.total;
+            const deltaPct = dataA.total > 0 ? (targetDiff / dataA.total) * 100 : 0;
+            
+            if(dataA.total === 0 && dataB.total === 0) {
+                container.innerHTML = "<p>Dados insuficientes para gerar insights neste recorte.</p>"; return;
+            }
+
+            if (targetDiff === 0) {
+                container.innerHTML = `<p>${aiStrB} frente ${aiStrA} apresentou <strong>estabilidade absoluta</strong>, mantendo o exato mesmo volume de ${formatBRNum(dataA.total)} dispositivos.</p>`; return;
+            }
+
+            const isGrowth = targetDiff > 0;
+            const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
+            let diffs = allCanals.map(c => { return { name: c, diff: (dataB.byCanal[c] || 0) - (dataA.byCanal[c] || 0) }; });
+            let contributors = diffs.filter(c => isGrowth ? c.diff > 0 : c.diff < 0);
+            contributors.sort((a, b) => isGrowth ? b.diff - a.diff : a.diff - b.diff);
+
+            let explained = 0; let driversText = [];
+            
+            for (let i = 0; i < contributors.length; i++) {
+                let c = contributors[i];
+                explained += c.diff;
+                let vA = dataA.byCanal[c.name] || 0; let vB = dataB.byCanal[c.name] || 0;
+                let cPct = vA > 0 ? (c.diff / vA) * 100 : (vB > 0 ? 100 : 0);
+                
+                let pctStr = cPct > 0 ? `+${formatBRPct(cPct)}` : `${formatBRPct(cPct)}`;
+                let absStr = c.diff > 0 ? `+${formatBRNum(c.diff)}` : formatBRNum(c.diff);
+                
+                let textPart = `o canal ${c.name}, com <strong class="text-gray-900">${absStr} unidades</strong> (${pctStr} vs cenário base)`;
+                driversText.push(textPart);
+
+                if ((explained / targetDiff) >= 0.85) break; 
+            }
+
+            let text = `<p>${aiStrB} frente ${aiStrA}, aponta para uma `;
+            text += isGrowth ? `<span class="text-green-600 font-bold">expansão de +${formatBRPct(deltaPct)}</span> (+${formatBRNum(targetDiff)} un.). ` : `<span class="text-red-600 font-bold">retração de ${formatBRPct(deltaPct)}</span> (${formatBRNum(targetDiff)} un.). `;
+            
+            if (driversText.length > 0) {
+                text += `A principal contribuição para este movimento veio de ${driversText[0]}`;
+                if (driversText.length > 1) {
+                    let rest = driversText.slice(1);
+                    let last = rest.pop();
+                    if(rest.length > 0) text += `, seguido por ${rest.join(', ')} e por ${last}`;
+                    else text += ` e por ${last}`;
+                }
+                text += `.</p>`;
+            }
+            container.innerHTML = text;
+        }
+
+        function drawBarChart(byCanalA, byCanalB, nameA, nameB, typeB) {
+            const allCanals = Array.from(new Set([...Object.keys(byCanalA), ...Object.keys(byCanalB)]));
+            const topCanals = allCanals.sort((a,b) => (byCanalB[b]||0) - (byCanalB[a]||0)).slice(0, 5);
+            const dataA = topCanals.map(c => byCanalA[c] || 0); const dataB = topCanals.map(c => byCanalB[c] || 0);
+
+            if (barChart) barChart.destroy();
+            barChart = new Chart(document.getElementById('barChart'), {
+                type: 'bar',
+                data: {
+                    labels: topCanals,
+                    datasets: [
+                        { label: nameA, data: dataA, backgroundColor: '#D1D5DB', borderRadius: 4 },
+                        { label: nameB, data: dataB, backgroundColor: getBaseColor(typeB, true), borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' } } },
+                        datalabels: {
+                            display: function(context) { return context.datasetIndex === 1; },
+                            align: 'top', anchor: 'end', offset: 2,
+                            formatter: function(value, context) {
+                                let valA = context.chart.data.datasets[0].data[context.dataIndex]; let valB = value;
+                                if (valA === 0 && valB === 0) return '';
+                                if (valA === 0) return '+100%';
+                                let delta = ((valB - valA) / valA) * 100;
+                                return (delta > 0 ? '+' : '') + formatBRPct(delta);
+                            },
+                            color: function(context) {
+                                let valA = context.chart.data.datasets[0].data[context.dataIndex]; let valB = context.dataset.data[context.dataIndex];
+                                return (valB - valA) > 0 ? '#16a34a' : ((valB - valA) < 0 ? '#dc2626' : '#6b7280');
+                            },
+                            font: { weight: 'bold', size: 10 }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
+                    },
+                    layout: { padding: { top: 20 } }
+                }
+            });
+        }
+
+        function drawTimelineChart(typeA, yearA, moA, typeB, yearB, moB, nameA, nameB, filterCanal, filterDevice, compType) {
+            let labels = []; let datasets = [];
+
+            if (compType === 'YEAR') {
+                labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                const dataA = labels.map((m, i) => extractValue(typeA, `MONTH|${yearA}${String(i + 1).padStart(2, '0')}`, filterCanal, filterDevice).total);
+                const dataB = labels.map((m, i) => extractValue(typeB, `MONTH|${yearB}${String(i + 1).padStart(2, '0')}`, filterCanal, filterDevice).total);
+
+                const cleanA = dataA.map(v => v === 0 ? null : v);
+                const cleanB = dataB.map(v => v === 0 ? null : v);
+
+                datasets = [
+                    { label: nameA, data: cleanA, borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
+                    { label: nameB, data: cleanB, borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
+                ];
+            } else if (compType === 'YTD') {
+                const maxM = Math.max(parseInt(moA||0), parseInt(moB||0));
+                labels = Array.from({length: maxM}, (_, i) => PT_MONTHS[i].substring(0,3)); 
+
+                let accA = 0;
+                const cleanA = labels.map((_, i) => {
+                    if (i + 1 > parseInt(moA)) return null; 
+                    const val = extractValue(typeA, `MONTH|${yearA}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total;
+                    accA += val; return accA;
+                });
+
+                let accB = 0;
+                const cleanB = labels.map((_, i) => {
+                    if (i + 1 > parseInt(moB)) return null;
+                    const val = extractValue(typeB, `MONTH|${yearB}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total;
+                    accB += val; return accB;
+                });
+
+                datasets = [
+                    { label: nameA, data: cleanA, borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
+                    { label: nameB, data: cleanB, borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
+                ];
+            } else {
+                labels = [nameA, nameB];
+                const valA = extractValue(typeA, `MONTH|${yearA}${moA}`, filterCanal, filterDevice).total;
+                const valB = extractValue(typeB, `MONTH|${yearB}${moB}`, filterCanal, filterDevice).total;
+
+                datasets = [{ label: 'Evolução de Volume', data: [valA, valB], borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0, borderWidth: 3, pointRadius: 6, pointBackgroundColor: '#fff' }];
+            }
+
+            if (timelineChart) timelineChart.destroy();
+            timelineChart = new Chart(document.getElementById('timelineChart'), {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { 
+                        legend: { position: 'top', align: 'end', labels: { boxWidth: 12, usePointStyle: true, font: { weight: 'bold', size: 10 } } },
+                        datalabels: {
+                            display: true, align: 'top', offset: 6,
+                            formatter: function(value) {
+                                if (value === null || value === 0) return '';
+                                if (value >= 1000000) return (value / 1000000).toLocaleString('pt-BR', {maximumFractionDigits:1}) + 'M';
+                                if (value >= 1000) return (value / 1000).toLocaleString('pt-BR', {maximumFractionDigits:0}) + 'k';
+                                return formatBRNum(value);
+                            },
+                            font: { size: 10, weight: 'bold' },
+                            color: function(context) { return context.dataset.borderColor; }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)', padding: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) label += formatBRNum(context.parsed.y) + ' un.';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { display: false } }, 
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
+                    },
+                    layout: { padding: { top: 25 } } 
+                }
+            });
+        }
+
+        function drawTable(dataA, dataB, nameA, nameB, typeB) {
+            const tbody = document.getElementById('drilldown-tbody');
+            let html = '';
+            
+            const allCanals = new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]);
+            const sortedCanals = Array.from(allCanals).sort((a,b) => {
+                let valB = (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0);
+                if(valB !== 0) return valB;
+                return (dataA.byCanal[b] || 0) - (dataA.byCanal[a] || 0);
+            });
+
+            sortedCanals.forEach((canal, idx) => {
+                const valA = dataA.byCanal[canal] || 0; const valB = dataB.byCanal[canal] || 0;
+                const deltaAbs = valB - valA; const deltaPct = valA > 0 ? (deltaAbs / valA) * 100 : (valB > 0 ? 100 : 0);
+                
+                const pctColor = deltaPct > 0 ? 'text-green-600' : (deltaPct < 0 ? 'text-red-600' : 'text-gray-400');
+                const absSign = deltaAbs > 0 ? '+' : '';
+
+                html += `
+                    <tr class="border-b border-gray-100 hover:bg-blue-50/50 cursor-pointer transition-colors group" onclick="toggleDrilldown('drill-${idx}')">
+                        <td class="p-4 flex items-center gap-2 font-black text-xs text-gray-800"><i data-lucide="chevron-right" id="icon-drill-${idx}" class="w-4 h-4 text-blue-500 transition-transform"></i>${canal}</td>
+                        <td class="p-4 text-xs font-semibold text-gray-500">${formatBRNum(valA)}</td>
+                        <td class="p-4 text-xs font-black" style="color: ${getBaseColor(typeB, true)};">${formatBRNum(valB)}</td>
+                        <td class="p-4 text-xs font-bold ${pctColor} bg-gray-50/30">${absSign}${formatBRPct(deltaPct)}</td>
+                        <td class="p-4 text-xs font-semibold ${pctColor} bg-gray-50/30">${absSign}${formatBRNum(deltaAbs)}</td>
+                    </tr>
+                `;
+
+                const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
+                const allDevices = new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]);
+                const sortedDevices = Array.from(allDevices).sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
+
+                sortedDevices.forEach(dev => {
+                    const dValA = devicesA[dev] || 0; const dValB = devicesB[dev] || 0;
+                    const dDeltaAbs = dValB - dValA; const dDeltaPct = dValA > 0 ? (dDeltaAbs / dValA) * 100 : (dValB > 0 ? 100 : 0);
+                    const dPctColor = dDeltaPct > 0 ? 'text-green-600' : (dDeltaPct < 0 ? 'text-red-600' : 'text-gray-400');
+                    const dAbsSign = dDeltaAbs > 0 ? '+' : '';
+
+                    html += `
+                        <tr class="drill-${idx} hidden bg-gray-50 border-b border-white">
+                            <td class="p-3 pl-12 text-[11px] font-bold text-gray-600 flex items-center gap-2 border-l-2 border-l-blue-200"><i data-lucide="smartphone" class="w-3 h-3 text-gray-400"></i> ${dev}</td>
+                            <td class="p-3 text-[11px] text-gray-500">${formatBRNum(dValA)}</td>
+                            <td class="p-3 text-[11px] font-bold text-gray-700">${formatBRNum(dValB)}</td>
+                            <td class="p-3 text-[11px] font-bold ${dPctColor}">${dAbsSign}${formatBRPct(dDeltaPct)}</td>
+                            <td class="p-3 text-[11px] text-gray-500">${dAbsSign}${formatBRNum(dDeltaAbs)}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            tbody.innerHTML = html;
+            
+            const totalAbs = dataB.total - dataA.total;
+            const totalPct = dataA.total > 0 ? (totalAbs / dataA.total) * 100 : (dataB.total > 0 ? 100 : 0);
+            document.getElementById('total-table-a').innerText = formatBRNum(dataA.total);
+            document.getElementById('total-table-b').innerText = formatBRNum(dataB.total);
+            document.getElementById('total-table-abs').innerText = (totalAbs > 0 ? '+' : '') + formatBRNum(totalAbs);
+            document.getElementById('total-table-pct').innerText = (totalAbs > 0 ? '+' : '') + formatBRPct(totalPct);
+            
+            const pctClass = totalPct > 0 ? 'text-green-600' : (totalPct < 0 ? 'text-red-600' : 'text-gray-500');
+            document.getElementById('total-table-abs').className = `p-4 text-xs font-black ${pctClass}`;
+            document.getElementById('total-table-pct').className = `p-4 text-xs font-black ${pctClass}`;
+
+            lucide.createIcons();
+        }
+
+        function toggleDrilldown(className) {
+            const rows = document.querySelectorAll('.' + className);
+            const icon = document.getElementById('icon-' + className);
+            let isHidden = true;
+            rows.forEach(r => {
+                if (r.classList.contains('hidden')) { r.classList.remove('hidden'); isHidden = false; } 
+                else { r.classList.add('hidden'); }
+            });
+            if (!isHidden) icon.classList.add('rotate-90');
+            else icon.classList.remove('rotate-90');
+        }
+
+        function exportExcel() {
+            if(!window.currentExportData) return;
+            const { dataA, dataB, nameA, nameB } = window.currentExportData;
+            const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
+            allCanals.sort((a,b) => (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0));
+
+            let rows = [];
+            rows.push(["Canal", "Modelo", nameA, nameB, "Var (%)", "Var (Abs)"]);
+
+            allCanals.forEach(canal => {
+                const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
+                const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
+                rows.push([canal, "TOTAL CANAL", Math.round(cA), Math.round(cB), cPct.toFixed(1).replace('.',',') + '%', Math.round(cAbs)]);
+
+                const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
+                const allDevices = Array.from(new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]));
+                allDevices.sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
+
+                allDevices.forEach(dev => {
+                    const dA = devicesA[dev] || 0; const dB = devicesB[dev] || 0;
+                    const dAbs = dB - dA; const dPct = dA > 0 ? (dAbs/dA)*100 : (dB > 0 ? 100 : 0);
+                    rows.push([canal, dev, Math.round(dA), Math.round(dB), dPct.toFixed(1).replace('.',',') + '%', Math.round(dAbs)]);
+                });
+            });
+
+            const wsFinal = XLSX.utils.aoa_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, wsFinal, "MPOS Analytics");
+            XLSX.writeFile(wb, `MPOS_Analytics_${new Date().getTime()}.xlsx`);
+        }
+
+        function exportJoinedCSV() {
+            if(!window.currentExportData) return;
+            const { dataA, dataB, nameA, nameB } = window.currentExportData;
+            const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
+            allCanals.sort((a,b) => (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0));
+
+            let csvContent = `Canal;Modelo;${nameA};${nameB};Var (%);Var (Abs)\n`;
+
+            allCanals.forEach(canal => {
+                const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
+                const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
+                csvContent += `${canal};TOTAL CANAL;${Math.round(cA)};${Math.round(cB)};${cPct.toFixed(1).replace('.',',')}%;${Math.round(cAbs)}\n`;
+
+                const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
+                const allDevices = Array.from(new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]));
+                allDevices.sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
+
+                allDevices.forEach(dev => {
+                    const dA = devicesA[dev] || 0; const dB = devicesB[dev] || 0;
+                    const dAbs = dB - dA; const dPct = dA > 0 ? (dAbs/dA)*100 : (dB > 0 ? 100 : 0);
+                    csvContent += `${canal};${dev};${Math.round(dA)};${Math.round(dB)};${dPct.toFixed(1).replace('.',',')}%;${Math.round(dAbs)}\n`;
+                });
+            });
+
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `MPOS_Analytics_Export_${new Date().getTime()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // RELATÓRIO EXECUTIVO
+        function generateExecutiveReport() {
+            const compType = document.querySelector('input[name="comp-type"]:checked').value;
+            if (compType === 'YEAR') {
+                alert("Por favor, ative a chave 'Mês a Mês' ou 'YTD' no Motor de Comparação antes de gerar o Relatório Executivo.");
+                return;
+            }
+
+            let yearTarget, monthTarget, typeTarget;
+            const [typeA, yA] = document.getElementById('scenario-a').value.split('|');
+            const [typeB, yB] = document.getElementById('scenario-b').value.split('|');
+            
+            if (typeB === 'ACTUAL' || typeB === 'FORECAST') {
+                typeTarget = typeB; yearTarget = yB; monthTarget = document.getElementById('month-b').value;
+            } else if (typeA === 'ACTUAL' || typeA === 'FORECAST') {
+                typeTarget = typeA; yearTarget = yA; monthTarget = document.getElementById('month-a').value;
+            } else {
+                alert("Para gerar a Visão Executiva, pelo menos um dos cenários selecionados precisa ser o Realizado ou Forecast.");
+                return;
+            }
+            
+            const currentYM = `${yearTarget}${monthTarget}`;
+            
+            let prevMoM_YM = "";
+            let mInt = parseInt(monthTarget);
+            if (mInt === 1) prevMoM_YM = `${parseInt(yearTarget)-1}12`;
+            else prevMoM_YM = `${yearTarget}${String(mInt-1).padStart(2, '0')}`;
+            
+            let prevYoY_YM = `${parseInt(yearTarget)-1}${monthTarget}`;
+
+            const dTarget = extractValue(typeTarget, `${compType}|${currentYM}`, 'ALL', 'ALL');
+            const dPlan   = extractValue('PLAN', `${compType}|${currentYM}`, 'ALL', 'ALL');
+            const dMoM    = extractValue(typeTarget, `${compType}|${prevMoM_YM}`, 'ALL', 'ALL');
+            const dYoY    = extractValue(typeTarget, `${compType}|${prevYoY_YM}`, 'ALL', 'ALL');
+
+            const lblYtd = compType === 'YTD' ? 'Acumulado (YTD) até ' : '';
+            const typeLabel = typeTarget === 'ACTUAL' ? 'Realizado' : 'Forecast';
+            const tituloMes = `${lblYtd}${PT_MONTHS[parseInt(monthTarget)-1]} / ${yearTarget}`;
+
+            function getVarHTML(val, base) {
+                if(base===0 && val===0) return `<span style="color:#6b7280;">-</span>`;
+                if(base===0) return `<span style="color:#16a34a;">+100,0%</span>`;
+                let pct = ((val-base)/base)*100;
+                let color = pct > 0 ? '#16a34a' : (pct < 0 ? '#dc2626' : '#6b7280');
+                let sign = pct > 0 ? '+' : '';
+                return `<span style="color:${color};">${sign}${pct.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1})}%</span>`;
+            }
+
+            let html = `
+            <html>
+            <head>
+                <title>Relatório Executivo - ${tituloMes}</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; color: #333; margin: 0; background: #f9fafb; padding: 20px; }
+                    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+                    h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 5px; font-size: 24px; }
+                    .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
+                    h2 { color: #1f2937; margin-top: 30px; font-size: 18px; border-left: 4px solid #3b82f6; padding-left: 10px; }
+                    .kpi-box { display: flex; gap: 15px; margin-top: 15px; }
+                    .kpi { background: #f3f4f6; padding: 20px 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #e5e7eb; }
+                    .kpi-label { display: block; font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: bold; margin-bottom: 8px; }
+                    .kpi-val { font-size: 24px; color: #111827; font-weight: 900; }
+                    .comment { background: #eff6ff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2563eb; color: #1e40af; font-size: 14px; line-height: 1.6; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+                    th, td { padding: 12px 10px; text-align: right; border-bottom: 1px solid #e5e7eb; }
+                    th { background: #f9fafb; font-size: 11px; text-transform: uppercase; color: #4b5563; }
+                    th:first-child, td:first-child { text-align: left; }
+                    .page-break { page-break-after: always; }
+                    
+                    .no-print-btn { display: block; width: fit-content; margin: 0 auto 30px auto; padding: 12px 24px; background: #4f46e5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; text-decoration: none; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
+                    .no-print-btn:hover { background: #4338ca; transform: scale(0.98); }
+                    @media print {
+                        body { background: white; margin: 0; padding: 0; }
+                        .container { box-shadow: none; padding: 0; max-width: 100%; }
+                        .no-print-btn { display: none !important; }
+                    }
+                </style>
+            </head>
+            <body>
+                <button class="no-print-btn" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
+                <div class="container">
+                    <h1>MPOS Analytics: Visão Executiva</h1>
+                    <div class="subtitle">Cenário Analisado: ${typeLabel} de ${tituloMes}</div>
+
+                    <h2>Visão Geral do Negócio</h2>
+                    <div class="kpi-box">
+                        <div class="kpi"><span class="kpi-label">Volume Total</span><div class="kpi-val">${formatBRNum(dTarget.total)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. Plano (Mesmo Período)</span><div class="kpi-val">${getVarHTML(dTarget.total, dPlan.total)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. Período Anterior (MoM)</span><div class="kpi-val">${getVarHTML(dTarget.total, dMoM.total)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. Ano Anterior (YoY)</span><div class="kpi-val">${getVarHTML(dTarget.total, dYoY.total)}</div></div>
+                    </div>
+                    <div class="comment">
+                        <p>O volume consolidado do ${typeLabel} atingiu <strong>${formatBRNum(dTarget.total)} dispositivos</strong>. 
+                        Comparado ao Plano projetado para este cenário, o resultado representa uma variação de <strong>${getVarHTML(dTarget.total, dPlan.total)}</strong> (${formatBRNum(dTarget.total - dPlan.total)} un.). 
+                        Na visão sequencial do período, o movimento foi de <strong>${getVarHTML(dTarget.total, dMoM.total)}</strong>, enquanto a variação histórica (Ano contra Ano) fechou em <strong>${getVarHTML(dTarget.total, dYoY.total)}</strong>.</p>
+                    </div>
+            `;
+
+            const allCanals = Array.from(new Set([...Object.keys(dTarget.byCanal)]));
+            allCanals.sort((a,b) => (dTarget.byCanal[b] || 0) - (dTarget.byCanal[a] || 0));
+
+            allCanals.forEach(canal => {
+                const cT = dTarget.byCanal[canal] || 0;
+                if(cT === 0) return; 
+                
+                const cP = dPlan.byCanal[canal] || 0;
+                const cM = dMoM.byCanal[canal] || 0;
+                const cY = dYoY.byCanal[canal] || 0;
+
+                html += `
+                <div style="page-break-inside: avoid;">
+                    <h2>Canal: ${canal}</h2>
+                    <div class="kpi-box">
+                        <div class="kpi"><span class="kpi-label">Volume</span><div class="kpi-val">${formatBRNum(cT)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. Plano</span><div class="kpi-val">${getVarHTML(cT, cP)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. MoM</span><div class="kpi-val">${getVarHTML(cT, cM)}</div></div>
+                        <div class="kpi"><span class="kpi-label">vs. YoY</span><div class="kpi-val">${getVarHTML(cT, cY)}</div></div>
+                    </div>
+                    <div class="comment">
+                        <p>O canal <strong>${canal}</strong> contribuiu com <strong>${formatBRNum(cT)} dispositivos</strong> no cenário atual. 
+                        Sua aderência frente ao plano foi de <strong>${getVarHTML(cT, cP)}</strong>. Em comparação ao ritmo do período anterior, a variação foi de <strong>${getVarHTML(cT, cM)}</strong> e, frente ao ano passado, variou <strong>${getVarHTML(cT, cY)}</strong>.</p>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Modelo de Dispositivo</th>
+                                <th>Volume ${typeLabel}</th>
+                                <th>Desvio vs Plano (Abs)</th>
+                                <th>Var vs Plano (%)</th>
+                                <th>Var MoM (%)</th>
+                                <th>Var YoY (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                const devices = Array.from(new Set(Object.keys(dTarget.byCanalDevice[canal] || {})));
+                devices.sort((a,b) => (dTarget.byCanalDevice[canal][b] || 0) - (dTarget.byCanalDevice[canal][a] || 0));
+
+                devices.forEach(dev => {
+                    let dTV = dTarget.byCanalDevice[canal][dev] || 0;
+                    let dPV = (dPlan.byCanalDevice[canal] && dPlan.byCanalDevice[canal][dev]) ? dPlan.byCanalDevice[canal][dev] : 0;
+                    let dMV = (dMoM.byCanalDevice[canal] && dMoM.byCanalDevice[canal][dev]) ? dMoM.byCanalDevice[canal][dev] : 0;
+                    let dYV = (dYoY.byCanalDevice[canal] && dYoY.byCanalDevice[canal][dev]) ? dYoY.byCanalDevice[canal][dev] : 0;
+                    
+                    let devAbsPlan = dTV - dPV;
+                    let sign = devAbsPlan > 0 ? '+' : '';
+
+                    html += `
+                            <tr>
+                                <td><strong>${dev}</strong></td>
+                                <td><strong>${formatBRNum(dTV)}</strong></td>
+                                <td style="color:${devAbsPlan > 0 ? '#16a34a' : (devAbsPlan < 0 ? '#dc2626' : '#6b7280')}; font-weight:bold;">${sign}${formatBRNum(devAbsPlan)}</td>
+                                <td><strong>${getVarHTML(dTV, dPV)}</strong></td>
+                                <td><strong>${getVarHTML(dTV, dMV)}</strong></td>
+                                <td><strong>${getVarHTML(dTV, dYV)}</strong></td>
+                            </tr>
+                    `;
+                });
+
+                html += `</tbody></table></div>`;
+            });
+
+            html += `</div></body></html>`;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+        }
+
+        window.onload = boot;
+    </script>
+</body>
+</html>
