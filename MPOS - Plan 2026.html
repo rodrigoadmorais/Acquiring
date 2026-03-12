@@ -97,9 +97,9 @@
                 <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
                     <i data-lucide="git-compare" class="w-4 h-4 text-blue-500"></i> Motor de Comparação
                 </h2>
-                <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
+                <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner flex-wrap">
                     <label class="cursor-pointer">
-                        <input type="radio" name="comp-type" value="MONTH" onchange="handleTypeChange()" class="peer sr-only">
+                        <input type="radio" name="comp-type" value="MONTH" checked onchange="handleTypeChange()" class="peer sr-only">
                         <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Mês a Mês</div>
                     </label>
                     <label class="cursor-pointer">
@@ -107,7 +107,11 @@
                         <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTD (Acumulado)</div>
                     </label>
                     <label class="cursor-pointer">
-                        <input type="radio" name="comp-type" value="YEAR" checked onchange="handleTypeChange()" class="peer sr-only">
+                        <input type="radio" name="comp-type" value="YTG" onchange="handleTypeChange()" class="peer sr-only">
+                        <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTG (A Realizar)</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="comp-type" value="YEAR" onchange="handleTypeChange()" class="peer sr-only">
                         <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Anos (Fechado)</div>
                     </label>
                 </div>
@@ -117,7 +121,7 @@
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
                     <div class="flex gap-2">
                         <select id="scenario-a" onchange="handleScenarioChange('a')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                        <select id="month-a" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center" style="display: none;"></select>
+                        <select id="month-a" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center" style="display: block;"></select>
                     </div>
                 </div>
                 <div class="flex justify-center pt-5">
@@ -129,7 +133,7 @@
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
                     <div class="flex gap-2">
                         <select id="scenario-b" onchange="handleScenarioChange('b')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                        <select id="month-b" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center" style="display: none;"></select>
+                        <select id="month-b" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center" style="display: block;"></select>
                     </div>
                 </div>
             </div>
@@ -222,6 +226,7 @@
         const URL_FORECAST = "forecast.json"; 
 
         const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
         const BR_MONTH_MAP = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
 
         let db = { PLAN: [], ACTUAL: [], FORECAST: [] };
@@ -251,7 +256,6 @@
             let matchEn = str.match(/^(\d{4})-(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i);
             if (matchEn) {
                 let m = matchEn[2].charAt(0).toUpperCase() + matchEn[2].slice(1).toLowerCase();
-                const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
                 return matchEn[1] + EN_TO_NUM[m];
             }
             
@@ -334,7 +338,6 @@
             return cleanData;
         }
 
-        // Mágica 10.0: Auto-Cura de Forecast com a base Realizada usando CanalRegistry correto
         function fuseActualIntoForecast(actualDb, forecastDb) {
             const today = new Date();
             const currentYYYYMM = String(today.getFullYear()) + String(today.getMonth() + 1).padStart(2, '0');
@@ -394,7 +397,6 @@
                 db.ACTUAL = parseStandardJSON(rawActual);
                 db.FORECAST = parseForecastJSON(rawForecast);
 
-                // Prepara o Registry de Canais antes de fundir os dados
                 detectStructure();
 
                 if (db.ACTUAL.length > 0) {
@@ -457,8 +459,17 @@
             const monthA = document.getElementById('month-a');
             const monthB = document.getElementById('month-b');
 
-            monthA.style.display = compType === 'YEAR' ? 'none' : 'block';
-            monthB.style.display = compType === 'YEAR' ? 'none' : 'block';
+            // Esconde os meses nas visões que usam seletor único (YTD, YTG) ou que não usam (YEAR)
+            if (compType === 'YEAR') {
+                monthA.style.display = 'none';
+                monthB.style.display = 'none';
+            } else if (compType === 'YTD' || compType === 'YTG') {
+                monthA.style.display = 'block';
+                monthB.style.display = 'none';
+            } else {
+                monthA.style.display = 'block';
+                monthB.style.display = 'block';
+            }
 
             let htmlA = '', htmlB = '';
             ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
@@ -482,7 +493,6 @@
                 const hasPlan = scenarioList.some(s => s.id === planId);
                 const hasActual = scenarioList.some(s => s.id === actualId);
 
-                // DEFAULT: PLANO 2026 vs REALIZADO 2026
                 if (hasPlan && hasActual) {
                     selectScA.value = planId;
                     selectScB.value = actualId;
@@ -500,6 +510,17 @@
             }
 
             handleScenarioChange('a', false); handleScenarioChange('b', false);
+
+            if (compType !== 'YEAR') {
+                const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+                if (Array.from(monthA.options).some(o => o.value === currentMonth)) {
+                    monthA.value = currentMonth;
+                }
+                if (Array.from(monthB.options).some(o => o.value === currentMonth)) {
+                    monthB.value = currentMonth;
+                }
+            }
+
             processDashboard();
         }
 
@@ -567,6 +588,16 @@
                             if(km <= targetM) rowSum += parseNum(row[k]);
                         }
                     });
+                } else if (periodType === 'YTG') {
+                    const y = periodValue.substring(0,4);
+                    const targetM = parseInt(periodValue.substring(4,6), 10);
+                    Object.keys(row).forEach(k => {
+                        if(k.startsWith(y)) {
+                            const km = parseInt(k.substring(4,6), 10);
+                            // YTG soma do mês escolhido para frente
+                            if(km >= targetM) rowSum += parseNum(row[k]);
+                        }
+                    });
                 }
 
                 total += rowSum;
@@ -594,17 +625,28 @@
             const filterDevice = document.getElementById('filter-device').value;
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
 
-            const scA = document.getElementById('scenario-a'); const moA = document.getElementById('month-a');
-            const [typeA, yearA] = scA.value.split('|');
-            const periodA = compType === 'YEAR' ? `YEAR|${yearA}` : `${compType}|${yearA}${moA.value}`;
-            
-            const scB = document.getElementById('scenario-b'); const moB = document.getElementById('month-b');
-            const [typeB, yearB] = scB.value.split('|');
-            const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `${compType}|${yearB}${moB.value}`;
+            const scA = document.getElementById('scenario-a'); 
+            const moA = document.getElementById('month-a');
+            const scB = document.getElementById('scenario-b'); 
+            const moB = document.getElementById('month-b');
 
-            const labelPrefix = compType === 'YTD' ? 'YTD ' : 'Mês ';
-            const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${labelPrefix}${moA.value})`;
-            const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${labelPrefix}${moB.value})`;
+            // Força a caixa B a usar o mês da caixa A nas opções acumuladas
+            let moA_val = moA.value;
+            let moB_val = (compType === 'YTD' || compType === 'YTG') ? moA_val : moB.value;
+
+            const [typeA, yearA] = scA.value.split('|');
+            const [typeB, yearB] = scB.value.split('|');
+
+            const periodA = compType === 'YEAR' ? `YEAR|${yearA}` : `${compType}|${yearA}${moA_val}`;
+            const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `${compType}|${yearB}${moB_val}`;
+
+            let labelPrefix = '';
+            if (compType === 'YTD') labelPrefix = 'YTD até Mês ';
+            if (compType === 'YTG') labelPrefix = 'YTG a partir do Mês ';
+            if (compType === 'MONTH') labelPrefix = 'Mês ';
+
+            const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${labelPrefix}${moA_val})`;
+            const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${labelPrefix}${moB_val})`;
 
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
@@ -621,17 +663,20 @@
                 aiStrB = `${pB} de ${yearB}`;
                 aiStrA = `${pA} de ${yearA}`;
             } else if (compType === 'YTD') {
-                aiStrB = `${pB} Acumulado (YTD) até ${PT_MONTHS[parseInt(moB.value)-1]} de ${yearB}`;
-                aiStrA = `${pA} Acumulado (YTD) até ${PT_MONTHS[parseInt(moA.value)-1]} de ${yearA}`;
+                aiStrB = `${pB} Acumulado (YTD) até ${PT_MONTHS[parseInt(moB_val)-1]} de ${yearB}`;
+                aiStrA = `${pA} Acumulado (YTD) até ${PT_MONTHS[parseInt(moA_val)-1]} de ${yearA}`;
+            } else if (compType === 'YTG') {
+                aiStrB = `${pB} Restante (YTG) de ${PT_MONTHS[parseInt(moB_val)-1]} a Dezembro de ${yearB}`;
+                aiStrA = `${pA} Restante (YTG) de ${PT_MONTHS[parseInt(moA_val)-1]} a Dezembro de ${yearA}`;
             } else {
-                aiStrB = `${pB} de ${PT_MONTHS[parseInt(moB.value)-1]} de ${yearB}`;
-                aiStrA = `${pA} de ${PT_MONTHS[parseInt(moA.value)-1]} de ${yearA}`;
+                aiStrB = `${pB} de ${PT_MONTHS[parseInt(moB_val)-1]} de ${yearB}`;
+                aiStrA = `${pA} de ${PT_MONTHS[parseInt(moA_val)-1]} de ${yearA}`;
             }
 
             generateGeminiAI(dataA, dataB, aiStrA, aiStrB, typeB);
 
             drawBarChart(dataA.byCanal, dataB.byCanal, nameA, nameB, typeB);
-            drawTimelineChart(typeA, yearA, moA.value, typeB, yearB, moB.value, nameA, nameB, filterCanal, filterDevice, compType);
+            drawTimelineChart(typeA, yearA, moA_val, typeB, yearB, moB_val, nameA, nameB, filterCanal, filterDevice, compType);
             drawTable(dataA, dataB, nameA, nameB, typeB);
         }
 
@@ -792,20 +837,38 @@
                     { label: nameB, data: cleanB, borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
                 ];
             } else if (compType === 'YTD') {
-                const maxM = Math.max(parseInt(moA||0), parseInt(moB||0));
+                const maxM = parseInt(moA); 
                 labels = Array.from({length: maxM}, (_, i) => PT_MONTHS[i].substring(0,3)); 
 
                 let accA = 0;
                 const cleanA = labels.map((_, i) => {
-                    if (i + 1 > parseInt(moA)) return null; 
                     const val = extractValue(typeA, `MONTH|${yearA}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total;
                     accA += val; return accA;
                 });
 
                 let accB = 0;
                 const cleanB = labels.map((_, i) => {
-                    if (i + 1 > parseInt(moB)) return null;
                     const val = extractValue(typeB, `MONTH|${yearB}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total;
+                    accB += val; return accB;
+                });
+
+                datasets = [
+                    { label: nameA, data: cleanA, borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
+                    { label: nameB, data: cleanB, borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
+                ];
+            } else if (compType === 'YTG') {
+                const startM = parseInt(moA); 
+                labels = Array.from({length: 12 - startM + 1}, (_, i) => PT_MONTHS[startM - 1 + i].substring(0,3)); 
+
+                let accA = 0;
+                const cleanA = labels.map((_, i) => {
+                    const val = extractValue(typeA, `MONTH|${yearA}${String(startM+i).padStart(2,'0')}`, filterCanal, filterDevice).total;
+                    accA += val; return accA;
+                });
+
+                let accB = 0;
+                const cleanB = labels.map((_, i) => {
+                    const val = extractValue(typeB, `MONTH|${yearB}${String(startM+i).padStart(2,'0')}`, filterCanal, filterDevice).total;
                     accB += val; return accB;
                 });
 
@@ -1008,11 +1071,11 @@
             document.body.removeChild(link);
         }
 
-        // RELATÓRIO EXECUTIVO DINÂMICO
+        // RELATÓRIO EXECUTIVO PDF
         function generateExecutiveReport() {
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
             if (compType === 'YEAR') {
-                alert("Por favor, ative a chave 'Mês a Mês' ou 'YTD' no Motor de Comparação antes de gerar o Relatório Executivo.");
+                alert("Por favor, ative uma chave de meses (Mês a Mês, YTD ou YTG) no Motor de Comparação antes de gerar o Relatório Executivo.");
                 return;
             }
 
@@ -1020,8 +1083,9 @@
             const [typeA, yA] = document.getElementById('scenario-a').value.split('|');
             const [typeB, yB] = document.getElementById('scenario-b').value.split('|');
             
+            // O Relatório exige que a base Realizada ou Forecast seja analisada contra o Plano e o passado
             if (typeB === 'ACTUAL' || typeB === 'FORECAST') {
-                typeTarget = typeB; yearTarget = yB; monthTarget = document.getElementById('month-b').value;
+                typeTarget = typeB; yearTarget = yB; monthTarget = document.getElementById('month-a').value;
             } else if (typeA === 'ACTUAL' || typeA === 'FORECAST') {
                 typeTarget = typeA; yearTarget = yA; monthTarget = document.getElementById('month-a').value;
             } else {
@@ -1043,9 +1107,18 @@
             const dMoM    = extractValue(typeTarget, `${compType}|${prevMoM_YM}`, 'ALL', 'ALL');
             const dYoY    = extractValue('ACTUAL', `${compType}|${prevYoY_YM}`, 'ALL', 'ALL');
 
-            const lblYtd = compType === 'YTD' ? 'Acumulado (YTD) até ' : '';
+            let lblMode = '';
+            if (compType === 'YTD') lblMode = 'Acumulado (YTD) até ';
+            if (compType === 'YTG') lblMode = 'Restante (YTG) de ';
+
             const typeLabel = typeTarget === 'ACTUAL' ? 'Realizado' : 'Forecast';
-            const tituloMes = `${lblYtd}${PT_MONTHS[parseInt(monthTarget)-1]} / ${yearTarget}`;
+            let tituloMes = "";
+            if (compType === 'YTG') {
+                tituloMes = `${lblMode}${PT_MONTHS[parseInt(monthTarget)-1]} a Dezembro / ${yearTarget}`;
+            } else {
+                tituloMes = `${lblMode}${PT_MONTHS[parseInt(monthTarget)-1]} / ${yearTarget}`;
+            }
+            
             const bColor = getBaseColor(typeTarget, true);
 
             function getVarHTML(val, base) {
@@ -1091,7 +1164,7 @@
                 <button class="no-print-btn" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
                 <div class="container">
                     <h1>MPOS Analytics: Visão Executiva</h1>
-                    <div class="subtitle">Cenário Analisado: ${typeLabel} de ${tituloMes}</div>
+                    <div class="subtitle">Cenário Analisado: ${typeLabel} - ${tituloMes}</div>
 
                     <h2>Visão Geral do Negócio</h2>
                     <div class="kpi-box">
