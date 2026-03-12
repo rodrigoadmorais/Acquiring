@@ -46,7 +46,7 @@
     <div id="loading" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <div class="spinner mb-6"></div>
         <h2 class="text-xl font-black text-gray-800 tracking-tight">Iniciando MPOS Analytics...</h2>
-        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Processando Plano, Realizado & Forecast</p>
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Sincronizando Plano, Realizado & Forecast</p>
     </div>
 
     <header class="ml-yellow w-full py-4 px-6 shadow-sm sticky top-0 z-50 border-b border-yellow-300">
@@ -222,6 +222,7 @@
         const URL_FORECAST = "forecast.json"; 
 
         const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
         const BR_MONTH_MAP = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
 
         let db = { PLAN: [], ACTUAL: [], FORECAST: [] };
@@ -248,14 +249,21 @@
             const str = String(k).trim().toLowerCase();
             if (/^\d{6}$/.test(str)) return str;
             
-            // Formato do Forecast (jan/26)
-            let matchBr = str.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\/(\d{2})$/);
-            if (matchBr) return "20" + matchBr[2] + BR_MONTH_MAP[matchBr[1]];
-
+            let matchEn = str.match(/^(\d{4})-(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i);
+            if (matchEn) {
+                let m = matchEn[2].charAt(0).toUpperCase() + matchEn[2].slice(1).toLowerCase();
+                return matchEn[1] + EN_TO_NUM[m];
+            }
+            
+            let matchBr = str.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\/(\d{2})$/i);
+            if (matchBr) {
+                let m = matchBr[1].toLowerCase();
+                let y = "20" + matchBr[2];
+                return y + BR_MONTH_MAP[m];
+            }
             return null;
         }
 
-        // Classifica o Dispositivo (Independente de como vier escrito)
         function classifyDevice(val) {
             if(!val) return null;
             let str = String(val).toUpperCase();
@@ -266,64 +274,66 @@
             return null; 
         }
 
-        // O TRATOR DE DADOS (Pega sujeira e transforma em array perfeito)
-        function processDirtyJSON(dataArray, typeLabel) {
+        // TRATOR DE DADOS UNIVERSAL (Funciona para Plano, Realizado e Forecast independentemente de estarem sujos)
+        function processDirtyJSON(dataArray) {
+            if (!dataArray || dataArray.length === 0) return [];
             let cleanData = [];
-            
-            // Para o PLAN e ACTUAL (Que costumam ser mais comportados)
-            if (typeLabel !== 'FORECAST') {
-                if (!dataArray || dataArray.length === 0) return [];
-                const firstRow = dataArray[0];
-                const vals = Object.values(firstRow).map(String);
-                const isHeaderRow = vals.some(v => extractMonthFromKey(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
-                
-                let startIdx = isHeaderRow ? 1 : 0;
-                for (let i = startIdx; i < dataArray.length; i++) {
-                    let obj = {};
-                    let canalCol = "", deviceCol = "";
-                    for (let k in dataArray[i]) {
-                        if (k === 'row_number' || k === 'TOTAL') continue;
-                        
-                        let keyName = isHeaderRow ? firstRow[k] : k;
-                        let monthKey = extractMonthFromKey(keyName);
-                        
-                        if (monthKey) {
-                            obj[monthKey] = parseNum(dataArray[i][k]);
-                        } else {
-                            let textVal = String(dataArray[i][k] || '').trim();
-                            if(String(keyName).toUpperCase().includes('CANAL')) obj['Canal'] = textVal;
-                            else if(classifyDevice(textVal)) obj['Device'] = classifyDevice(textVal);
-                        }
-                    }
-                    if(obj['Canal']) cleanData.push(obj);
-                }
-                return cleanData;
-            }
 
-            // MÁQUINA DE LIMPEZA PARA O FORECAST
-            for (let i = 0; i < dataArray.length; i++) {
+            const firstRow = dataArray[0];
+            const vals = Object.values(firstRow).map(String);
+            const isHeaderRow = vals.some(v => extractMonthFromKey(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
+
+            let startIdx = isHeaderRow ? 1 : 0;
+
+            for (let i = startIdx; i < dataArray.length; i++) {
                 let row = dataArray[i];
-                let canal = row['Canal'];
-                let device = classifyDevice(row['DEVICE_TYPE']) || classifyDevice(row['TOTAL']);
-                
-                // Se não tem canal explícito (ex: 0), ou não é um device válido, pula! (Mata as linhas de total e lixo)
-                if (!canal || canal === 0 || canal === '0' || !device) continue;
-
-                let obj = { Canal: String(canal).trim(), Device: device };
+                let obj = {};
+                let rawCanal = null;
+                let rawDevice = null;
                 let hasData = false;
 
-                // Varre a linha buscando meses (jan/26, etc)
                 for (let k in row) {
-                    let mKey = extractMonthFromKey(k);
-                    if (mKey) {
+                    if (k === 'row_number') continue;
+
+                    let keyName = isHeaderRow ? firstRow[k] : k;
+                    if (!keyName || String(keyName).trim() === "") continue;
+
+                    let monthKey = extractMonthFromKey(keyName);
+
+                    if (monthKey) {
                         let val = parseNum(row[k]);
-                        obj[mKey] = val;
-                        if(val > 0) hasData = true;
+                        obj[monthKey] = val;
+                        if (val !== 0) hasData = true;
+                    } else {
+                        let textVal = String(row[k] || '').trim();
+                        if (textVal && textVal !== '0') {
+                            if (String(keyName).toUpperCase().includes('CANAL')) {
+                                rawCanal = textVal;
+                            }
+                            let detectedDevice = classifyDevice(textVal);
+                            if (detectedDevice) {
+                                rawDevice = detectedDevice;
+                            }
+                        }
                     }
                 }
-                if(hasData) cleanData.push(obj);
-            }
 
+                // Fallback para planilhas super sujas (onde o nome do canal/device fica em colunas genéricas como TOTAL)
+                if (!rawDevice && row['TOTAL']) {
+                     let detectedDevice = classifyDevice(row['TOTAL']);
+                     if (detectedDevice) rawDevice = detectedDevice;
+                }
+                if (!rawDevice && row['DEVICE_TYPE']) {
+                     let detectedDevice = classifyDevice(row['DEVICE_TYPE']);
+                     if (detectedDevice) rawDevice = detectedDevice;
+                }
+
+                if (rawCanal && rawCanal !== '0' && rawDevice) {
+                    obj['Canal'] = rawCanal;
+                    obj['Device'] = rawDevice;
+                    if (hasData) cleanData.push(obj);
+                }
+            }
             return cleanData;
         }
 
@@ -340,9 +350,9 @@
                 let rawActual = resActual.ok ? await resActual.json() : [];
                 let rawForecast = resForecast.ok ? await resForecast.json() : [];
 
-                db.PLAN = processDirtyJSON(rawPlan, 'PLAN');
-                db.ACTUAL = processDirtyJSON(rawActual, 'ACTUAL');
-                db.FORECAST = processDirtyJSON(rawForecast, 'FORECAST');
+                db.PLAN = processDirtyJSON(rawPlan);
+                db.ACTUAL = processDirtyJSON(rawActual);
+                db.FORECAST = processDirtyJSON(rawForecast);
 
                 detectStructure();
                 handleTypeChange(); 
@@ -365,9 +375,10 @@
             ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
                 if(!db[type] || db[type].length === 0) return;
                 
+                // Registra o nome do canal bonitinho
                 db[type].forEach(row => {
                     let c = String(row.Canal||'').trim();
-                    if(c) canalRegistry[c.toUpperCase()] = c;
+                    if(c && c !== '0') canalRegistry[c.toUpperCase()] = c;
                 });
 
                 let months = new Set();
@@ -442,7 +453,9 @@
             ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
                 if(!db[type]) return;
                 db[type].forEach(row => {
-                    if(row.Canal) allCanals.add(row.Canal);
+                    let rawC = String(row.Canal||'').trim().toUpperCase();
+                    let canal = canalRegistry[rawC] || String(row.Canal||'').trim();
+                    if(canal) allCanals.add(canal);
                     if(row.Device) allDevices.add(row.Device);
                 });
             });
@@ -457,7 +470,8 @@
             let total = 0; let byCanal = {}; let byDevice = {}; let byCanalDevice = {};
 
             data.forEach(row => {
-                let canal = row.Canal;
+                let rawC = String(row.Canal||'').trim().toUpperCase();
+                let canal = canalRegistry[rawC] || String(row.Canal||'').trim();
                 let device = row.Device;
 
                 if (filterCanal !== 'ALL' && canal !== filterCanal) return;
@@ -915,7 +929,7 @@
             document.body.removeChild(link);
         }
 
-        // RELATÓRIO EXECUTIVO DINÂMICO
+        // RELATÓRIO EXECUTIVO
         function generateExecutiveReport() {
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
             if (compType === 'YEAR') {
