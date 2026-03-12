@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
@@ -78,12 +79,15 @@
                 <select id="filter-canal" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
                 <select id="filter-device" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
             </div>
-            <div class="flex gap-3">
-                <button onclick="generateExecutiveReport()" class="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-indigo-700 transition-all active:scale-95">
-                    <i data-lucide="file-text" class="w-4 h-4"></i> Visão Executiva (PDF)
+            <div class="flex gap-2">
+                <button onclick="generateExecutiveReport()" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-indigo-700 transition-all active:scale-95">
+                    <i data-lucide="file-text" class="w-4 h-4"></i> PDF Executivo
                 </button>
-                <button onclick="exportJoinedCSV()" class="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
-                    <i data-lucide="download" class="w-4 h-4"></i> Exportar CSV
+                <button onclick="exportExcel()" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel / GSheets
+                </button>
+                <button onclick="exportJoinedCSV()" class="flex items-center gap-2 bg-gray-500 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-gray-600 transition-all active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i> CSV
                 </button>
             </div>
         </div>
@@ -342,7 +346,6 @@
             const monthA = document.getElementById('month-a');
             const monthB = document.getElementById('month-b');
 
-            // Exibe o seletor de mês apenas se não for 'YEAR' (ou seja, se for MONTH ou YTD)
             monthA.style.display = compType === 'YEAR' ? 'none' : 'block';
             monthB.style.display = compType === 'YEAR' ? 'none' : 'block';
 
@@ -381,7 +384,6 @@
             const moSelect = document.getElementById(`month-${side}`);
             const scenario = scenarioList.find(s => s.id === scSelect.value);
             if (scenario) {
-                // Preenche os meses e já exibe o texto bonitinho (ex: 03 - Março)
                 moSelect.innerHTML = scenario.months.map(m => `<option value="${m}">${m} - ${PT_MONTHS[parseInt(m)-1].substring(0,3)}</option>`).join('');
                 if (scenario.months.length > 0) moSelect.value = scenario.months[scenario.months.length - 1];
             }
@@ -414,7 +416,6 @@
 
                 let rowSum = 0;
                 
-                // Lógica Inteligente para MONTH, YEAR e o NOVO YTD
                 if (periodType === 'MONTH') {
                     rowSum = parseNum(row[periodValue]);
                 } else if (periodType === 'YEAR') {
@@ -452,7 +453,6 @@
             const [typeB, yearB] = scB.value.split('|');
             const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `${compType}|${yearB}${moB.value}`;
 
-            // Rótulos inteligentes dependendo da chave selecionada (MONTH, YTD, YEAR)
             const labelPrefix = compType === 'YTD' ? 'YTD ' : 'Mês ';
             const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${labelPrefix}${moA.value})`;
             const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${labelPrefix}${moB.value})`;
@@ -515,7 +515,6 @@
             lucide.createIcons();
         }
 
-        // IA GEMINI - O BUG DOS CANAIS DUPLICADOS NO TEXTO FOI CORRIGIDO AQUI
         function generateGeminiAI(dataA, dataB, aiStrA, aiStrB) {
             const container = document.getElementById('ai-text');
             const targetDiff = dataB.total - dataA.total;
@@ -557,8 +556,6 @@
             
             if (driversText.length > 0) {
                 text += `A principal contribuição para este movimento veio de ${driversText[0]}`;
-                
-                // Lógica de Concatenação Perfeita para evitar Canal Duplicado
                 if (driversText.length > 1) {
                     let rest = driversText.slice(1);
                     let last = rest.pop();
@@ -615,7 +612,6 @@
             });
         }
 
-        // Gráfico Inteligente para YTD, YEAR e MONTH
         function drawTimelineChart(typeA, yearA, moA, typeB, yearB, moB, nameA, nameB, filterCanal, filterDevice, compType) {
             let labels = []; let datasets = [];
 
@@ -632,24 +628,21 @@
                     { label: nameB, data: cleanB, borderColor: '#3483FA', backgroundColor: 'rgba(52, 131, 250, 0.1)', fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
                 ];
             } else if (compType === 'YTD') {
-                // Monta a curva cumulativa até o maior mês selecionado nas caixas A e B
-                const maxM = Math.max(parseInt(moA), parseInt(moB));
+                const maxM = Math.max(parseInt(moA||0), parseInt(moB||0));
                 labels = Array.from({length: maxM}, (_, i) => PT_MONTHS[i].substring(0,3)); 
 
                 let accA = 0;
                 const cleanA = labels.map((_, i) => {
                     if (i + 1 > parseInt(moA)) return null; 
                     const val = extractValue(typeA, `MONTH|${yearA}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total;
-                    accA += val;
-                    return accA;
+                    accA += val; return accA;
                 });
 
                 let accB = 0;
                 const cleanB = labels.map((_, i) => {
                     if (i + 1 > parseInt(moB)) return null;
                     const val = extractValue(typeB, `MONTH|${yearB}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total;
-                    accB += val;
-                    return accB;
+                    accB += val; return accB;
                 });
 
                 datasets = [
@@ -787,6 +780,43 @@
             else icon.classList.remove('rotate-90');
         }
 
+        // Exportação NATIVA para Excel (XLSX) usando SheetJS
+        function exportExcel() {
+            if(!window.currentExportData) return;
+            const { dataA, dataB, nameA, nameB } = window.currentExportData;
+            
+            const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
+            allCanals.sort((a,b) => (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0));
+
+            let rows = [];
+            rows.push(["Canal", "Modelo", nameA, nameB, "Var (%)", "Var (Abs)"]);
+
+            allCanals.forEach(canal => {
+                const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
+                const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
+                
+                // Formatações limpas para ficar perfeito no Excel
+                rows.push([canal, "TOTAL CANAL", Math.round(cA), Math.round(cB), cPct.toFixed(1).replace('.',',') + '%', Math.round(cAbs)]);
+
+                const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
+                const allDevices = Array.from(new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]));
+                allDevices.sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
+
+                allDevices.forEach(dev => {
+                    const dA = devicesA[dev] || 0; const dB = devicesB[dev] || 0;
+                    const dAbs = dB - dA; const dPct = dA > 0 ? (dAbs/dA)*100 : (dB > 0 ? 100 : 0);
+                    rows.push([canal, dev, Math.round(dA), Math.round(dB), dPct.toFixed(1).replace('.',',') + '%', Math.round(dAbs)]);
+                });
+            });
+
+            // Monta o arquivo e força o download
+            const wsFinal = XLSX.utils.aoa_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, wsFinal, "MPOS Analytics");
+            XLSX.writeFile(wb, `MPOS_Analytics_${new Date().getTime()}.xlsx`);
+        }
+
+        // Exportação Antiga (CSV) mantida como backup
         function exportJoinedCSV() {
             if(!window.currentExportData) return;
             const { dataA, dataB, nameA, nameB } = window.currentExportData;
@@ -799,7 +829,6 @@
             allCanals.forEach(canal => {
                 const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
                 const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
-                
                 csvContent += `${canal};TOTAL CANAL;${Math.round(cA)};${Math.round(cB)};${cPct.toFixed(1).replace('.',',')}%;${Math.round(cAbs)}\n`;
 
                 const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
@@ -817,13 +846,13 @@
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", `MPOS_Analytics_Export_${new Date().getTime()}.csv`);
+            link.setAttribute("download", `MPOS_Analytics_${new Date().getTime()}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // RELATÓRIO EXECUTIVO
+        // RELATÓRIO EXECUTIVO PDF (Com Suporte a YTD)
         function generateExecutiveReport() {
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
             if (compType === 'YEAR') {
