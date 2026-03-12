@@ -46,7 +46,7 @@
     <div id="loading" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <div class="spinner mb-6"></div>
         <h2 class="text-xl font-black text-gray-800 tracking-tight">Iniciando MPOS Analytics...</h2>
-        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Sincronizando Plano, Realizado & Forecast</p>
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Processando Plano, Realizado & Forecast</p>
     </div>
 
     <header class="ml-yellow w-full py-4 px-6 shadow-sm sticky top-0 z-50 border-b border-yellow-300">
@@ -99,7 +99,7 @@
                 </h2>
                 <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
                     <label class="cursor-pointer">
-                        <input type="radio" name="comp-type" value="MONTH" checked onchange="handleTypeChange()" class="peer sr-only">
+                        <input type="radio" name="comp-type" value="MONTH" onchange="handleTypeChange()" class="peer sr-only">
                         <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Mês a Mês</div>
                     </label>
                     <label class="cursor-pointer">
@@ -107,7 +107,7 @@
                         <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTD (Acumulado)</div>
                     </label>
                     <label class="cursor-pointer">
-                        <input type="radio" name="comp-type" value="YEAR" onchange="handleTypeChange()" class="peer sr-only">
+                        <input type="radio" name="comp-type" value="YEAR" checked onchange="handleTypeChange()" class="peer sr-only">
                         <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Anos (Fechado)</div>
                     </label>
                 </div>
@@ -117,7 +117,7 @@
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
                     <div class="flex gap-2">
                         <select id="scenario-a" onchange="handleScenarioChange('a')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                        <select id="month-a" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
+                        <select id="month-a" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center" style="display: none;"></select>
                     </div>
                 </div>
                 <div class="flex justify-center pt-5">
@@ -129,7 +129,7 @@
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
                     <div class="flex gap-2">
                         <select id="scenario-b" onchange="handleScenarioChange('b')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                        <select id="month-b" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
+                        <select id="month-b" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center" style="display: none;"></select>
                     </div>
                 </div>
             </div>
@@ -222,7 +222,6 @@
         const URL_FORECAST = "forecast.json"; 
 
         const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
         const BR_MONTH_MAP = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
 
         let db = { PLAN: [], ACTUAL: [], FORECAST: [] };
@@ -252,6 +251,7 @@
             let matchEn = str.match(/^(\d{4})-(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$/i);
             if (matchEn) {
                 let m = matchEn[2].charAt(0).toUpperCase() + matchEn[2].slice(1).toLowerCase();
+                const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
                 return matchEn[1] + EN_TO_NUM[m];
             }
             
@@ -334,6 +334,7 @@
             return cleanData;
         }
 
+        // Mágica 10.0: Auto-Cura de Forecast com a base Realizada usando CanalRegistry correto
         function fuseActualIntoForecast(actualDb, forecastDb) {
             const today = new Date();
             const currentYYYYMM = String(today.getFullYear()) + String(today.getMonth() + 1).padStart(2, '0');
@@ -341,8 +342,13 @@
             let forecastMap = {};
             
             forecastDb.forEach(row => {
-                let key = row.Canal + "|" + row.Device;
-                if(!forecastMap[key]) forecastMap[key] = { Canal: row.Canal, Device: row.Device };
+                let rawC = String(row.Canal||'').trim().toUpperCase();
+                let canal = canalRegistry[rawC] || String(row.Canal||'').trim();
+                let device = row.Device;
+                
+                let key = canal + "|" + device;
+                if(!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
+                
                 for(let k in row) {
                     if(/^\d{6}$/.test(k)) {
                         if (k < currentYYYYMM) forecastMap[key][k] = 0; 
@@ -352,8 +358,9 @@
             });
 
             actualDb.forEach(row => {
-                let canal = row.Canal || row[cols.ACTUAL.canal];
-                let rawD = row.Device || row[cols.ACTUAL.device];
+                let rawC = String(row[cols.ACTUAL.canal]||'').trim().toUpperCase();
+                let canal = canalRegistry[rawC] || String(row[cols.ACTUAL.canal]||'').trim();
+                let rawD = String(row[cols.ACTUAL.device]||'');
                 let device = classifyDevice(rawD) || rawD;
                 
                 if(!canal || !device) return;
@@ -387,11 +394,13 @@
                 db.ACTUAL = parseStandardJSON(rawActual);
                 db.FORECAST = parseForecastJSON(rawForecast);
 
+                // Prepara o Registry de Canais antes de fundir os dados
+                detectStructure();
+
                 if (db.ACTUAL.length > 0) {
                     db.FORECAST = fuseActualIntoForecast(db.ACTUAL, db.FORECAST);
                 }
 
-                detectStructure();
                 handleTypeChange(); 
                 populateGlobalFilters();
 
@@ -466,24 +475,20 @@
             selectScA.innerHTML = htmlA; selectScB.innerHTML = htmlB;
 
             if(scenarioList.length > 0) {
-                // --- DEFAULT INTELIGENTE PARA MÊS E ANO ATUAL ---
                 const currentYear = new Date().getFullYear().toString();
-                const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-
                 const planId = `PLAN|${currentYear}`;
                 const actualId = `ACTUAL|${currentYear}`;
 
                 const hasPlan = scenarioList.some(s => s.id === planId);
                 const hasActual = scenarioList.some(s => s.id === actualId);
 
+                // DEFAULT: PLANO 2026 vs REALIZADO 2026
                 if (hasPlan && hasActual) {
                     selectScA.value = planId;
                     selectScB.value = actualId;
                 } else {
-                    // Fallback
                     const actuals = scenarioList.filter(s => s.type === 'ACTUAL');
                     const plans = scenarioList.filter(s => s.type === 'PLAN');
-                    
                     if (actuals.length > 0 && plans.length > 0) {
                         selectScA.value = plans[plans.length - 1].id; 
                         selectScB.value = actuals[actuals.length - 1].id; 
@@ -494,19 +499,7 @@
                 }
             }
 
-            handleScenarioChange('a', false); 
-            handleScenarioChange('b', false);
-
-            if (compType !== 'YEAR') {
-                const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-                if (Array.from(monthA.options).some(o => o.value === currentMonth)) {
-                    monthA.value = currentMonth;
-                }
-                if (Array.from(monthB.options).some(o => o.value === currentMonth)) {
-                    monthB.value = currentMonth;
-                }
-            }
-
+            handleScenarioChange('a', false); handleScenarioChange('b', false);
             processDashboard();
         }
 
@@ -719,7 +712,7 @@
                 let textPart = `o canal ${c.name}, com <strong class="text-gray-900">${absStr} unidades</strong> (${pctStr} vs cenário base)`;
                 driversText.push(textPart);
 
-                if ((explained / targetDiff) >= 0.85) break; 
+                if ((explained / Math.abs(targetDiff)) >= 0.85) break; 
             }
 
             let text = `<p>${aiStrB} frente ${aiStrA}, aponta para uma `;
@@ -1048,7 +1041,7 @@
             const dTarget = extractValue(typeTarget, `${compType}|${currentYM}`, 'ALL', 'ALL');
             const dPlan   = extractValue('PLAN', `${compType}|${currentYM}`, 'ALL', 'ALL');
             const dMoM    = extractValue(typeTarget, `${compType}|${prevMoM_YM}`, 'ALL', 'ALL');
-            const dYoY    = extractValue('ACTUAL', `${compType}|${prevYoY_YM}`, 'ALL', 'ALL'); // YoY sempre usa o Actual como base
+            const dYoY    = extractValue('ACTUAL', `${compType}|${prevYoY_YM}`, 'ALL', 'ALL');
 
             const lblYtd = compType === 'YTD' ? 'Acumulado (YTD) até ' : '';
             const typeLabel = typeTarget === 'ACTUAL' ? 'Realizado' : 'Forecast';
