@@ -97,7 +97,7 @@
                 <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
                     <i data-lucide="git-compare" class="w-4 h-4 text-blue-500"></i> Motor de Comparação
                 </h2>
-                <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner flex-wrap">
+                <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
                     <label class="cursor-pointer">
                         <input type="radio" name="comp-type" value="MONTH" checked onchange="handleTypeChange()" class="peer sr-only">
                         <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Mês a Mês</div>
@@ -121,7 +121,7 @@
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
                     <div class="flex gap-2">
                         <select id="scenario-a" onchange="handleScenarioChange('a')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                        <select id="month-a" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center" style="display: block;"></select>
+                        <select id="month-a" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
                     </div>
                 </div>
                 <div class="flex justify-center pt-5">
@@ -133,7 +133,7 @@
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
                     <div class="flex gap-2">
                         <select id="scenario-b" onchange="handleScenarioChange('b')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                        <select id="month-b" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center" style="display: block;"></select>
+                        <select id="month-b" onchange="processDashboard()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
                     </div>
                 </div>
             </div>
@@ -368,7 +368,7 @@
                 
                 if(!canal || !device) return;
 
-                let key = canal + "|" + device;
+                let key = canal.toUpperCase() + "|" + device;
                 for(let k in row) {
                     if(/^\d{6}$/.test(k) && k < currentYYYYMM) {
                         if(!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
@@ -459,7 +459,6 @@
             const monthA = document.getElementById('month-a');
             const monthB = document.getElementById('month-b');
 
-            // Esconde os meses nas visões que usam seletor único (YTD, YTG) ou que não usam (YEAR)
             if (compType === 'YEAR') {
                 monthA.style.display = 'none';
                 monthB.style.display = 'none';
@@ -509,16 +508,13 @@
                 }
             }
 
-            handleScenarioChange('a', false); handleScenarioChange('b', false);
+            handleScenarioChange('a', false); 
+            handleScenarioChange('b', false);
 
+            // Default for Month: Always start at '01' (January) for both selectors
             if (compType !== 'YEAR') {
-                const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-                if (Array.from(monthA.options).some(o => o.value === currentMonth)) {
-                    monthA.value = currentMonth;
-                }
-                if (Array.from(monthB.options).some(o => o.value === currentMonth)) {
-                    monthB.value = currentMonth;
-                }
+                if (Array.from(monthA.options).some(o => o.value === '01')) { monthA.value = '01'; }
+                if (Array.from(monthB.options).some(o => o.value === '01')) { monthB.value = '01'; }
             }
 
             processDashboard();
@@ -529,8 +525,13 @@
             const moSelect = document.getElementById(`month-${side}`);
             const scenario = scenarioList.find(s => s.id === scSelect.value);
             if (scenario) {
+                let prevVal = moSelect.value;
                 moSelect.innerHTML = scenario.months.map(m => `<option value="${m}">${m} - ${PT_MONTHS[parseInt(m)-1].substring(0,3)}</option>`).join('');
-                if (scenario.months.length > 0) moSelect.value = scenario.months[scenario.months.length - 1];
+                if (Array.from(moSelect.options).some(o => o.value === prevVal)) {
+                    moSelect.value = prevVal;
+                } else if (scenario.months.length > 0) {
+                    moSelect.value = scenario.months[scenario.months.length - 1];
+                }
             }
             if (runProcess) processDashboard();
         }
@@ -548,7 +549,7 @@
                     let rawD = String(row[colD]||'');
                     let device = type === 'FORECAST' ? rawD : (classifyDevice(rawD) || rawD);
 
-                    if(canal && canal !== '0') allCanals.add(canal);
+                    if(canal && canal !== '0') allCanals.add(canal.toUpperCase());
                     if(device) allDevices.add(device);
                 });
             });
@@ -568,6 +569,8 @@
             data.forEach(row => {
                 let rawC = String(row[colC]||'').trim().toUpperCase();
                 let canal = canalRegistry[rawC] || String(row[colC]||'').trim();
+                canal = canal.toUpperCase(); // Force uppercase to absolutely prevent duplicates
+
                 let rawD = String(row[colD]||'');
                 let device = type === 'FORECAST' ? rawD : (classifyDevice(rawD) || rawD);
 
@@ -594,7 +597,6 @@
                     Object.keys(row).forEach(k => {
                         if(k.startsWith(y)) {
                             const km = parseInt(k.substring(4,6), 10);
-                            // YTG soma do mês escolhido para frente
                             if(km >= targetM) rowSum += parseNum(row[k]);
                         }
                     });
@@ -630,7 +632,6 @@
             const scB = document.getElementById('scenario-b'); 
             const moB = document.getElementById('month-b');
 
-            // Força a caixa B a usar o mês da caixa A nas opções acumuladas
             let moA_val = moA.value;
             let moB_val = (compType === 'YTD' || compType === 'YTG') ? moA_val : moB.value;
 
@@ -727,6 +728,7 @@
             aiCard.style.borderLeftColor = getBaseColor(typeB, true);
 
             const targetDiff = dataB.total - dataA.total;
+            const absTargetDiff = Math.abs(targetDiff);
             const deltaPct = dataA.total > 0 ? (targetDiff / dataA.total) * 100 : 0;
             
             if(dataA.total === 0 && dataB.total === 0) {
@@ -747,17 +749,17 @@
             
             for (let i = 0; i < contributors.length; i++) {
                 let c = contributors[i];
-                explained += c.diff;
+                explained += Math.abs(c.diff);
                 let vA = dataA.byCanal[c.name] || 0; let vB = dataB.byCanal[c.name] || 0;
                 let cPct = vA > 0 ? (c.diff / vA) * 100 : (vB > 0 ? 100 : 0);
                 
                 let pctStr = cPct > 0 ? `+${formatBRPct(cPct)}` : `${formatBRPct(cPct)}`;
                 let absStr = c.diff > 0 ? `+${formatBRNum(c.diff)}` : formatBRNum(c.diff);
                 
-                let textPart = `o canal ${c.name}, com <strong class="text-gray-900">${absStr} unidades</strong> (${pctStr} vs cenário base)`;
+                let textPart = `o canal <strong class="text-gray-900">${c.name}</strong>, com <strong>${absStr} unidades</strong> (${pctStr} vs cenário base)`;
                 driversText.push(textPart);
 
-                if ((explained / Math.abs(targetDiff)) >= 0.85) break; 
+                if ((explained / absTargetDiff) >= 0.85) break; 
             }
 
             let text = `<p>${aiStrB} frente ${aiStrA}, aponta para uma `;
@@ -840,17 +842,8 @@
                 const maxM = parseInt(moA); 
                 labels = Array.from({length: maxM}, (_, i) => PT_MONTHS[i].substring(0,3)); 
 
-                let accA = 0;
-                const cleanA = labels.map((_, i) => {
-                    const val = extractValue(typeA, `MONTH|${yearA}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total;
-                    accA += val; return accA;
-                });
-
-                let accB = 0;
-                const cleanB = labels.map((_, i) => {
-                    const val = extractValue(typeB, `MONTH|${yearB}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total;
-                    accB += val; return accB;
-                });
+                const cleanA = labels.map((_, i) => extractValue(typeA, `MONTH|${yearA}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total);
+                const cleanB = labels.map((_, i) => extractValue(typeB, `MONTH|${yearB}${String(i+1).padStart(2,'0')}`, filterCanal, filterDevice).total);
 
                 datasets = [
                     { label: nameA, data: cleanA, borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
@@ -860,17 +853,8 @@
                 const startM = parseInt(moA); 
                 labels = Array.from({length: 12 - startM + 1}, (_, i) => PT_MONTHS[startM - 1 + i].substring(0,3)); 
 
-                let accA = 0;
-                const cleanA = labels.map((_, i) => {
-                    const val = extractValue(typeA, `MONTH|${yearA}${String(startM+i).padStart(2,'0')}`, filterCanal, filterDevice).total;
-                    accA += val; return accA;
-                });
-
-                let accB = 0;
-                const cleanB = labels.map((_, i) => {
-                    const val = extractValue(typeB, `MONTH|${yearB}${String(startM+i).padStart(2,'0')}`, filterCanal, filterDevice).total;
-                    accB += val; return accB;
-                });
+                const cleanA = labels.map((_, i) => extractValue(typeA, `MONTH|${yearA}${String(startM+i).padStart(2,'0')}`, filterCanal, filterDevice).total);
+                const cleanB = labels.map((_, i) => extractValue(typeB, `MONTH|${yearB}${String(startM+i).padStart(2,'0')}`, filterCanal, filterDevice).total);
 
                 datasets = [
                     { label: nameA, data: cleanA, borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
@@ -1083,7 +1067,6 @@
             const [typeA, yA] = document.getElementById('scenario-a').value.split('|');
             const [typeB, yB] = document.getElementById('scenario-b').value.split('|');
             
-            // O Relatório exige que a base Realizada ou Forecast seja analisada contra o Plano e o passado
             if (typeB === 'ACTUAL' || typeB === 'FORECAST') {
                 typeTarget = typeB; yearTarget = yB; monthTarget = document.getElementById('month-a').value;
             } else if (typeA === 'ACTUAL' || typeA === 'FORECAST') {
@@ -1256,3 +1239,4 @@
     </script>
 </body>
 </html>
+
