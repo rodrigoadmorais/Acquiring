@@ -46,7 +46,7 @@
     <div id="loading" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center">
         <div class="spinner mb-6"></div>
         <h2 class="text-xl font-black text-gray-800 tracking-tight">Iniciando MPOS Analytics...</h2>
-        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Sincronizando Plano, Realizado & Forecast</p>
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Processando Plano, Realizado & Forecast</p>
     </div>
 
     <header class="ml-yellow w-full py-4 px-6 shadow-sm sticky top-0 z-50 border-b border-yellow-300">
@@ -162,8 +162,7 @@
             <h4 class="text-sm font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-tight" id="ai-title">
                 <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo gerado pelo Gemini
             </h4>
-            <div id="ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2">
-            </div>
+            <div id="ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2"></div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -171,17 +170,13 @@
                 <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
                     <i data-lucide="line-chart" class="w-4 h-4 text-gray-400" id="icon-chart-line"></i> Evolução Focada (A vs B)
                 </h4>
-                <div class="h-80">
-                    <canvas id="timelineChart"></canvas>
-                </div>
+                <div class="h-80"><canvas id="timelineChart"></canvas></div>
             </div>
             <div class="card p-6">
                 <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
                     <i data-lucide="bar-chart-2" class="w-4 h-4 text-gray-400" id="icon-chart-bar"></i> Comparativo por Canal (Top 5)
                 </h4>
-                <div class="h-80">
-                    <canvas id="barChart"></canvas>
-                </div>
+                <div class="h-80"><canvas id="barChart"></canvas></div>
             </div>
         </div>
 
@@ -203,8 +198,7 @@
                             <th class="p-4">Var (Abs)</th>
                         </tr>
                     </thead>
-                    <tbody id="drilldown-tbody" class="divide-y divide-gray-100 bg-white">
-                    </tbody>
+                    <tbody id="drilldown-tbody" class="divide-y divide-gray-100 bg-white"></tbody>
                     <tfoot class="bg-gray-50">
                         <tr class="border-t border-gray-200">
                             <td class="p-4 font-black text-xs text-gray-800 uppercase tracking-widest">Total Geral</td>
@@ -228,80 +222,109 @@
         const URL_FORECAST = "forecast.json"; 
 
         const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
         const BR_MONTH_MAP = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
 
         let db = { PLAN: [], ACTUAL: [], FORECAST: [] };
         let scenarioList = []; 
-        let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" }, FORECAST: { canal: "", device: "" } };
-        let canalRegistry = {}; // Guarda a capitalização correta dos canais
+        let canalRegistry = {}; 
         let timelineChart, barChart;
-        
         window.currentExportData = null;
 
         function formatBRPct(num) { return num.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '%'; }
         function formatBRNum(num) { return Math.round(num).toLocaleString('pt-BR'); }
 
         function parseNum(val) {
-            if (!val || val === "0") return 0;
+            if (!val || val === "0" || String(val).trim() === "") return 0;
             let s = String(val).trim().replace(/\s/g, ''); 
-            const parts = s.split(/[.,]/);
-            if (parts.length === 2 && parts[1].length === 3) return parseFloat(s.replace(/[.,]/g, '')) || 0;
-            if (s.includes('.') && s.includes(',')) {
-                return s.indexOf('.') < s.indexOf(',') ? parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0 : parseFloat(s.replace(/,/g, '')) || 0;
+            if (s.includes(',') && s.includes('.')) {
+                return s.indexOf('.') < s.indexOf(',') ? parseFloat(s.replace(/\./g, '').replace(',', '.')) : parseFloat(s.replace(/,/g, ''));
             }
-            return parseFloat(s.replace(',', '.')) || 0;
+            if (s.includes(',')) return parseFloat(s.replace(',', '.'));
+            return parseFloat(s);
         }
 
-        // Extrator inteligente de mês (Aceita: 202601, 2025-Jan, jan/26)
-        function standardizeMonth(val) {
-            if(!val) return "";
-            let v = String(val).trim();
-            if (/^\d{6}$/.test(v)) return v; 
+        // Tenta achar o mês de várias formas: 202601, jan/26, 2026-Jan
+        function extractMonthFromKey(k) {
+            const str = String(k).trim().toLowerCase();
+            if (/^\d{6}$/.test(str)) return str;
             
-            let matchEn = v.match(/^(\d{4})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i);
-            if (matchEn) {
-                let m = matchEn[2].charAt(0).toUpperCase() + matchEn[2].slice(1).toLowerCase();
-                return matchEn[1] + EN_TO_NUM[m];
-            }
-            
-            let matchBr = v.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\/(\d{2})$/i);
-            if (matchBr) {
-                let m = matchBr[1].toLowerCase();
-                let y = "20" + matchBr[2];
-                return y + BR_MONTH_MAP[m];
-            }
-            return v;
+            // Formato do Forecast (jan/26)
+            let matchBr = str.match(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\/(\d{2})$/);
+            if (matchBr) return "20" + matchBr[2] + BR_MONTH_MAP[matchBr[1]];
+
+            return null;
         }
 
-        function normalizeData(data) {
-            if (!data || data.length === 0) return [];
-            const firstRow = data[0];
-            const vals = Object.values(firstRow).map(String);
-            const isHeaderRow = vals.some(v => /^\d{6}$/.test(v) || /^\d{4}-[A-Za-z]{3}$/.test(v) || /^[A-Za-z]{3}\/\d{2}$/.test(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
+        // Classifica o Dispositivo (Independente de como vier escrito)
+        function classifyDevice(val) {
+            if(!val) return null;
+            let str = String(val).toUpperCase();
+            if (str.includes('AIR')) return 'AIR';
+            if (str.includes('MINI')) return 'MINI';
+            if (str.includes('PRO')) return 'PRO';
+            if (str.includes('SMART')) return 'SMART';
+            return null; 
+        }
+
+        // O TRATOR DE DADOS (Pega sujeira e transforma em array perfeito)
+        function processDirtyJSON(dataArray, typeLabel) {
+            let cleanData = [];
             
-            let mappedData = [];
-            if (isHeaderRow) {
-                for (let i = 1; i < data.length; i++) {
+            // Para o PLAN e ACTUAL (Que costumam ser mais comportados)
+            if (typeLabel !== 'FORECAST') {
+                if (!dataArray || dataArray.length === 0) return [];
+                const firstRow = dataArray[0];
+                const vals = Object.values(firstRow).map(String);
+                const isHeaderRow = vals.some(v => extractMonthFromKey(v)) || vals.some(v => v.toUpperCase().includes('CANAL'));
+                
+                let startIdx = isHeaderRow ? 1 : 0;
+                for (let i = startIdx; i < dataArray.length; i++) {
                     let obj = {};
-                    for (let k in data[i]) {
+                    let canalCol = "", deviceCol = "";
+                    for (let k in dataArray[i]) {
                         if (k === 'row_number' || k === 'TOTAL') continue;
-                        let realKey = firstRow[k]; 
-                        if (realKey && String(realKey).trim() !== "") obj[standardizeMonth(realKey)] = data[i][k];
+                        
+                        let keyName = isHeaderRow ? firstRow[k] : k;
+                        let monthKey = extractMonthFromKey(keyName);
+                        
+                        if (monthKey) {
+                            obj[monthKey] = parseNum(dataArray[i][k]);
+                        } else {
+                            let textVal = String(dataArray[i][k] || '').trim();
+                            if(String(keyName).toUpperCase().includes('CANAL')) obj['Canal'] = textVal;
+                            else if(classifyDevice(textVal)) obj['Device'] = classifyDevice(textVal);
+                        }
                     }
-                    mappedData.push(obj);
+                    if(obj['Canal']) cleanData.push(obj);
                 }
-            } else {
-                for (let i = 0; i < data.length; i++) {
-                    let obj = {};
-                    for (let k in data[i]) {
-                        if (k === 'row_number' || k === 'TOTAL') continue;
-                        obj[standardizeMonth(k)] = data[i][k];
-                    }
-                    mappedData.push(obj);
-                }
+                return cleanData;
             }
-            return mappedData;
+
+            // MÁQUINA DE LIMPEZA PARA O FORECAST
+            for (let i = 0; i < dataArray.length; i++) {
+                let row = dataArray[i];
+                let canal = row['Canal'];
+                let device = classifyDevice(row['DEVICE_TYPE']) || classifyDevice(row['TOTAL']);
+                
+                // Se não tem canal explícito (ex: 0), ou não é um device válido, pula! (Mata as linhas de total e lixo)
+                if (!canal || canal === 0 || canal === '0' || !device) continue;
+
+                let obj = { Canal: String(canal).trim(), Device: device };
+                let hasData = false;
+
+                // Varre a linha buscando meses (jan/26, etc)
+                for (let k in row) {
+                    let mKey = extractMonthFromKey(k);
+                    if (mKey) {
+                        let val = parseNum(row[k]);
+                        obj[mKey] = val;
+                        if(val > 0) hasData = true;
+                    }
+                }
+                if(hasData) cleanData.push(obj);
+            }
+
+            return cleanData;
         }
 
         async function boot() {
@@ -312,15 +335,21 @@
                     fetch(`${URL_ACTUAL}?_=${Date.now()}`).catch(() => ({ ok: false })),
                     fetch(`${URL_FORECAST}?_=${Date.now()}`).catch(() => ({ ok: false }))
                 ]);
-                if (resPlan.ok) db.PLAN = normalizeData(await resPlan.json());
-                if (resActual.ok) db.ACTUAL = normalizeData(await resActual.json());
-                if (resForecast.ok) db.FORECAST = normalizeData(await resForecast.json());
+                
+                let rawPlan = resPlan.ok ? await resPlan.json() : [];
+                let rawActual = resActual.ok ? await resActual.json() : [];
+                let rawForecast = resForecast.ok ? await resForecast.json() : [];
+
+                db.PLAN = processDirtyJSON(rawPlan, 'PLAN');
+                db.ACTUAL = processDirtyJSON(rawActual, 'ACTUAL');
+                db.FORECAST = processDirtyJSON(rawForecast, 'FORECAST');
 
                 detectStructure();
                 handleTypeChange(); 
                 populateGlobalFilters();
 
             } catch (err) {
+                console.log(err);
                 document.getElementById('status-badge').className = "bg-white text-red-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-200 shadow-sm flex items-center gap-2";
                 document.getElementById('status-badge').innerHTML = '<i data-lucide="alert-triangle" class="w-3 h-3 text-red-500"></i> Erro de Sincronia';
                 lucide.createIcons();
@@ -333,30 +362,13 @@
             scenarioList = [];
             canalRegistry = {};
 
-            // 1. Registra os nomes exatos de canais do Plano e Actual para usar como padrão
-            ['PLAN', 'ACTUAL'].forEach(type => {
-                if(db[type].length === 0) return;
-                const sample = db[type][0];
-                const textKeys = Object.keys(sample).filter(k => k !== "row_number" && !/^\d{6}$/.test(k));
-                cols[type].canal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
-                const possibleDevices = textKeys.filter(k => k !== cols[type].canal);
-                cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
-
+            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
+                if(!db[type] || db[type].length === 0) return;
+                
                 db[type].forEach(row => {
-                    let c = String(row[cols[type].canal]||'').trim();
+                    let c = String(row.Canal||'').trim();
                     if(c) canalRegistry[c.toUpperCase()] = c;
                 });
-            });
-
-            // 2. Extrai colunas e dados gerais
-            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
-                if(db[type].length === 0) return;
-                const sample = db[type][0];
-                const textKeys = Object.keys(sample).filter(k => k !== "row_number" && !/^\d{6}$/.test(k) && k !== 'TOTAL');
-                
-                cols[type].canal = textKeys.find(k => k.toUpperCase().includes('CANAL')) || textKeys[0];
-                const possibleDevices = textKeys.filter(k => k !== cols[type].canal);
-                cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
 
                 let months = new Set();
                 db[type].forEach(row => { Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) months.add(k); }); });
@@ -425,30 +437,13 @@
             if (runProcess) processDashboard();
         }
 
-        // Padroniza as máquinas (Se a linha do Forecast for "Mini BT D175", extrai só "MINI")
-        function getStandardDevice(raw) {
-            if(!raw) return null;
-            let up = String(raw).toUpperCase();
-            if (up.includes('AIR')) return 'AIR';
-            if (up.includes('MINI')) return 'MINI';
-            if (up.includes('PRO')) return 'PRO';
-            if (up.includes('SMART')) return 'SMART';
-            return null; // Descarta linhas de somatório automático que não tenham nome de device
-        }
-
         function populateGlobalFilters() {
             let allCanals = new Set(); let allDevices = new Set();
             ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
                 if(!db[type]) return;
                 db[type].forEach(row => {
-                    let rawC = String(row[cols[type].canal]||'').trim().toUpperCase();
-                    let canal = canalRegistry[rawC] || String(row[cols[type].canal]||'').trim();
-                    let device = getStandardDevice(row[cols[type].device]);
-                    
-                    if(canal && device) {
-                        allCanals.add(canal);
-                        allDevices.add(device);
-                    }
+                    if(row.Canal) allCanals.add(row.Canal);
+                    if(row.Device) allDevices.add(row.Device);
                 });
             });
             document.getElementById('filter-canal').innerHTML = '<option value="ALL">Todos os Canais</option>' + [...allCanals].sort().map(c => `<option value="${c}">${c}</option>`).join('');
@@ -458,32 +453,28 @@
         function extractValue(type, periodId, filterCanal, filterDevice) {
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type] || [];
-            const colC = cols[type].canal; const colD = cols[type].device;
 
             let total = 0; let byCanal = {}; let byDevice = {}; let byCanalDevice = {};
 
             data.forEach(row => {
-                let device = getStandardDevice(row[colD]);
-                if(!device) return; // Ignora os totais agrupados do forecast
-                
-                let rawC = String(row[colC]||'').trim().toUpperCase();
-                let canal = canalRegistry[rawC] || String(row[colC]||'').trim();
+                let canal = row.Canal;
+                let device = row.Device;
 
                 if (filterCanal !== 'ALL' && canal !== filterCanal) return;
                 if (filterDevice !== 'ALL' && device !== filterDevice) return;
 
                 let rowSum = 0;
                 if (periodType === 'MONTH') {
-                    rowSum = parseNum(row[periodValue]);
+                    rowSum = row[periodValue] || 0;
                 } else if (periodType === 'YEAR') {
-                    Object.keys(row).forEach(k => { if(k.startsWith(periodValue)) rowSum += parseNum(row[k]); });
+                    Object.keys(row).forEach(k => { if(k.startsWith(periodValue)) rowSum += row[k]||0; });
                 } else if (periodType === 'YTD') {
                     const y = periodValue.substring(0,4);
                     const targetM = parseInt(periodValue.substring(4,6), 10);
                     Object.keys(row).forEach(k => {
                         if(k.startsWith(y)) {
                             const km = parseInt(k.substring(4,6), 10);
-                            if(km <= targetM) rowSum += parseNum(row[k]);
+                            if(km <= targetM) rowSum += row[k]||0;
                         }
                     });
                 }
@@ -497,11 +488,10 @@
             return { total, byCanal, byDevice, byCanalDevice };
         }
 
-        // Função de cor visual de acordo com a base selecionada
         function getBaseColor(type, isBorder = false) {
-            if (type === 'PLAN') return isBorder ? '#10B981' : '#10B981'; // Verde
-            if (type === 'FORECAST') return isBorder ? '#F59E0B' : '#F59E0B'; // Laranja
-            return isBorder ? '#3B82F6' : '#3B82F6'; // Azul (Actual)
+            if (type === 'PLAN') return isBorder ? '#10B981' : '#10B981'; 
+            if (type === 'FORECAST') return isBorder ? '#F59E0B' : '#F59E0B'; 
+            return isBorder ? '#3B82F6' : '#3B82F6'; 
         }
         function getBaseBgColor(type) {
             if (type === 'PLAN') return 'rgba(16, 185, 129, 0.1)';
@@ -558,7 +548,6 @@
         function updateKPIs(valA, valB, nameA, nameB, typeB) {
             document.getElementById('label-kpi-a').innerText = nameA;
             
-            // Dynamic B formatting based on Type B
             const kpiB = document.getElementById('kpi-b-container');
             const lblB = document.getElementById('label-kpi-b');
             const thB = document.getElementById('th-b');
@@ -600,8 +589,6 @@
         function generateGeminiAI(dataA, dataB, aiStrA, aiStrB, typeB) {
             const container = document.getElementById('ai-text');
             const aiCard = document.getElementById('ai-container');
-            const aiIcon = document.getElementById('ai-title');
-            
             aiCard.style.borderLeftColor = getBaseColor(typeB, true);
 
             const targetDiff = dataB.total - dataA.total;
@@ -928,7 +915,7 @@
             document.body.removeChild(link);
         }
 
-        // RELATÓRIO EXECUTIVO
+        // RELATÓRIO EXECUTIVO DINÂMICO
         function generateExecutiveReport() {
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
             if (compType === 'YEAR') {
@@ -966,6 +953,7 @@
             const lblYtd = compType === 'YTD' ? 'Acumulado (YTD) até ' : '';
             const typeLabel = typeTarget === 'ACTUAL' ? 'Realizado' : 'Forecast';
             const tituloMes = `${lblYtd}${PT_MONTHS[parseInt(monthTarget)-1]} / ${yearTarget}`;
+            const bColor = getBaseColor(typeTarget, true);
 
             function getVarHTML(val, base) {
                 if(base===0 && val===0) return `<span style="color:#6b7280;">-</span>`;
@@ -985,7 +973,7 @@
                     .container { max-width: 1000px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
                     h1 { color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 5px; font-size: 24px; }
                     .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
-                    h2 { color: #1f2937; margin-top: 30px; font-size: 18px; border-left: 4px solid #3b82f6; padding-left: 10px; }
+                    h2 { color: #1f2937; margin-top: 30px; font-size: 18px; border-left: 4px solid ${bColor}; padding-left: 10px; }
                     .kpi-box { display: flex; gap: 15px; margin-top: 15px; }
                     .kpi { background: #f3f4f6; padding: 20px 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #e5e7eb; }
                     .kpi-label { display: block; font-size: 11px; text-transform: uppercase; color: #6b7280; font-weight: bold; margin-bottom: 8px; }
@@ -1014,7 +1002,7 @@
 
                     <h2>Visão Geral do Negócio</h2>
                     <div class="kpi-box">
-                        <div class="kpi"><span class="kpi-label">Volume Total</span><div class="kpi-val">${formatBRNum(dTarget.total)}</div></div>
+                        <div class="kpi"><span class="kpi-label">Volume Total</span><div class="kpi-val" style="color:${bColor}">${formatBRNum(dTarget.total)}</div></div>
                         <div class="kpi"><span class="kpi-label">vs. Plano (Mesmo Período)</span><div class="kpi-val">${getVarHTML(dTarget.total, dPlan.total)}</div></div>
                         <div class="kpi"><span class="kpi-label">vs. Período Anterior (MoM)</span><div class="kpi-val">${getVarHTML(dTarget.total, dMoM.total)}</div></div>
                         <div class="kpi"><span class="kpi-label">vs. Ano Anterior (YoY)</span><div class="kpi-val">${getVarHTML(dTarget.total, dYoY.total)}</div></div>
@@ -1041,7 +1029,7 @@
                 <div style="page-break-inside: avoid;">
                     <h2>Canal: ${canal}</h2>
                     <div class="kpi-box">
-                        <div class="kpi"><span class="kpi-label">Volume</span><div class="kpi-val">${formatBRNum(cT)}</div></div>
+                        <div class="kpi"><span class="kpi-label">Volume</span><div class="kpi-val" style="color:${bColor}">${formatBRNum(cT)}</div></div>
                         <div class="kpi"><span class="kpi-label">vs. Plano</span><div class="kpi-val">${getVarHTML(cT, cP)}</div></div>
                         <div class="kpi"><span class="kpi-label">vs. MoM</span><div class="kpi-val">${getVarHTML(cT, cM)}</div></div>
                         <div class="kpi"><span class="kpi-label">vs. YoY</span><div class="kpi-val">${getVarHTML(cT, cY)}</div></div>
