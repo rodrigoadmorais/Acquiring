@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dash - CPA Contábil (CPA/Descuentos)</title>
+    <title>Acompanhamento CPA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
         :root {
             --meli-yellow: #ffe600;
@@ -30,25 +31,7 @@
             align-items: center;
             font-size: 1.2rem;
             font-weight: bold;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .nav-bar {
-            background-color: var(--meli-blue);
-            padding: 0 20px;
-            display: flex;
-        }
-
-        .nav-item {
-            color: #fff;
-            padding: 12px 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        .nav-item.active {
-            border-bottom: 4px solid var(--meli-yellow);
-            font-weight: bold;
+            border-bottom: 2px solid var(--meli-blue);
         }
 
         .container {
@@ -66,6 +49,23 @@
             color: #333;
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+
+        select {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
         }
 
         .chart-container {
@@ -94,8 +94,9 @@
             flex: 1;
             text-align: right;
             padding-right: 15px;
-            min-width: 90px;
+            min-width: 110px;
             font-size: 0.85rem;
+            position: relative;
         }
 
         .col-total {
@@ -103,10 +104,15 @@
             background-color: rgba(0,0,0,0.03);
         }
 
-        details {
-            padding: 0;
-            margin: 0;
+        .deviation {
+            font-size: 0.7rem;
+            margin-left: 4px;
+            font-weight: bold;
         }
+        .dev-up { color: #c0392b; }
+        .dev-down { color: #27ae60; }
+
+        details { padding: 0; margin: 0; }
 
         summary {
             display: flex;
@@ -119,21 +125,11 @@
             align-items: center;
         }
 
-        summary:hover {
-            background-color: var(--hover-bg);
-        }
+        summary:hover { background-color: var(--hover-bg); }
+        .level-0 > summary { background-color: #fff9c4; font-weight: bold; }
 
-        .level-0 > summary {
-            background-color: #fff9c4;
-            font-weight: bold;
-        }
-
-        summary {
-            list-style: none;
-        }
-        summary::-webkit-details-marker {
-            display: none;
-        }
+        summary { list-style: none; }
+        summary::-webkit-details-marker { display: none; }
         
         summary::before {
             content: '+';
@@ -150,21 +146,10 @@
             color: #555;
             line-height: 1;
         }
-        details[open] > summary::before {
-            content: '-';
-        }
+        details[open] > summary::before { content: '-'; }
+        .leaf-node::before { content: ''; border: none; background: transparent; width: 16px; }
 
-        .leaf-node::before {
-            content: '';
-            border: none;
-            background: transparent;
-            width: 16px;
-        }
-
-        .details-content {
-            padding-left: 20px;
-            border-left: 1px solid #eee;
-        }
+        .details-content { padding-left: 20px; border-left: 1px solid #eee; }
 
         .leaf-node {
             display: flex;
@@ -173,27 +158,37 @@
             border-bottom: 1px solid var(--border-color);
             font-size: 0.85rem;
         }
-
-        .leaf-node:hover {
-            background-color: var(--hover-bg);
-        }
+        .leaf-node:hover { background-color: var(--hover-bg); }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
         <span style="margin-right: 15px; font-size: 1.5rem;">🤝</span> 
-        Dash - CPA Contábil (CPA/Descuentos)
-    </div>
-
-    <div class="nav-bar">
-        <div class="nav-item">Visão Geral</div>
-        <div class="nav-item active">Detalhamento (Drill-down)</div>
-        <div class="nav-item">Configurações</div>
+        Acompanhamento CPA
     </div>
 
     <div class="container">
-        <h2>Evolução do Saldo (ML) por Período</h2>
+        <h2>
+            Visão Geral
+            <div class="controls">
+                <div>
+                    <label for="monthFilter">Mês:</label>
+                    <select id="monthFilter" onchange="updateView()">
+                        <option value="all">Todos os Meses</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="unitToggle">Unidade:</label>
+                    <select id="unitToggle" onchange="updateView()">
+                        <option value="1">Reais (R$)</option>
+                        <option value="1000">Milhares (k)</option>
+                        <option value="1000000" selected>Milhões (M)</option>
+                    </select>
+                </div>
+            </div>
+        </h2>
+        
         <div class="chart-container">
             <canvas id="evolutionChart"></canvas>
         </div>
@@ -205,48 +200,60 @@
     </div>
 
     <script>
+        // Registrando o Plugin para os rótulos de dados
+        Chart.register(ChartDataLabels);
+
         const dataUrl = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json';
+        
+        // Nova hierarquia
+        const hierarchyKeys = ["MNG3", "MNG4", "Tipo de Lançamento", "TYPE_DOC", "CUENTA", "CENTRO", "Cod_Fornecedor", "TEXTO", "NRO_DOC"];
 
-        const hierarchyKeys = ["MNG3", "MNG4", "Tipo de Lançamento", "TYPE_DOC", "CUENTA", "CENTRO", "NRO_DOC"];
-
+        // Variáveis globais para os filtros
+        let globalData = [];
         let periodKeys = [];
+        let chartInstance = null;
 
         async function initDashboard() {
             try {
                 const response = await fetch(dataUrl);
                 if (!response.ok) throw new Error("Erro ao carregar os dados JSON");
-                const rawData = await response.json();
+                let rawData = await response.json();
                 
                 if(!rawData || rawData.length === 0) {
                     document.getElementById('drilldown-table').innerHTML = '<p>Nenhum dado encontrado.</p>';
                     return;
                 }
 
-                // 1. Pega a primeira linha que funciona como o "De/Para" das colunas
                 const headerMap = rawData[0]; 
-                
-                // 2. Remove a primeira linha da base de dados (para não virar uma linha na tabela)
                 rawData.shift(); 
 
-                // 3. Renomeia as chaves de todos os objetos usando o "De/Para"
-                const data = rawData.map(row => {
+                // De/Para e Limpeza Inicial
+                globalData = rawData.map(row => {
                     let newRow = {};
                     for (let key in row) {
                         let realColumnName = headerMap[key];
-                        if(realColumnName) {
-                            newRow[realColumnName] = row[key];
-                        }
+                        if(realColumnName) newRow[realColumnName] = row[key];
                     }
                     return newRow;
+                }).filter(row => {
+                    // Remover sujeira de PROCV do Excel/Sheets
+                    if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
+                    return true;
                 });
 
-                // Agora procura os meses (qualquer chave com 6 dígitos numéricos)
-                periodKeys = Object.keys(data[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
+                periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
 
-                const groupedData = buildHierarchy(data, hierarchyKeys, 0);
+                // Preencher select de meses
+                const monthSelect = document.getElementById('monthFilter');
+                periodKeys.forEach(p => {
+                    let option = document.createElement('option');
+                    option.value = p;
+                    option.text = formatPeriodName(p);
+                    monthSelect.appendChild(option);
+                });
 
-                renderChart(data);
-                renderTable(groupedData);
+                // Renderização inicial
+                updateView();
 
             } catch (error) {
                 console.error(error);
@@ -254,7 +261,35 @@
             }
         }
 
-        function buildHierarchy(dataRows, keys, level) {
+        // Atualiza Gráfico e Tabela baseados nos seletores
+        function updateView() {
+            const selectedMonth = document.getElementById('monthFilter').value;
+            let activePeriods = selectedMonth === 'all' ? periodKeys : [selectedMonth];
+            
+            const groupedData = buildHierarchy(globalData, hierarchyKeys, 0, activePeriods);
+            
+            renderChart(globalData, activePeriods);
+            renderTable(groupedData, activePeriods);
+        }
+
+        function formatPeriodName(p) {
+            return String(p).length === 6 ? `${String(p).substring(0,4)}-${String(p).substring(4,6)}` : p;
+        }
+
+        function getFormatterConfig() {
+            const unit = parseInt(document.getElementById('unitToggle').value);
+            const suffix = unit === 1000000 ? ' M' : (unit === 1000 ? ' k' : '');
+            return { divisor: unit, suffix: suffix };
+        }
+
+        function formatNumber(num) {
+            if (!num || num === 0) return '-';
+            const { divisor, suffix } = getFormatterConfig();
+            let val = num / divisor;
+            return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(val) + suffix;
+        }
+
+        function buildHierarchy(dataRows, keys, level, activePeriods) {
             if (level >= keys.length) return dataRows;
             
             const currentKey = keys[level];
@@ -274,12 +309,12 @@
                         rowTotal: 0,
                         rows: []
                     };
-                    periodKeys.forEach(p => groups[groupName].totals[p] = 0);
+                    activePeriods.forEach(p => groups[groupName].totals[p] = 0);
                 }
 
                 groups[groupName].rows.push(row);
                 
-                periodKeys.forEach(p => {
+                activePeriods.forEach(p => {
                     let val = parseFloat(row[p]);
                     if (!isNaN(val)) {
                         groups[groupName].totals[p] += val;
@@ -288,26 +323,26 @@
                 });
             });
 
-            return Object.values(groups).map(group => {
-                group.children = buildHierarchy(group.rows, keys, level + 1);
+            // Converte em array, processa filhos e ORDENA por grandeza de valor
+            let resultArray = Object.values(groups).map(group => {
+                group.children = buildHierarchy(group.rows, keys, level + 1, activePeriods);
                 return group;
             });
+
+            // Ordena descendente pelo valor absoluto (canais mais representativos primeiro)
+            resultArray.sort((a, b) => Math.abs(b.rowTotal) - Math.abs(a.rowTotal));
+
+            return resultArray;
         }
 
-        function formatNumber(num) {
-            if (num === 0) return '-';
-            return new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
-        }
-
-        function renderTable(groupedData) {
+        function renderTable(groupedData, activePeriods) {
             const container = document.getElementById('drilldown-table');
             
-            let headerHtml = `<div class="table-header"><div class="col-title">Hierarquia</div>`;
-            periodKeys.forEach(p => {
-                let displayPeriod = String(p).length === 6 ? `${String(p).substring(0,4)}-${String(p).substring(4,6)}` : p;
-                headerHtml += `<div class="col-value">${displayPeriod}</div>`;
+            let headerHtml = `<div class="table-header"><div class="col-title">Agrupamento</div>`;
+            activePeriods.forEach(p => {
+                headerHtml += `<div class="col-value">${formatPeriodName(p)}</div>`;
             });
-            headerHtml += `<div class="col-value col-total">Total</div></div>`;
+            headerHtml += `<div class="col-value col-total">Total Selecionado</div></div>`;
             
             function generateHtml(nodes, isLeaf, depth) {
                 let html = '';
@@ -317,20 +352,51 @@
                         html += `<div class="col-title" style="padding-left: ${depth * 15}px;">${node.name || node.NRO_DOC}</div>`;
                         
                         let totalRow = 0;
-                        periodKeys.forEach(p => {
+                        let prevVal = null;
+
+                        activePeriods.forEach(p => {
                             let val = node.totals ? node.totals[p] : (parseFloat(node[p]) || 0);
                             totalRow += val;
-                            html += `<div class="col-value">${formatNumber(val)}</div>`;
+                            
+                            // Lógica do alerta de desvio MoM
+                            let alertHtml = '';
+                            if (activePeriods.length > 1 && prevVal !== null && prevVal !== 0) {
+                                let deviation = (val - prevVal) / Math.abs(prevVal);
+                                if (Math.abs(deviation) >= 0.10) { // Se variar mais de 10%
+                                    let isUp = deviation > 0;
+                                    let icon = isUp ? '▲' : '▼';
+                                    let cssClass = isUp ? 'dev-up' : 'dev-down';
+                                    alertHtml = `<span class="deviation ${cssClass}">${icon} ${(Math.abs(deviation)*100).toFixed(0)}%</span>`;
+                                }
+                            }
+                            
+                            html += `<div class="col-value">${formatNumber(val)} ${alertHtml}</div>`;
+                            prevVal = val;
                         });
                         html += `<div class="col-value col-total">${formatNumber(totalRow)}</div>`;
                         html += `</div>`;
                     } else {
                         html += `<details class="level-${depth}"><summary>`;
-                        html += `<div class="col-title">${node.levelKey}: ${node.name}</div>`;
+                        // Remover o nome da coluna da frente, deixa o layout mais limpo
+                        html += `<div class="col-title">${node.name}</div>`;
                         
-                        periodKeys.forEach(p => {
+                        let prevVal = null;
+                        activePeriods.forEach(p => {
                             let val = node.totals[p];
-                            html += `<div class="col-value">${formatNumber(val)}</div>`;
+                            
+                            let alertHtml = '';
+                            if (activePeriods.length > 1 && prevVal !== null && prevVal !== 0) {
+                                let deviation = (val - prevVal) / Math.abs(prevVal);
+                                if (Math.abs(deviation) >= 0.10) { 
+                                    let isUp = deviation > 0;
+                                    let icon = isUp ? '▲' : '▼';
+                                    let cssClass = isUp ? 'dev-up' : 'dev-down';
+                                    alertHtml = `<span class="deviation ${cssClass}">${icon} ${(Math.abs(deviation)*100).toFixed(0)}%</span>`;
+                                }
+                            }
+
+                            html += `<div class="col-value">${formatNumber(val)} ${alertHtml}</div>`;
+                            prevVal = val;
                         });
                         html += `<div class="col-value col-total">${formatNumber(node.rowTotal)}</div>`;
                         
@@ -348,54 +414,81 @@
             container.innerHTML = headerHtml + generateHtml(groupedData, false, 0);
         }
 
-        function renderChart(data) {
+        function renderChart(data, activePeriods) {
             const ctx = document.getElementById('evolutionChart').getContext('2d');
             
             const globalTotals = {};
-            periodKeys.forEach(p => globalTotals[p] = 0);
+            activePeriods.forEach(p => globalTotals[p] = 0);
 
             data.forEach(row => {
-                periodKeys.forEach(p => {
+                activePeriods.forEach(p => {
                     let val = parseFloat(row[p]);
                     if (!isNaN(val)) globalTotals[p] += val;
                 });
             });
 
-            const labels = periodKeys.map(p => String(p).length === 6 ? `${String(p).substring(0,4)}-${String(p).substring(4,6)}` : p);
-            const chartData = periodKeys.map(p => globalTotals[p]);
+            const labels = activePeriods.map(p => formatPeriodName(p));
+            // Aplicar também a divisão no gráfico e remover formatação de string
+            const { divisor } = getFormatterConfig();
+            const chartData = activePeriods.map(p => globalTotals[p] / divisor);
 
-            new Chart(ctx, {
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Soma de ML',
+                        label: 'Total CPA',
                         data: chartData,
-                        borderColor: '#3498db',
-                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: '#2d3277',
+                        backgroundColor: 'rgba(45, 50, 119, 0.1)',
                         borderWidth: 2,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#2980b9',
+                        pointRadius: 6,
+                        pointBackgroundColor: '#ffe600',
                         fill: true,
-                        tension: 0
+                        tension: 0.1
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 30 } // Espaço para o rótulo de dados não cortar
+                    },
                     plugins: {
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return 'Total: ' + formatNumber(context.parsed.y);
+                                    return formatNumber(context.raw * divisor); 
                                 }
                             }
                         },
-                        legend: { display: false }
+                        // Configuração do Datalabels (Rótulos em cima da linha)
+                        datalabels: {
+                            align: 'top',
+                            anchor: 'bottom',
+                            color: '#333',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: function(value) {
+                                return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+                            }
+                        }
                     },
                     scales: {
-                        y: { beginAtZero: true },
-                        x: { grid: { display: false } }
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: false }, // Remove grid Y
+                            ticks: { display: false }, // Remove números Y
+                            border: { display: false }
+                        },
+                        x: { 
+                            grid: { display: false }, // Remove grid X
+                            border: { display: false }
+                        }
                     }
                 }
             });
