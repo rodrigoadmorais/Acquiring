@@ -52,20 +52,35 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap; /* Permite que os controles desçam se a tela for menor */
+            gap: 10px;
         }
 
         .controls {
             display: flex;
+            align-items: center;
             gap: 15px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: normal;
+            flex-wrap: wrap;
         }
 
-        select {
-            padding: 4px 8px;
+        input[type="text"], select {
+            padding: 5px 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-family: inherit;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
         }
 
         .chart-container {
@@ -170,6 +185,12 @@
             font-size: 0.85rem;
         }
         .leaf-node:hover { background-color: var(--hover-bg); }
+        
+        /* Highlight para quando a busca encontrar algo */
+        .highlight-doc {
+            background-color: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
     </style>
 </head>
 <body>
@@ -184,13 +205,18 @@
             Visão Geral
             <div class="controls">
                 <div>
-                    <label for="monthFilter">Mês:</label>
+                    <input type="text" id="searchDoc" placeholder="Buscar Nº Doc..." onkeyup="updateView()">
+                </div>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="toggleTipoLancamento" onchange="updateView()">
+                    Incluir Tipo de Lançamento
+                </label>
+                <div>
                     <select id="monthFilter" onchange="updateView()">
                         <option value="all">Todos os Meses</option>
                     </select>
                 </div>
                 <div>
-                    <label for="unitToggle">Unidade:</label>
                     <select id="unitToggle" onchange="updateView()">
                         <option value="1">Reais (R$)</option>
                         <option value="1000">Milhares (k)</option>
@@ -211,15 +237,10 @@
     </div>
 
     <script>
-        // Registrando o Plugin para os rótulos de dados no gráfico
         Chart.register(ChartDataLabels);
 
         const dataUrl = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json';
         
-        // HIERARQUIA ATUALIZADA: MNG3 -> MNG4 -> Tipo de Lançamento -> CUENTA -> CENTRO -> Cod_Fornecedor -> TEXTO -> NRO_DOC
-        const hierarchyKeys = ["MNG3", "MNG4", "Tipo de Lançamento", "CUENTA", "CENTRO", "Cod_Fornecedor", "TEXTO", "NRO_DOC"];
-
-        // Variáveis globais para os filtros
         let globalData = [];
         let periodKeys = [];
         let chartInstance = null;
@@ -238,7 +259,6 @@
                 const headerMap = rawData[0]; 
                 rawData.shift(); 
 
-                // De/Para e Limpeza Inicial
                 globalData = rawData.map(row => {
                     let newRow = {};
                     for (let key in row) {
@@ -247,14 +267,12 @@
                     }
                     return newRow;
                 }).filter(row => {
-                    // Remover sujeira de PROCV do Excel/Sheets
                     if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
                     return true;
                 });
 
                 periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
 
-                // Preencher select de meses
                 const monthSelect = document.getElementById('monthFilter');
                 periodKeys.forEach(p => {
                     let option = document.createElement('option');
@@ -263,7 +281,6 @@
                     monthSelect.appendChild(option);
                 });
 
-                // Renderização inicial
                 updateView();
 
             } catch (error) {
@@ -272,15 +289,38 @@
             }
         }
 
-        // Atualiza Gráfico e Tabela baseados nos seletores
         function updateView() {
             const selectedMonth = document.getElementById('monthFilter').value;
+            const searchTerm = document.getElementById('searchDoc').value.trim().toLowerCase();
+            const showTipoLancamento = document.getElementById('toggleTipoLancamento').checked;
+
             let activePeriods = selectedMonth === 'all' ? periodKeys : [selectedMonth];
             
-            const groupedData = buildHierarchy(globalData, hierarchyKeys, 0, activePeriods);
+            // 1. Monta a Hierarquia Dinâmica baseada no Checkbox
+            let currentHierarchy = ["MNG3", "MNG4"];
+            if (showTipoLancamento) {
+                currentHierarchy.push("Tipo de Lançamento");
+            }
+            currentHierarchy.push("CUENTA", "CENTRO", "Cod_Fornecedor", "TEXTO", "NRO_DOC");
+
+            // 2. Filtra a base se houver alguma pesquisa no campo NRO_DOC
+            let filteredData = globalData;
+            let isSearching = false;
+            if (searchTerm !== '') {
+                isSearching = true;
+                filteredData = globalData.filter(row => {
+                    let docStr = row["NRO_DOC"] ? String(row["NRO_DOC"]).toLowerCase() : '';
+                    return docStr.includes(searchTerm);
+                });
+            }
+
+            const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
             
-            renderChart(globalData, activePeriods);
-            renderTable(groupedData, activePeriods);
+            // O Gráfico também reflete a busca
+            renderChart(filteredData, activePeriods);
+            
+            // Renderiza a tabela passando a flag de "isSearching" para expandir automaticamente
+            renderTable(groupedData, activePeriods, isSearching);
         }
 
         function formatPeriodName(p) {
@@ -300,18 +340,16 @@
             return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(val) + suffix;
         }
 
-        // Função para calcular qual ícone renderizar
         function getAlertIcon(val, prevVal, activePeriodsLength) {
-            if (activePeriodsLength <= 1) return ''; // Não mostra seta se tiver só um mês selecionado
+            if (activePeriodsLength <= 1) return ''; 
             
             if (prevVal !== null && prevVal !== 0) {
                 let deviation = (val - prevVal) / Math.abs(prevVal);
-                if (Math.abs(deviation) >= 0.10) { // Maior que 10%
+                if (Math.abs(deviation) >= 0.10) { 
                     let isUp = deviation > 0;
                     return `<span class="deviation ${isUp ? 'dev-up' : 'dev-down'}">${isUp ? '▲' : '▼'}</span>`;
                 }
             } else if (val !== 0 && (prevVal === 0 || prevVal === null)) {
-                // Saiu do zero para algum valor (subida ou descida total)
                 let isUp = val > 0;
                 return `<span class="deviation ${isUp ? 'dev-up' : 'dev-down'}">${isUp ? '▲' : '▼'}</span>`;
             }
@@ -352,33 +390,35 @@
                 });
             });
 
-            // Converte em array, processa filhos e ORDENA por grandeza de valor
             let resultArray = Object.values(groups).map(group => {
                 group.children = buildHierarchy(group.rows, keys, level + 1, activePeriods);
                 return group;
             });
 
-            // Ordena descendente pelo valor absoluto (canais mais representativos primeiro)
             resultArray.sort((a, b) => Math.abs(b.rowTotal) - Math.abs(a.rowTotal));
 
             return resultArray;
         }
 
-        function renderTable(groupedData, activePeriods) {
+        function renderTable(groupedData, activePeriods, isSearching) {
             const container = document.getElementById('drilldown-table');
             
-            // Renderiza cabeçalho
             let headerHtml = `<div class="table-header"><div class="col-title">Agrupamento</div>`;
             activePeriods.forEach(p => {
                 headerHtml += `<div class="col-value" style="justify-content: flex-end; padding-right: 30px;">${formatPeriodName(p)}</div>`;
             });
             headerHtml += `<div class="col-value col-total" style="justify-content: flex-end; padding-right: 15px;">Total Selecionado</div></div>`;
             
+            // Se estivermos pesquisando um documento, a tag <details> recebe "open" para expandir automaticamente
+            const openAttribute = isSearching ? 'open' : '';
+
             function generateHtml(nodes, isLeaf, depth) {
                 let html = '';
                 nodes.forEach(node => {
                     if (isLeaf || !node.children || !node.children[0].name) {
-                        html += `<div class="leaf-node">`;
+                        // Se for resultado de busca, aplica um fundo levemente azulado para destacar
+                        const leafClass = isSearching ? 'leaf-node highlight-doc' : 'leaf-node';
+                        html += `<div class="${leafClass}">`;
                         html += `<div class="col-title" style="padding-left: ${depth * 15}px;">${node.name || node.NRO_DOC}</div>`;
                         
                         let totalRow = 0;
@@ -395,7 +435,7 @@
                         html += `<div class="col-value col-total"><span class="val-number">${formatNumber(totalRow)}</span><span class="val-icon"></span></div>`;
                         html += `</div>`;
                     } else {
-                        html += `<details class="level-${depth}"><summary>`;
+                        html += `<details class="level-${depth}" ${openAttribute}><summary>`;
                         html += `<div class="col-title">${node.name}</div>`;
                         
                         let prevVal = null;
@@ -419,7 +459,11 @@
                 return html;
             }
 
-            container.innerHTML = headerHtml + generateHtml(groupedData, false, 0);
+            if(groupedData.length === 0) {
+                container.innerHTML = headerHtml + `<p style="padding: 20px;">Nenhum documento encontrado.</p>`;
+            } else {
+                container.innerHTML = headerHtml + generateHtml(groupedData, false, 0);
+            }
         }
 
         function renderChart(data, activePeriods) {
