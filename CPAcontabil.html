@@ -258,6 +258,7 @@
                 const headerMap = rawData[0]; 
                 rawData.shift(); 
 
+                // TRATAMENTO DA BASE E REGRAS DE NEGÓCIO
                 globalData = rawData.map(row => {
                     let newRow = {};
                     for (let key in row) {
@@ -266,8 +267,24 @@
                     }
                     return newRow;
                 }).filter(row => {
+                    // Remove lixo de PROCV original antes de sobrescrevermos o MNG3
                     if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
                     return true;
+                }).map(row => {
+                    // 1. Forçar tudo a ser CPA no MNG3
+                    row["MNG3"] = "CPA";
+
+                    // 2. Renomear os canais (MNG4)
+                    if (row["MNG4"]) {
+                        let canal = String(row["MNG4"]).trim().toLowerCase();
+                        if (canal.includes("cashback")) {
+                            row["MNG4"] = "Consultor Cashback";
+                        } else if (canal.includes("consultor")) {
+                            row["MNG4"] = "Consultor NF";
+                        }
+                    }
+
+                    return row;
                 });
 
                 periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
@@ -416,11 +433,9 @@
                         let totalRow = 0;
                         let prevVal = null;
 
-                        // Adicionando o "index" para saber se é o primeiro mês do loop
                         activePeriods.forEach((p, index) => {
                             let val = node.totals ? node.totals[p] : (parseFloat(node[p]) || 0);
                             totalRow += val;
-                            // Só calcula a seta se NÃO for a primeira coluna (index > 0)
                             let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
                             
                             html += `<div class="col-value"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>`;
@@ -434,10 +449,8 @@
                         
                         let prevVal = null;
                         
-                        // Adicionando o "index" também nos nós pais (expansíveis)
                         activePeriods.forEach((p, index) => {
                             let val = node.totals[p];
-                            // Só calcula a seta se NÃO for a primeira coluna (index > 0)
                             let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
 
                             html += `<div class="col-value"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>`;
