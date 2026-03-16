@@ -52,7 +52,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap; /* Permite que os controles desçam se a tela for menor */
+            flex-wrap: wrap; 
             gap: 10px;
         }
 
@@ -186,7 +186,6 @@
         }
         .leaf-node:hover { background-color: var(--hover-bg); }
         
-        /* Highlight para quando a busca encontrar algo */
         .highlight-doc {
             background-color: #e3f2fd;
             border-left: 3px solid #2196f3;
@@ -296,14 +295,12 @@
 
             let activePeriods = selectedMonth === 'all' ? periodKeys : [selectedMonth];
             
-            // 1. Monta a Hierarquia Dinâmica baseada no Checkbox
             let currentHierarchy = ["MNG3", "MNG4"];
             if (showTipoLancamento) {
                 currentHierarchy.push("Tipo de Lançamento");
             }
             currentHierarchy.push("CUENTA", "CENTRO", "Cod_Fornecedor", "TEXTO", "NRO_DOC");
 
-            // 2. Filtra a base se houver alguma pesquisa no campo NRO_DOC
             let filteredData = globalData;
             let isSearching = false;
             if (searchTerm !== '') {
@@ -316,10 +313,7 @@
 
             const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
             
-            // O Gráfico também reflete a busca
             renderChart(filteredData, activePeriods);
-            
-            // Renderiza a tabela passando a flag de "isSearching" para expandir automaticamente
             renderTable(groupedData, activePeriods, isSearching);
         }
 
@@ -409,14 +403,12 @@
             });
             headerHtml += `<div class="col-value col-total" style="justify-content: flex-end; padding-right: 15px;">Total Selecionado</div></div>`;
             
-            // Se estivermos pesquisando um documento, a tag <details> recebe "open" para expandir automaticamente
             const openAttribute = isSearching ? 'open' : '';
 
             function generateHtml(nodes, isLeaf, depth) {
                 let html = '';
                 nodes.forEach(node => {
                     if (isLeaf || !node.children || !node.children[0].name) {
-                        // Se for resultado de busca, aplica um fundo levemente azulado para destacar
                         const leafClass = isSearching ? 'leaf-node highlight-doc' : 'leaf-node';
                         html += `<div class="${leafClass}">`;
                         html += `<div class="col-title" style="padding-left: ${depth * 15}px;">${node.name || node.NRO_DOC}</div>`;
@@ -424,10 +416,12 @@
                         let totalRow = 0;
                         let prevVal = null;
 
-                        activePeriods.forEach(p => {
+                        // Adicionando o "index" para saber se é o primeiro mês do loop
+                        activePeriods.forEach((p, index) => {
                             let val = node.totals ? node.totals[p] : (parseFloat(node[p]) || 0);
                             totalRow += val;
-                            let alertHtml = getAlertIcon(val, prevVal, activePeriods.length);
+                            // Só calcula a seta se NÃO for a primeira coluna (index > 0)
+                            let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
                             
                             html += `<div class="col-value"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>`;
                             prevVal = val;
@@ -439,9 +433,12 @@
                         html += `<div class="col-title">${node.name}</div>`;
                         
                         let prevVal = null;
-                        activePeriods.forEach(p => {
+                        
+                        // Adicionando o "index" também nos nós pais (expansíveis)
+                        activePeriods.forEach((p, index) => {
                             let val = node.totals[p];
-                            let alertHtml = getAlertIcon(val, prevVal, activePeriods.length);
+                            // Só calcula a seta se NÃO for a primeira coluna (index > 0)
+                            let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
 
                             html += `<div class="col-value"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>`;
                             prevVal = val;
