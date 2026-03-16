@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dash - CPA Contábil (CPA/Descuentos)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --meli-yellow: #ffe600;
+            --meli-blue: #2d3277; /* Azul escuro da barra e tabela */
+            --meli-bg: #ebebeb;
+            --border-color: #e0e0e0;
+            --text-color: #333;
+            --hover-bg: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Proxima Nova', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--meli-bg);
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+        }
+
+        /* Topo Amarelo */
+        .top-bar {
+            background-color: var(--meli-yellow);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* Menu Azul */
+        .nav-bar {
+            background-color: var(--meli-blue);
+            padding: 0 20px;
+            display: flex;
+        }
+
+        .nav-item {
+            color: #fff;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .nav-item.active {
+            border-bottom: 4px solid var(--meli-yellow);
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 95%;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px; /* Mais compacto como na imagem */
+            margin-bottom: 40px;
+        }
+
+        /* Estilos da Tabela Meli */
+        .table-header {
+            display: flex;
+            background-color: var(--meli-blue);
+            color: #fff;
+            padding: 12px 10px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .col-title {
+            flex: 4; /* Espaço maior para a árvore */
+            padding-right: 10px;
+            min-width: 300px;
+        }
+
+        .col-value {
+            flex: 1;
+            text-align: right;
+            padding-right: 15px;
+            min-width: 90px;
+            font-size: 0.85rem;
+        }
+
+        .col-total {
+            font-weight: bold;
+            background-color: rgba(0,0,0,0.03);
+        }
+
+        details {
+            padding: 0;
+            margin: 0;
+        }
+
+        summary {
+            display: flex;
+            cursor: pointer;
+            padding: 8px 10px;
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+            font-size: 0.85rem;
+            align-items: center;
+        }
+
+        summary:hover {
+            background-color: var(--hover-bg);
+        }
+
+        /* Primeiro nível com fundo levemente amarelo, igual à imagem */
+        .level-0 > summary {
+            background-color: #fff9c4;
+            font-weight: bold;
+        }
+
+        summary {
+            list-style: none;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        /* Ícone de +/- no estilo Windows/Meli */
+        summary::before {
+            content: '+';
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 14px;
+            height: 14px;
+            border: 1px solid #999;
+            background: #fff;
+            margin-right: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #555;
+            line-height: 1;
+        }
+        details[open] > summary::before {
+            content: '-';
+        }
+
+        /* Esconder o ícone no último nível (folha) */
+        .leaf-node::before {
+            content: '';
+            border: none;
+            background: transparent;
+            width: 16px;
+        }
+
+        .details-content {
+            padding-left: 20px;
+            border-left: 1px solid #eee;
+        }
+
+        .leaf-node {
+            display: flex;
+            padding: 8px 10px 8px 30px;
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+        }
+
+        .leaf-node:hover {
+            background-color: var(--hover-bg);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <span style="margin-right: 15px; font-size: 1.5rem;">🤝</span> 
+        Dash - CPA Contábil (CPA/Descuentos)
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item">Visão Geral</div>
+        <div class="nav-item active">Detalhamento (Drill-down)</div>
+        <div class="nav-item">Configurações</div>
+    </div>
+
+    <div class="container">
+        <h2>Evolução do Saldo (ML) por Período</h2>
+        <div class="chart-container">
+            <canvas id="evolutionChart"></canvas>
+        </div>
+
+        <h2>Detalhamento</h2>
+        <div id="drilldown-table">
+            <p style="padding: 20px;">Carregando dados...</p>
+        </div>
+    </div>
+
+    <script>
+        const dataUrl = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json';
+
+        // INCLUSÃO DO "Tipo de Lançamento" ANTES DO "TYPE_DOC"
+        const hierarchyKeys = ["MNG3", "MNG4", "Tipo de Lançamento", "TYPE_DOC", "CUENTA", "CENTRO", "NRO_DOC"];
+
+        let periodKeys = [];
+
+        async function initDashboard() {
+            try {
+                const response = await fetch(dataUrl);
+                if (!response.ok) throw new Error("Erro ao carregar os dados JSON");
+                const data = await response.json();
+                
+                if(!data || data.length === 0) {
+                    document.getElementById('drilldown-table').innerHTML = '<p>Nenhum dado encontrado.</p>';
+                    return;
+                }
+
+                const firstRow = data[0];
+                periodKeys = Object.keys(firstRow).filter(k => /^\d{6}$/.test(k) || k.includes('-')).sort();
+
+                const groupedData = buildHierarchy(data, hierarchyKeys, 0);
+
+                renderChart(data);
+                renderTable(groupedData);
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('drilldown-table').innerHTML = `<p style="color:red; padding:20px;">Erro ao carregar o dashboard: ${error.message}</p>`;
+            }
+        }
+
+        function buildHierarchy(dataRows, keys, level) {
+            if (level >= keys.length) return dataRows;
+            
+            const currentKey = keys[level];
+            const groups = {};
+
+            dataRows.forEach(row => {
+                let groupName = row[currentKey];
+                if (!groupName || groupName === 'empty' || groupName === '') {
+                    groupName = 'Não Classificado';
+                }
+
+                if (!groups[groupName]) {
+                    groups[groupName] = {
+                        name: groupName,
+                        levelKey: currentKey,
+                        totals: {},
+                        rowTotal: 0,
+                        rows: []
+                    };
+                    periodKeys.forEach(p => groups[groupName].totals[p] = 0);
+                }
+
+                groups[groupName].rows.push(row);
+                
+                periodKeys.forEach(p => {
+                    let val = parseFloat(row[p]);
+                    if (!isNaN(val)) {
+                        groups[groupName].totals[p] += val;
+                        groups[groupName].rowTotal += val;
+                    }
+                });
+            });
+
+            return Object.values(groups).map(group => {
+                group.children = buildHierarchy(group.rows, keys, level + 1);
+                return group;
+            });
+        }
+
+        function formatNumber(num) {
+            if (num === 0) return '-';
+            return new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        }
+
+        function renderTable(groupedData) {
+            const container = document.getElementById('drilldown-table');
+            
+            // Cabeçalho da Tabela
+            let headerHtml = `<div class="table-header"><div class="col-title">Hierarquia</div>`;
+            periodKeys.forEach(p => {
+                // Formata 202601 para 2026-01 caso venha sem hífen para ficar igual à foto
+                let displayPeriod = p.length === 6 ? `${p.substring(0,4)}-${p.substring(4,6)}` : p;
+                headerHtml += `<div class="col-value">${displayPeriod}</div>`;
+            });
+            headerHtml += `<div class="col-value col-total">Total</div></div>`;
+            
+            function generateHtml(nodes, isLeaf, depth) {
+                let html = '';
+                nodes.forEach(node => {
+                    if (isLeaf || !node.children || !node.children[0].name) {
+                        html += `<div class="leaf-node">`;
+                        html += `<div class="col-title" style="padding-left: ${depth * 15}px;">${node.name || node.NRO_DOC}</div>`;
+                        
+                        let totalRow = 0;
+                        periodKeys.forEach(p => {
+                            let val = node.totals ? node.totals[p] : (parseFloat(node[p]) || 0);
+                            totalRow += val;
+                            html += `<div class="col-value">${formatNumber(val)}</div>`;
+                        });
+                        html += `<div class="col-value col-total">${formatNumber(totalRow)}</div>`;
+                        html += `</div>`;
+                    } else {
+                        html += `<details class="level-${depth}"><summary>`;
+                        html += `<div class="col-title">${node.levelKey}: ${node.name}</div>`;
+                        
+                        periodKeys.forEach(p => {
+                            let val = node.totals[p];
+                            html += `<div class="col-value">${formatNumber(val)}</div>`;
+                        });
+                        html += `<div class="col-value col-total">${formatNumber(node.rowTotal)}</div>`;
+                        
+                        html += `</summary><div class="details-content">`;
+                        
+                        const nextIsLeaf = node.children[0] && node.children[0].levelKey === 'NRO_DOC';
+                        html += generateHtml(node.children, nextIsLeaf, depth + 1);
+                        
+                        html += `</div></details>`;
+                    }
+                });
+                return html;
+            }
+
+            container.innerHTML = headerHtml + generateHtml(groupedData, false, 0);
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            
+            const globalTotals = {};
+            periodKeys.forEach(p => globalTotals[p] = 0);
+
+            data.forEach(row => {
+                periodKeys.forEach(p => {
+                    let val = parseFloat(row[p]);
+                    if (!isNaN(val)) globalTotals[p] += val;
+                });
+            });
+
+            // Formata labels para 2026-01
+            const labels = periodKeys.map(p => p.length === 6 ? `${p.substring(0,4)}-${p.substring(4,6)}` : p);
+            const chartData = periodKeys.map(p => globalTotals[p]);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Soma de ML',
+                        data: chartData,
+                        borderColor: '#3498db', /* Azul claro da linha */
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#2980b9',
+                        fill: true,
+                        tension: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Total: ' + formatNumber(context.parsed.y);
+                                }
+                            }
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>
