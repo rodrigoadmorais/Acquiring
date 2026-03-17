@@ -87,7 +87,6 @@
             background-color: #e2e6ea;
         }
 
-        /* Novo estilo para a seleção de meses */
         .month-filters {
             display: flex;
             gap: 8px;
@@ -115,8 +114,23 @@
 
         .col-title {
             flex: 4;
+            display: flex;
+            align-items: center;
             padding-right: 10px;
             min-width: 300px;
+        }
+
+        /* Classe da etiqueta discreta */
+        .level-badge {
+            font-size: 0.65rem;
+            color: #95a5a6;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            padding: 1px 5px;
+            margin-right: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background: #fafafa;
         }
 
         .col-value {
@@ -193,16 +207,17 @@
             line-height: 1;
         }
         details[open] > summary::before { content: '-'; }
-        .leaf-node::before { content: ''; border: none; background: transparent; width: 16px; }
+        .leaf-node::before { content: ''; border: none; background: transparent; width: 16px; margin-right: 8px;}
 
         .details-content { padding-left: 20px; border-left: 1px solid #eee; }
 
         .leaf-node {
             display: flex;
-            padding: 8px 10px 8px 30px;
+            padding: 8px 10px 8px 22px; /* Ajuste no padding para a etiqueta alinhar bonito */
             background-color: #fff;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.85rem;
+            align-items: center;
         }
         .leaf-node:hover { background-color: var(--hover-bg); }
         
@@ -261,6 +276,21 @@
         let periodKeys = [];
         let chartInstance = null;
 
+        // Dicionário para as Etiquetas Discretas (As que não estão aqui, ficam em branco)
+        const levelLabels = {
+            "MNG4": "Canal",
+            "CUENTA": "Conta",
+            "CECO": "CECO",
+            "Cod_Fornecedor": "Fornecedor",
+            "NRO_DOC": "Nº Doc"
+        };
+
+        function getLevelBadge(key) {
+            const label = levelLabels[key];
+            if (!label) return '';
+            return `<span class="level-badge">${label}</span>`;
+        }
+
         async function initDashboard() {
             try {
                 const response = await fetch(dataUrl);
@@ -304,16 +334,11 @@
 
                 periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
 
-                // ------------------------------------------------------------------
-                // LÓGICA DE MESES DEFAULT (Jan até Mês Anterior)
-                // ------------------------------------------------------------------
                 const now = new Date();
                 const currentYear = now.getFullYear();
-                const currentMonth = now.getMonth() + 1; // 1-12
+                const currentMonth = now.getMonth() + 1; 
                 
-                // Ex: 202603
                 const currentYYYYMM = parseInt(currentYear + String(currentMonth).padStart(2, '0'));
-                // Ex: 202601
                 const startOfThisYear = parseInt(currentYear + '01');
 
                 let defaultChecked = [];
@@ -321,19 +346,15 @@
                 periodKeys.forEach(p => {
                     let pClean = p.replace('-', '');
                     let pInt = parseInt(pClean);
-                    // Regra: Mês do ano atual, mas estritamente ANTES do mês atual
                     if (pInt >= startOfThisYear && pInt < currentYYYYMM) {
                         defaultChecked.push(p);
                     }
                 });
 
-                // Trava de segurança: se a regra acima retornar vazio (ex: estamos em Janeiro)
-                // ele preenche com o último mês que existe na base para a tela não virar em branco.
                 if (defaultChecked.length === 0 && periodKeys.length > 0) {
                     defaultChecked.push(periodKeys[periodKeys.length - 1]);
                 }
 
-                // Criação dos Checkboxes na tela
                 const monthContainer = document.getElementById('monthCheckboxes');
                 periodKeys.forEach(p => {
                     let label = document.createElement('label');
@@ -342,7 +363,7 @@
                     let checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.value = p;
-                    checkbox.onchange = updateView; // Atualiza tudo quando clicar
+                    checkbox.onchange = updateView; 
                     
                     if (defaultChecked.includes(p)) {
                         checkbox.checked = true;
@@ -365,22 +386,21 @@
             const searchTerm = document.getElementById('searchDoc').value.trim().toLowerCase();
             const showTipoLancamento = document.getElementById('toggleTipoLancamento').checked;
 
-            // Busca os meses selecionados nas caixinhas
             const checkedBoxes = document.querySelectorAll('#monthCheckboxes input[type="checkbox"]:checked');
             let activePeriods = Array.from(checkedBoxes).map(cb => cb.value).sort();
 
-            // Proteção: Se o usuário desmarcar tudo, mostra uma mensagem e limpa o gráfico
             if (activePeriods.length === 0) {
                 document.getElementById('drilldown-table').innerHTML = '<p style="padding: 20px; color: #c0392b; font-weight: bold;">Por favor, selecione pelo menos um mês nas caixinhas acima.</p>';
                 if(chartInstance) chartInstance.destroy();
                 return;
             }
 
-            let currentHierarchy = ["MNG3", "MNG4"];
+            // HIERARQUIA DINÂMICA NOVA ORDEM: CUENTA -> CECO -> (TIPO LANÇAMENTO) -> FORNECEDOR -> TEXTO -> NRO_DOC
+            let currentHierarchy = ["MNG3", "MNG4", "CUENTA", "CECO"];
             if (showTipoLancamento) {
                 currentHierarchy.push("Tipo de Lançamento");
             }
-            currentHierarchy.push("CUENTA", "CECO", "Cod_Fornecedor", "TEXTO", "NRO_DOC");
+            currentHierarchy.push("Cod_Fornecedor", "TEXTO", "NRO_DOC");
 
             let filteredData = globalData;
             let isSearching = false;
@@ -395,7 +415,9 @@
             const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
             
             renderChart(filteredData, activePeriods);
-            renderTable(groupedData, activePeriods, isSearching);
+            
+            // Passamos a hierarquia inteira pra tabela, pra ela saber quem é a "folha" (leaf)
+            renderTable(groupedData, activePeriods, isSearching, currentHierarchy);
         }
 
         function formatPeriodName(p) {
@@ -475,7 +497,7 @@
             return resultArray;
         }
 
-        function renderTable(groupedData, activePeriods, isSearching) {
+        function renderTable(groupedData, activePeriods, isSearching, currentHierarchy) {
             const container = document.getElementById('drilldown-table');
             
             let headerHtml = `<div class="table-header"><div class="col-title">Agrupamento</div>`;
@@ -497,8 +519,13 @@
 
                     if (isLeaf || !node.children || !node.children[0].name) {
                         const leafClass = isSearching ? 'leaf-node highlight-doc' : 'leaf-node';
+                        
+                        // O nome da última coluna é sempre o último da array (ex: NRO_DOC)
+                        let leafKey = currentHierarchy[currentHierarchy.length - 1]; 
+                        let badge = getLevelBadge(leafKey);
+
                         html += `<div class="${leafClass}">`;
-                        html += `<div class="col-title" style="padding-left: ${depth * 15}px;">${node.name || node.NRO_DOC}</div>`;
+                        html += `<div class="col-title" style="padding-left: ${depth * 15}px;">${badge}${node.name || node.NRO_DOC}</div>`;
                         
                         let totalRow = 0;
                         let prevVal = null;
@@ -516,7 +543,9 @@
                         html += `</div>`;
                     } else {
                         html += `<details class="level-${depth}" ${openAttribute}><summary>`;
-                        html += `<div class="col-title">${node.name}</div>`;
+                        
+                        let badge = getLevelBadge(node.levelKey);
+                        html += `<div class="col-title">${badge}${node.name}</div>`;
                         
                         let prevVal = null;
                         
@@ -532,7 +561,8 @@
                         
                         html += `</summary><div class="details-content">`;
                         
-                        const nextIsLeaf = node.children[0] && node.children[0].levelKey === 'NRO_DOC';
+                        // Verifica se o filho que ele vai renderizar é a folha
+                        const nextIsLeaf = node.children[0] && node.children[0].levelKey === currentHierarchy[currentHierarchy.length - 1];
                         html += generateHtml(node.children, nextIsLeaf, depth + 1);
                         
                         html += `</div></details>`;
