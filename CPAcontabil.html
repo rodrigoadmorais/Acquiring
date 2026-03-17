@@ -120,7 +120,6 @@
             min-width: 300px;
         }
 
-        /* Classe da etiqueta discreta */
         .level-badge {
             font-size: 0.65rem;
             color: #95a5a6;
@@ -213,7 +212,7 @@
 
         .leaf-node {
             display: flex;
-            padding: 8px 10px 8px 22px; /* Ajuste no padding para a etiqueta alinhar bonito */
+            padding: 8px 10px 8px 22px; 
             background-color: #fff;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.85rem;
@@ -276,7 +275,6 @@
         let periodKeys = [];
         let chartInstance = null;
 
-        // Dicionário para as Etiquetas Discretas (As que não estão aqui, ficam em branco)
         const levelLabels = {
             "MNG4": "Canal",
             "CUENTA": "Conta",
@@ -316,7 +314,12 @@
                     }
                     return newRow;
                 }).filter(row => {
+                    // Ignora erros de PROCV
                     if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
+                    
+                    // NOVA REGRA: Ignora a linha se o MNG4 for "OTHERS"
+                    if(row["MNG4"] && String(row["MNG4"]).trim().toUpperCase() === "OTHERS") return false;
+                    
                     return true;
                 }).map(row => {
                     row["MNG3"] = "CPA";
@@ -395,7 +398,6 @@
                 return;
             }
 
-            // HIERARQUIA DINÂMICA NOVA ORDEM: CUENTA -> CECO -> (TIPO LANÇAMENTO) -> FORNECEDOR -> TEXTO -> NRO_DOC
             let currentHierarchy = ["MNG3", "MNG4", "CUENTA", "CECO"];
             if (showTipoLancamento) {
                 currentHierarchy.push("Tipo de Lançamento");
@@ -416,7 +418,6 @@
             
             renderChart(filteredData, activePeriods);
             
-            // Passamos a hierarquia inteira pra tabela, pra ela saber quem é a "folha" (leaf)
             renderTable(groupedData, activePeriods, isSearching, currentHierarchy);
         }
 
@@ -520,7 +521,6 @@
                     if (isLeaf || !node.children || !node.children[0].name) {
                         const leafClass = isSearching ? 'leaf-node highlight-doc' : 'leaf-node';
                         
-                        // O nome da última coluna é sempre o último da array (ex: NRO_DOC)
                         let leafKey = currentHierarchy[currentHierarchy.length - 1]; 
                         let badge = getLevelBadge(leafKey);
 
@@ -561,7 +561,6 @@
                         
                         html += `</summary><div class="details-content">`;
                         
-                        // Verifica se o filho que ele vai renderizar é a folha
                         const nextIsLeaf = node.children[0] && node.children[0].levelKey === currentHierarchy[currentHierarchy.length - 1];
                         html += generateHtml(node.children, nextIsLeaf, depth + 1);
                         
