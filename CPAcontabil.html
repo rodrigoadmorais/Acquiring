@@ -238,7 +238,8 @@
     <script>
         Chart.register(ChartDataLabels);
 
-        const dataUrl = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json';
+        // O cache-buster ("?nocache=...") obriga o navegador a baixar o JSON mais recente sempre
+        const dataUrl = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json?nocache=' + new Date().getTime();
         
         let globalData = [];
         let periodKeys = [];
@@ -263,11 +264,14 @@
                     let newRow = {};
                     for (let key in row) {
                         let realColumnName = headerMap[key];
-                        if(realColumnName) newRow[realColumnName] = row[key];
+                        if(realColumnName) {
+                            // Limpa espaços invisíveis que podem vir da planilha (ex: "CECO " -> "CECO")
+                            let cleanColumnName = String(realColumnName).trim();
+                            newRow[cleanColumnName] = row[key];
+                        }
                     }
                     return newRow;
                 }).filter(row => {
-                    // Remove lixo de PROCV original antes de sobrescrevermos o MNG3
                     if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
                     return true;
                 }).map(row => {
@@ -312,11 +316,12 @@
 
             let activePeriods = selectedMonth === 'all' ? periodKeys : [selectedMonth];
             
+            // HIERARQUIA COM CECO
             let currentHierarchy = ["MNG3", "MNG4"];
             if (showTipoLancamento) {
                 currentHierarchy.push("Tipo de Lançamento");
             }
-            currentHierarchy.push("CUENTA", "CENTRO", "Cod_Fornecedor", "TEXTO", "NRO_DOC");
+            currentHierarchy.push("CUENTA", "CECO", "Cod_Fornecedor", "TEXTO", "NRO_DOC");
 
             let filteredData = globalData;
             let isSearching = false;
