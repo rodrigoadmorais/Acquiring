@@ -51,9 +51,9 @@
             padding-bottom: 10px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             flex-wrap: wrap; 
-            gap: 10px;
+            gap: 15px;
         }
 
         .controls {
@@ -81,6 +81,20 @@
             padding: 4px 8px;
             border-radius: 4px;
             border: 1px solid #ddd;
+            transition: background-color 0.2s;
+        }
+        .checkbox-container:hover {
+            background-color: #e2e6ea;
+        }
+
+        /* Novo estilo para a seleção de meses */
+        .month-filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding-left: 10px;
+            border-left: 2px solid #ddd;
         }
 
         .chart-container {
@@ -113,7 +127,7 @@
             padding-right: 15px;
             min-width: 110px;
             font-size: 0.85rem;
-            position: relative; /* Necessário para a barra de dados não vazar */
+            position: relative; 
         }
 
         .val-number {
@@ -217,17 +231,14 @@
                     Incluir Tipo de Lançamento
                 </label>
                 <div>
-                    <select id="monthFilter" onchange="updateView()">
-                        <option value="all">Todos os Meses</option>
-                    </select>
-                </div>
-                <div>
                     <select id="unitToggle" onchange="updateView()">
                         <option value="1">Reais (R$)</option>
                         <option value="1000">Milhares (k)</option>
                         <option value="1000000" selected>Milhões (M)</option>
                     </select>
                 </div>
+                <div id="monthCheckboxes" class="month-filters">
+                    </div>
             </div>
         </h2>
         
@@ -288,18 +299,58 @@
                             row["MNG4"] = "Consultor NF";
                         }
                     }
-
                     return row;
                 });
 
                 periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
 
-                const monthSelect = document.getElementById('monthFilter');
+                // ------------------------------------------------------------------
+                // LÓGICA DE MESES DEFAULT (Jan até Mês Anterior)
+                // ------------------------------------------------------------------
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1; // 1-12
+                
+                // Ex: 202603
+                const currentYYYYMM = parseInt(currentYear + String(currentMonth).padStart(2, '0'));
+                // Ex: 202601
+                const startOfThisYear = parseInt(currentYear + '01');
+
+                let defaultChecked = [];
+
                 periodKeys.forEach(p => {
-                    let option = document.createElement('option');
-                    option.value = p;
-                    option.text = formatPeriodName(p);
-                    monthSelect.appendChild(option);
+                    let pClean = p.replace('-', '');
+                    let pInt = parseInt(pClean);
+                    // Regra: Mês do ano atual, mas estritamente ANTES do mês atual
+                    if (pInt >= startOfThisYear && pInt < currentYYYYMM) {
+                        defaultChecked.push(p);
+                    }
+                });
+
+                // Trava de segurança: se a regra acima retornar vazio (ex: estamos em Janeiro)
+                // ele preenche com o último mês que existe na base para a tela não virar em branco.
+                if (defaultChecked.length === 0 && periodKeys.length > 0) {
+                    defaultChecked.push(periodKeys[periodKeys.length - 1]);
+                }
+
+                // Criação dos Checkboxes na tela
+                const monthContainer = document.getElementById('monthCheckboxes');
+                periodKeys.forEach(p => {
+                    let label = document.createElement('label');
+                    label.className = 'checkbox-container';
+                    
+                    let checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = p;
+                    checkbox.onchange = updateView; // Atualiza tudo quando clicar
+                    
+                    if (defaultChecked.includes(p)) {
+                        checkbox.checked = true;
+                    }
+
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(' ' + formatPeriodName(p)));
+                    monthContainer.appendChild(label);
                 });
 
                 updateView();
@@ -311,12 +362,20 @@
         }
 
         function updateView() {
-            const selectedMonth = document.getElementById('monthFilter').value;
             const searchTerm = document.getElementById('searchDoc').value.trim().toLowerCase();
             const showTipoLancamento = document.getElementById('toggleTipoLancamento').checked;
 
-            let activePeriods = selectedMonth === 'all' ? periodKeys : [selectedMonth];
-            
+            // Busca os meses selecionados nas caixinhas
+            const checkedBoxes = document.querySelectorAll('#monthCheckboxes input[type="checkbox"]:checked');
+            let activePeriods = Array.from(checkedBoxes).map(cb => cb.value).sort();
+
+            // Proteção: Se o usuário desmarcar tudo, mostra uma mensagem e limpa o gráfico
+            if (activePeriods.length === 0) {
+                document.getElementById('drilldown-table').innerHTML = '<p style="padding: 20px; color: #c0392b; font-weight: bold;">Por favor, selecione pelo menos um mês nas caixinhas acima.</p>';
+                if(chartInstance) chartInstance.destroy();
+                return;
+            }
+
             let currentHierarchy = ["MNG3", "MNG4"];
             if (showTipoLancamento) {
                 currentHierarchy.push("Tipo de Lançamento");
@@ -411,7 +470,6 @@
                 return group;
             });
 
-            // NOVO: Ordenando ESTRITAMENTE do maior valor para o menor (Ordem Decrescente Real)
             resultArray.sort((a, b) => b.rowTotal - a.rowTotal);
 
             return resultArray;
@@ -430,14 +488,10 @@
 
             function generateHtml(nodes, isLeaf, depth) {
                 let html = '';
-                
-                // Pega o maior valor absoluto DENTRO DESTE NÍVEL para criar a proporção da barra de calor
                 const maxTotalLevel = Math.max(...nodes.map(n => Math.abs(n.rowTotal)), 0);
 
                 nodes.forEach(node => {
-                    // Calcula a intensidade da cor (0 a 1)
                     let intensity = maxTotalLevel === 0 ? 0 : Math.abs(node.rowTotal) / maxTotalLevel;
-                    // Define a cor da barra (Amarelo pra positivo, vermelho suave pra negativo)
                     let barColor = node.rowTotal >= 0 ? 'rgba(255, 230, 0, 0.45)' : 'rgba(231, 76, 60, 0.25)';
                     let dataBarHtml = `<div style="position: absolute; right: 0; top: 3px; bottom: 3px; width: ${intensity * 100}%; background-color: ${barColor}; z-index: 0; border-radius: 2px;"></div>`;
 
