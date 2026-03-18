@@ -7,6 +7,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
+        /* REGRA DE OURO PARA ALINHAMENTO: Tudo conta a borda e o padding no tamanho total */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         :root {
             --meli-yellow: #ffe600;
             --meli-blue: #2d3277;
@@ -103,6 +108,19 @@
             margin-bottom: 40px;
         }
 
+        /* --- ESTILOS DA TABELA (ALINHAMENTO CORRIGIDO) --- */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto; /* Permite scroll se tiver muitos meses selecionados */
+            margin-bottom: 50px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .table-inner {
+            min-width: max-content; /* Força a tabela a esticar em vez de esmagar as colunas */
+        }
+
         .table-header {
             display: flex;
             background-color: var(--meli-blue);
@@ -110,15 +128,22 @@
             padding: 12px 10px;
             font-weight: bold;
             font-size: 0.85rem;
-            border-radius: 4px 4px 0 0;
+        }
+
+        /* Espaçador invisível no cabeçalho para compensar o botão de + */
+        .table-header::before {
+            content: '';
+            display: block;
+            width: 24px;
+            flex-shrink: 0;
         }
 
         .col-title {
-            flex: 4;
+            flex: 4 1 0%; /* Travando a proporção exata */
             display: flex;
             align-items: center;
             padding-right: 10px;
-            min-width: 300px;
+            min-width: 280px;
         }
 
         .level-badge {
@@ -134,13 +159,12 @@
         }
 
         .col-value {
-            flex: 1;
+            flex: 1 1 0%; /* Travando a proporção exata */
             display: flex;
             flex-direction: column;
             justify-content: center;
             padding-right: 15px;
-            min-width: 110px;
-            font-size: 0.85rem;
+            min-width: 130px;
             position: relative; 
         }
 
@@ -159,7 +183,7 @@
         }
 
         .val-icon {
-            width: 15px;
+            width: 15px; /* Trava o espaço da setinha verde/vermelha */
             text-align: right;
             margin-left: 8px;
             position: relative;
@@ -171,7 +195,7 @@
             color: var(--plan-color);
             text-align: right;
             width: 100%;
-            padding-right: 23px; /* Alinha o texto do plano com o número de cima, ignorando o espaço do ícone */
+            padding-right: 23px; 
             margin-top: 2px;
             font-weight: 500;
         }
@@ -222,15 +246,23 @@
             font-weight: bold;
             color: #555;
             line-height: 1;
+            flex-shrink: 0; /* Impede que o botão amasse */
         }
         details[open] > summary::before { content: '-'; }
-        .leaf-node::before { content: ''; border: none; background: transparent; width: 16px; margin-right: 8px;}
+        
+        /* Espaçador para quem não tem botão (folha da árvore) */
+        .leaf-node::before { 
+            content: ''; 
+            display: block; 
+            width: 24px; 
+            flex-shrink: 0;
+        }
 
         .details-content { padding-left: 20px; border-left: 1px solid #eee; }
 
         .leaf-node {
             display: flex;
-            padding: 8px 10px 8px 22px; 
+            padding: 8px 10px; 
             background-color: #fff;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.85rem;
@@ -275,7 +307,7 @@
             </div>
         </h2>
         
-        <div id="drilldown-table" style="margin-bottom: 50px;">
+        <div id="drilldown-table">
             <p style="padding: 20px;">Carregando dados...</p>
         </div>
 
@@ -289,7 +321,6 @@
     <script>
         Chart.register(ChartDataLabels);
 
-        // Quebra de cache nativa do JavaScript
         const nocache = new Date().getTime();
         const dataUrlRealized = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json?nocache=' + nocache;
         const dataUrlPlan = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/plancpa.json?nocache=' + nocache;
@@ -321,7 +352,6 @@
 
         async function initDashboard() {
             try {
-                // Trazendo as duas bases juntas
                 const [resRealized, resPlan] = await Promise.all([
                     fetch(dataUrlRealized),
                     fetch(dataUrlPlan)
@@ -338,7 +368,6 @@
                     return;
                 }
 
-                // --- PROCESSANDO REALIZADO ---
                 const headerMap = rawData[0]; 
                 rawData.shift(); 
 
@@ -371,22 +400,18 @@
 
                 periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
 
-                // --- PROCESSANDO PLANO ---
-                // Transforma a base do plano em um dicionário: planMap["canal"]["202601"] = valor * 1.000.000
                 rawPlan.forEach(row => {
                     if (row.Canal) {
                         let canalKey = String(row.Canal).trim().toLowerCase();
                         planMap[canalKey] = {};
                         periodKeys.forEach(p => {
-                            let monthStr = String(p).substring(4, 6); // Extrai "01" de "202601"
+                            let monthStr = String(p).substring(4, 6); 
                             let colName = monthColsMap[monthStr];
-                            // Os dados vêm em milhões, então multiplicamos por 1 milhão para a escala bater com o realizado
                             planMap[canalKey][p] = (row[colName] || 0) * 1000000;
                         });
                     }
                 });
 
-                // --- PREENCHENDO FILTROS DE DATA ---
                 const now = new Date();
                 const currentYear = now.getFullYear();
                 const currentMonth = now.getMonth() + 1; 
@@ -461,7 +486,6 @@
 
             const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
             
-            // Atribui os valores de plano aos níveis MNG3 e MNG4
             attachPlanToHierarchy(groupedData, activePeriods);
 
             renderChart(filteredData, activePeriods, groupedData);
@@ -532,7 +556,6 @@
             return resultArray;
         }
 
-        // Nova função para associar o Plano aos níveis agrupados corretos (MNG3 e MNG4)
         function attachPlanToHierarchy(nodes, activePeriods) {
             nodes.forEach(node => {
                 if (node.levelKey) {
@@ -569,11 +592,25 @@
         function renderTable(groupedData, activePeriods, isSearching, currentHierarchy) {
             const container = document.getElementById('drilldown-table');
             
+            // --- CABEÇALHO CORRIGIDO E ESTRUTURADO IDÊNTICO AOS DADOS ---
             let headerHtml = `<div class="table-header"><div class="col-title">Agrupamento</div>`;
             activePeriods.forEach(p => {
-                headerHtml += `<div class="col-value" style="justify-content: flex-end; padding-right: 30px;">${formatPeriodName(p)}</div>`;
+                headerHtml += `
+                    <div class="col-value">
+                        <div class="val-primary">
+                            <span class="val-number">${formatPeriodName(p)}</span>
+                            <span class="val-icon"></span>
+                        </div>
+                    </div>`;
             });
-            headerHtml += `<div class="col-value col-total" style="justify-content: flex-end; padding-right: 15px;">Total Selecionado</div></div>`;
+            headerHtml += `
+                    <div class="col-value col-total">
+                        <div class="val-primary">
+                            <span class="val-number">Total Selec.</span>
+                            <span class="val-icon"></span>
+                        </div>
+                    </div>
+                </div>`;
             
             const openAttribute = isSearching ? 'open' : '';
 
@@ -586,7 +623,6 @@
                     let barColor = node.rowTotal >= 0 ? 'rgba(255, 230, 0, 0.45)' : 'rgba(231, 76, 60, 0.25)';
                     let dataBarHtml = `<div style="position: absolute; right: 0; top: 3px; bottom: 3px; width: ${intensity * 100}%; background-color: ${barColor}; z-index: 0; border-radius: 2px;"></div>`;
 
-                    // Só exibe linha do plano se for nível MNG3 (CPA) ou MNG4 (Canal)
                     const showPlan = (node.levelKey === 'MNG3' || node.levelKey === 'MNG4');
 
                     if (isLeaf || !node.children || !node.children[0].name) {
@@ -643,7 +679,7 @@
 
                         let planTotalHtml = '';
                         if (showPlan && node.planRowTotal !== undefined) {
-                            planTotalHtml = `<div class="val-plan" style="padding-right:15px;">Plano: ${formatNumber(node.planRowTotal)}</div>`;
+                            planTotalHtml = `<div class="val-plan" style="padding-right:23px;">Plano: ${formatNumber(node.planRowTotal)}</div>`;
                         }
 
                         html += `<div class="col-value col-total">
@@ -664,9 +700,10 @@
             }
 
             if(groupedData.length === 0) {
-                container.innerHTML = headerHtml + `<p style="padding: 20px;">Nenhum documento encontrado.</p>`;
+                container.innerHTML = `<div class="table-wrapper"><div class="table-inner">${headerHtml}</div><p style="padding: 20px;">Nenhum documento encontrado.</p></div>`;
             } else {
-                container.innerHTML = headerHtml + generateHtml(groupedData, false, 0);
+                // Wrapper adicionado para resolver o problema caso o monitor seja pequeno
+                container.innerHTML = `<div class="table-wrapper"><div class="table-inner">${headerHtml}${generateHtml(groupedData, false, 0)}</div></div>`;
             }
         }
 
@@ -680,7 +717,6 @@
                 globalPlan[p] = 0;
             });
 
-            // Soma Realizado
             data.forEach(row => {
                 activePeriods.forEach(p => {
                     let val = parseFloat(row[p]);
@@ -688,7 +724,6 @@
                 });
             });
 
-            // Soma Plano (a partir do MNG3 que já foi agrupado)
             if (groupedData && groupedData.length > 0) {
                 groupedData.forEach(mng3Node => {
                     activePeriods.forEach(p => {
