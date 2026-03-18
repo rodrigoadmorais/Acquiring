@@ -234,8 +234,9 @@
     </div>
 
     <div class="container">
+        
         <h2>
-            Visão Geral
+            Detalhamento
             <div class="controls">
                 <div>
                     <input type="text" id="searchDoc" placeholder="Buscar Nº Doc..." onkeyup="updateView()">
@@ -256,14 +257,15 @@
             </div>
         </h2>
         
+        <div id="drilldown-table" style="margin-bottom: 50px;">
+            <p style="padding: 20px;">Carregando dados...</p>
+        </div>
+
+        <h2>Visão Geral (Evolutivo)</h2>
         <div class="chart-container">
             <canvas id="evolutionChart"></canvas>
         </div>
 
-        <h2>Detalhamento</h2>
-        <div id="drilldown-table">
-            <p style="padding: 20px;">Carregando dados...</p>
-        </div>
     </div>
 
     <script>
@@ -314,10 +316,8 @@
                     }
                     return newRow;
                 }).filter(row => {
-                    // Ignora erros de PROCV
+                    // Ignora erros de PROCV e o MNG4 = OTHERS
                     if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
-                    
-                    // NOVA REGRA: Ignora a linha se o MNG4 for "OTHERS"
                     if(row["MNG4"] && String(row["MNG4"]).trim().toUpperCase() === "OTHERS") return false;
                     
                     return true;
