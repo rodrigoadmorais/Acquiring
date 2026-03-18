@@ -14,6 +14,7 @@
             --border-color: #e0e0e0;
             --text-color: #333;
             --hover-bg: #f5f5f5;
+            --plan-color: #7f8c8d;
         }
 
         body {
@@ -98,7 +99,7 @@
 
         .chart-container {
             width: 100%;
-            height: 300px;
+            height: 350px;
             margin-bottom: 40px;
         }
 
@@ -135,12 +136,19 @@
         .col-value {
             flex: 1;
             display: flex;
-            justify-content: flex-end;
-            align-items: center;
+            flex-direction: column;
+            justify-content: center;
             padding-right: 15px;
             min-width: 110px;
             font-size: 0.85rem;
             position: relative; 
+        }
+
+        .val-primary {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            width: 100%;
         }
 
         .val-number {
@@ -156,6 +164,16 @@
             margin-left: 8px;
             position: relative;
             z-index: 1;
+        }
+        
+        .val-plan {
+            font-size: 0.68rem;
+            color: var(--plan-color);
+            text-align: right;
+            width: 100%;
+            padding-right: 23px; /* Alinha o texto do plano com o número de cima, ignorando o espaço do ícone */
+            margin-top: 2px;
+            font-weight: 500;
         }
 
         .col-total {
@@ -271,9 +289,13 @@
     <script>
         Chart.register(ChartDataLabels);
 
-        const dataUrl = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json?nocache=' + new Date().getTime();
+        // Quebra de cache nativa do JavaScript
+        const nocache = new Date().getTime();
+        const dataUrlRealized = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json?nocache=' + nocache;
+        const dataUrlPlan = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/plancpa.json?nocache=' + nocache;
         
         let globalData = [];
+        let planMap = {}; 
         let periodKeys = [];
         let chartInstance = null;
 
@@ -285,6 +307,12 @@
             "NRO_DOC": "Nº Doc"
         };
 
+        const monthColsMap = {
+            '01': 'J A N', '02': 'F E V', '03': 'M A R', '04': 'A B R',
+            '05': 'M A I', '06': 'J U N', '07': 'J U L', '08': 'A G O',
+            '09': 'S E P', '10': 'O C T', '11': 'N O V', '12': 'D E C'
+        };
+
         function getLevelBadge(key) {
             const label = levelLabels[key];
             if (!label) return '';
@@ -293,15 +321,24 @@
 
         async function initDashboard() {
             try {
-                const response = await fetch(dataUrl);
-                if (!response.ok) throw new Error("Erro ao carregar os dados JSON");
-                let rawData = await response.json();
+                // Trazendo as duas bases juntas
+                const [resRealized, resPlan] = await Promise.all([
+                    fetch(dataUrlRealized),
+                    fetch(dataUrlPlan)
+                ]);
+
+                if (!resRealized.ok) throw new Error("Erro ao carregar os dados de Realizado");
+                if (!resPlan.ok) throw new Error("Erro ao carregar os dados de Plano");
+
+                let rawData = await resRealized.json();
+                let rawPlan = await resPlan.json();
                 
                 if(!rawData || rawData.length === 0) {
-                    document.getElementById('drilldown-table').innerHTML = '<p>Nenhum dado encontrado.</p>';
+                    document.getElementById('drilldown-table').innerHTML = '<p>Nenhum dado encontrado no Realizado.</p>';
                     return;
                 }
 
+                // --- PROCESSANDO REALIZADO ---
                 const headerMap = rawData[0]; 
                 rawData.shift(); 
 
@@ -316,14 +353,11 @@
                     }
                     return newRow;
                 }).filter(row => {
-                    // Ignora erros de PROCV e o MNG4 = OTHERS
                     if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
                     if(row["MNG4"] && String(row["MNG4"]).trim().toUpperCase() === "OTHERS") return false;
-                    
                     return true;
                 }).map(row => {
                     row["MNG3"] = "CPA";
-
                     if (row["MNG4"]) {
                         let canal = String(row["MNG4"]).trim().toLowerCase();
                         if (canal.includes("cashback")) {
@@ -337,10 +371,25 @@
 
                 periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
 
+                // --- PROCESSANDO PLANO ---
+                // Transforma a base do plano em um dicionário: planMap["canal"]["202601"] = valor * 1.000.000
+                rawPlan.forEach(row => {
+                    if (row.Canal) {
+                        let canalKey = String(row.Canal).trim().toLowerCase();
+                        planMap[canalKey] = {};
+                        periodKeys.forEach(p => {
+                            let monthStr = String(p).substring(4, 6); // Extrai "01" de "202601"
+                            let colName = monthColsMap[monthStr];
+                            // Os dados vêm em milhões, então multiplicamos por 1 milhão para a escala bater com o realizado
+                            planMap[canalKey][p] = (row[colName] || 0) * 1000000;
+                        });
+                    }
+                });
+
+                // --- PREENCHENDO FILTROS DE DATA ---
                 const now = new Date();
                 const currentYear = now.getFullYear();
                 const currentMonth = now.getMonth() + 1; 
-                
                 const currentYYYYMM = parseInt(currentYear + String(currentMonth).padStart(2, '0'));
                 const startOfThisYear = parseInt(currentYear + '01');
 
@@ -368,9 +417,7 @@
                     checkbox.value = p;
                     checkbox.onchange = updateView; 
                     
-                    if (defaultChecked.includes(p)) {
-                        checkbox.checked = true;
-                    }
+                    if (defaultChecked.includes(p)) checkbox.checked = true;
 
                     label.appendChild(checkbox);
                     label.appendChild(document.createTextNode(' ' + formatPeriodName(p)));
@@ -399,9 +446,7 @@
             }
 
             let currentHierarchy = ["MNG3", "MNG4", "CUENTA", "CECO"];
-            if (showTipoLancamento) {
-                currentHierarchy.push("Tipo de Lançamento");
-            }
+            if (showTipoLancamento) currentHierarchy.push("Tipo de Lançamento");
             currentHierarchy.push("Cod_Fornecedor", "TEXTO", "NRO_DOC");
 
             let filteredData = globalData;
@@ -416,8 +461,10 @@
 
             const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
             
-            renderChart(filteredData, activePeriods);
-            
+            // Atribui os valores de plano aos níveis MNG3 e MNG4
+            attachPlanToHierarchy(groupedData, activePeriods);
+
+            renderChart(filteredData, activePeriods, groupedData);
             renderTable(groupedData, activePeriods, isSearching, currentHierarchy);
         }
 
@@ -440,7 +487,6 @@
 
         function getAlertIcon(val, prevVal, activePeriodsLength) {
             if (activePeriodsLength <= 1) return ''; 
-            
             if (prevVal !== null && prevVal !== 0) {
                 let deviation = (val - prevVal) / Math.abs(prevVal);
                 if (Math.abs(deviation) >= 0.10) { 
@@ -456,27 +502,17 @@
 
         function buildHierarchy(dataRows, keys, level, activePeriods) {
             if (level >= keys.length) return dataRows;
-            
             const currentKey = keys[level];
             const groups = {};
 
             dataRows.forEach(row => {
                 let groupName = row[currentKey];
-                if (!groupName || groupName === 'empty' || groupName === '') {
-                    groupName = 'Não Classificado';
-                }
+                if (!groupName || groupName === 'empty' || groupName === '') groupName = 'Não Classificado';
 
                 if (!groups[groupName]) {
-                    groups[groupName] = {
-                        name: groupName,
-                        levelKey: currentKey,
-                        totals: {},
-                        rowTotal: 0,
-                        rows: []
-                    };
+                    groups[groupName] = { name: groupName, levelKey: currentKey, totals: {}, rowTotal: 0, rows: [] };
                     activePeriods.forEach(p => groups[groupName].totals[p] = 0);
                 }
-
                 groups[groupName].rows.push(row);
                 
                 activePeriods.forEach(p => {
@@ -492,10 +528,42 @@
                 group.children = buildHierarchy(group.rows, keys, level + 1, activePeriods);
                 return group;
             });
-
             resultArray.sort((a, b) => b.rowTotal - a.rowTotal);
-
             return resultArray;
+        }
+
+        // Nova função para associar o Plano aos níveis agrupados corretos (MNG3 e MNG4)
+        function attachPlanToHierarchy(nodes, activePeriods) {
+            nodes.forEach(node => {
+                if (node.levelKey) {
+                    node.planTotals = {};
+                    activePeriods.forEach(p => node.planTotals[p] = 0);
+                    node.planRowTotal = 0;
+
+                    if (node.children && node.children.length > 0) {
+                        attachPlanToHierarchy(node.children, activePeriods);
+
+                        if (node.levelKey === 'MNG4') {
+                            let canalKey = String(node.name).trim().toLowerCase();
+                            let pData = planMap[canalKey];
+                            if (pData) {
+                                activePeriods.forEach(p => {
+                                    let val = pData[p] || 0;
+                                    node.planTotals[p] = val;
+                                    node.planRowTotal += val;
+                                });
+                            }
+                        } else if (node.levelKey === 'MNG3') {
+                            activePeriods.forEach(p => {
+                                let sum = 0;
+                                node.children.forEach(c => sum += (c.planTotals ? c.planTotals[p] : 0));
+                                node.planTotals[p] = sum;
+                            });
+                            node.children.forEach(c => node.planRowTotal += (c.planRowTotal || 0));
+                        }
+                    }
+                }
+            });
         }
 
         function renderTable(groupedData, activePeriods, isSearching, currentHierarchy) {
@@ -518,9 +586,11 @@
                     let barColor = node.rowTotal >= 0 ? 'rgba(255, 230, 0, 0.45)' : 'rgba(231, 76, 60, 0.25)';
                     let dataBarHtml = `<div style="position: absolute; right: 0; top: 3px; bottom: 3px; width: ${intensity * 100}%; background-color: ${barColor}; z-index: 0; border-radius: 2px;"></div>`;
 
+                    // Só exibe linha do plano se for nível MNG3 (CPA) ou MNG4 (Canal)
+                    const showPlan = (node.levelKey === 'MNG3' || node.levelKey === 'MNG4');
+
                     if (isLeaf || !node.children || !node.children[0].name) {
                         const leafClass = isSearching ? 'leaf-node highlight-doc' : 'leaf-node';
-                        
                         let leafKey = currentHierarchy[currentHierarchy.length - 1]; 
                         let badge = getLevelBadge(leafKey);
 
@@ -535,11 +605,16 @@
                             totalRow += val;
                             let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
                             
-                            html += `<div class="col-value"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>`;
+                            html += `<div class="col-value">
+                                        <div class="val-primary"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>
+                                     </div>`;
                             prevVal = val;
                         });
                         
-                        html += `<div class="col-value col-total">${dataBarHtml}<span class="val-number">${formatNumber(totalRow)}</span><span class="val-icon"></span></div>`;
+                        html += `<div class="col-value col-total">
+                                    ${dataBarHtml}
+                                    <div class="val-primary"><span class="val-number">${formatNumber(totalRow)}</span><span class="val-icon"></span></div>
+                                 </div>`;
                         html += `</div>`;
                     } else {
                         html += `<details class="level-${depth}" ${openAttribute}><summary>`;
@@ -553,11 +628,29 @@
                             let val = node.totals[p];
                             let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
 
-                            html += `<div class="col-value"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>`;
+                            let planHtml = '';
+                            if (showPlan && node.planTotals) {
+                                let planVal = node.planTotals[p] || 0;
+                                planHtml = `<div class="val-plan">Plano: ${formatNumber(planVal)}</div>`;
+                            }
+
+                            html += `<div class="col-value">
+                                        <div class="val-primary"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>
+                                        ${planHtml}
+                                     </div>`;
                             prevVal = val;
                         });
 
-                        html += `<div class="col-value col-total">${dataBarHtml}<span class="val-number">${formatNumber(node.rowTotal)}</span><span class="val-icon"></span></div>`;
+                        let planTotalHtml = '';
+                        if (showPlan && node.planRowTotal !== undefined) {
+                            planTotalHtml = `<div class="val-plan" style="padding-right:15px;">Plano: ${formatNumber(node.planRowTotal)}</div>`;
+                        }
+
+                        html += `<div class="col-value col-total">
+                                    ${dataBarHtml}
+                                    <div class="val-primary"><span class="val-number">${formatNumber(node.rowTotal)}</span><span class="val-icon"></span></div>
+                                    ${planTotalHtml}
+                                 </div>`;
                         
                         html += `</summary><div class="details-content">`;
                         
@@ -577,22 +670,38 @@
             }
         }
 
-        function renderChart(data, activePeriods) {
+        function renderChart(data, activePeriods, groupedData) {
             const ctx = document.getElementById('evolutionChart').getContext('2d');
             
-            const globalTotals = {};
-            activePeriods.forEach(p => globalTotals[p] = 0);
+            const globalRealized = {};
+            const globalPlan = {};
+            activePeriods.forEach(p => {
+                globalRealized[p] = 0;
+                globalPlan[p] = 0;
+            });
 
+            // Soma Realizado
             data.forEach(row => {
                 activePeriods.forEach(p => {
                     let val = parseFloat(row[p]);
-                    if (!isNaN(val)) globalTotals[p] += val;
+                    if (!isNaN(val)) globalRealized[p] += val;
                 });
             });
 
+            // Soma Plano (a partir do MNG3 que já foi agrupado)
+            if (groupedData && groupedData.length > 0) {
+                groupedData.forEach(mng3Node => {
+                    activePeriods.forEach(p => {
+                        globalPlan[p] += (mng3Node.planTotals ? mng3Node.planTotals[p] : 0);
+                    });
+                });
+            }
+
             const labels = activePeriods.map(p => formatPeriodName(p));
             const { divisor } = getFormatterConfig();
-            const chartData = activePeriods.map(p => globalTotals[p] / divisor);
+            
+            const chartDataRealized = activePeriods.map(p => globalRealized[p] / divisor);
+            const chartDataPlan = activePeriods.map(p => globalPlan[p] / divisor);
 
             if (chartInstance) {
                 chartInstance.destroy();
@@ -602,17 +711,31 @@
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Total CPA',
-                        data: chartData,
-                        borderColor: '#2d3277',
-                        backgroundColor: 'rgba(45, 50, 119, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 6,
-                        pointBackgroundColor: '#ffe600',
-                        fill: true,
-                        tension: 0.1
-                    }]
+                    datasets: [
+                        {
+                            label: 'Realizado CPA',
+                            data: chartDataRealized,
+                            borderColor: '#2d3277',
+                            backgroundColor: 'rgba(45, 50, 119, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 6,
+                            pointBackgroundColor: '#ffe600',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Plano CPA',
+                            data: chartDataPlan,
+                            borderColor: '#95a5a6',
+                            borderDash: [5, 5],
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#7f8c8d',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -621,19 +744,29 @@
                         padding: { top: 30 } 
                     },
                     plugins: {
-                        legend: { display: false },
+                        legend: { 
+                            display: true, 
+                            position: 'bottom',
+                            labels: { usePointStyle: true, boxWidth: 10 }
+                        },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return formatNumber(context.raw * divisor); 
+                                    return context.dataset.label + ': ' + formatNumber(context.raw * divisor); 
                                 }
                             }
                         },
                         datalabels: {
-                            align: 'top',
-                            anchor: 'bottom',
-                            color: '#333',
-                            font: { weight: 'bold', size: 12 },
+                            align: function(context) {
+                                return context.datasetIndex === 0 ? 'top' : 'bottom';
+                            },
+                            anchor: function(context) {
+                                return context.datasetIndex === 0 ? 'bottom' : 'top';
+                            },
+                            color: function(context) {
+                                return context.datasetIndex === 0 ? '#333' : '#7f8c8d';
+                            },
+                            font: { weight: 'bold', size: 11 },
                             formatter: function(value) {
                                 return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
                             }
