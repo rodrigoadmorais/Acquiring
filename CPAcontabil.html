@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
-        /* REGRA DE OURO PARA ALINHAMENTO: Tudo conta a borda e o padding no tamanho total */
+        /* REGRA DE OURO PARA ALINHAMENTO */
         *, *::before, *::after {
             box-sizing: border-box;
         }
@@ -108,17 +108,16 @@
             margin-bottom: 40px;
         }
 
-        /* --- ESTILOS DA TABELA (ALINHAMENTO CORRIGIDO) --- */
         .table-wrapper {
             width: 100%;
-            overflow-x: auto; /* Permite scroll se tiver muitos meses selecionados */
+            overflow-x: auto; 
             margin-bottom: 50px;
             border-radius: 4px;
             border: 1px solid var(--border-color);
         }
 
         .table-inner {
-            min-width: max-content; /* Força a tabela a esticar em vez de esmagar as colunas */
+            min-width: max-content; 
         }
 
         .table-header {
@@ -130,7 +129,6 @@
             font-size: 0.85rem;
         }
 
-        /* Espaçador invisível no cabeçalho para compensar o botão de + */
         .table-header::before {
             content: '';
             display: block;
@@ -139,7 +137,7 @@
         }
 
         .col-title {
-            flex: 4 1 0%; /* Travando a proporção exata */
+            flex: 4 1 0%; 
             display: flex;
             align-items: center;
             padding-right: 10px;
@@ -159,7 +157,7 @@
         }
 
         .col-value {
-            flex: 1 1 0%; /* Travando a proporção exata */
+            flex: 1 1 0%; 
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -183,7 +181,7 @@
         }
 
         .val-icon {
-            width: 15px; /* Trava o espaço da setinha verde/vermelha */
+            width: 15px; 
             text-align: right;
             margin-left: 8px;
             position: relative;
@@ -246,11 +244,10 @@
             font-weight: bold;
             color: #555;
             line-height: 1;
-            flex-shrink: 0; /* Impede que o botão amasse */
+            flex-shrink: 0; 
         }
         details[open] > summary::before { content: '-'; }
         
-        /* Espaçador para quem não tem botão (folha da árvore) */
         .leaf-node::before { 
             content: ''; 
             display: block; 
@@ -400,6 +397,7 @@
 
                 periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
 
+                // LENDO A BASE DO PLANO (AGORA TRANSFORMANDO EM POSITIVO)
                 rawPlan.forEach(row => {
                     if (row.Canal) {
                         let canalKey = String(row.Canal).trim().toLowerCase();
@@ -407,7 +405,9 @@
                         periodKeys.forEach(p => {
                             let monthStr = String(p).substring(4, 6); 
                             let colName = monthColsMap[monthStr];
-                            planMap[canalKey][p] = (row[colName] || 0) * 1000000;
+                            
+                            // Math.abs() FORÇA O VALOR A FICAR POSITIVO
+                            planMap[canalKey][p] = Math.abs(row[colName] || 0) * 1000000;
                         });
                     }
                 });
@@ -592,7 +592,6 @@
         function renderTable(groupedData, activePeriods, isSearching, currentHierarchy) {
             const container = document.getElementById('drilldown-table');
             
-            // --- CABEÇALHO CORRIGIDO E ESTRUTURADO IDÊNTICO AOS DADOS ---
             let headerHtml = `<div class="table-header"><div class="col-title">Agrupamento</div>`;
             activePeriods.forEach(p => {
                 headerHtml += `
@@ -702,7 +701,6 @@
             if(groupedData.length === 0) {
                 container.innerHTML = `<div class="table-wrapper"><div class="table-inner">${headerHtml}</div><p style="padding: 20px;">Nenhum documento encontrado.</p></div>`;
             } else {
-                // Wrapper adicionado para resolver o problema caso o monitor seja pequeno
                 container.innerHTML = `<div class="table-wrapper"><div class="table-inner">${headerHtml}${generateHtml(groupedData, false, 0)}</div></div>`;
             }
         }
