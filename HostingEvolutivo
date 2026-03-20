@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado Pago - Hosting Evolution (USD)</title>
+    <!-- Tailwind CSS para Estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@300;400;700&display=swap');
+        body { font-family: 'Proxima Nova', -apple-system, sans-serif; }
+        .ml-yellow { background-color: #FFE600; }
+        .ml-blue { background-color: #3483FA; }
+        .ml-blue-hover { background-color: #2968c8; }
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        .delta-up { color: #F04449; } /* Vermelho para aumento de custo */
+        .delta-down { color: #00A650; } /* Verde para redução de custo */
+    </style>
+</head>
+<body class="bg-white text-[#333333] pb-20">
+
+    <!-- Header Estilo Mercado Livre -->
+    <header class="ml-yellow py-6 px-4 md:px-8 border-b border-black/5 shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-white p-2.5 rounded-full shadow-sm">
+                        <svg class="text-[#3483FA] w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    </div>
+                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">
+                        Hosting Evolution <span class="text-[#3483FA]">USD</span>
+                    </h1>
+                </div>
+                <p class="text-slate-800/70 text-sm mt-1 ml-14 font-semibold uppercase tracking-wide">Visão Geral de Custos em Dólares (Taxa: 5,34)</p>
+            </div>
+            
+            <!-- Selector de Visão -->
+            <div class="flex items-center bg-white/50 p-1.5 rounded-full backdrop-blur-md border border-black/10">
+                <button id="btn-absolute" onclick="updateView('absolute')" class="px-8 py-2.5 rounded-full text-sm font-bold transition-all duration-300 bg-[#3483FA] text-white shadow-lg scale-105">
+                    Absoluto
+                </button>
+                <button id="btn-per-tpn" onclick="updateView('per_tpn')" class="px-8 py-2.5 rounded-full text-sm font-bold transition-all duration-300 text-slate-700 hover:bg-white/40">
+                    Custo por TPN
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 md:px-8 mt-8 flex flex-col gap-10">
+        
+        <!-- Sumário de Médias com Comparativo -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-8 border-t-[#3483FA]">
+                <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Média Total ACQ</p>
+                <p id="summary-acq" class="text-2xl font-black text-slate-800 mt-2 text-nowrap">USD 0</p>
+                <div id="delta-container-acq" class="flex items-center justify-center gap-1 mt-1 text-xs font-bold">
+                    <span id="delta-icon-acq"></span>
+                    <span id="delta-text-acq"></span>
+                    <span class="text-slate-400 font-normal ml-1">vs 2024</span>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-8 border-t-[#00A650]">
+                <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Média Total Point</p>
+                <p id="summary-point" class="text-2xl font-black text-slate-800 mt-2 text-nowrap">USD 0</p>
+                <div id="delta-container-point" class="flex items-center justify-center gap-1 mt-1 text-xs font-bold">
+                    <span id="delta-icon-point"></span>
+                    <span id="delta-text-point"></span>
+                    <span class="text-slate-400 font-normal ml-1">vs 2024</span>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-8 border-t-slate-800">
+                <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Média Total OP</p>
+                <p id="summary-op" class="text-2xl font-black text-slate-800 mt-2 text-nowrap">USD 0</p>
+                <div id="delta-container-op" class="flex items-center justify-center gap-1 mt-1 text-xs font-bold">
+                    <span id="delta-icon-op"></span>
+                    <span id="delta-text-op"></span>
+                    <span class="text-slate-400 font-normal ml-1">vs 2024</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secções de Gráficos -->
+        <section class="bg-white rounded-lg shadow-sm overflow-hidden border border-slate-200">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">ACQ</h3>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-slate-200">Análise Bienal (24-25)</div>
+            </div>
+            <div class="p-6 chart-container">
+                <canvas id="chart-acq"></canvas>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-lg shadow-sm overflow-hidden border border-slate-200">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">Point</h3>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-slate-200">Análise Bienal (24-25)</div>
+            </div>
+            <div class="p-6 chart-container">
+                <canvas id="chart-point"></canvas>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-lg shadow-sm overflow-hidden border border-slate-200">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">OP</h3>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-slate-200">Análise Bienal (24-25)</div>
+            </div>
+            <div class="p-6 chart-container">
+                <canvas id="chart-op"></canvas>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="max-w-7xl mx-auto mt-20 text-center text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] px-4">
+        Mercado Pago | Financial Analytics & Cloud Hosting Services
+    </footer>
+
+    <script>
+        const USD_RATE = 5.34;
+        const labels = ['Jan/24', 'Fev/24', 'Mar/24', 'Abr/24', 'Mai/24', 'Jun/24', 'Jul/24', 'Ago/24', 'Set/24', 'Out/24', 'Nov/24', 'Dez/24', 'Jan/25', 'Fev/25', 'Mar/25', 'Abr/25', 'Mai/25', 'Jun/25', 'Jul/25', 'Ago/25', 'Set/25', 'Out/25', 'Nov/25', 'Dez/25'];
+        
+        const rawData = {
+            ACQ: {
+                tpn: [264587492, 259254644, 274850080, 259578790, 268539603, 275925192, 276636267, 284517490, 284302543, 292236034, 306460911, 337443908, 299306849, 293070680, 329034050, 309837953, 336050694, 332821812, 345070483, 358379343, 346991426, 349774379, 358361037, 391576969],
+                fixed: [-4219512.35, -5098137.61, -4312766.56, -5596550.17, -5056214.84, -4308126.75, -3257831.65, -3108321.59, -3770935.84, -3593209.66, -4011832.88, -4471609.06, -4348790.05, -3867410.23, -4338611.13, -5015084.55, -3580057.72, -5045113.75, -5356205.64, -6383437.60, -7685900.37, -4647059.91, -4729518.28, -2559182.82],
+                variable: [-4221958.31, -4502412.58, -3526966.07, -4540717.13, -4522764.48, -5063825.32, -6740117.44, -6430796.63, -7801677.22, -7433980.01, -8300068.11, -9251297.77, -8778755.29, -7674953.21, -9060721.58, -10920897.97, -12072844.65, -10245046.07, -11983561.58, -11872511.66, -10959034.19, -10661316.11, -10359086.68, -5844561.35]
+            },
+            POINT: {
+                tpn: [147267540, 149862632, 157029879, 151112910, 158498441, 165230785, 165114024, 171827551, 171111218, 174005690, 179277824, 197561269, 175716552, 173964782, 199612619, 185151731, 200757566, 198494528, 204782086, 213616301, 206615878, 212744946, 216159156, 233734358],
+                fixed: [-2518715.12, -2925843.70, -2567543.31, -3103313.39, -2833929.96, -2446489.26, -1874335.95, -1780040.48, -2177902.25, -2078036.89, -2278018.44, -2503157.65, -2386165.33, -2136746.45, -2362878.90, -2778856.32, -1874767.89, -2701070.60, -2774751.02, -3533133.27, -4343163.18, -2534036.96, -2613195.26, -278691.45],
+                variable: [-2520175.13, -2583954.49, -2099728.36, -2517849.03, -2534939.29, -2875633.60, -3877807.61, -3682720.05, -4505854.98, -4299243.74, -4712985.01, -5178774.79, -4816871.16, -4240416.12, -4934823.68, -6051405.49, -6321874.06, -5486204.29, -6211577.07, -6575655.09, -6193145.16, -5813615.57, -5723696.63, -648846.03]
+            },
+            OP: {
+                tpn: [73482406, 64140487, 66893680, 57584781, 53097756, 48445345, 46101417, 40714719, 39131686, 40494884, 44335339, 44177994, 42663796, 38427853, 38544629, 36895475, 41151553, 40198144, 42102128, 40429139, 38978365, 30974916, 32325306, 33145029],
+                fixed: [-1130230.44, -1474449.94, -1123987.01, -1579135.23, -1353439.63, -1062534.95, -724033.40, -670592.89, -733696.14, -658705.12, -764744.38, -883542.85, -835445.35, -763497.53, -877240.61, -1103395.42, -848181.29, -1183339.34, -1433328.81, -1582644.03, -1813709.70, -831065.59, -792598.11, -858325.00],
+                variable: [-1130885.63, -1302158.23, -919192.82, -1281218.97, -1210646.47, -1248916.71, -1497950.36, -1387387.53, -1517941.63, -1362793.01, -1582177.15, -1827959.02, -1686485.34, -1515176.20, -1831805.93, -2402695.57, -2860431.95, -2402398.00, -3204849.64, -2941101.56, -2585886.36, -1906633.14, -1736029.15, -1955548.25]
+            }
+        };
+
+        let currentView = 'absolute';
+        const charts = {};
+
+        const verticalLinePlugin = {
+            id: 'verticalLine',
+            afterDraw: (chart) => {
+                if (chart.options.plugins.verticalLine) {
+                    const ctx = chart.ctx;
+                    const xTick = chart.scales.x.getPixelForValue(11);
+                    const top = chart.chartArea.top;
+                    const bottom = chart.chartArea.bottom;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(xTick, top);
+                    ctx.lineTo(xTick, bottom);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#FFE600';
+                    ctx.stroke();
+                    ctx.fillStyle = '#666';
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('FIM 2024', xTick, top - 5);
+                    ctx.restore();
+                }
+            }
+        };
+        Chart.register(verticalLinePlugin);
+
+        function formatCurrency(valBrl) {
+            // Conversão de BRL para USD
+            const valUsd = valBrl / USD_RATE;
+            
+            if (currentView === 'absolute') {
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(valUsd);
+            }
+            return 'USD ' + valUsd.toFixed(4);
+        }
+
+        function getDataForSource(source) {
+            const data = rawData[source];
+            const fixed = data.fixed.map((v, i) => {
+                const absBrl = Math.abs(v);
+                const absUsd = absBrl / USD_RATE;
+                return currentView === 'absolute' ? absUsd : absUsd / data.tpn[i];
+            });
+            const variable = data.variable.map((v, i) => {
+                const absBrl = Math.abs(v);
+                const absUsd = absBrl / USD_RATE;
+                return currentView === 'absolute' ? absUsd : absUsd / data.tpn[i];
+            });
+            return { fixed, variable };
+        }
+
+        function updateCharts() {
+            const sources = [
+                { id: 'acq', color: '#3483FA', colorSec: '#8BB6F9' },
+                { id: 'point', color: '#00A650', colorSec: '#7ED3A1' },
+                { id: 'op', color: '#333333', colorSec: '#999999' }
+            ];
+
+            sources.forEach(source => {
+                const { fixed, variable } = getDataForSource(source.id.toUpperCase());
+                
+                const avg2024 = (fixed.slice(0, 12).reduce((a,b)=>a+b,0) + variable.slice(0, 12).reduce((a,b)=>a+b,0)) / 12;
+                const avg2025 = (fixed.slice(12).reduce((a,b)=>a+b,0) + variable.slice(12).reduce((a,b)=>a+b,0)) / 12;
+                const avgTotal = (fixed.reduce((a,b)=>a+b,0) + variable.reduce((a,b)=>a+b,0)) / 24;
+
+                // Formatar valores para os cards de sumário
+                const formatSummary = (val) => {
+                    if (currentView === 'absolute') {
+                        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+                    }
+                    return 'USD ' + val.toFixed(4);
+                };
+
+                document.getElementById(`summary-${source.id}`).innerText = formatSummary(avgTotal);
+
+                const delta = ((avg2025 / avg2024) - 1) * 100;
+                const deltaText = document.getElementById(`delta-text-${source.id}`);
+                const deltaIcon = document.getElementById(`delta-icon-${source.id}`);
+                
+                deltaText.innerText = (delta > 0 ? '+' : '') + delta.toFixed(1) + '%';
+                
+                if (delta > 0) {
+                    deltaText.className = "delta-up";
+                    deltaIcon.innerHTML = `<svg class="w-3 h-3 delta-up" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"></path></svg>`;
+                } else {
+                    deltaText.className = "delta-down";
+                    deltaIcon.innerHTML = `<svg class="w-3 h-3 delta-down" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>`;
+                }
+
+                if (charts[source.id]) {
+                    charts[source.id].data.datasets[0].data = fixed;
+                    charts[source.id].data.datasets[1].data = variable;
+                    charts[source.id].options.scales.y.ticks.callback = function(value) {
+                        return currentView === 'absolute' ? 'USD ' + (value/1e6).toFixed(1) + 'M' : value.toFixed(4);
+                    };
+                    charts[source.id].update();
+                } else {
+                    const ctx = document.getElementById(`chart-${source.id}`).getContext('2d');
+                    charts[source.id] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Hosting Fixed',
+                                    data: fixed,
+                                    borderColor: source.color,
+                                    backgroundColor: source.color,
+                                    borderWidth: 3,
+                                    pointRadius: 3,
+                                    pointBackgroundColor: '#FFF',
+                                    tension: 0.3,
+                                    fill: false
+                                },
+                                {
+                                    label: 'Hosting Variable',
+                                    data: variable,
+                                    borderColor: source.colorSec,
+                                    backgroundColor: source.colorSec,
+                                    borderWidth: 3,
+                                    pointRadius: 3,
+                                    pointBackgroundColor: '#FFF',
+                                    tension: 0.3,
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { intersect: false, mode: 'index' },
+                            plugins: {
+                                legend: { position: 'top', labels: { usePointStyle: true, font: { weight: 'bold' } } },
+                                verticalLine: true,
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) label += ': ';
+                                            // Valor já convertido no data
+                                            if (currentView === 'absolute') {
+                                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                            } else {
+                                                label += 'USD ' + context.parsed.y.toFixed(4);
+                                            }
+                                            return label;
+                                        },
+                                        afterBody: function(items) {
+                                            const idx = items[0].dataIndex;
+                                            const tpn = rawData[source.id.toUpperCase()].tpn[idx];
+                                            return '\nVolume: ' + tpn.toLocaleString('pt-BR') + ' TPN';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                                y: { 
+                                    grid: { color: '#EEEEEE' },
+                                    ticks: { 
+                                        font: { size: 10 },
+                                        callback: function(value) {
+                                            return currentView === 'absolute' ? 'USD ' + (value/1e6).toFixed(1) + 'M' : value.toFixed(4);
+                                        }
+                                    } 
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function updateView(view) {
+            currentView = view;
+            const btnAbs = document.getElementById('btn-absolute');
+            const btnTpn = document.getElementById('btn-per-tpn');
+            if (view === 'absolute') {
+                btnAbs.className = "px-8 py-2.5 rounded-full text-sm font-bold transition-all duration-300 bg-[#3483FA] text-white shadow-lg scale-105";
+                btnTpn.className = "px-8 py-2.5 rounded-full text-sm font-bold transition-all duration-300 text-slate-700 hover:bg-white/40";
+            } else {
+                btnTpn.className = "px-8 py-2.5 rounded-full text-sm font-bold transition-all duration-300 bg-[#3483FA] text-white shadow-lg scale-105";
+                btnAbs.className = "px-8 py-2.5 rounded-full text-sm font-bold transition-all duration-300 text-slate-700 hover:bg-white/40";
+            }
+            updateCharts();
+        }
+
+        window.onload = updateCharts;
+    </script>
+</body>
+</html>
