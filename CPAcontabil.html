@@ -259,7 +259,7 @@
 
         .leaf-node {
             display: flex;
-            padding: 8px 10px; 
+            padding: 8px 10px 8px 22px; 
             background-color: #fff;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.85rem;
@@ -288,10 +288,15 @@
                 <div>
                     <input type="text" id="searchDoc" placeholder="Buscar Nº Doc..." onkeyup="updateView()">
                 </div>
-                <label class="checkbox-container">
-                    <input type="checkbox" id="toggleTipoLancamento" onchange="updateView()">
-                    Incluir Tipo de Lançamento
-                </label>
+                
+                <div>
+                    <select id="tipoLancamentoPos" onchange="updateView()">
+                        <option value="off" selected>Ocultar Tipo de Lançamento</option>
+                        <option value="after_canal">Mostrar logo após Canal</option>
+                        <option value="after_ceco">Mostrar após CECO</option>
+                    </select>
+                </div>
+
                 <div>
                     <select id="unitToggle" onchange="updateView()">
                         <option value="1">Reais (R$)</option>
@@ -304,7 +309,7 @@
             </div>
         </h2>
         
-        <div id="drilldown-table">
+        <div id="drilldown-table" style="margin-bottom: 50px;">
             <p style="padding: 20px;">Carregando dados...</p>
         </div>
 
@@ -397,7 +402,6 @@
 
                 periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
 
-                // LENDO A BASE DO PLANO (AGORA TRANSFORMANDO EM POSITIVO)
                 rawPlan.forEach(row => {
                     if (row.Canal) {
                         let canalKey = String(row.Canal).trim().toLowerCase();
@@ -405,8 +409,6 @@
                         periodKeys.forEach(p => {
                             let monthStr = String(p).substring(4, 6); 
                             let colName = monthColsMap[monthStr];
-                            
-                            // Math.abs() FORÇA O VALOR A FICAR POSITIVO
                             planMap[canalKey][p] = Math.abs(row[colName] || 0) * 1000000;
                         });
                     }
@@ -459,7 +461,8 @@
 
         function updateView() {
             const searchTerm = document.getElementById('searchDoc').value.trim().toLowerCase();
-            const showTipoLancamento = document.getElementById('toggleTipoLancamento').checked;
+            // Lendo a nova seleção de posição
+            const tipoLancamentoPos = document.getElementById('tipoLancamentoPos').value;
 
             const checkedBoxes = document.querySelectorAll('#monthCheckboxes input[type="checkbox"]:checked');
             let activePeriods = Array.from(checkedBoxes).map(cb => cb.value).sort();
@@ -470,8 +473,19 @@
                 return;
             }
 
-            let currentHierarchy = ["MNG3", "MNG4", "CUENTA", "CECO"];
-            if (showTipoLancamento) currentHierarchy.push("Tipo de Lançamento");
+            // HIERARQUIA DINÂMICA COM POSIÇÃO ESCOLHIDA
+            let currentHierarchy = ["MNG3", "MNG4"];
+            
+            if (tipoLancamentoPos === 'after_canal') {
+                currentHierarchy.push("Tipo de Lançamento");
+            }
+            
+            currentHierarchy.push("CUENTA", "CECO");
+            
+            if (tipoLancamentoPos === 'after_ceco') {
+                currentHierarchy.push("Tipo de Lançamento");
+            }
+            
             currentHierarchy.push("Cod_Fornecedor", "TEXTO", "NRO_DOC");
 
             let filteredData = globalData;
