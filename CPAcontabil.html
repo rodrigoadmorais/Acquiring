@@ -1,1 +1,841 @@
-colar o CPA contábil
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acompanhamento CPA</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        /* REGRA DE OURO PARA ALINHAMENTO */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --meli-yellow: #ffe600;
+            --meli-blue: #2d3277;
+            --meli-bg: #ebebeb;
+            --border-color: #e0e0e0;
+            --text-color: #333;
+            --hover-bg: #f5f5f5;
+            --plan-color: #7f8c8d;
+        }
+
+        body {
+            font-family: 'Proxima Nova', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--meli-bg);
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+        }
+
+        .top-bar {
+            background-color: var(--meli-yellow);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-bottom: 2px solid var(--meli-blue);
+        }
+
+        .container {
+            max-width: 95%;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap; 
+            gap: 15px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.85rem;
+            font-weight: normal;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"], select {
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            transition: background-color 0.2s;
+        }
+        .checkbox-container:hover {
+            background-color: #e2e6ea;
+        }
+
+        .month-filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding-left: 10px;
+            border-left: 2px solid #ddd;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 350px;
+            margin-bottom: 40px;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto; 
+            margin-bottom: 50px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .table-inner {
+            min-width: max-content; 
+        }
+
+        .table-header {
+            display: flex;
+            background-color: var(--meli-blue);
+            color: #fff;
+            padding: 12px 10px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .table-header::before {
+            content: '';
+            display: block;
+            width: 24px;
+            flex-shrink: 0;
+        }
+
+        .col-title {
+            flex: 4 1 0%; 
+            display: flex;
+            align-items: center;
+            padding-right: 10px;
+            min-width: 280px;
+        }
+
+        .level-badge {
+            font-size: 0.65rem;
+            color: #95a5a6;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            padding: 1px 5px;
+            margin-right: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background: #fafafa;
+        }
+
+        .col-value {
+            flex: 1 1 0%; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-right: 15px;
+            min-width: 130px;
+            position: relative; 
+        }
+
+        .val-primary {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            width: 100%;
+        }
+
+        .val-number {
+            flex: 1;
+            text-align: right;
+            position: relative;
+            z-index: 1;
+        }
+
+        .val-icon {
+            width: 15px; 
+            text-align: right;
+            margin-left: 8px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .val-plan {
+            font-size: 0.68rem;
+            color: var(--plan-color);
+            text-align: right;
+            width: 100%;
+            padding-right: 23px; 
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .col-total {
+            font-weight: bold;
+            background-color: rgba(0,0,0,0.03);
+            border-left: 1px solid #eee;
+        }
+
+        .deviation {
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .dev-up { color: #c0392b; }
+        .dev-down { color: #27ae60; }
+
+        details { padding: 0; margin: 0; }
+
+        summary {
+            display: flex;
+            cursor: pointer;
+            padding: 8px 10px;
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+            font-size: 0.85rem;
+            align-items: center;
+        }
+
+        summary:hover { background-color: var(--hover-bg); }
+        .level-0 > summary { background-color: #fff9c4; font-weight: bold; }
+
+        summary { list-style: none; }
+        summary::-webkit-details-marker { display: none; }
+        
+        summary::before {
+            content: '+';
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 14px;
+            height: 14px;
+            border: 1px solid #999;
+            background: #fff;
+            margin-right: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #555;
+            line-height: 1;
+            flex-shrink: 0; 
+        }
+        details[open] > summary::before { content: '-'; }
+        
+        .leaf-node::before { 
+            content: ''; 
+            display: block; 
+            width: 24px; 
+            flex-shrink: 0;
+        }
+
+        .details-content { padding-left: 20px; border-left: 1px solid #eee; }
+
+        .leaf-node {
+            display: flex;
+            padding: 8px 10px 8px 22px; 
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            align-items: center;
+        }
+        .leaf-node:hover { background-color: var(--hover-bg); }
+        
+        .highlight-doc {
+            background-color: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <span style="margin-right: 15px; font-size: 1.5rem;">🤝</span> 
+        Acompanhamento CPA
+    </div>
+
+    <div class="container">
+        
+        <h2>
+            Detalhamento
+            <div class="controls">
+                <div>
+                    <input type="text" id="searchDoc" placeholder="Buscar Nº Doc..." onkeyup="updateView()">
+                </div>
+                
+                <div>
+                    <select id="tipoLancamentoPos" onchange="updateView()">
+                        <option value="off" selected>Ocultar Tipo de Lançamento</option>
+                        <option value="after_canal">Mostrar logo após Canal</option>
+                        <option value="after_ceco">Mostrar após CECO</option>
+                    </select>
+                </div>
+
+                <div>
+                    <select id="unitToggle" onchange="updateView()">
+                        <option value="1">Reais (R$)</option>
+                        <option value="1000">Milhares (k)</option>
+                        <option value="1000000" selected>Milhões (M)</option>
+                    </select>
+                </div>
+                <div id="monthCheckboxes" class="month-filters">
+                    </div>
+            </div>
+        </h2>
+        
+        <div id="drilldown-table" style="margin-bottom: 50px;">
+            <p style="padding: 20px;">Carregando dados...</p>
+        </div>
+
+        <h2>Visão Geral (Evolutivo)</h2>
+        <div class="chart-container">
+            <canvas id="evolutionChart"></canvas>
+        </div>
+
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        const nocache = new Date().getTime();
+        const dataUrlRealized = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json?nocache=' + nocache;
+        const dataUrlPlan = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/plancpa.json?nocache=' + nocache;
+        
+        let globalData = [];
+        let planMap = {}; 
+        let periodKeys = [];
+        let chartInstance = null;
+
+        const levelLabels = {
+            "MNG4": "Canal",
+            "CUENTA": "Conta",
+            "CECO": "CECO",
+            "Cod_Fornecedor": "Fornecedor",
+            "NRO_DOC": "Nº Doc"
+        };
+
+        const monthColsMap = {
+            '01': 'J A N', '02': 'F E V', '03': 'M A R', '04': 'A B R',
+            '05': 'M A I', '06': 'J U N', '07': 'J U L', '08': 'A G O',
+            '09': 'S E P', '10': 'O C T', '11': 'N O V', '12': 'D E C'
+        };
+
+        function getLevelBadge(key) {
+            const label = levelLabels[key];
+            if (!label) return '';
+            return `<span class="level-badge">${label}</span>`;
+        }
+
+        async function initDashboard() {
+            try {
+                const [resRealized, resPlan] = await Promise.all([
+                    fetch(dataUrlRealized),
+                    fetch(dataUrlPlan)
+                ]);
+
+                if (!resRealized.ok) throw new Error("Erro ao carregar os dados de Realizado");
+                if (!resPlan.ok) throw new Error("Erro ao carregar os dados de Plano");
+
+                let rawData = await resRealized.json();
+                let rawPlan = await resPlan.json();
+                
+                if(!rawData || rawData.length === 0) {
+                    document.getElementById('drilldown-table').innerHTML = '<p>Nenhum dado encontrado no Realizado.</p>';
+                    return;
+                }
+
+                const headerMap = rawData[0]; 
+                rawData.shift(); 
+
+                globalData = rawData.map(row => {
+                    let newRow = {};
+                    for (let key in row) {
+                        let realColumnName = headerMap[key];
+                        if(realColumnName) {
+                            let cleanColumnName = String(realColumnName).trim();
+                            newRow[cleanColumnName] = row[key];
+                        }
+                    }
+                    return newRow;
+                }).filter(row => {
+                    if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
+                    if(row["MNG4"] && String(row["MNG4"]).trim().toUpperCase() === "OTHERS") return false;
+                    return true;
+                }).map(row => {
+                    row["MNG3"] = "CPA";
+                    if (row["MNG4"]) {
+                        let canal = String(row["MNG4"]).trim().toLowerCase();
+                        if (canal.includes("cashback")) {
+                            row["MNG4"] = "Consultor Cashback";
+                        } else if (canal.includes("consultor")) {
+                            row["MNG4"] = "Consultor NF";
+                        }
+                    }
+                    return row;
+                });
+
+                periodKeys = Object.keys(globalData[0]).filter(k => /^\d{6}$/.test(String(k)) || String(k).includes('-')).sort();
+
+                rawPlan.forEach(row => {
+                    if (row.Canal) {
+                        let canalKey = String(row.Canal).trim().toLowerCase();
+                        planMap[canalKey] = {};
+                        periodKeys.forEach(p => {
+                            let monthStr = String(p).substring(4, 6); 
+                            let colName = monthColsMap[monthStr];
+                            planMap[canalKey][p] = Math.abs(row[colName] || 0) * 1000000;
+                        });
+                    }
+                });
+
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1; 
+                const currentYYYYMM = parseInt(currentYear + String(currentMonth).padStart(2, '0'));
+                const startOfThisYear = parseInt(currentYear + '01');
+
+                let defaultChecked = [];
+
+                periodKeys.forEach(p => {
+                    let pClean = p.replace('-', '');
+                    let pInt = parseInt(pClean);
+                    if (pInt >= startOfThisYear && pInt < currentYYYYMM) {
+                        defaultChecked.push(p);
+                    }
+                });
+
+                if (defaultChecked.length === 0 && periodKeys.length > 0) {
+                    defaultChecked.push(periodKeys[periodKeys.length - 1]);
+                }
+
+                const monthContainer = document.getElementById('monthCheckboxes');
+                periodKeys.forEach(p => {
+                    let label = document.createElement('label');
+                    label.className = 'checkbox-container';
+                    
+                    let checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = p;
+                    checkbox.onchange = updateView; 
+                    
+                    if (defaultChecked.includes(p)) checkbox.checked = true;
+
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(' ' + formatPeriodName(p)));
+                    monthContainer.appendChild(label);
+                });
+
+                updateView();
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('drilldown-table').innerHTML = `<p style="color:red; padding:20px;">Erro ao carregar o dashboard: ${error.message}</p>`;
+            }
+        }
+
+        function updateView() {
+            const searchTerm = document.getElementById('searchDoc').value.trim().toLowerCase();
+            // Lendo a nova seleção de posição
+            const tipoLancamentoPos = document.getElementById('tipoLancamentoPos').value;
+
+            const checkedBoxes = document.querySelectorAll('#monthCheckboxes input[type="checkbox"]:checked');
+            let activePeriods = Array.from(checkedBoxes).map(cb => cb.value).sort();
+
+            if (activePeriods.length === 0) {
+                document.getElementById('drilldown-table').innerHTML = '<p style="padding: 20px; color: #c0392b; font-weight: bold;">Por favor, selecione pelo menos um mês nas caixinhas acima.</p>';
+                if(chartInstance) chartInstance.destroy();
+                return;
+            }
+
+            // HIERARQUIA DINÂMICA COM POSIÇÃO ESCOLHIDA
+            let currentHierarchy = ["MNG3", "MNG4"];
+            
+            if (tipoLancamentoPos === 'after_canal') {
+                currentHierarchy.push("Tipo de Lançamento");
+            }
+            
+            currentHierarchy.push("CUENTA", "CECO");
+            
+            if (tipoLancamentoPos === 'after_ceco') {
+                currentHierarchy.push("Tipo de Lançamento");
+            }
+            
+            currentHierarchy.push("Cod_Fornecedor", "TEXTO", "NRO_DOC");
+
+            let filteredData = globalData;
+            let isSearching = false;
+            if (searchTerm !== '') {
+                isSearching = true;
+                filteredData = globalData.filter(row => {
+                    let docStr = row["NRO_DOC"] ? String(row["NRO_DOC"]).toLowerCase() : '';
+                    return docStr.includes(searchTerm);
+                });
+            }
+
+            const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
+            
+            attachPlanToHierarchy(groupedData, activePeriods);
+
+            renderChart(filteredData, activePeriods, groupedData);
+            renderTable(groupedData, activePeriods, isSearching, currentHierarchy);
+        }
+
+        function formatPeriodName(p) {
+            return String(p).length === 6 ? `${String(p).substring(0,4)}-${String(p).substring(4,6)}` : p;
+        }
+
+        function getFormatterConfig() {
+            const unit = parseInt(document.getElementById('unitToggle').value);
+            const suffix = unit === 1000000 ? ' M' : (unit === 1000 ? ' k' : '');
+            return { divisor: unit, suffix: suffix };
+        }
+
+        function formatNumber(num) {
+            if (!num || num === 0) return '-';
+            const { divisor, suffix } = getFormatterConfig();
+            let val = num / divisor;
+            return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(val) + suffix;
+        }
+
+        function getAlertIcon(val, prevVal, activePeriodsLength) {
+            if (activePeriodsLength <= 1) return ''; 
+            if (prevVal !== null && prevVal !== 0) {
+                let deviation = (val - prevVal) / Math.abs(prevVal);
+                if (Math.abs(deviation) >= 0.10) { 
+                    let isUp = deviation > 0;
+                    return `<span class="deviation ${isUp ? 'dev-up' : 'dev-down'}">${isUp ? '▲' : '▼'}</span>`;
+                }
+            } else if (val !== 0 && (prevVal === 0 || prevVal === null)) {
+                let isUp = val > 0;
+                return `<span class="deviation ${isUp ? 'dev-up' : 'dev-down'}">${isUp ? '▲' : '▼'}</span>`;
+            }
+            return '';
+        }
+
+        function buildHierarchy(dataRows, keys, level, activePeriods) {
+            if (level >= keys.length) return dataRows;
+            const currentKey = keys[level];
+            const groups = {};
+
+            dataRows.forEach(row => {
+                let groupName = row[currentKey];
+                if (!groupName || groupName === 'empty' || groupName === '') groupName = 'Não Classificado';
+
+                if (!groups[groupName]) {
+                    groups[groupName] = { name: groupName, levelKey: currentKey, totals: {}, rowTotal: 0, rows: [] };
+                    activePeriods.forEach(p => groups[groupName].totals[p] = 0);
+                }
+                groups[groupName].rows.push(row);
+                
+                activePeriods.forEach(p => {
+                    let val = parseFloat(row[p]);
+                    if (!isNaN(val)) {
+                        groups[groupName].totals[p] += val;
+                        groups[groupName].rowTotal += val;
+                    }
+                });
+            });
+
+            let resultArray = Object.values(groups).map(group => {
+                group.children = buildHierarchy(group.rows, keys, level + 1, activePeriods);
+                return group;
+            });
+            resultArray.sort((a, b) => b.rowTotal - a.rowTotal);
+            return resultArray;
+        }
+
+        function attachPlanToHierarchy(nodes, activePeriods) {
+            nodes.forEach(node => {
+                if (node.levelKey) {
+                    node.planTotals = {};
+                    activePeriods.forEach(p => node.planTotals[p] = 0);
+                    node.planRowTotal = 0;
+
+                    if (node.children && node.children.length > 0) {
+                        attachPlanToHierarchy(node.children, activePeriods);
+
+                        if (node.levelKey === 'MNG4') {
+                            let canalKey = String(node.name).trim().toLowerCase();
+                            let pData = planMap[canalKey];
+                            if (pData) {
+                                activePeriods.forEach(p => {
+                                    let val = pData[p] || 0;
+                                    node.planTotals[p] = val;
+                                    node.planRowTotal += val;
+                                });
+                            }
+                        } else if (node.levelKey === 'MNG3') {
+                            activePeriods.forEach(p => {
+                                let sum = 0;
+                                node.children.forEach(c => sum += (c.planTotals ? c.planTotals[p] : 0));
+                                node.planTotals[p] = sum;
+                            });
+                            node.children.forEach(c => node.planRowTotal += (c.planRowTotal || 0));
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTable(groupedData, activePeriods, isSearching, currentHierarchy) {
+            const container = document.getElementById('drilldown-table');
+            
+            let headerHtml = `<div class="table-header"><div class="col-title">Agrupamento</div>`;
+            activePeriods.forEach(p => {
+                headerHtml += `
+                    <div class="col-value">
+                        <div class="val-primary">
+                            <span class="val-number">${formatPeriodName(p)}</span>
+                            <span class="val-icon"></span>
+                        </div>
+                    </div>`;
+            });
+            headerHtml += `
+                    <div class="col-value col-total">
+                        <div class="val-primary">
+                            <span class="val-number">Total Selec.</span>
+                            <span class="val-icon"></span>
+                        </div>
+                    </div>
+                </div>`;
+            
+            const openAttribute = isSearching ? 'open' : '';
+
+            function generateHtml(nodes, isLeaf, depth) {
+                let html = '';
+                const maxTotalLevel = Math.max(...nodes.map(n => Math.abs(n.rowTotal)), 0);
+
+                nodes.forEach(node => {
+                    let intensity = maxTotalLevel === 0 ? 0 : Math.abs(node.rowTotal) / maxTotalLevel;
+                    let barColor = node.rowTotal >= 0 ? 'rgba(255, 230, 0, 0.45)' : 'rgba(231, 76, 60, 0.25)';
+                    let dataBarHtml = `<div style="position: absolute; right: 0; top: 3px; bottom: 3px; width: ${intensity * 100}%; background-color: ${barColor}; z-index: 0; border-radius: 2px;"></div>`;
+
+                    const showPlan = (node.levelKey === 'MNG3' || node.levelKey === 'MNG4');
+
+                    if (isLeaf || !node.children || !node.children[0].name) {
+                        const leafClass = isSearching ? 'leaf-node highlight-doc' : 'leaf-node';
+                        let leafKey = currentHierarchy[currentHierarchy.length - 1]; 
+                        let badge = getLevelBadge(leafKey);
+
+                        html += `<div class="${leafClass}">`;
+                        html += `<div class="col-title" style="padding-left: ${depth * 15}px;">${badge}${node.name || node.NRO_DOC}</div>`;
+                        
+                        let totalRow = 0;
+                        let prevVal = null;
+
+                        activePeriods.forEach((p, index) => {
+                            let val = node.totals ? node.totals[p] : (parseFloat(node[p]) || 0);
+                            totalRow += val;
+                            let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
+                            
+                            html += `<div class="col-value">
+                                        <div class="val-primary"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>
+                                     </div>`;
+                            prevVal = val;
+                        });
+                        
+                        html += `<div class="col-value col-total">
+                                    ${dataBarHtml}
+                                    <div class="val-primary"><span class="val-number">${formatNumber(totalRow)}</span><span class="val-icon"></span></div>
+                                 </div>`;
+                        html += `</div>`;
+                    } else {
+                        html += `<details class="level-${depth}" ${openAttribute}><summary>`;
+                        
+                        let badge = getLevelBadge(node.levelKey);
+                        html += `<div class="col-title">${badge}${node.name}</div>`;
+                        
+                        let prevVal = null;
+                        
+                        activePeriods.forEach((p, index) => {
+                            let val = node.totals[p];
+                            let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
+
+                            let planHtml = '';
+                            if (showPlan && node.planTotals) {
+                                let planVal = node.planTotals[p] || 0;
+                                planHtml = `<div class="val-plan">Plano: ${formatNumber(planVal)}</div>`;
+                            }
+
+                            html += `<div class="col-value">
+                                        <div class="val-primary"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>
+                                        ${planHtml}
+                                     </div>`;
+                            prevVal = val;
+                        });
+
+                        let planTotalHtml = '';
+                        if (showPlan && node.planRowTotal !== undefined) {
+                            planTotalHtml = `<div class="val-plan" style="padding-right:23px;">Plano: ${formatNumber(node.planRowTotal)}</div>`;
+                        }
+
+                        html += `<div class="col-value col-total">
+                                    ${dataBarHtml}
+                                    <div class="val-primary"><span class="val-number">${formatNumber(node.rowTotal)}</span><span class="val-icon"></span></div>
+                                    ${planTotalHtml}
+                                 </div>`;
+                        
+                        html += `</summary><div class="details-content">`;
+                        
+                        const nextIsLeaf = node.children[0] && node.children[0].levelKey === currentHierarchy[currentHierarchy.length - 1];
+                        html += generateHtml(node.children, nextIsLeaf, depth + 1);
+                        
+                        html += `</div></details>`;
+                    }
+                });
+                return html;
+            }
+
+            if(groupedData.length === 0) {
+                container.innerHTML = `<div class="table-wrapper"><div class="table-inner">${headerHtml}</div><p style="padding: 20px;">Nenhum documento encontrado.</p></div>`;
+            } else {
+                container.innerHTML = `<div class="table-wrapper"><div class="table-inner">${headerHtml}${generateHtml(groupedData, false, 0)}</div></div>`;
+            }
+        }
+
+        function renderChart(data, activePeriods, groupedData) {
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            
+            const globalRealized = {};
+            const globalPlan = {};
+            activePeriods.forEach(p => {
+                globalRealized[p] = 0;
+                globalPlan[p] = 0;
+            });
+
+            data.forEach(row => {
+                activePeriods.forEach(p => {
+                    let val = parseFloat(row[p]);
+                    if (!isNaN(val)) globalRealized[p] += val;
+                });
+            });
+
+            if (groupedData && groupedData.length > 0) {
+                groupedData.forEach(mng3Node => {
+                    activePeriods.forEach(p => {
+                        globalPlan[p] += (mng3Node.planTotals ? mng3Node.planTotals[p] : 0);
+                    });
+                });
+            }
+
+            const labels = activePeriods.map(p => formatPeriodName(p));
+            const { divisor } = getFormatterConfig();
+            
+            const chartDataRealized = activePeriods.map(p => globalRealized[p] / divisor);
+            const chartDataPlan = activePeriods.map(p => globalPlan[p] / divisor);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Realizado CPA',
+                            data: chartDataRealized,
+                            borderColor: '#2d3277',
+                            backgroundColor: 'rgba(45, 50, 119, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 6,
+                            pointBackgroundColor: '#ffe600',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Plano CPA',
+                            data: chartDataPlan,
+                            borderColor: '#95a5a6',
+                            borderDash: [5, 5],
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#7f8c8d',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 30 } 
+                    },
+                    plugins: {
+                        legend: { 
+                            display: true, 
+                            position: 'bottom',
+                            labels: { usePointStyle: true, boxWidth: 10 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatNumber(context.raw * divisor); 
+                                }
+                            }
+                        },
+                        datalabels: {
+                            align: function(context) {
+                                return context.datasetIndex === 0 ? 'top' : 'bottom';
+                            },
+                            anchor: function(context) {
+                                return context.datasetIndex === 0 ? 'bottom' : 'top';
+                            },
+                            color: function(context) {
+                                return context.datasetIndex === 0 ? '#333' : '#7f8c8d';
+                            },
+                            font: { weight: 'bold', size: 11 },
+                            formatter: function(value) {
+                                return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: { display: false },
+                            border: { display: false }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>
