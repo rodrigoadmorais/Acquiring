@@ -379,7 +379,9 @@
                     let tipo = row["Tipo de Lançamento"] ? String(row["Tipo de Lançamento"]).trim() : "";
                     if (tipo.includes("#N/A")) tipo = "";
 
-                    let ref = row["Referência da Nota"] ? String(row["Referência da Nota"]).trim() : "";
+                    // AJUSTE: Agora busca por "Referência" (ou mantém o nome antigo por segurança se vier misturado)
+                    let refRaw = row["Referência"] || row["Referência da Nota"] || "";
+                    let ref = String(refRaw).trim();
                     if (ref.includes("#N/A")) ref = "";
 
                     let fornNome = row["Fornecedor"] ? String(row["Fornecedor"]).trim() : "";
@@ -475,7 +477,6 @@
             const showDetails = document.getElementById('showDetailsToggle').checked;
             const hierarchyOrder = document.getElementById('hierarchyOrder').value;
 
-            // Mostra ou esconde o controle de Ordem baseado no Checkbox
             document.getElementById('hierarchyOrderContainer').style.display = showDetails ? 'block' : 'none';
 
             const checkedBoxes = document.querySelectorAll('#monthCheckboxes input[type="checkbox"]:checked');
@@ -487,11 +488,9 @@
                 return;
             }
 
-            // --- LÓGICA DA HIERARQUIA (CLEAN VS COMPLETO) ---
             let currentHierarchy = ["MNG3", "MNG4", "Tipo_Ref"];
             
             if (showDetails) {
-                // Modo Completo
                 if (hierarchyOrder === 'forn_first') {
                     currentHierarchy.push("Fornecedor_Final", "CUENTA", "CECO");
                 } else {
@@ -499,7 +498,6 @@
                 }
                 currentHierarchy.push("TEXTO", "NRO_DOC");
             } else {
-                // Modo Clean (Pula Conta, Ceco e Texto)
                 currentHierarchy.push("Fornecedor_Final", "NRO_DOC");
             }
 
