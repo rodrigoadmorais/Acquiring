@@ -7,7 +7,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
+        /* REGRA DE OURO PARA ALINHAMENTO */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
 
         :root {
             --meli-yellow: #ffe600;
@@ -113,7 +116,9 @@
             border: 1px solid var(--border-color);
         }
 
-        .table-inner { min-width: max-content; }
+        .table-inner {
+            min-width: max-content; 
+        }
 
         .table-header {
             display: flex;
@@ -379,6 +384,7 @@
                     }
                     return newRow;
                 }).filter(row => {
+                    // A regra anterior para excluir MNG3 quebrado na origem
                     if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
                     if(row["MNG4"] && String(row["MNG4"]).trim().toUpperCase() === "OTHERS") return false;
                     return true;
@@ -396,10 +402,21 @@
                         }
                     }
 
-                    // --- COLUNA VIRTUAL: Tipo_Ref ---
+                    // --- LIMPEZA DE ERROS DO EXCEL ---
                     let tipo = row["Tipo de Lançamento"] ? String(row["Tipo de Lançamento"]).trim() : "";
+                    if (tipo.includes("#N/A")) tipo = "";
+
                     let ref = row["Referência da Nota"] ? String(row["Referência da Nota"]).trim() : "";
-                    
+                    if (ref.includes("#N/A")) ref = "";
+
+                    let fornNome = row["Fornecedor"] ? String(row["Fornecedor"]).trim() : "";
+                    if (fornNome.includes("#N/A")) fornNome = "";
+
+                    let fornCod = row["Cod_Fornecedor"] ? String(row["Cod_Fornecedor"]).trim() : "";
+                    if (fornCod.includes("#N/A")) fornCod = "";
+
+
+                    // --- COLUNA VIRTUAL: Tipo_Ref ---
                     if (tipo && ref && ref !== "empty" && ref !== "") {
                         row["Tipo_Ref"] = tipo + " " + ref;
                     } else if (tipo) {
@@ -409,9 +426,6 @@
                     }
 
                     // --- COLUNA VIRTUAL: Fornecedor_Final ---
-                    let fornNome = row["Fornecedor"] ? String(row["Fornecedor"]).trim() : "";
-                    let fornCod = row["Cod_Fornecedor"] ? String(row["Cod_Fornecedor"]).trim() : "";
-                    
                     if (fornNome && fornNome !== "empty" && fornNome !== "") {
                         row["Fornecedor_Final"] = fornNome;
                     } else if (fornCod && fornCod !== "empty" && fornCod !== "") {
@@ -508,7 +522,6 @@
                 currentHierarchy.push("Tipo_Ref");
             }
             
-            // Usando a coluna virtual Fornecedor_Final
             currentHierarchy.push("Fornecedor_Final", "TEXTO", "NRO_DOC");
 
             let filteredData = globalData;
