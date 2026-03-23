@@ -76,6 +76,13 @@
             outline: none;
         }
 
+        /* Destaque para o filtro principal de Canal */
+        #canalFilter {
+            font-weight: bold;
+            border: 2px solid var(--meli-blue);
+            color: var(--meli-blue);
+        }
+
         .btn-primary {
             background-color: var(--meli-blue);
             color: #fff;
@@ -88,6 +95,7 @@
             transition: background-color 0.2s;
         }
         .btn-primary:hover { background-color: #1a1e50; }
+        
         .btn-secondary {
             background-color: #bdc3c7;
             color: #333;
@@ -123,6 +131,28 @@
         }
 
         .chart-container { width: 100%; height: 350px; margin-bottom: 40px; }
+        
+        /* Estrutura dos novos gráficos mensais */
+        .monthly-section { margin-bottom: 40px; border-top: 1px solid #eee; padding-top: 20px;}
+        .monthly-section-title { color: var(--meli-blue); margin-bottom: 15px; border-left: 4px solid var(--meli-yellow); padding-left: 10px;}
+        .monthly-charts-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .monthly-charts-wrapper { grid-template-columns: 1fr; }
+        }
+        .monthly-chart-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .monthly-chart-box h4 { margin-top: 0; text-align: center; color: #555; font-size: 0.95rem; margin-bottom: 15px;}
+        .monthly-canvas-container { position: relative; height: 250px; width: 100%; }
+
         .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 50px; border-radius: 4px; border: 1px solid var(--border-color); }
         .table-inner { min-width: max-content; }
 
@@ -227,6 +257,13 @@
         <h2>
             Detalhamento
             <div class="controls">
+                
+                <div>
+                    <select id="canalFilter" onchange="updateView()">
+                        <option value="all" selected>🎯 Todos os Canais</option>
+                        </select>
+                </div>
+
                 <div>
                     <input type="text" id="searchDoc" placeholder="Buscar Nº Doc..." onkeyup="updateView()">
                 </div>
@@ -265,6 +302,11 @@
         <h2>Visão Geral (Evolutivo)</h2>
         <div class="chart-container">
             <canvas id="evolutionChart"></canvas>
+        </div>
+
+        <h2>Composição Mensal</h2>
+        <div id="monthly-charts-container">
+            <p style="padding: 20px;">Carregando gráficos...</p>
         </div>
 
     </div>
@@ -309,6 +351,7 @@
         let uniqueCanais = new Set();
         let uniqueTipos = new Set();
         let chartInstance = null;
+        let monthlyChartInstances = []; // Guarda as instâncias dos gráficos de pizza e barra
 
         const levelLabels = {
             "MNG4": "Canal",
@@ -379,7 +422,6 @@
                     let tipo = row["Tipo de Lançamento"] ? String(row["Tipo de Lançamento"]).trim() : "";
                     if (tipo.includes("#N/A")) tipo = "";
 
-                    // AJUSTE: Agora busca por "Referência" (ou mantém o nome antigo por segurança se vier misturado)
                     let refRaw = row["Referência"] || row["Referência da Nota"] || "";
                     let ref = String(refRaw).trim();
                     if (ref.includes("#N/A")) ref = "";
@@ -389,7 +431,6 @@
 
                     let fornCod = row["Cod_Fornecedor"] ? String(row["Cod_Fornecedor"]).trim() : "";
                     if (fornCod.includes("#N/A")) fornCod = "";
-
 
                     let isNotaContabilizada = tipo.toLowerCase().includes("notas fiscais contabilizadas");
 
@@ -401,13 +442,17 @@
                         row["Tipo_Ref"] = "Não Classificado";
                     }
 
+                    // REGRA: Identificar se tem nome válido de Fornecedor
+                    let hasFornNome = false;
                     if (fornNome && fornNome !== "empty" && fornNome !== "") {
                         row["Fornecedor_Final"] = fornNome;
+                        hasFornNome = true;
                     } else if (fornCod && fornCod !== "empty" && fornCod !== "") {
                         row["Fornecedor_Final"] = fornCod;
                     } else {
                         row["Fornecedor_Final"] = "Não Informado";
                     }
+                    row["hasFornNome"] = hasFornNome; // Guardado para o gráfico Top 5
 
                     if (row["MNG4"]) uniqueCanais.add(row["MNG4"]);
                     if (row["Tipo_Ref"]) uniqueTipos.add(row["Tipo_Ref"]);
@@ -429,6 +474,15 @@
                     }
                 });
 
+                // Preencher o filtro de Canal
+                const canalSelect = document.getElementById('canalFilter');
+                Array.from(uniqueCanais).sort().forEach(c => {
+                    let option = document.createElement('option');
+                    option.value = c;
+                    option.text = c;
+                    canalSelect.appendChild(option);
+                });
+
                 const now = new Date();
                 const currentYear = now.getFullYear();
                 const currentMonth = now.getMonth() + 1; 
@@ -436,13 +490,10 @@
                 const startOfThisYear = parseInt(currentYear + '01');
 
                 let defaultChecked = [];
-
                 periodKeys.forEach(p => {
                     let pClean = p.replace('-', '');
                     let pInt = parseInt(pClean);
-                    if (pInt >= startOfThisYear && pInt < currentYYYYMM) {
-                        defaultChecked.push(p);
-                    }
+                    if (pInt >= startOfThisYear && pInt < currentYYYYMM) defaultChecked.push(p);
                 });
 
                 if (defaultChecked.length === 0 && periodKeys.length > 0) {
@@ -473,9 +524,9 @@
 
         function updateView() {
             const searchTerm = document.getElementById('searchDoc').value.trim().toLowerCase();
-            
             const showDetails = document.getElementById('showDetailsToggle').checked;
             const hierarchyOrder = document.getElementById('hierarchyOrder').value;
+            const selectedCanal = document.getElementById('canalFilter').value;
 
             document.getElementById('hierarchyOrderContainer').style.display = showDetails ? 'block' : 'none';
 
@@ -485,6 +536,7 @@
             if (activePeriods.length === 0) {
                 document.getElementById('drilldown-table').innerHTML = '<p style="padding: 20px; color: #c0392b; font-weight: bold;">Por favor, selecione pelo menos um mês nas caixinhas acima.</p>';
                 if(chartInstance) chartInstance.destroy();
+                document.getElementById('monthly-charts-container').innerHTML = '';
                 return;
             }
 
@@ -504,6 +556,9 @@
             let isSearching = searchTerm !== '';
 
             let filteredData = globalData.filter(row => {
+                // Filtro Mestre de Canal
+                if (selectedCanal !== 'all' && row["MNG4"] !== selectedCanal) return false;
+
                 if (isSearching) {
                     let docStr = row["NRO_DOC"] ? String(row["NRO_DOC"]).toLowerCase() : '';
                     if (!docStr.includes(searchTerm)) return false;
@@ -522,8 +577,12 @@
 
             const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
             attachPlanToHierarchy(groupedData, activePeriods);
+            
             renderChart(filteredData, activePeriods, groupedData);
             renderTable(groupedData, activePeriods, isSearching, currentHierarchy);
+            
+            // Renderiza os novos gráficos mensais baseados nos dados filtrados
+            renderMonthlyCharts(filteredData, activePeriods);
         }
 
         function formatPeriodName(p) {
@@ -630,20 +689,10 @@
             activePeriods.forEach(p => {
                 headerHtml += `
                     <div class="col-value">
-                        <div class="val-primary">
-                            <span class="val-number">${formatPeriodName(p)}</span>
-                            <span class="val-icon"></span>
-                        </div>
+                        <div class="val-primary"><span class="val-number">${formatPeriodName(p)}</span><span class="val-icon"></span></div>
                     </div>`;
             });
-            headerHtml += `
-                    <div class="col-value col-total">
-                        <div class="val-primary">
-                            <span class="val-number">Total Selec.</span>
-                            <span class="val-icon"></span>
-                        </div>
-                    </div>
-                </div>`;
+            headerHtml += `<div class="col-value col-total"><div class="val-primary"><span class="val-number">Total Selec.</span><span class="val-icon"></span></div></div></div>`;
             
             const openAttribute = isSearching ? 'open' : '';
 
@@ -673,26 +722,18 @@
                             let val = node.totals ? node.totals[p] : (parseFloat(node[p]) || 0);
                             totalRow += val;
                             let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
-                            
-                            html += `<div class="col-value">
-                                        <div class="val-primary"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>
-                                     </div>`;
+                            html += `<div class="col-value"><div class="val-primary"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div></div>`;
                             prevVal = val;
                         });
                         
-                        html += `<div class="col-value col-total">
-                                    ${dataBarHtml}
-                                    <div class="val-primary"><span class="val-number">${formatNumber(totalRow)}</span><span class="val-icon"></span></div>
-                                 </div>`;
+                        html += `<div class="col-value col-total">${dataBarHtml}<div class="val-primary"><span class="val-number">${formatNumber(totalRow)}</span><span class="val-icon"></span></div></div>`;
                         html += `</div>`;
                     } else {
                         html += `<details class="level-${depth}" ${openAttribute}><summary>`;
-                        
                         let badge = getLevelBadge(node.levelKey);
                         html += `<div class="col-title">${badge}${node.name}</div>`;
                         
                         let prevVal = null;
-                        
                         activePeriods.forEach((p, index) => {
                             let val = node.totals[p];
                             let alertHtml = index === 0 ? '' : getAlertIcon(val, prevVal, activePeriods.length);
@@ -703,10 +744,7 @@
                                 planHtml = `<div class="val-plan">Plano: ${formatNumber(planVal)}</div>`;
                             }
 
-                            html += `<div class="col-value">
-                                        <div class="val-primary"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>
-                                        ${planHtml}
-                                     </div>`;
+                            html += `<div class="col-value"><div class="val-primary"><span class="val-number">${formatNumber(val)}</span><span class="val-icon">${alertHtml}</span></div>${planHtml}</div>`;
                             prevVal = val;
                         });
 
@@ -715,17 +753,10 @@
                             planTotalHtml = `<div class="val-plan" style="padding-right:23px;">Plano: ${formatNumber(node.planRowTotal)}</div>`;
                         }
 
-                        html += `<div class="col-value col-total">
-                                    ${dataBarHtml}
-                                    <div class="val-primary"><span class="val-number">${formatNumber(node.rowTotal)}</span><span class="val-icon"></span></div>
-                                    ${planTotalHtml}
-                                 </div>`;
-                        
+                        html += `<div class="col-value col-total">${dataBarHtml}<div class="val-primary"><span class="val-number">${formatNumber(node.rowTotal)}</span><span class="val-icon"></span></div>${planTotalHtml}</div>`;
                         html += `</summary><div class="details-content">`;
-                        
                         const nextIsLeaf = node.children[0] && node.children[0].levelKey === currentHierarchy[currentHierarchy.length - 1];
                         html += generateHtml(node.children, nextIsLeaf, depth + 1);
-                        
                         html += `</div></details>`;
                     }
                 });
@@ -770,9 +801,7 @@
             const chartDataRealized = activePeriods.map(p => globalRealized[p] / divisor);
             const chartDataPlan = activePeriods.map(p => globalPlan[p] / divisor);
 
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
+            if (chartInstance) chartInstance.destroy();
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
@@ -807,7 +836,8 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: { top: 30 } },
+                    // AJUSTE: Margens laterais aumentadas para os números inteiros caberem sem cortar
+                    layout: { padding: { top: 30, left: 60, right: 60 } }, 
                     plugins: {
                         legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } },
                         tooltip: {
@@ -827,6 +857,154 @@
                         y: { beginAtZero: true, grid: { display: false }, ticks: { display: false }, border: { display: false } },
                         x: { grid: { display: false }, border: { display: false } }
                     }
+                }
+            });
+        }
+
+        // --- NOVA FUNÇÃO: Renderizar Gráficos de Pizza e Barras por Mês ---
+        function renderMonthlyCharts(filteredData, activePeriods) {
+            const container = document.getElementById('monthly-charts-container');
+            container.innerHTML = '';
+            
+            // Destrói gráficos antigos para limpar memória
+            monthlyChartInstances.forEach(inst => inst.destroy());
+            monthlyChartInstances = [];
+
+            if (filteredData.length === 0) {
+                container.innerHTML = '<p style="padding: 20px;">Nenhum dado para exibir.</p>';
+                return;
+            }
+
+            const { divisor } = getFormatterConfig();
+
+            activePeriods.forEach(p => {
+                // Cria uma seção para o Mês
+                let monthSection = document.createElement('div');
+                monthSection.className = 'monthly-section';
+                monthSection.innerHTML = `
+                    <h3 class="monthly-section-title">Análise de ${formatPeriodName(p)}</h3>
+                    <div class="monthly-charts-wrapper" id="charts-wrapper-${p}"></div>
+                `;
+                container.appendChild(monthSection);
+                let wrapper = document.getElementById(`charts-wrapper-${p}`);
+
+                // 1. Processando dados para a Pizza (Composição por Tipo_Ref)
+                let tipoMap = {};
+                let totalPeriodAbs = 0;
+                filteredData.forEach(row => {
+                    let val = parseFloat(row[p]) || 0;
+                    if (val !== 0) {
+                        let tipo = row["Tipo_Ref"] || "Não Classificado";
+                        tipoMap[tipo] = (tipoMap[tipo] || 0) + val;
+                        totalPeriodAbs += Math.abs(val);
+                    }
+                });
+
+                let tipoData = Object.keys(tipoMap).map(k => ({ tipo: k, val: tipoMap[k] }))
+                                     .sort((a,b) => Math.abs(b.val) - Math.abs(a.val));
+                
+                let pieLabels = tipoData.map(d => d.tipo);
+                let pieRealValues = tipoData.map(d => d.val); // Guarda valor real para tooltip
+                let pieAbsValues = tipoData.map(d => Math.abs(d.val)); // O Gráfico precisa de valor absoluto para formar a fatia
+
+                if (pieLabels.length > 0) {
+                    let pieDiv = document.createElement('div');
+                    pieDiv.className = 'monthly-chart-box';
+                    pieDiv.innerHTML = `<h4>Composição por Tipo de Lançamento</h4><div class="monthly-canvas-container"><canvas id="pie-${p}"></canvas></div>`;
+                    wrapper.appendChild(pieDiv);
+
+                    let ctxPie = document.getElementById(`pie-${p}`).getContext('2d');
+                    let instPie = new Chart(ctxPie, {
+                        type: 'pie',
+                        data: {
+                            labels: pieLabels,
+                            datasets: [{
+                                data: pieAbsValues.map(v => v / divisor),
+                                backgroundColor: ['#2d3277', '#ffe600', '#00a650', '#e74c3c', '#9b59b6', '#34495e', '#16a085', '#27ae60', '#2980b9', '#8e44ad']
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'right', labels: { boxWidth: 12, font: {size: 10} } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let rawVal = pieRealValues[context.dataIndex] / divisor;
+                                            let perc = ((context.raw / (totalPeriodAbs / divisor)) * 100).toFixed(1);
+                                            return `${context.label}: ${formatNumber(rawVal * divisor)} (${perc}%)`;
+                                        }
+                                    }
+                                },
+                                datalabels: {
+                                    color: '#fff', font: { weight: 'bold', size: 10 }, textStrokeColor: 'rgba(0,0,0,0.5)', textStrokeWidth: 2,
+                                    formatter: (value, ctx) => {
+                                        let sum = ctx.chart._metasets[ctx.datasetIndex].total;
+                                        let percentage = (value * 100 / sum).toFixed(0) + "%";
+                                        return percentage === "0%" ? "" : percentage;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    monthlyChartInstances.push(instPie);
+                }
+
+                // 2. Processando dados para a Barra (Top 5 Fornecedores Validos)
+                let fornMap = {};
+                filteredData.forEach(row => {
+                    let val = parseFloat(row[p]) || 0;
+                    if (val !== 0 && row.hasFornNome) { // Regra do fornecedor com nome
+                        let forn = row["Fornecedor_Final"];
+                        fornMap[forn] = (fornMap[forn] || 0) + val;
+                    }
+                });
+
+                let fornData = Object.keys(fornMap).map(k => ({ forn: k, val: fornMap[k] }))
+                                     .sort((a,b) => Math.abs(b.val) - Math.abs(a.val))
+                                     .slice(0, 5); // Traz apenas os Top 5
+                
+                let barLabels = fornData.map(d => d.forn);
+                let barValues = fornData.map(d => d.val);
+
+                if (barLabels.length > 0) {
+                    let barDiv = document.createElement('div');
+                    barDiv.className = 'monthly-chart-box';
+                    barDiv.innerHTML = `<h4>Top 5 Fornecedores (Nominais)</h4><div class="monthly-canvas-container"><canvas id="bar-${p}"></canvas></div>`;
+                    wrapper.appendChild(barDiv);
+
+                    let ctxBar = document.getElementById(`bar-${p}`).getContext('2d');
+                    let instBar = new Chart(ctxBar, {
+                        type: 'bar',
+                        data: {
+                            labels: barLabels,
+                            datasets: [{
+                                label: 'Valor',
+                                data: barValues.map(v => v / divisor),
+                                backgroundColor: '#2d3277',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            layout: { padding: { top: 25 } },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: { label: function(context) { return formatNumber(context.raw * divisor); } }
+                                },
+                                datalabels: {
+                                    anchor: 'end', align: 'end', color: '#333', font: { size: 10, weight: 'bold' },
+                                    formatter: function(value) { return formatNumber(value * divisor); }
+                                }
+                            },
+                            scales: {
+                                y: { display: false },
+                                x: { ticks: { font: {size: 10}, maxRotation: 20, minRotation: 0 } }
+                            }
+                        }
+                    });
+                    monthlyChartInstances.push(instBar);
                 }
             });
         }
