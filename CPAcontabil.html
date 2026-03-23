@@ -7,10 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
-        /* REGRA DE OURO PARA ALINHAMENTO */
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { box-sizing: border-box; }
 
         :root {
             --meli-yellow: #ffe600;
@@ -116,9 +113,7 @@
             border: 1px solid var(--border-color);
         }
 
-        .table-inner {
-            min-width: max-content; 
-        }
+        .table-inner { min-width: max-content; }
 
         .table-header {
             display: flex;
@@ -291,9 +286,9 @@
                 
                 <div>
                     <select id="tipoLancamentoPos" onchange="updateView()">
-                        <option value="off" selected>Ocultar Tipo de Lançamento</option>
-                        <option value="after_canal">Mostrar logo após Canal</option>
-                        <option value="after_ceco">Mostrar após CECO</option>
+                        <option value="after_canal" selected>Mostrar Tipo / Ref. após Canal</option>
+                        <option value="off">Ocultar Tipo / Ref.</option>
+                        <option value="after_ceco">Mostrar Tipo / Ref. após CECO</option>
                     </select>
                 </div>
 
@@ -332,11 +327,11 @@
         let periodKeys = [];
         let chartInstance = null;
 
+        // Ocultadas as tags Tipo de Lançamento, Fornecedor e Texto
         const levelLabels = {
             "MNG4": "Canal",
             "CUENTA": "Conta",
             "CECO": "CECO",
-            "Cod_Fornecedor": "Fornecedor",
             "NRO_DOC": "Nº Doc"
         };
 
@@ -388,7 +383,10 @@
                     if(row["MNG4"] && String(row["MNG4"]).trim().toUpperCase() === "OTHERS") return false;
                     return true;
                 }).map(row => {
+                    // Forçar CPA
                     row["MNG3"] = "CPA";
+
+                    // Tratar Canal
                     if (row["MNG4"]) {
                         let canal = String(row["MNG4"]).trim().toLowerCase();
                         if (canal.includes("cashback")) {
@@ -397,6 +395,31 @@
                             row["MNG4"] = "Consultor NF";
                         }
                     }
+
+                    // --- COLUNA VIRTUAL: Tipo_Ref ---
+                    let tipo = row["Tipo de Lançamento"] ? String(row["Tipo de Lançamento"]).trim() : "";
+                    let ref = row["Referência da Nota"] ? String(row["Referência da Nota"]).trim() : "";
+                    
+                    if (tipo && ref && ref !== "empty" && ref !== "") {
+                        row["Tipo_Ref"] = tipo + " " + ref;
+                    } else if (tipo) {
+                        row["Tipo_Ref"] = tipo;
+                    } else {
+                        row["Tipo_Ref"] = "Não Classificado";
+                    }
+
+                    // --- COLUNA VIRTUAL: Fornecedor_Final ---
+                    let fornNome = row["Fornecedor"] ? String(row["Fornecedor"]).trim() : "";
+                    let fornCod = row["Cod_Fornecedor"] ? String(row["Cod_Fornecedor"]).trim() : "";
+                    
+                    if (fornNome && fornNome !== "empty" && fornNome !== "") {
+                        row["Fornecedor_Final"] = fornNome;
+                    } else if (fornCod && fornCod !== "empty" && fornCod !== "") {
+                        row["Fornecedor_Final"] = fornCod;
+                    } else {
+                        row["Fornecedor_Final"] = "Não Informado";
+                    }
+
                     return row;
                 });
 
@@ -461,7 +484,6 @@
 
         function updateView() {
             const searchTerm = document.getElementById('searchDoc').value.trim().toLowerCase();
-            // Lendo a nova seleção de posição
             const tipoLancamentoPos = document.getElementById('tipoLancamentoPos').value;
 
             const checkedBoxes = document.querySelectorAll('#monthCheckboxes input[type="checkbox"]:checked');
@@ -473,20 +495,21 @@
                 return;
             }
 
-            // HIERARQUIA DINÂMICA COM POSIÇÃO ESCOLHIDA
+            // HIERARQUIA DINÂMICA
             let currentHierarchy = ["MNG3", "MNG4"];
             
             if (tipoLancamentoPos === 'after_canal') {
-                currentHierarchy.push("Tipo de Lançamento");
+                currentHierarchy.push("Tipo_Ref");
             }
             
             currentHierarchy.push("CUENTA", "CECO");
             
             if (tipoLancamentoPos === 'after_ceco') {
-                currentHierarchy.push("Tipo de Lançamento");
+                currentHierarchy.push("Tipo_Ref");
             }
             
-            currentHierarchy.push("Cod_Fornecedor", "TEXTO", "NRO_DOC");
+            // Usando a coluna virtual Fornecedor_Final
+            currentHierarchy.push("Fornecedor_Final", "TEXTO", "NRO_DOC");
 
             let filteredData = globalData;
             let isSearching = false;
