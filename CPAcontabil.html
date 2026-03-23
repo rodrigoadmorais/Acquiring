@@ -384,15 +384,12 @@
                     }
                     return newRow;
                 }).filter(row => {
-                    // A regra anterior para excluir MNG3 quebrado na origem
                     if(row["MNG3"] && String(row["MNG3"]).includes("#N/A")) return false;
                     if(row["MNG4"] && String(row["MNG4"]).trim().toUpperCase() === "OTHERS") return false;
                     return true;
                 }).map(row => {
-                    // Forçar CPA
                     row["MNG3"] = "CPA";
 
-                    // Tratar Canal
                     if (row["MNG4"]) {
                         let canal = String(row["MNG4"]).trim().toLowerCase();
                         if (canal.includes("cashback")) {
@@ -402,7 +399,7 @@
                         }
                     }
 
-                    // --- LIMPEZA DE ERROS DO EXCEL ---
+                    // --- LIMPEZA DE ERROS DO EXCEL E LÓGICA DE REFERÊNCIA ---
                     let tipo = row["Tipo de Lançamento"] ? String(row["Tipo de Lançamento"]).trim() : "";
                     if (tipo.includes("#N/A")) tipo = "";
 
@@ -417,7 +414,9 @@
 
 
                     // --- COLUNA VIRTUAL: Tipo_Ref ---
-                    if (tipo && ref && ref !== "empty" && ref !== "") {
+                    let isNotaContabilizada = tipo.toLowerCase().includes("notas fiscais contabilizadas");
+
+                    if (tipo && ref && ref !== "empty" && ref !== "" && isNotaContabilizada) {
                         row["Tipo_Ref"] = tipo + " " + ref;
                     } else if (tipo) {
                         row["Tipo_Ref"] = tipo;
@@ -524,15 +523,30 @@
             
             currentHierarchy.push("Fornecedor_Final", "TEXTO", "NRO_DOC");
 
-            let filteredData = globalData;
-            let isSearching = false;
-            if (searchTerm !== '') {
-                isSearching = true;
-                filteredData = globalData.filter(row => {
+            let isSearching = searchTerm !== '';
+
+            // --- FILTRO MESTRE (Busca + Remoção de Linhas Zeradas) ---
+            let filteredData = globalData.filter(row => {
+                
+                // 1. Filtro de Busca (NRO_DOC)
+                if (isSearching) {
                     let docStr = row["NRO_DOC"] ? String(row["NRO_DOC"]).toLowerCase() : '';
-                    return docStr.includes(searchTerm);
-                });
-            }
+                    if (!docStr.includes(searchTerm)) return false;
+                }
+
+                // 2. Filtro de Valores (Ignorar linhas que estão zeradas em TODOS os meses selecionados)
+                let temValor = false;
+                for (let i = 0; i < activePeriods.length; i++) {
+                    let val = parseFloat(row[activePeriods[i]]);
+                    // Considerando uma margem mínima para ignorar lixo de arredondamento
+                    if (!isNaN(val) && Math.abs(val) >= 0.001) {
+                        temValor = true;
+                        break;
+                    }
+                }
+                
+                return temValor;
+            });
 
             const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
             
