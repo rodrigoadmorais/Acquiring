@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
-        /* REGRA DE OURO PARA ALINHAMENTO */
         *, *::before, *::after {
             box-sizing: border-box;
         }
@@ -76,7 +75,34 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             font-family: inherit;
+            outline: none;
         }
+
+        .btn-primary {
+            background-color: var(--meli-blue);
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #1a1e50;
+        }
+        .btn-secondary {
+            background-color: #bdc3c7;
+            color: #333;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+        }
+        .btn-secondary:hover { background-color: #95a5a6; }
 
         .checkbox-container {
             display: flex;
@@ -128,13 +154,7 @@
             font-weight: bold;
             font-size: 0.85rem;
         }
-
-        .table-header::before {
-            content: '';
-            display: block;
-            width: 24px;
-            flex-shrink: 0;
-        }
+        .table-header::before { content: ''; display: block; width: 24px; flex-shrink: 0; }
 
         .col-title {
             flex: 4 1 0%; 
@@ -173,20 +193,8 @@
             width: 100%;
         }
 
-        .val-number {
-            flex: 1;
-            text-align: right;
-            position: relative;
-            z-index: 1;
-        }
-
-        .val-icon {
-            width: 15px; 
-            text-align: right;
-            margin-left: 8px;
-            position: relative;
-            z-index: 1;
-        }
+        .val-number { flex: 1; text-align: right; position: relative; z-index: 1; }
+        .val-icon { width: 15px; text-align: right; margin-left: 8px; position: relative; z-index: 1; }
         
         .val-plan {
             font-size: 0.68rem;
@@ -198,32 +206,18 @@
             font-weight: 500;
         }
 
-        .col-total {
-            font-weight: bold;
-            background-color: rgba(0,0,0,0.03);
-            border-left: 1px solid #eee;
-        }
+        .col-total { font-weight: bold; background-color: rgba(0,0,0,0.03); border-left: 1px solid #eee; }
 
-        .deviation {
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
+        .deviation { font-size: 0.8rem; font-weight: bold; }
         .dev-up { color: #c0392b; }
         .dev-down { color: #27ae60; }
 
         details { padding: 0; margin: 0; }
-
         summary {
-            display: flex;
-            cursor: pointer;
-            padding: 8px 10px;
-            background-color: #fff;
-            border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s;
-            font-size: 0.85rem;
-            align-items: center;
+            display: flex; cursor: pointer; padding: 8px 10px;
+            background-color: #fff; border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem; align-items: center;
         }
-
         summary:hover { background-color: var(--hover-bg); }
         .level-0 > summary { background-color: #fff9c4; font-weight: bold; }
 
@@ -231,46 +225,48 @@
         summary::-webkit-details-marker { display: none; }
         
         summary::before {
-            content: '+';
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            width: 14px;
-            height: 14px;
-            border: 1px solid #999;
-            background: #fff;
-            margin-right: 8px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #555;
-            line-height: 1;
-            flex-shrink: 0; 
+            content: '+'; display: inline-flex; justify-content: center; align-items: center;
+            width: 14px; height: 14px; border: 1px solid #999; background: #fff;
+            margin-right: 8px; font-size: 12px; font-weight: bold; color: #555;
+            line-height: 1; flex-shrink: 0; 
         }
         details[open] > summary::before { content: '-'; }
         
-        .leaf-node::before { 
-            content: ''; 
-            display: block; 
-            width: 24px; 
-            flex-shrink: 0;
-        }
-
+        .leaf-node::before { content: ''; display: block; width: 24px; flex-shrink: 0; }
         .details-content { padding-left: 20px; border-left: 1px solid #eee; }
 
         .leaf-node {
-            display: flex;
-            padding: 8px 10px 8px 22px; 
-            background-color: #fff;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.85rem;
-            align-items: center;
+            display: flex; padding: 8px 10px 8px 22px; 
+            background-color: #fff; border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem; align-items: center;
         }
         .leaf-node:hover { background-color: var(--hover-bg); }
-        
-        .highlight-doc {
-            background-color: #e3f2fd;
-            border-left: 3px solid #2196f3;
+        .highlight-doc { background-color: #e3f2fd; border-left: 3px solid #2196f3; }
+
+        /* Estilos do Modal de Exportação */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;
         }
+        .modal-box {
+            background: #fff; width: 500px; max-width: 95%; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+            max-height: 90vh;
+        }
+        .modal-header {
+            padding: 15px 20px; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-header h3 { margin: 0; color: var(--meli-blue); }
+        .modal-body { padding: 20px; overflow-y: auto; }
+        .modal-footer {
+            padding: 15px 20px; border-top: 1px solid #eee;
+            display: flex; justify-content: flex-end; gap: 10px;
+        }
+        .export-section { margin-bottom: 20px; }
+        .export-section h4 { margin-top: 0; margin-bottom: 10px; font-size: 0.95rem; color: #555; border-bottom: 1px dashed #ccc; padding-bottom: 5px;}
+        .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .export-grid label { font-size: 0.85rem; display: flex; align-items: center; gap: 5px; cursor:pointer;}
     </style>
 </head>
 <body>
@@ -290,10 +286,9 @@
                 </div>
                 
                 <div>
-                    <select id="tipoLancamentoPos" onchange="updateView()">
-                        <option value="after_canal" selected>Mostrar Tipo / Ref. após Canal</option>
-                        <option value="off">Ocultar Tipo / Ref.</option>
-                        <option value="after_ceco">Mostrar Tipo / Ref. após CECO</option>
+                    <select id="hierarchyOrder" onchange="updateView()">
+                        <option value="forn_first" selected>Ordem: Fornecedor -> Conta/CECO</option>
+                        <option value="conta_first">Ordem: Conta/CECO -> Fornecedor</option>
                     </select>
                 </div>
 
@@ -304,6 +299,9 @@
                         <option value="1000000" selected>Milhões (M)</option>
                     </select>
                 </div>
+
+                <button class="btn-primary" onclick="openExportModal()">⬇ Exportar Base</button>
+
                 <div id="monthCheckboxes" class="month-filters">
                     </div>
             </div>
@@ -320,6 +318,33 @@
 
     </div>
 
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Exportar Dados do Dashboard</h3>
+                <span style="cursor:pointer; font-weight:bold; color:#999;" onclick="closeExportModal()">X</span>
+            </div>
+            <div class="modal-body">
+                <div class="export-section">
+                    <h4>Meses a Exportar</h4>
+                    <div class="export-grid" id="exportMonthsGrid"></div>
+                </div>
+                <div class="export-section">
+                    <h4>Canais (MNG4)</h4>
+                    <div class="export-grid" id="exportCanaisGrid"></div>
+                </div>
+                <div class="export-section">
+                    <h4>Tipos de Lançamento</h4>
+                    <div class="export-grid" id="exportTiposGrid"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeExportModal()">Cancelar</button>
+                <button class="btn-primary" onclick="executeExport()">Gerar CSV (Excel)</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         Chart.register(ChartDataLabels);
 
@@ -330,6 +355,8 @@
         let globalData = [];
         let planMap = {}; 
         let periodKeys = [];
+        let uniqueCanais = new Set();
+        let uniqueTipos = new Set();
         let chartInstance = null;
 
         // Ocultadas as tags Tipo de Lançamento, Fornecedor e Texto
@@ -399,7 +426,6 @@
                         }
                     }
 
-                    // --- LIMPEZA DE ERROS DO EXCEL E LÓGICA DE REFERÊNCIA ---
                     let tipo = row["Tipo de Lançamento"] ? String(row["Tipo de Lançamento"]).trim() : "";
                     if (tipo.includes("#N/A")) tipo = "";
 
@@ -413,7 +439,6 @@
                     if (fornCod.includes("#N/A")) fornCod = "";
 
 
-                    // --- COLUNA VIRTUAL: Tipo_Ref ---
                     let isNotaContabilizada = tipo.toLowerCase().includes("notas fiscais contabilizadas");
 
                     if (tipo && ref && ref !== "empty" && ref !== "" && isNotaContabilizada) {
@@ -424,7 +449,6 @@
                         row["Tipo_Ref"] = "Não Classificado";
                     }
 
-                    // --- COLUNA VIRTUAL: Fornecedor_Final ---
                     if (fornNome && fornNome !== "empty" && fornNome !== "") {
                         row["Fornecedor_Final"] = fornNome;
                     } else if (fornCod && fornCod !== "empty" && fornCod !== "") {
@@ -432,6 +456,10 @@
                     } else {
                         row["Fornecedor_Final"] = "Não Informado";
                     }
+
+                    // Preenchendo as listas de filtros para o Modal
+                    if (row["MNG4"]) uniqueCanais.add(row["MNG4"]);
+                    if (row["Tipo_Ref"]) uniqueTipos.add(row["Tipo_Ref"]);
 
                     return row;
                 });
@@ -474,14 +502,11 @@
                 periodKeys.forEach(p => {
                     let label = document.createElement('label');
                     label.className = 'checkbox-container';
-                    
                     let checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.value = p;
                     checkbox.onchange = updateView; 
-                    
                     if (defaultChecked.includes(p)) checkbox.checked = true;
-
                     label.appendChild(checkbox);
                     label.appendChild(document.createTextNode(' ' + formatPeriodName(p)));
                     monthContainer.appendChild(label);
@@ -497,7 +522,7 @@
 
         function updateView() {
             const searchTerm = document.getElementById('searchDoc').value.trim().toLowerCase();
-            const tipoLancamentoPos = document.getElementById('tipoLancamentoPos').value;
+            const hierarchyOrder = document.getElementById('hierarchyOrder').value;
 
             const checkedBoxes = document.querySelectorAll('#monthCheckboxes input[type="checkbox"]:checked');
             let activePeriods = Array.from(checkedBoxes).map(cb => cb.value).sort();
@@ -508,50 +533,37 @@
                 return;
             }
 
-            // HIERARQUIA DINÂMICA
-            let currentHierarchy = ["MNG3", "MNG4"];
+            // HIERARQUIA DINÂMICA SIMPLIFICADA
+            let currentHierarchy = ["MNG3", "MNG4", "Tipo_Ref"];
             
-            if (tipoLancamentoPos === 'after_canal') {
-                currentHierarchy.push("Tipo_Ref");
+            if (hierarchyOrder === 'forn_first') {
+                currentHierarchy.push("Fornecedor_Final", "CUENTA", "CECO");
+            } else {
+                currentHierarchy.push("CUENTA", "CECO", "Fornecedor_Final");
             }
-            
-            currentHierarchy.push("CUENTA", "CECO");
-            
-            if (tipoLancamentoPos === 'after_ceco') {
-                currentHierarchy.push("Tipo_Ref");
-            }
-            
-            currentHierarchy.push("Fornecedor_Final", "TEXTO", "NRO_DOC");
+            currentHierarchy.push("TEXTO", "NRO_DOC");
 
             let isSearching = searchTerm !== '';
 
-            // --- FILTRO MESTRE (Busca + Remoção de Linhas Zeradas) ---
             let filteredData = globalData.filter(row => {
-                
-                // 1. Filtro de Busca (NRO_DOC)
                 if (isSearching) {
                     let docStr = row["NRO_DOC"] ? String(row["NRO_DOC"]).toLowerCase() : '';
                     if (!docStr.includes(searchTerm)) return false;
                 }
 
-                // 2. Filtro de Valores (Ignorar linhas que estão zeradas em TODOS os meses selecionados)
                 let temValor = false;
                 for (let i = 0; i < activePeriods.length; i++) {
                     let val = parseFloat(row[activePeriods[i]]);
-                    // Considerando uma margem mínima para ignorar lixo de arredondamento
                     if (!isNaN(val) && Math.abs(val) >= 0.001) {
                         temValor = true;
                         break;
                     }
                 }
-                
                 return temValor;
             });
 
             const groupedData = buildHierarchy(filteredData, currentHierarchy, 0, activePeriods);
-            
             attachPlanToHierarchy(groupedData, activePeriods);
-
             renderChart(filteredData, activePeriods, groupedData);
             renderTable(groupedData, activePeriods, isSearching, currentHierarchy);
         }
@@ -837,52 +849,132 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: {
-                        padding: { top: 30 } 
-                    },
+                    layout: { padding: { top: 30 } },
                     plugins: {
-                        legend: { 
-                            display: true, 
-                            position: 'bottom',
-                            labels: { usePointStyle: true, boxWidth: 10 }
-                        },
+                        legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': ' + formatNumber(context.raw * divisor); 
-                                }
+                                label: function(context) { return context.dataset.label + ': ' + formatNumber(context.raw * divisor); }
                             }
                         },
                         datalabels: {
-                            align: function(context) {
-                                return context.datasetIndex === 0 ? 'top' : 'bottom';
-                            },
-                            anchor: function(context) {
-                                return context.datasetIndex === 0 ? 'bottom' : 'top';
-                            },
-                            color: function(context) {
-                                return context.datasetIndex === 0 ? '#333' : '#7f8c8d';
-                            },
+                            align: function(context) { return context.datasetIndex === 0 ? 'top' : 'bottom'; },
+                            anchor: function(context) { return context.datasetIndex === 0 ? 'bottom' : 'top'; },
+                            color: function(context) { return context.datasetIndex === 0 ? '#333' : '#7f8c8d'; },
                             font: { weight: 'bold', size: 11 },
-                            formatter: function(value) {
-                                return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
-                            }
+                            formatter: function(value) { return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value); }
                         }
                     },
                     scales: {
-                        y: { 
-                            beginAtZero: true,
-                            grid: { display: false },
-                            ticks: { display: false },
-                            border: { display: false }
-                        },
-                        x: { 
-                            grid: { display: false },
-                            border: { display: false }
-                        }
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { display: false }, border: { display: false } },
+                        x: { grid: { display: false }, border: { display: false } }
                     }
                 }
             });
+        }
+
+        // --- FUNÇÕES DE EXPORTAÇÃO (MODAL E CSV) ---
+        function populateExportModal() {
+            // Meses (Marca por padrão os que estão ativos na tela)
+            const activeScreenMonths = Array.from(document.querySelectorAll('#monthCheckboxes input:checked')).map(cb => cb.value);
+            const gridMonths = document.getElementById('exportMonthsGrid');
+            gridMonths.innerHTML = '';
+            periodKeys.forEach(p => {
+                gridMonths.innerHTML += `<label><input type="checkbox" class="exp-month" value="${p}" ${activeScreenMonths.includes(p) ? 'checked' : ''}> ${formatPeriodName(p)}</label>`;
+            });
+
+            // Canais
+            const gridCanais = document.getElementById('exportCanaisGrid');
+            gridCanais.innerHTML = '';
+            Array.from(uniqueCanais).sort().forEach(c => {
+                gridCanais.innerHTML += `<label><input type="checkbox" class="exp-canal" value="${c}" checked> ${c}</label>`;
+            });
+
+            // Tipos de Lançamento
+            const gridTipos = document.getElementById('exportTiposGrid');
+            gridTipos.innerHTML = '';
+            Array.from(uniqueTipos).sort().forEach(t => {
+                gridTipos.innerHTML += `<label><input type="checkbox" class="exp-tipo" value="${t}" checked> ${t}</label>`;
+            });
+        }
+
+        function openExportModal() {
+            populateExportModal();
+            document.getElementById('exportModal').style.display = 'flex';
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').style.display = 'none';
+        }
+
+        function executeExport() {
+            // Coleta seleções
+            const selectedMonths = Array.from(document.querySelectorAll('.exp-month:checked')).map(cb => cb.value);
+            const selectedCanais = Array.from(document.querySelectorAll('.exp-canal:checked')).map(cb => cb.value);
+            const selectedTipos = Array.from(document.querySelectorAll('.exp-tipo:checked')).map(cb => cb.value);
+
+            if (selectedMonths.length === 0) { alert('Selecione pelo menos um mês para exportar.'); return; }
+            if (selectedCanais.length === 0) { alert('Selecione pelo menos um Canal para exportar.'); return; }
+            if (selectedTipos.length === 0) { alert('Selecione pelo menos um Tipo de Lançamento.'); return; }
+
+            // Filtra os dados
+            let dataToExport = globalData.filter(row => {
+                let matchCanal = selectedCanais.includes(row["MNG4"]);
+                let matchTipo = selectedTipos.includes(row["Tipo_Ref"]);
+                
+                // Excluir se estiver zerado em todos os meses selecionados
+                let temValor = false;
+                for (let i = 0; i < selectedMonths.length; i++) {
+                    let val = parseFloat(row[selectedMonths[i]]);
+                    if (!isNaN(val) && Math.abs(val) >= 0.001) { temValor = true; break; }
+                }
+
+                return matchCanal && matchTipo && temValor;
+            });
+
+            // Monta o CSV (Separador ; para Excel PT-BR)
+            let csvContent = "\uFEFF"; // Caractere BOM (Garante que o Excel leia os acentos)
+            
+            // Cabeçalhos
+            let headers = ["Canal", "Tipo_Ref", "Fornecedor", "Conta", "CECO", "Texto", "Num_Doc"];
+            selectedMonths.forEach(m => headers.push(formatPeriodName(m)));
+            csvContent += headers.join(";") + "\r\n";
+
+            // Linhas
+            dataToExport.forEach(row => {
+                let line = [
+                    row["MNG4"] || "",
+                    row["Tipo_Ref"] || "",
+                    row["Fornecedor_Final"] || "",
+                    row["CUENTA"] || "",
+                    row["CECO"] || "",
+                    row["TEXTO"] || "",
+                    row["NRO_DOC"] || ""
+                ];
+
+                selectedMonths.forEach(m => {
+                    let val = parseFloat(row[m]) || 0;
+                    // Converte ponto pra vírgula pro Excel brasileiro entender como número
+                    line.push(val.toFixed(2).replace('.', ','));
+                });
+
+                // Evitar quebra de linha dentro do texto no CSV
+                let cleanLine = line.map(cell => `"${String(cell).replace(/"/g, '""')}"`);
+                csvContent += cleanLine.join(";") + "\r\n";
+            });
+
+            // Download
+            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement("a");
+            let url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Exportacao_CPA.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            closeExportModal();
         }
 
         initDashboard();
