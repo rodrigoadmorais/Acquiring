@@ -163,7 +163,6 @@
             border-radius: 8px;
             border: 1px solid var(--border-color);
             box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-            /* Cursor pointer para indicar interatividade */
             cursor: pointer;
             transition: box-shadow 0.2s, transform 0.2s;
         }
@@ -180,13 +179,10 @@
         .table-wrapper { width: 100%; overflow-x: auto; margin-bottom: 60px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .table-inner { min-width: max-content; }
 
-        /* AJUSTE CABEÇALHO BRANCO: Garantir que o fundo azul cubra tudo */
         .table-header {
             display: flex; background-color: var(--primary-blue); color: #fff;
-            padding: 0; /* Remove padding lateral */
-            font-weight: 600; font-size: 0.88rem;
-            border-radius: 8px 8px 0 0;
-            overflow: hidden; /* Garante que filhos respeitem o border-radius */
+            padding: 0; font-weight: 600; font-size: 0.88rem;
+            border-radius: 8px 8px 0 0; overflow: hidden;
         }
         .table-header::before { content: ''; display: block; width: 24px; flex-shrink: 0; background-color: var(--primary-blue); }
         .table-header .col-title { padding: 14px 12px; background-color: var(--primary-blue); }
@@ -220,12 +216,11 @@
         .dev-up { color: #c0392b; }
         .dev-down { color: #27ae60; }
 
-        details { padding: 0; margin: 0; scroll-margin-top: 100px; /* Margem para rolar e não cobrir com o menu */ }
+        details { padding: 0; margin: 0; scroll-margin-top: 100px; }
         summary {
             display: flex; cursor: pointer; padding: 10px 12px;
             background-color: #fff; border-bottom: 1px solid var(--border-color);
-            font-size: 0.88rem; align-items: center;
-            transition: background-color 0.1s;
+            font-size: 0.88rem; align-items: center; transition: background-color 0.1s;
         }
         summary:hover { background-color: var(--hover-bg); }
         .level-0 > summary { background-color: #fffde0; font-weight: bold; }
@@ -246,20 +241,45 @@
         .leaf-node {
             display: flex; padding: 10px 12px 10px 26px; 
             background-color: #fff; border-bottom: 1px solid var(--border-color);
-            font-size: 0.88rem; align-items: center;
-            scroll-margin-top: 100px;
+            font-size: 0.88rem; align-items: center; scroll-margin-top: 100px;
         }
         .leaf-node:hover { background-color: var(--hover-bg); }
         .highlight-doc { background-color: #e3f2fd; border-left: 4px solid var(--primary-blue); }
 
-        /* Estilo para piscar quando encontrado via gráfico */
+        /* Estilo para piscar quando clicado no gráfico */
         @keyframes highlight-fade {
             0% { background-color: #fffde0; }
             100% { background-color: transparent; }
         }
         .highlight-drilldown {
-            animation: highlight-fade 2s ease-out;
+            animation: highlight-fade 2.5s ease-out;
+            border-left: 4px solid var(--primary-blue);
         }
+
+        /* Modal de Exportação - Estilos Blindados */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: #fff; width: 500px; max-width: 95%; border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: flex; flex-direction: column;
+            max-height: 90vh;
+        }
+        .modal-header {
+            padding: 15px 20px; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-header h3 { margin: 0; color: var(--primary-blue); font-size: 1.2rem;}
+        .modal-body { padding: 20px; overflow-y: auto; color: #333; }
+        .modal-footer {
+            padding: 15px 20px; border-top: 1px solid #eee;
+            display: flex; justify-content: flex-end; gap: 10px;
+        }
+        .export-section { margin-bottom: 20px; }
+        .export-section h4 { margin-top: 0; margin-bottom: 10px; font-size: 0.95rem; color: #555; border-bottom: 1px dashed #ccc; padding-bottom: 5px;}
+        .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .export-grid label { font-size: 0.85rem; display: flex; align-items: center; gap: 5px; cursor:pointer;}
     </style>
 </head>
 <body>
@@ -278,7 +298,7 @@
                 <div>
                     <select id="canalFilter" onchange="updateView()">
                         <option value="all" selected>🎯 Todos os Canais</option>
-                        </select>
+                    </select>
                 </div>
 
                 <div>
@@ -307,8 +327,7 @@
 
                 <button class="btn-primary" onclick="openExportModal()">⬇ Exportar Base</button>
 
-                <div id="monthCheckboxes" class="month-filters">
-                    </div>
+                <div id="monthCheckboxes" class="month-filters"></div>
             </div>
         </h2>
         
@@ -321,12 +340,11 @@
             <canvas id="evolutionChart"></canvas>
         </div>
 
-        <div id="monthly-charts-container">
-            </div>
+        <div id="monthly-charts-container"></div>
 
     </div>
 
-    <div class="modal-overlay" id="exportModal">
+    <div class="modal-overlay" id="exportModal" style="display: none;">
         <div class="modal-box">
             <div class="modal-header">
                 <h3>Exportar Dados</h3>
@@ -354,13 +372,16 @@
     </div>
 
     <script>
-        // CONFIGURAÇÕES GLOBAIS DE DESIGN PARA CHART.JS
+        // CONFIGURAÇÕES GLOBAIS CHART.JS
         Chart.defaults.font.family = "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif";
-        Chart.defaults.font.size = 11;
-        Chart.defaults.color = "#555";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = "#444";
         Chart.defaults.plugins.legend.labels.usePointStyle = true;
-        Chart.defaults.plugins.legend.labels.boxWidth = 8;
+        Chart.defaults.plugins.legend.labels.boxWidth = 10;
         Chart.register(ChartDataLabels);
+
+        // Paleta Moderna
+        const mainPalette = ['#1565c0', '#27ae60', '#f39c12', '#8e44ad', '#e74c3c', '#16a085', '#2980b9', '#f1c40f', '#34495e'];
 
         const nocache = new Date().getTime();
         const dataUrlRealized = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/cpa.contabil.json?nocache=' + nocache;
@@ -393,7 +414,7 @@
             return `<span class="level-badge">${label}</span>`;
         }
 
-        // Função para formatar o título do mês (ex: 2026-01 -> Janeiro 26)
+        // Título de Mês Formatado (Ex: Janeiro 26)
         function formatMonthYearTitle(period) {
             if (!period || period.length < 6) return period;
             const year = period.substring(2, 4);
@@ -406,7 +427,6 @@
             
             const monthIndex = parseInt(monthNum, 10) - 1;
             if (monthIndex < 0 || monthIndex > 11) return period;
-            
             return `${monthNames[monthIndex]} ${year}`;
         }
 
@@ -742,11 +762,8 @@
                         let leafKey = currentHierarchy[currentHierarchy.length - 1]; 
                         let badge = getLevelBadge(leafKey);
 
-                        // ID único para busca automática
-                        const nodeId = `leaf-${leafKey}-${String(node.name || node.NRO_DOC).replace(/[^a-z0-9]/gi, '').toLowerCase()}`;
-
-                        html += `<div class="${leafClass}" id="${nodeId}">`;
-                        html += `<div class="col-title" style="padding-left: ${depth * 15}px;">${badge}${node.name || node.NRO_DOC}</div>`;
+                        html += `<div class="${leafClass}">`;
+                        html += `<div class="col-title search-title" style="padding-left: ${depth * 15}px;">${badge}${node.name || node.NRO_DOC}</div>`;
                         
                         let totalRow = 0;
                         let prevVal = null;
@@ -762,13 +779,9 @@
                         html += `<div class="col-value col-total">${dataBarHtml}<div class="val-primary"><span class="val-number">${formatNumber(totalRow)}</span><span class="val-icon"></span></div></div>`;
                         html += `</div>`;
                     } else {
-                        const levelKey = node.levelKey;
-                        // ID único para busca automática
-                        const nodeId = `details-${levelKey}-${String(node.name).replace(/[^a-z0-9]/gi, '').toLowerCase()}`;
-
-                        html += `<details class="level-${depth}" ${openAttribute} id="${nodeId}"><summary>`;
+                        html += `<details class="level-${depth}" ${openAttribute}><summary>`;
                         let badge = getLevelBadge(node.levelKey);
-                        html += `<div class="col-title">${badge}${node.name}</div>`;
+                        html += `<div class="col-title search-title">${badge}${node.name}</div>`;
                         
                         let prevVal = null;
                         activePeriods.forEach((p, index) => {
@@ -902,6 +915,52 @@
             });
         }
 
+        // --- FUNÇÃO PARA ABRIR O ITEM NA TABELA AO CLICAR NO GRÁFICO ---
+        function autoDrilldownTable(labelValue) {
+            const tableContainer = document.getElementById('drilldown-table');
+            let targetElement = null;
+
+            // Busca por texto exato no título da coluna
+            const colTitles = tableContainer.querySelectorAll('.search-title');
+            for (let title of colTitles) {
+                // Remove o crachá visual para checar só o texto
+                let rawText = title.textContent.replace(/Canal|Conta|CECO|Nº Doc/g, '').trim();
+                if (rawText === labelValue.trim()) {
+                    targetElement = title.closest('details') || title.closest('.leaf-node');
+                    break;
+                }
+            }
+
+            if (targetElement) {
+                // 1. Expandir todos os pais recursivamente
+                let current = targetElement;
+                if (current.tagName === 'DIV' && current.classList.contains('leaf-node')) {
+                    current = current.closest('details'); 
+                }
+
+                while (current) {
+                    if (current.tagName === 'DETAILS') {
+                        current.open = true;
+                    }
+                    current = current.parentElement ? current.parentElement.closest('details') : null;
+                }
+
+                // 2. Rolar para o elemento
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // 3. Feedback Visual (Destaque temporário)
+                tableContainer.querySelectorAll('.highlight-drilldown').forEach(el => el.classList.remove('highlight-drilldown'));
+                
+                const highlightTarget = targetElement.tagName === 'DETAILS' ? targetElement.querySelector('summary') : targetElement;
+                if (highlightTarget) {
+                    highlightTarget.classList.add('highlight-drilldown');
+                    setTimeout(() => highlightTarget.classList.remove('highlight-drilldown'), 2500);
+                }
+            } else {
+                alert(`Não foi possível localizar o item: "${labelValue}". Ele pode estar oculto dependendo da Ordem Hierárquica ou se for necessário marcar a 'Visão Completa'.`);
+            }
+        }
+
         function renderMonthlyCharts(filteredData, activePeriods) {
             const container = document.getElementById('monthly-charts-container');
             container.innerHTML = '';
@@ -916,7 +975,6 @@
             activePeriods.forEach(p => {
                 let monthSection = document.createElement('div');
                 monthSection.className = 'monthly-section';
-                // TÍTULO FORMATADO: Janeiro 26
                 monthSection.innerHTML = `
                     <h3 class="monthly-section-title">Análise de ${formatMonthYearTitle(p)}</h3>
                     <div class="monthly-charts-wrapper" id="charts-wrapper-${p}"></div>
@@ -946,8 +1004,7 @@
                 if (pieLabels.length > 0) {
                     let pieDiv = document.createElement('div');
                     pieDiv.className = 'monthly-chart-box';
-                    // Tooltip no título
-                    pieDiv.title = "Clique em uma fatia para localizar na tabela superior";
+                    pieDiv.title = "Clique na fatia para localizar o item na tabela";
                     pieDiv.innerHTML = `<h4>Composição por Tipo de Lançamento</h4><div class="monthly-canvas-container"><canvas id="pie-${p}"></canvas></div>`;
                     wrapper.appendChild(pieDiv);
 
@@ -958,19 +1015,18 @@
                             labels: pieLabels,
                             datasets: [{
                                 data: pieAbsValues.map(v => v / divisor),
-                                backgroundColor: ['#1565c0', '#27ae60', '#f39c12', '#8e44ad', '#e74c3c', '#16a085', '#2980b9', '#f1c40f', '#34495e'],
-                                borderWidth: 0
+                                backgroundColor: mainPalette,
+                                borderWidth: 0 
                             }]
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
                             layout: { padding: 15 },
-                            // INTERATIVIDADE: Clique na fatia
                             onClick: (event, elements, chart) => {
                                 if (elements.length > 0) {
                                     const index = elements[0].index;
                                     const label = chart.data.labels[index];
-                                    autoDrilldownTable('Tipo_Ref', label);
+                                    autoDrilldownTable(label);
                                 }
                             },
                             plugins: {
@@ -986,7 +1042,7 @@
                                 },
                                 datalabels: {
                                     color: '#fff', 
-                                    font: { weight: 'bold', size: 14 }, // RÓTULOS MAIORES
+                                    font: { weight: 'bold', size: 14 },
                                     textStrokeColor: 'rgba(0,0,0,0.4)', textStrokeWidth: 2,
                                     formatter: (value, ctx) => {
                                         let sum = ctx.chart._metasets[ctx.datasetIndex].total;
@@ -1004,7 +1060,6 @@
                 let fornMap = {};
                 filteredData.forEach(row => {
                     let val = parseFloat(row[p]) || 0;
-                    // REGRA: SÓ VALORES POSITIVOS E FORNECEDORES COM NOME
                     if (val > 0.001 && row.hasFornNome) { 
                         let forn = row["Fornecedor_Final"];
                         fornMap[forn] = (fornMap[forn] || 0) + val;
@@ -1021,8 +1076,7 @@
                 if (barLabels.length > 0) {
                     let barDiv = document.createElement('div');
                     barDiv.className = 'monthly-chart-box';
-                    // Tooltip no título
-                    barDiv.title = "Clique em uma barra para localizar na tabela superior";
+                    barDiv.title = "Clique na barra para localizar o fornecedor na tabela";
                     barDiv.innerHTML = `<h4>TOP 5 Fornecedores</h4><div class="monthly-canvas-container"><canvas id="bar-${p}"></canvas></div>`;
                     wrapper.appendChild(barDiv);
 
@@ -1034,20 +1088,19 @@
                             datasets: [{
                                 label: 'Valor',
                                 data: barValues.map(v => v / divisor),
-                                backgroundColor: '#1565c0', // Azul executivo
-                                borderRadius: 8, // ARREDONDADAS
+                                backgroundColor: '#1565c0', 
+                                borderRadius: 8, 
                                 hoverBackgroundColor: '#ffe600'
                             }]
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
                             layout: { padding: { top: 40, bottom: 5 } },
-                            // INTERATIVIDADE: Clique na barra
                             onClick: (event, elements, chart) => {
                                 if (elements.length > 0) {
                                     const index = elements[0].index;
                                     const label = chart.data.labels[index];
-                                    autoDrilldownTable('Fornecedor_Final', label);
+                                    autoDrilldownTable(label);
                                 }
                             },
                             plugins: {
@@ -1058,7 +1111,7 @@
                                 datalabels: {
                                     anchor: 'end', align: 'end', 
                                     color: '#1565c0', 
-                                    font: { size: 12, weight: 'bold' }, // RÓTULOS MAIORES
+                                    font: { size: 12, weight: 'bold' },
                                     formatter: function(value) { return formatNumber(value * divisor); }
                                 }
                             },
@@ -1075,61 +1128,6 @@
                     monthlyChartInstances.push(instBar);
                 }
             });
-        }
-
-        // --- NOVA FUNÇÃO: Drill-down Automático na Tabela ---
-        function autoDrilldownTable(labelType, labelValue) {
-            const tableContainer = document.getElementById('drilldown-table');
-            // Formata o valor para o padrão do ID criado na renderização
-            const cleanValue = String(labelValue).replace(/[^a-z0-9]/gi, '').toLowerCase();
-            const targetId = `${labelType === 'Tipo_Ref' ? 'details' : 'leaf'}-${labelType}-${cleanValue}`;
-            
-            let targetElement = document.getElementById(targetId);
-
-            // Se não encontrou pelo ID exato, tenta buscar pelo texto no .col-title (fallback)
-            if (!targetElement) {
-                const colTitles = tableContainer.querySelectorAll('.col-title');
-                for (let title of colTitles) {
-                    if (title.textContent.includes(labelValue)) {
-                        // Se for uma folha, o target é o div leaf-node. Se for grupo, é o details.
-                        targetElement = title.closest('.leaf-node') || title.closest('details');
-                        if (targetElement) break;
-                    }
-                }
-            }
-
-            if (targetElement) {
-                // 1. Expandir todos os pais recursivamente
-                let current = targetElement;
-                if (current.tagName === 'DIV' && current.classList.contains('leaf-node')) {
-                    current = current.closest('details'); // Começa do details pai se clicou numa folha
-                }
-
-                while (current) {
-                    if (current.tagName === 'DETAILS') {
-                        current.open = true;
-                    }
-                    current = current.parentElement ? current.parentElement.closest('details') : null;
-                }
-
-                // 2. Rolar para o elemento
-                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                // 3. Feedback Visual (Destaque temporário)
-                // Remove destaques antigos
-                tableContainer.querySelectorAll('.highlight-drilldown').forEach(el => el.classList.remove('highlight-drilldown'));
-                
-                // Aplica destaque no elemento encontrado
-                // Se for details, destaca o summary
-                const highlightTarget = targetElement.tagName === 'DETAILS' ? targetElement.querySelector('summary') : targetElement;
-                if (highlightTarget) {
-                    highlightTarget.classList.add('highlight-drilldown');
-                    // Remove a classe após a animação (2s definido no CSS)
-                    setTimeout(() => highlightTarget.classList.remove('highlight-drilldown'), 2100);
-                }
-            } else {
-                alert(`Não foi possível localizar "${labelValue}" na composição atual da tabela. Tente expandir a 'Visão Completa' ou ajustar a ordem hierárquica.`);
-            }
         }
 
         // --- FUNÇÕES DE EXPORTAÇÃO ---
