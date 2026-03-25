@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mercado Pago - Performance Canais TPV</title>
     
-    <!-- Integración de Tailwind CSS -->
+    <!-- Integração do Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Configuración de identidad visual de Mercado Pago -->
+    <!-- Configuração de identidade visual do Mercado Pago -->
     <script>
         tailwind.config = {
             theme: {
@@ -28,7 +28,7 @@
         }
     </script>
     
-    <!-- Integración de Chart.js y DataLabels -->
+    <!-- Integração do Chart.js e DataLabels -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
@@ -39,7 +39,7 @@
         .card-shadow {
             box-shadow: 0 1px 2px 0 rgba(0,0,0,.15);
         }
-        /* Estilos del Loader */
+        /* Estilos do Loader */
         #loader {
             position: fixed;
             inset: 0;
@@ -66,16 +66,16 @@
 </head>
 <body class="text-gray-800 antialiased h-screen flex flex-col">
 
-    <!-- Pantalla de carga mientras se obtienen datos de GitHub -->
+    <!-- Tela de carregamento enquanto consome os dados do GitHub -->
     <div id="loader">
         <div class="spinner mb-4"></div>
-        <h2 class="text-xl font-bold text-gray-700">Cargando datos desde GitHub...</h2>
+        <h2 class="text-xl font-bold text-gray-700">Carregando base de dados do GitHub...</h2>
     </div>
 
-    <!-- Encabezado (Header) -->
+    <!-- Cabeçalho (Header) -->
     <header class="bg-mpBlue text-white p-4 shadow-md flex justify-between items-center shrink-0">
         <div class="flex items-center space-x-3">
-            <!-- Icono simplificado de Mercado Pago -->
+            <!-- Ícone simplificado do Mercado Pago -->
             <svg class="w-8 h-8 fill-current text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9c0-.28.22-.5.5-.5h1c.28 0 .5.22.5.5v9c0 .28-.22.5-.5.5h-1c-.28 0-.5-.22-.5-.5z" opacity="0.3"/>
                 <path d="M14.5 9h-5c-.28 0-.5.22-.5.5v9c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-4h3.5c1.93 0 3.5-1.57 3.5-3.5S16.43 9 14.5 9zm0 5.5h-3.5v-4H14.5c1.1 0 2 .9 2 2s-.9 2-2 2z"/>
@@ -87,17 +87,17 @@
         </div>
     </header>
 
-    <!-- Contenido Principal -->
+    <!-- Conteúdo Principal -->
     <main class="flex-grow p-6 overflow-auto hidden" id="mainContent">
         
-        <!-- Controles de Filtros y Exportación -->
+        <!-- Controles de Filtros e Exportação -->
         <div class="bg-white p-5 rounded-lg card-shadow mb-6 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-6">
-                <!-- Filtro de Canales -->
+                <!-- Filtro de Canais -->
                 <div class="flex items-center space-x-2">
                     <label for="channelSelector" class="font-semibold text-gray-700 text-sm md:text-base">Canal:</label>
                     <select id="channelSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
-                        <option value="ALL">Visión General (Todos)</option>
+                        <option value="ALL">Visão Geral (Todos)</option>
                         <option value="CANAIS DIGITAIS">Canais Digitais</option>
                         <option value="FDV PROPRIA">FDV Própria</option>
                         <option value="FDV TERCEIRA">FDV Terceira</option>
@@ -112,42 +112,42 @@
                 <div class="flex items-center space-x-2">
                     <label for="cicloSelector" class="font-semibold text-gray-700 text-sm md:text-base">Ciclo Vida:</label>
                     <select id="cicloSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
-                        <option value="ALL">Todos (M0+M1+Triángulo)</option>
-                        <option value="M0">Solo M0</option>
-                        <option value="M1">Solo M1</option>
-                        <option value="TRIANGLE">Solo Triángulo</option>
+                        <option value="ALL">Todos (M0 + M1 + Triângulo)</option>
+                        <option value="M0">Apenas M0</option>
+                        <option value="M1">Apenas M1</option>
+                        <option value="TRIANGLE">Apenas Triângulo</option>
                     </select>
                 </div>
 
-                <!-- Selector de Magnitud -->
+                <!-- Seletor de Magnitude (Unidade de Milhar) -->
                 <div class="flex items-center space-x-2">
-                    <label for="magnitudeSelector" class="font-semibold text-gray-700 text-sm md:text-base">Unidad:</label>
+                    <label for="magnitudeSelector" class="font-semibold text-gray-700 text-sm md:text-base">Unidade:</label>
                     <select id="magnitudeSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
                         <option value="1">R$ Unidades</option>
-                        <option value="1000">R$ Miles (K)</option>
-                        <option value="1000000">R$ Millones (M)</option>
-                        <option value="1000000000">R$ Billones (B)</option>
+                        <option value="1000">R$ Milhares (K)</option>
+                        <option value="1000000">R$ Milhões (M)</option>
+                        <option value="1000000000">R$ Bilhões (B)</option>
                     </select>
                 </div>
 
-                <!-- Toggles visuales -->
+                <!-- Toggles Visuais -->
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-1">
                         <input type="checkbox" id="toggleJanuary" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
-                        <label for="toggleJanuary" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Sin Enero</label>
+                        <label for="toggleJanuary" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Ocultar Janeiro</label>
                     </div>
                     <div class="flex items-center space-x-1">
                         <input type="checkbox" id="toggleFebruary" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
-                        <label for="toggleFebruary" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Sin Febrero</label>
+                        <label for="toggleFebruary" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Ocultar Fevereiro</label>
                     </div>
                     <div class="flex items-center space-x-1">
                         <input type="checkbox" id="toggleDataLabels" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
-                        <label for="toggleDataLabels" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Mostrar Valores</label>
+                        <label for="toggleDataLabels" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Mostrar Rótulos</label>
                     </div>
                 </div>
             </div>
             
-            <!-- Botón de Exportar -->
+            <!-- Botão de Exportar -->
             <button id="btnExport" class="bg-mpGreen hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors card-shadow shrink-0 mt-4 xl:mt-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -156,7 +156,7 @@
             </button>
         </div>
 
-        <!-- Indicadores Clave (KPIs) -->
+        <!-- Indicadores Chave (KPIs) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <!-- KPI 1 -->
             <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-gray-400">
@@ -189,13 +189,13 @@
         <!-- Gráficos -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white p-5 rounded-lg card-shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolución Mensual TPV - 2025</h2>
+                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolução Mensal TPV - 2025</h2>
                 <div class="relative h-[350px]">
                     <canvas id="chart2025"></canvas>
                 </div>
             </div>
             <div class="bg-white p-5 rounded-lg card-shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolución Mensal TPV - 2026</h2>
+                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolução Mensal TPV - 2026</h2>
                 <div class="relative h-[350px]">
                     <canvas id="chart2026"></canvas>
                 </div>
@@ -204,19 +204,19 @@
 
     </main>
 
-    <!-- Lógica JavaScript y Manejo de Datos -->
+    <!-- Lógica JavaScript e Manipulação de Dados -->
     <script>
-        // Registrar el plugin de DataLabels globalmente
+        // Registar o plugin de DataLabels globalmente
         Chart.register(ChartDataLabels);
 
-        // Meses para los ejes X
+        // Meses para os eixos X
         const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         const channels = ["CANAIS DIGITAIS", "FDV PROPRIA", "FDV TERCEIRA", "MGM", "PARTNERS ONLINE", "RESELLERS", "TELEVENDAS"];
 
-        // Base de datos global vacía, se llenará vía fetch
+        // Base de dados global vazia, será preenchida via fetch
         let rawData = {};
 
-        // Estados de la aplicación
+        // Estados da aplicação
         let currentChannel = 'ALL';
         let currentCiclo = 'ALL';
         let currentMagnitude = 1; // 1, 1000 (K), 1000000 (M), 1000000000 (B)
@@ -224,18 +224,18 @@
         let hideFebruary = false;
         let showDataLabels = false;
 
-        // Instancias de los gráficos
+        // Instâncias dos gráficos
         let chartInst2025 = null;
         let chartInst2026 = null;
 
-        // Función para parsear y agrupar el JSON de GitHub
+        // Função para interpretar e agrupar o JSON do GitHub
         async function fetchAndParseData() {
             try {
-                // URL Raw del JSON en GitHub
+                // URL Raw do JSON no GitHub
                 const response = await fetch('https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/tpvcanais.json');
                 const data = await response.json();
 
-                // Inicializar la estructura
+                // Inicializar a estrutura
                 channels.forEach(c => {
                     rawData[c] = {
                         "M0": { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) },
@@ -247,21 +247,24 @@
                 let currentSection = null;
 
                 data.forEach(row => {
-                    const canal = row["Plano 2026"]; // Se usa esta columna como nombre del canal
+                    const canal = row["Plano 2026"]; // Usa-se esta coluna como nome do canal
 
-                    // Detectar en qué sección de la tabla nos encontramos (Plano 26, Plano 25, Actual)
+                    // Detetar em que secção da tabela nos encontramos (Plano 26, Plano 25, Actual)
+                    // A baseando no row_number para evitar confusões com blocos de nomes repetidos
                     if (canal === "SUM de TPV") {
-                        if (row["col_3"] === "ANOMES" && row["row_number"] < 35) {
-                            currentSection = "plano2026";
-                        } else if (row["col_3"] === "ANOMES" && row["row_number"] > 30) {
-                            currentSection = "plano2025";
+                        if (row["col_3"] === "ANOMES") {
+                            if (row["row_number"] < 20) {
+                                currentSection = "plano2026";
+                            } else {
+                                currentSection = "plano2025";
+                            }
                         } else if (row["col_3"] === "TIM_MONTH") {
                             currentSection = "actual";
                         }
                         return;
                     }
 
-                    // Filtrar solo los canales solicitados y ciclos válidos
+                    // Filtrar apenas os canais solicitados e ciclos válidos
                     if (!channels.includes(canal)) return;
                     let ciclo = row["col_2"];
                     if (!["M0", "M1", "TRIANGLE"].includes(ciclo)) return;
@@ -272,7 +275,7 @@
                         return isNaN(num) ? null : num;
                     };
 
-                    // Llenar los arreglos correspondientes según la sección
+                    // Preencher os arrays correspondentes conforme a secção
                     if (currentSection === "plano2026") {
                         for(let i = 0; i < 12; i++) rawData[canal][ciclo].plano2026[i] = parseVal(row[`col_${i+3}`]);
                     } 
@@ -282,12 +285,12 @@
                     else if (currentSection === "actual") {
                         // Meses de 2025
                         for(let i = 0; i < 12; i++) rawData[canal][ciclo].actual2025[i] = parseVal(row[`col_${i+3}`]);
-                        // Meses de 2026 (enero, febrero, marzo -> columnas 15, 16, 17)
+                        // Meses de 2026 (Janeiro, Fevereiro, Março -> colunas 15, 16, 17)
                         for(let i = 0; i < 3; i++) rawData[canal][ciclo].actual2026[i] = parseVal(row[`col_${i+15}`]);
                     }
                 });
 
-                // Ocultar Loader y mostrar contenido
+                // Ocultar Loader e mostrar conteúdo
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('mainContent').classList.remove('hidden');
 
@@ -295,12 +298,12 @@
                 updateDashboard();
 
             } catch (error) {
-                console.error("Error al cargar datos:", error);
-                document.getElementById('loader').innerHTML = `<h2 class="text-xl font-bold text-red-600">Error al cargar datos JSON</h2><p class="mt-2 text-gray-700">${error.message}</p>`;
+                console.error("Erro ao carregar dados:", error);
+                document.getElementById('loader').innerHTML = `<h2 class="text-xl font-bold text-red-600">Erro ao carregar dados JSON</h2><p class="mt-2 text-gray-700">${error.message}</p>`;
             }
         }
 
-        // Función utilitaria para sumar arreglos manejando valores nulos
+        // Função utilitária para somar arrays lidando com valores nulos
         const sumArrays = (arrays) => {
             const length = 12;
             const result = Array(length).fill(null);
@@ -318,7 +321,7 @@
             return result;
         };
 
-        // Función para agrupar datos basada en filtros
+        // Função para agrupar dados baseados nos filtros
         function getProcessedData(selectedChannel, selectedCiclo) {
             const result = {
                 plano2025: Array(12).fill(null),
@@ -350,7 +353,7 @@
             return result;
         }
 
-        // Utilidad para dar formato numérico respetando la magnitud elegida
+        // Utilidade para formatar moeda respeitando a magnitude escolhida
         const formatCurrencyWithMagnitude = (value) => {
             if (value === null || value === undefined) return '';
             
@@ -367,7 +370,7 @@
             }).format(val) + suffix;
         };
 
-        // Formato para variación %
+        // Formato para variação %
         const formatVar = (plan, actual, elementId) => {
             const el = document.getElementById(elementId);
             if (!plan || plan === 0) {
@@ -386,9 +389,9 @@
             }
         };
 
-        // Función principal para actualizar KPIs y Gráficos
+        // Função principal para atualizar KPIs e Gráficos
         function updateDashboard() {
-            // 1. Cálculos de KPI (Respetando emparejamiento exacto)
+            // 1. Cálculos de KPI (Respeitando pareamento exato maçã com maçã)
             let plan25Total = 0;
             let actual25Total = 0;
             let plan26YTD = 0;
@@ -401,7 +404,7 @@
                 ciclosToProcess.forEach(ciclo => {
                     const dataObj = rawData[channel][ciclo];
                     for (let i = 0; i < 12; i++) {
-                        // Filtros de mes
+                        // Filtros de mês
                         if (i === 0 && hideJanuary) continue;
                         if (i === 1 && hideFebruary) continue;
 
@@ -418,15 +421,16 @@
                 });
             });
 
-            document.getElementById('kpiPlan2025').innerText = formatCurrencyWithMagnitude(plan25Total * currentMagnitude);
-            document.getElementById('kpiActual2025').innerText = formatCurrencyWithMagnitude(actual25Total * currentMagnitude);
+            // Atualiza os cartões KPI com o valor bruto e a função gere a divisão de magnitude internamente
+            document.getElementById('kpiPlan2025').innerText = formatCurrencyWithMagnitude(plan25Total);
+            document.getElementById('kpiActual2025').innerText = formatCurrencyWithMagnitude(actual25Total);
             formatVar(plan25Total, actual25Total, 'kpiVar2025');
 
-            document.getElementById('kpiPlan2026').innerText = formatCurrencyWithMagnitude(plan26YTD * currentMagnitude);
-            document.getElementById('kpiActual2026').innerText = formatCurrencyWithMagnitude(actual26YTD * currentMagnitude);
+            document.getElementById('kpiPlan2026').innerText = formatCurrencyWithMagnitude(plan26YTD);
+            document.getElementById('kpiActual2026').innerText = formatCurrencyWithMagnitude(actual26YTD);
             formatVar(plan26YTD, actual26YTD, 'kpiVar2026');
 
-            // 2. Preparar Datos para el Gráfico
+            // 2. Preparar Dados para o Gráfico
             const rawGraphData = getProcessedData(currentChannel, currentCiclo);
 
             const filterFn = (_, i) => {
@@ -437,12 +441,12 @@
 
             const chartLabels = months.filter(filterFn);
             
-            // Función para procesar y ESCALAR los datos a la magnitud escogida
+            // Função para processar e ESCALAR os dados do gráfico para a magnitude escolhida
             const processAndScaleData = (arr) => {
                 return arr.filter(filterFn).map(val => val === null ? null : val / currentMagnitude);
             };
 
-            // Opciones Compartidas de los Gráficos
+            // Opções Partilhadas dos Gráficos
             const commonOptions = {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -457,7 +461,7 @@
                                 let label = context.dataset.label || '';
                                 if (label) label += ': ';
                                 if (context.parsed.y !== null) {
-                                    // Se re-multiplica porque el tooltip lo espera original para usar nuestra función
+                                    // Multiplica-se porque a função espera o valor base para poder anexar ' M' ou ' B'
                                     label += formatCurrencyWithMagnitude(context.parsed.y * currentMagnitude);
                                 }
                                 return label;
@@ -474,16 +478,22 @@
                         color: '#4B5563',
                         font: { weight: 'bold', size: 10 },
                         formatter: function(value) {
-                            if (value === null) return '';
-                            // Formato abreviado para la etiqueta para evitar superposiciones
-                            return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
+                            if (value === null || value === 0) return '';
+                            let formatted = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
+                            
+                            // Adicionar sufixo no rótulo para clareza
+                            if (currentMagnitude == 1000) formatted += 'K';
+                            else if (currentMagnitude == 1000000) formatted += 'M';
+                            else if (currentMagnitude == 1000000000) formatted += 'B';
+                            
+                            return formatted;
                         }
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { display: false }, // Se eliminan las líneas de cuadrícula
+                        grid: { display: false }, // Remove as linhas de grade
                         ticks: {
                             callback: function(value) {
                                 return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
@@ -491,7 +501,7 @@
                         }
                     },
                     x: {
-                        grid: { display: false } // Se eliminan las líneas de cuadrícula
+                        grid: { display: false } // Remove as linhas de grade verticais
                     }
                 }
             };
@@ -568,7 +578,7 @@
             });
         }
 
-        // Manejo de eventos de la UI
+        // Interação dos Elementos UI
         document.getElementById('channelSelector').addEventListener('change', e => { currentChannel = e.target.value; updateDashboard(); });
         document.getElementById('cicloSelector').addEventListener('change', e => { currentCiclo = e.target.value; updateDashboard(); });
         document.getElementById('magnitudeSelector').addEventListener('change', e => { currentMagnitude = Number(e.target.value); updateDashboard(); });
@@ -576,7 +586,7 @@
         document.getElementById('toggleFebruary').addEventListener('change', e => { hideFebruary = e.target.checked; updateDashboard(); });
         document.getElementById('toggleDataLabels').addEventListener('change', e => { showDataLabels = e.target.checked; updateDashboard(); });
 
-        // Exportar a CSV (exporta los valores brutos sin escalar)
+        // Exportar para CSV (exporta sempre os valores brutos totais)
         document.getElementById('btnExport').addEventListener('click', () => {
             let csvContent = `Filtro de Canal:;${currentChannel}\n`;
             csvContent += `Filtro de Ciclo Vida:;${currentCiclo}\n\n`;
@@ -606,7 +616,7 @@
             document.body.removeChild(link);
         });
 
-        // Inicialización: Hacer Fetch e invocar render
+        // Inicialização: Dispara o Fetch assim que carregar a página
         window.onload = () => {
             fetchAndParseData();
         };
