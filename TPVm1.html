@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mercado Pago - Performance Canais TPV</title>
     
-    <!-- Integração do Tailwind CSS -->
+    <!-- Integración de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Configuração de identidade visual do Mercado Pago -->
+    <!-- Configuración de identidad visual de Mercado Pago -->
     <script>
         tailwind.config = {
             theme: {
@@ -28,8 +28,9 @@
         }
     </script>
     
-    <!-- Integração do Chart.js para os gráficos -->
+    <!-- Integración de Chart.js y DataLabels -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
     <style>
         body {
@@ -38,14 +39,43 @@
         .card-shadow {
             box-shadow: 0 1px 2px 0 rgba(0,0,0,.15);
         }
+        /* Estilos del Loader */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.8);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 158, 227, 0.3);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border-left-color: #009EE3;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="text-gray-800 antialiased h-screen flex flex-col">
 
-    <!-- Cabeçalho (Header) -->
+    <!-- Pantalla de carga mientras se obtienen datos de GitHub -->
+    <div id="loader">
+        <div class="spinner mb-4"></div>
+        <h2 class="text-xl font-bold text-gray-700">Cargando datos desde GitHub...</h2>
+    </div>
+
+    <!-- Encabezado (Header) -->
     <header class="bg-mpBlue text-white p-4 shadow-md flex justify-between items-center shrink-0">
         <div class="flex items-center space-x-3">
-            <!-- Ícone/Logo simplificado do Mercado Pago -->
+            <!-- Icono simplificado de Mercado Pago -->
             <svg class="w-8 h-8 fill-current text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9c0-.28.22-.5.5-.5h1c.28 0 .5.22.5.5v9c0 .28-.22.5-.5.5h-1c-.28 0-.5-.22-.5-.5z" opacity="0.3"/>
                 <path d="M14.5 9h-5c-.28 0-.5.22-.5.5v9c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-4h3.5c1.93 0 3.5-1.57 3.5-3.5S16.43 9 14.5 9zm0 5.5h-3.5v-4H14.5c1.1 0 2 .9 2 2s-.9 2-2 2z"/>
@@ -57,17 +87,17 @@
         </div>
     </header>
 
-    <!-- Conteúdo Principal -->
-    <main class="flex-grow p-6 overflow-auto">
+    <!-- Contenido Principal -->
+    <main class="flex-grow p-6 overflow-auto hidden" id="mainContent">
         
-        <!-- Controles de Filtro e Exportação -->
-        <div class="bg-white p-5 rounded-lg card-shadow mb-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div class="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
-                <!-- Filtro de Canais -->
-                <div class="flex items-center space-x-3">
-                    <label for="channelSelector" class="font-semibold text-gray-700 text-lg">Canal:</label>
-                    <select id="channelSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2.5 min-w-[200px] outline-none transition-colors">
-                        <option value="ALL">Visão Geral (Todos)</option>
+        <!-- Controles de Filtros y Exportación -->
+        <div class="bg-white p-5 rounded-lg card-shadow mb-6 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-6">
+                <!-- Filtro de Canales -->
+                <div class="flex items-center space-x-2">
+                    <label for="channelSelector" class="font-semibold text-gray-700 text-sm md:text-base">Canal:</label>
+                    <select id="channelSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
+                        <option value="ALL">Visión General (Todos)</option>
                         <option value="CANAIS DIGITAIS">Canais Digitais</option>
                         <option value="FDV PROPRIA">FDV Própria</option>
                         <option value="FDV TERCEIRA">FDV Terceira</option>
@@ -79,46 +109,61 @@
                 </div>
                 
                 <!-- Filtro de Ciclo de Vida -->
-                <div class="flex items-center space-x-3 border-l md:pl-6 border-gray-200">
-                    <label for="cicloSelector" class="font-semibold text-gray-700 text-lg">Ciclo Vida:</label>
-                    <select id="cicloSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2.5 min-w-[180px] outline-none transition-colors">
-                        <option value="ALL">Todos (M0 + M1 + Triângulo)</option>
-                        <option value="M0">Apenas M0</option>
-                        <option value="M1">Apenas M1</option>
-                        <option value="TRIANGLE">Apenas Triângulo</option>
+                <div class="flex items-center space-x-2">
+                    <label for="cicloSelector" class="font-semibold text-gray-700 text-sm md:text-base">Ciclo Vida:</label>
+                    <select id="cicloSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
+                        <option value="ALL">Todos (M0+M1+Triángulo)</option>
+                        <option value="M0">Solo M0</option>
+                        <option value="M1">Solo M1</option>
+                        <option value="TRIANGLE">Solo Triángulo</option>
                     </select>
                 </div>
 
-                <!-- Toggle Ocultar Janeiro -->
-                <div class="flex items-center space-x-2 border-l md:pl-6 border-gray-200">
-                    <input type="checkbox" id="toggleJanuary" class="w-5 h-5 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue focus:ring-2 cursor-pointer">
-                    <label for="toggleJanuary" class="font-semibold text-gray-700 cursor-pointer select-none text-lg">Ocultar Janeiro</label>
+                <!-- Selector de Magnitud -->
+                <div class="flex items-center space-x-2">
+                    <label for="magnitudeSelector" class="font-semibold text-gray-700 text-sm md:text-base">Unidad:</label>
+                    <select id="magnitudeSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
+                        <option value="1">R$ Unidades</option>
+                        <option value="1000">R$ Miles (K)</option>
+                        <option value="1000000">R$ Millones (M)</option>
+                        <option value="1000000000">R$ Billones (B)</option>
+                    </select>
                 </div>
 
-                <!-- Toggle Ocultar Fevereiro -->
-                <div class="flex items-center space-x-2 border-l md:pl-6 border-gray-200">
-                    <input type="checkbox" id="toggleFebruary" class="w-5 h-5 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue focus:ring-2 cursor-pointer">
-                    <label for="toggleFebruary" class="font-semibold text-gray-700 cursor-pointer select-none text-lg">Ocultar Fevereiro</label>
+                <!-- Toggles visuales -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-1">
+                        <input type="checkbox" id="toggleJanuary" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
+                        <label for="toggleJanuary" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Sin Enero</label>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <input type="checkbox" id="toggleFebruary" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
+                        <label for="toggleFebruary" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Sin Febrero</label>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <input type="checkbox" id="toggleDataLabels" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
+                        <label for="toggleDataLabels" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Mostrar Valores</label>
+                    </div>
                 </div>
             </div>
             
-            <!-- Botão de Exportar -->
-            <button id="btnExport" class="bg-mpGreen hover:bg-green-600 text-white font-semibold py-2.5 px-5 rounded-lg flex items-center space-x-2 transition-colors card-shadow shrink-0 mt-4 lg:mt-0">
+            <!-- Botón de Exportar -->
+            <button id="btnExport" class="bg-mpGreen hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors card-shadow shrink-0 mt-4 xl:mt-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                 </svg>
-                <span>Exportar Visão Atual (CSV)</span>
+                <span>Exportar CSV</span>
             </button>
         </div>
 
-        <!-- Indicadores Chave (KPIs) -->
+        <!-- Indicadores Clave (KPIs) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <!-- KPI 1: Actual 2025 Total -->
+            <!-- KPI 1 -->
             <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-gray-400">
                 <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV Total 2025 (Plano)</h3>
                 <p id="kpiPlan2025" class="text-2xl font-bold text-gray-800">R$ 0</p>
             </div>
-            <!-- KPI 2: Actual 2025 Total vs Plano -->
+            <!-- KPI 2 -->
             <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-mpBlue">
                 <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV Total 2025 (Actual)</h3>
                 <div class="flex items-end space-x-2">
@@ -126,12 +171,12 @@
                     <span id="kpiVar2025" class="text-sm font-semibold mb-1">0%</span>
                 </div>
             </div>
-            <!-- KPI 3: Actual 2026 (YTD) Pareado -->
+            <!-- KPI 3 -->
             <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-gray-400">
                 <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV 2026 YTD (Plano Pareado)</h3>
                 <p id="kpiPlan2026" class="text-2xl font-bold text-gray-800">R$ 0</p>
             </div>
-            <!-- KPI 4: Actual 2026 (YTD) vs Plano -->
+            <!-- KPI 4 -->
             <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-mpBlue">
                 <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV 2026 YTD (Actual)</h3>
                 <div class="flex items-end space-x-2">
@@ -143,16 +188,14 @@
 
         <!-- Gráficos -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Gráfico 2025 -->
             <div class="bg-white p-5 rounded-lg card-shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolução Mensal TPV - 2025</h2>
+                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolución Mensual TPV - 2025</h2>
                 <div class="relative h-[350px]">
                     <canvas id="chart2025"></canvas>
                 </div>
             </div>
-            <!-- Gráfico 2026 -->
             <div class="bg-white p-5 rounded-lg card-shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolução Mensal TPV - 2026</h2>
+                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolución Mensal TPV - 2026</h2>
                 <div class="relative h-[350px]">
                     <canvas id="chart2026"></canvas>
                 </div>
@@ -161,156 +204,103 @@
 
     </main>
 
-    <!-- Lógica JavaScript e Dados -->
+    <!-- Lógica JavaScript y Manejo de Datos -->
     <script>
-        // Meses para os eixos X
+        // Registrar el plugin de DataLabels globalmente
+        Chart.register(ChartDataLabels);
+
+        // Meses para los ejes X
         const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const channels = ["CANAIS DIGITAIS", "FDV PROPRIA", "FDV TERCEIRA", "MGM", "PARTNERS ONLINE", "RESELLERS", "TELEVENDAS"];
 
-        // Base de dados consolidada com os 7 canais compatíveis e com quebra de Ciclo de Vida (M0, M1, TRIANGLE)
-        const rawData = {
-            "CANAIS DIGITAIS": {
-                "M0": {
-                    plano2025: [281333088, 270256936, 290982935, 315740923, 343692135, 337731733, 340559862, 325171544, 331004039, 353980604, 364945530, 339791650],
-                    actual2025: [324179177, 310271317, 321873690, 317450852, 395345459, 377830300, 420210594, 422253842, 441513905, 515949646, 510680075, 518866757],
-                    plano2026: [488691578, 451216320, 540852069, 597461824, 683129160, 703588254, 825656918, 885865534, 954727048, 1065357937, 1152023913, 1108310272],
-                    actual2026: [508715140, 482589768, 398921020, null, null, null, null, null, null, null, null, null]
-                },
-                "M1": {
-                    plano2025: [0, 239901218, 259241419, 273054456, 289664796, 311597833, 307657846, 319688258, 310751264, 317437755, 332268354, 345852756],
-                    actual2025: [0, 292034256, 284308766, 298838334, 312705838, 362537401, 343203368, 383730393, 380317629, 423975549, 464627066, 472923677],
-                    plano2026: [0, 328214893, 327113490, 349410922, 357209393, 360671698, 354633726, 386114250, 388164413, 404349665, 428577813, 453328424],
-                    actual2026: [0, 432502093, 369649762, null, null, null, null, null, null, null, null, null]
-                },
-                "TRIANGLE": {
-                    plano2025: [0, 0, 223415991, 438436983, 639569552, 859503307, 1072154271, 1286852023, 1519804672, 1724318004, 1869371376, 2067056159],
-                    actual2025: [0, 0, 277369076, 491570540, 764461640, 953206430, 1287857425, 1489667415, 1689156507, 1982809063, 2195325461, 2597678722],
-                    plano2026: [0, 0, 309404144, 567418441, 863788239, 1095143446, 1419577975, 1625990086, 1859277854, 2044781375, 2334338376, 2688209011],
-                    actual2026: [0, 0, 349677481, null, null, null, null, null, null, null, null, null]
-                }
-            },
-            "FDV PROPRIA": {
-                "M0": {
-                    plano2025: [64682412, 65572587, 65113001, 78901461, 86762404, 101775554, 118663167, 126541262, 134409775, 157112873, 140527374, 162705277],
-                    actual2025: [46842799, 62699567, 73381470, 104406487, 117056916, 132052610, 140964412, 148086765, 146369325, 166833905, 176298145, 207458977],
-                    plano2026: [143814918, 135455862, 178054209, 171777462, 181373367, 190442047, 198034049, 200772912, 204088669, 212466042, 200364271, 226870852],
-                    actual2026: [136270153, 147913777, 116959748, null, null, null, null, null, null, null, null, null]
-                },
-                "M1": {
-                    plano2025: [0, 116964269, 112166309, 109744520, 135399773, 150729590, 177154864, 206274416, 220785603, 234892567, 275031119, 269617399],
-                    actual2025: [0, 84125963, 118321200, 137637472, 187997375, 203840475, 223167026, 243794129, 231212331, 240387577, 275364899, 328917946],
-                    plano2026: [0, 240545719, 265483367, 318218735, 311008575, 329949847, 342003633, 357539866, 362254336, 369148618, 379392372, 413915095],
-                    actual2026: [0, 220703453, 203671475, null, null, null, null, null, null, null, null, null]
-                },
-                "TRIANGLE": {
-                    plano2025: [0, 0, 112533723, 213381045, 307537001, 422652034, 541029409, 679389430, 837419261, 992709508, 1153343643, 1495652907],
-                    actual2025: [0, 0, 83923347, 181848162, 332653086, 463513727, 673633401, 840527791, 976486526, 1165080255, 1319406039, 1737212953],
-                    plano2026: [0, 0, 255060359, 451283536, 711751474, 930517611, 1136900774, 1341347450, 1554699510, 1780722383, 1987023749, 2614872630],
-                    actual2026: [0, 0, 188976428, null, null, null, null, null, null, null, null, null]
-                }
-            },
-            "FDV TERCEIRA": {
-                "M0": {
-                    plano2025: [42910207, 36215566, 34565862, 37445946, 38776364, 39657217, 41647418, 38903267, 40819293, 42446094, 39106484, 43283094],
-                    actual2025: [30377478, 27161737, 26140313, 35809331, 36838828, 39697401, 45247126, 45298635, 40134575, 43285202, 42451950, 50730203],
-                    plano2026: [39541026, 32058821, 34650089, 32012639, 31392604, 30682040, 30072758, 29309900, 28741949, 28748669, 26897335, 30800077],
-                    actual2026: [31059174, 27671350, 23875494, null, null, null, null, null, null, null, null, null]
-                },
-                "M1": {
-                    plano2025: [0, 70725852, 63977729, 60219827, 64712781, 67978137, 67902225, 72350486, 68082503, 71227846, 73020894, 71205015],
-                    actual2025: [0, 49788380, 51174962, 50499536, 63233870, 62431977, 62926209, 74765173, 69621670, 67654798, 71399501, 79503832],
-                    plano2026: [0, 67434336, 55172092, 60122555, 55105609, 53890164, 50378395, 50954161, 48460283, 48516850, 49612584, 50153870],
-                    actual2026: [0, 47616736, 35464950, null, null, null, null, null, null, null, null, null]
-                },
-                "TRIANGLE": {
-                    plano2025: [0, 0, 66031976, 118714818, 163591445, 213765235, 262225611, 309182980, 360397879, 392927012, 426091487, 499754113],
-                    actual2025: [0, 0, 50992611, 92745236, 148282514, 195167954, 253653650, 300231723, 338925853, 401538853, 443842401, 586761458],
-                    plano2026: [0, 0, 64606913, 113143759, 163683429, 204596070, 243709893, 283720403, 317217023, 348047637, 381064843, 467327487],
-                    actual2026: [0, 0, 38469551, null, null, null, null, null, null, null, null, null]
-                }
-            },
-            "MGM": {
-                "M0": {
-                    plano2025: [25700277, 28351132, 28934833, 28188421, 31950775, 34926554, 37163518, 37221634, 36111955, 36616906, 36897204, 38636784],
-                    actual2025: [36566102, 34330743, 37767843, 40457912, 40106171, 38678126, 46059286, 44935014, 47243382, 45093522, 41309256, 42570436],
-                    plano2026: [44630904, 40212966, 42203281, 42279096, 42348999, 42028171, 46963586, 45547617, 48625963, 47658578, 49233105, 54691867],
-                    actual2026: [36742724, 30903262, 25567958, null, null, null, null, null, null, null, null, null]
-                },
-                "M1": {
-                    plano2025: [0, 34760123, 38461869, 41848668, 40728354, 45022046, 47970711, 49372402, 49453357, 48188883, 48194747, 50173677],
-                    actual2025: [0, 47233086, 45626500, 46247867, 52944156, 52139225, 47498267, 59701666, 56341664, 61453533, 53639420, 55284690],
-                    plano2026: [0, 61722914, 57935695, 55582444, 61354633, 60624953, 55174513, 64808898, 62260871, 70468776, 67118245, 79417452],
-                    actual2026: [0, 40888441, 29758238, null, null, null, null, null, null, null, null, null]
-                },
-                "TRIANGLE": {
-                    plano2025: [0, 0, 31100436, 65029419, 96765887, 126656054, 159238057, 194585331, 226179428, 251668959, 272976673, 297008460],
-                    actual2025: [0, 0, 49194321, 83214669, 128000541, 161988653, 209639984, 245805922, 275389170, 326247125, 367562051, 444855042],
-                    plano2026: [0, 0, 63446303, 107771330, 158829525, 207173486, 252728014, 292907607, 337368336, 392955700, 456589610, 545900693],
-                    actual2026: [0, 0, 31479935, null, null, null, null, null, null, null, null, null]
-                }
-            },
-            "PARTNERS ONLINE": {
-                "M0": {
-                    plano2025: [10813064, 11260040, 10589736, 10664045, 13106841, 10208466, 11936843, 11355779, 9403948, 10062380, 9541282, 6889843],
-                    actual2025: [6489030, 7543721, 6953412, 8680079, 7157735, 8595125, 7235629, 8166268, 9178851, 8490481, 8466206, 7677629],
-                    plano2026: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    actual2026: [8701976, 7264704, 6149494, null, null, null, null, null, null, null, null, null]
-                },
-                "M1": {
-                    plano2025: [0, 14453097, 14199561, 15872198, 15117681, 16517197, 13532378, 14416492, 12854741, 11494588, 11595780, 11199758],
-                    actual2025: [0, 15648050, 10323328, 9752580, 12258507, 9588642, 11466267, 10337391, 10130032, 11864788, 13308174, 10259505],
-                    plano2026: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    actual2026: [0, 10959565, 8630467, null, null, null, null, null, null, null, null, null]
-                },
-                "TRIANGLE": {
-                    plano2025: [0, 0, 12447333, 21997115, 33977366, 41173924, 54563329, 58715066, 66769093, 70642224, 78175314, 88009805],
-                    actual2025: [0, 0, 8977631, 15797139, 25183491, 33679946, 41016276, 52269850, 58859157, 59575778, 82636201, 81682408],
-                    plano2026: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    actual2026: [0, 0, 9044716, null, null, null, null, null, null, null, null, null]
-                }
-            },
-            "RESELLERS": {
-                "M0": {
-                    plano2025: [39690067, 43685244, 46074436, 51819944, 57242806, 61118327, 62649494, 62256509, 62114358, 65524319, 62088562, 66354957],
-                    actual2025: [62648895, 56078338, 56931320, 61772656, 65494884, 66959843, 72318189, 65227412, 61843286, 70379858, 70387039, 72521506],
-                    plano2026: [62249435, 57353581, 62622902, 60446354, 66981593, 71067759, 76347848, 73834482, 72320310, 75662159, 75412815, 78284129],
-                    actual2026: [59001531, 51964007, 41958011, null, null, null, null, null, null, null, null, null]
-                },
-                "M1": {
-                    plano2025: [0, 45474470, 44813258, 49792059, 52457509, 62105988, 67195054, 71286421, 72924029, 70067053, 74830490, 69222120],
-                    actual2025: [0, 61277995, 58869814, 51059024, 66989322, 69256263, 70220127, 78417414, 68781540, 67916793, 82780347, 88069853],
-                    plano2026: [0, 65674242, 68158491, 61369696, 75879762, 78078971, 82094609, 92236393, 89691858, 77382036, 85930868, 90802306],
-                    actual2026: [0, 57460123, 43050670, null, null, null, null, null, null, null, null, null]
-                },
-                "TRIANGLE": {
-                    plano2025: [0, 0, 45107319, 85507651, 131408339, 173931056, 221178719, 273778181, 325414934, 369938252, 407919152, 457244359],
-                    actual2025: [0, 0, 60149642, 102130656, 149412758, 194571939, 255419640, 308733110, 341530474, 397039137, 437545387, 544380046],
-                    plano2026: [0, 0, 67466027, 120282229, 177125135, 228365387, 298330692, 361110570, 415138328, 487715051, 545658607, 640294931],
-                    actual2026: [0, 0, 43674697, null, null, null, null, null, null, null, null, null]
-                }
-            },
-            "TELEVENDAS": {
-                "M0": {
-                    plano2025: [13553994, 12455417, 16427281, 17775227, 19405888, 19981850, 17765275, 20020473, 18890555, 20520344, 20213485, 18998142],
-                    actual2025: [12694570, 13713855, 14132745, 14311560, 14869294, 14327190, 16122240, 15626542, 15672094, 15612160, 14024667, 13810276],
-                    plano2026: [6529916, 6684906, 7169784, 7149854, 7463699, 7359514, 8263550, 8788254, 9737582, 11915358, 12917425, 8852992],
-                    actual2026: [9855629, 9761234, 7863219, null, null, null, null, null, null, null, null, null]
-                },
-                "M1": {
-                    plano2025: [0, 21665992, 19910444, 27440711, 30434541, 33233496, 33682920, 29960068, 34093049, 32212298, 33933343, 33933455],
-                    actual2025: [0, 20367566, 21901475, 20932567, 20157388, 21673952, 19992868, 23959598, 21859742, 21723332, 22668865, 20359705],
-                    plano2026: [0, 11318261, 11240056, 11203355, 10815366, 10622263, 10930898, 13060568, 13193521, 16834163, 18233736, 16633576],
-                    actual2026: [0, 13204641, 11422067, null, null, null, null, null, null, null, null, null]
-                },
-                "TRIANGLE": {
-                    plano2025: [0, 0, 22446129, 38388920, 66116576, 92285685, 121963809, 151589232, 171148528, 188827377, 210208129, 240327682],
-                    actual2025: [0, 0, 20961065, 37499284, 59436486, 70784197, 88604291, 102651301, 113430426, 128998151, 142601538, 170818660],
-                    plano2026: [0, 0, 11920962, 21013016, 33451109, 39666509, 49292008, 58212435, 66184577, 85810677, 102254205, 126192165],
-                    actual2026: [0, 0, 10381130, null, null, null, null, null, null, null, null, null]
-                }
+        // Base de datos global vacía, se llenará vía fetch
+        let rawData = {};
+
+        // Estados de la aplicación
+        let currentChannel = 'ALL';
+        let currentCiclo = 'ALL';
+        let currentMagnitude = 1; // 1, 1000 (K), 1000000 (M), 1000000000 (B)
+        let hideJanuary = false;
+        let hideFebruary = false;
+        let showDataLabels = false;
+
+        // Instancias de los gráficos
+        let chartInst2025 = null;
+        let chartInst2026 = null;
+
+        // Función para parsear y agrupar el JSON de GitHub
+        async function fetchAndParseData() {
+            try {
+                // URL Raw del JSON en GitHub
+                const response = await fetch('https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/tpvcanais.json');
+                const data = await response.json();
+
+                // Inicializar la estructura
+                channels.forEach(c => {
+                    rawData[c] = {
+                        "M0": { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) },
+                        "M1": { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) },
+                        "TRIANGLE": { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) }
+                    };
+                });
+
+                let currentSection = null;
+
+                data.forEach(row => {
+                    const canal = row["Plano 2026"]; // Se usa esta columna como nombre del canal
+
+                    // Detectar en qué sección de la tabla nos encontramos (Plano 26, Plano 25, Actual)
+                    if (canal === "SUM de TPV") {
+                        if (row["col_3"] === "ANOMES" && row["row_number"] < 35) {
+                            currentSection = "plano2026";
+                        } else if (row["col_3"] === "ANOMES" && row["row_number"] > 30) {
+                            currentSection = "plano2025";
+                        } else if (row["col_3"] === "TIM_MONTH") {
+                            currentSection = "actual";
+                        }
+                        return;
+                    }
+
+                    // Filtrar solo los canales solicitados y ciclos válidos
+                    if (!channels.includes(canal)) return;
+                    let ciclo = row["col_2"];
+                    if (!["M0", "M1", "TRIANGLE"].includes(ciclo)) return;
+
+                    const parseVal = (val) => {
+                        if (val === "" || val === undefined || val === null) return null;
+                        const num = parseFloat(val);
+                        return isNaN(num) ? null : num;
+                    };
+
+                    // Llenar los arreglos correspondientes según la sección
+                    if (currentSection === "plano2026") {
+                        for(let i = 0; i < 12; i++) rawData[canal][ciclo].plano2026[i] = parseVal(row[`col_${i+3}`]);
+                    } 
+                    else if (currentSection === "plano2025") {
+                        for(let i = 0; i < 12; i++) rawData[canal][ciclo].plano2025[i] = parseVal(row[`col_${i+3}`]);
+                    } 
+                    else if (currentSection === "actual") {
+                        // Meses de 2025
+                        for(let i = 0; i < 12; i++) rawData[canal][ciclo].actual2025[i] = parseVal(row[`col_${i+3}`]);
+                        // Meses de 2026 (enero, febrero, marzo -> columnas 15, 16, 17)
+                        for(let i = 0; i < 3; i++) rawData[canal][ciclo].actual2026[i] = parseVal(row[`col_${i+15}`]);
+                    }
+                });
+
+                // Ocultar Loader y mostrar contenido
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('mainContent').classList.remove('hidden');
+
+                // Renderizar
+                updateDashboard();
+
+            } catch (error) {
+                console.error("Error al cargar datos:", error);
+                document.getElementById('loader').innerHTML = `<h2 class="text-xl font-bold text-red-600">Error al cargar datos JSON</h2><p class="mt-2 text-gray-700">${error.message}</p>`;
             }
-        };
+        }
 
-        // Função utilitária para somar arrays, tratando nulls
+        // Función utilitaria para sumar arreglos manejando valores nulos
         const sumArrays = (arrays) => {
             const length = 12;
             const result = Array(length).fill(null);
@@ -328,7 +318,7 @@
             return result;
         };
 
-        // Função para obter dados processados baseados nos filtros para gráficos
+        // Función para agrupar datos basada en filtros
         function getProcessedData(selectedChannel, selectedCiclo) {
             const result = {
                 plano2025: Array(12).fill(null),
@@ -340,9 +330,7 @@
             const channelsToProcess = selectedChannel === 'ALL' ? Object.keys(rawData) : [selectedChannel];
             const ciclosToProcess = selectedCiclo === 'ALL' ? ['M0', 'M1', 'TRIANGLE'] : [selectedCiclo];
 
-            const arraysToSum = {
-                plano2025: [], actual2025: [], plano2026: [], actual2026: []
-            };
+            const arraysToSum = { plano2025: [], actual2025: [], plano2026: [], actual2026: [] };
 
             channelsToProcess.forEach(channel => {
                 ciclosToProcess.forEach(ciclo => {
@@ -362,26 +350,24 @@
             return result;
         }
 
-        // Estados da aplicação
-        let currentChannel = 'ALL';
-        let currentCiclo = 'ALL';
-        let hideJanuary = false;
-        let hideFebruary = false;
+        // Utilidad para dar formato numérico respetando la magnitud elegida
+        const formatCurrencyWithMagnitude = (value) => {
+            if (value === null || value === undefined) return '';
+            
+            let suffix = '';
+            let val = value / currentMagnitude;
+            
+            if (currentMagnitude == 1000) suffix = ' K';
+            else if (currentMagnitude == 1000000) suffix = ' M';
+            else if (currentMagnitude == 1000000000) suffix = ' B';
 
-        // Instâncias dos gráficos
-        let chartInst2025 = null;
-        let chartInst2026 = null;
-
-        // Utilitário para formatar moeda
-        const formatCurrency = (value) => {
-            return new Intl.NumberFormat('pt-BR', { 
-                style: 'currency', 
-                currency: 'BRL',
-                maximumFractionDigits: 0
-            }).format(value);
+            return 'R$ ' + new Intl.NumberFormat('pt-BR', { 
+                minimumFractionDigits: currentMagnitude > 1 ? 1 : 0,
+                maximumFractionDigits: currentMagnitude > 1 ? 1 : 0
+            }).format(val) + suffix;
         };
 
-        // Utilitário para formatar variação percentual com cores
+        // Formato para variación %
         const formatVar = (plan, actual, elementId) => {
             const el = document.getElementById(elementId);
             if (!plan || plan === 0) {
@@ -394,66 +380,15 @@
             el.innerText = `${sign}${variance.toFixed(1)}%`;
             
             if (variance > 0) {
-                el.className = "text-sm font-semibold mb-1 text-[#00a650]"; // Verde Mercado Pago
+                el.className = "text-sm font-semibold mb-1 text-[#00a650]"; 
             } else {
-                el.className = "text-sm font-semibold mb-1 text-[#FF6060]"; // Vermelho
+                el.className = "text-sm font-semibold mb-1 text-[#FF6060]"; 
             }
         };
 
-        // Configuração partilhada para os gráficos
-        const commonOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += formatCurrency(context.parsed.y);
-                            }
-                            return label;
-                        }
-                    }
-                },
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 20,
-                        font: { family: 'sans-serif', size: 13 }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            if(value >= 1000000000) return 'R$ ' + (value / 1000000000).toFixed(1) + 'B';
-                            if(value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(0) + 'M';
-                            return 'R$ ' + value;
-                        }
-                    },
-                    grid: { color: '#E5E7EB' }
-                },
-                x: {
-                    grid: { display: false }
-                }
-            }
-        };
-
-        // Função principal para atualizar o Dashboard
+        // Función principal para actualizar KPIs y Gráficos
         function updateDashboard() {
-            // Recálculo Bottom-Up de KPIs para garantir PAREAMENTO ABSOLUTO (maçã com maçã)
-            // Ou seja, o Plano só é somado no KPI se o Actual respectivo existir (não for null) naquele exato mês/canal/ciclo.
+            // 1. Cálculos de KPI (Respetando emparejamiento exacto)
             let plan25Total = 0;
             let actual25Total = 0;
             let plan26YTD = 0;
@@ -466,17 +401,15 @@
                 ciclosToProcess.forEach(ciclo => {
                     const dataObj = rawData[channel][ciclo];
                     for (let i = 0; i < 12; i++) {
-                        // Respeitar as visualizações ocultadas para os KPIs também
+                        // Filtros de mes
                         if (i === 0 && hideJanuary) continue;
                         if (i === 1 && hideFebruary) continue;
 
-                        // 2025 Totals
                         if (dataObj.actual2025[i] !== null && dataObj.actual2025[i] !== undefined) {
                             plan25Total += dataObj.plano2025[i] || 0;
                             actual25Total += dataObj.actual2025[i] || 0;
                         }
 
-                        // 2026 YTD - Estritamente Pareado
                         if (dataObj.actual2026[i] !== null && dataObj.actual2026[i] !== undefined) {
                             plan26YTD += dataObj.plano2026[i] || 0;
                             actual26YTD += dataObj.actual2026[i] || 0;
@@ -485,16 +418,16 @@
                 });
             });
 
-            document.getElementById('kpiPlan2025').innerText = formatCurrency(plan25Total);
-            document.getElementById('kpiActual2025').innerText = formatCurrency(actual25Total);
+            document.getElementById('kpiPlan2025').innerText = formatCurrencyWithMagnitude(plan25Total * currentMagnitude);
+            document.getElementById('kpiActual2025').innerText = formatCurrencyWithMagnitude(actual25Total * currentMagnitude);
             formatVar(plan25Total, actual25Total, 'kpiVar2025');
 
-            document.getElementById('kpiPlan2026').innerText = formatCurrency(plan26YTD);
-            document.getElementById('kpiActual2026').innerText = formatCurrency(actual26YTD);
+            document.getElementById('kpiPlan2026').innerText = formatCurrencyWithMagnitude(plan26YTD * currentMagnitude);
+            document.getElementById('kpiActual2026').innerText = formatCurrencyWithMagnitude(actual26YTD * currentMagnitude);
             formatVar(plan26YTD, actual26YTD, 'kpiVar2026');
 
-            // Preparação dos dados para os Gráficos
-            const dataGraph = getProcessedData(currentChannel, currentCiclo);
+            // 2. Preparar Datos para el Gráfico
+            const rawGraphData = getProcessedData(currentChannel, currentCiclo);
 
             const filterFn = (_, i) => {
                 if (i === 0 && hideJanuary) return false;
@@ -503,9 +436,67 @@
             };
 
             const chartLabels = months.filter(filterFn);
-            const processData = (arr) => arr.filter(filterFn);
+            
+            // Función para procesar y ESCALAR los datos a la magnitud escogida
+            const processAndScaleData = (arr) => {
+                return arr.filter(filterFn).map(val => val === null ? null : val / currentMagnitude);
+            };
 
-            // 3. Atualizar/Criar Gráfico 2025
+            // Opciones Compartidas de los Gráficos
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) {
+                                    // Se re-multiplica porque el tooltip lo espera original para usar nuestra función
+                                    label += formatCurrencyWithMagnitude(context.parsed.y * currentMagnitude);
+                                }
+                                return label;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 20, font: { family: 'sans-serif', size: 13 } }
+                    },
+                    datalabels: {
+                        display: showDataLabels,
+                        align: 'top',
+                        color: '#4B5563',
+                        font: { weight: 'bold', size: 10 },
+                        formatter: function(value) {
+                            if (value === null) return '';
+                            // Formato abreviado para la etiqueta para evitar superposiciones
+                            return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { display: false }, // Se eliminan las líneas de cuadrícula
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false } // Se eliminan las líneas de cuadrícula
+                    }
+                }
+            };
+
+            // 3. Gráfico 2025
             const ctx2025 = document.getElementById('chart2025').getContext('2d');
             if (chartInst2025) chartInst2025.destroy();
             chartInst2025 = new Chart(ctx2025, {
@@ -515,30 +506,32 @@
                     datasets: [
                         {
                             label: 'Actual 2025',
-                            data: processData(dataGraph.actual2025),
-                            borderColor: '#009EE3', // Azul MP
+                            data: processAndScaleData(rawGraphData.actual2025),
+                            borderColor: '#009EE3', 
                             backgroundColor: '#009EE3',
                             borderWidth: 3,
                             tension: 0.3,
                             pointRadius: 4,
-                            pointHoverRadius: 6
+                            pointHoverRadius: 6,
+                            datalabels: { align: 'top' }
                         },
                         {
                             label: 'Plano 2025',
-                            data: processData(dataGraph.plano2025),
-                            borderColor: '#9CA3AF', // Cinzento
+                            data: processAndScaleData(rawGraphData.plano2025),
+                            borderColor: '#9CA3AF', 
                             backgroundColor: '#9CA3AF',
                             borderWidth: 2,
-                            borderDash: [5, 5], // Linha tracejada
+                            borderDash: [5, 5], 
                             tension: 0.3,
-                            pointRadius: 3
+                            pointRadius: 3,
+                            datalabels: { align: 'bottom' }
                         }
                     ]
                 },
                 options: commonOptions
             });
 
-            // 4. Atualizar/Criar Gráfico 2026
+            // 4. Gráfico 2026
             const ctx2026 = document.getElementById('chart2026').getContext('2d');
             if (chartInst2026) chartInst2026.destroy();
             chartInst2026 = new Chart(ctx2026, {
@@ -548,24 +541,26 @@
                     datasets: [
                         {
                             label: 'Actual 2026',
-                            data: processData(dataGraph.actual2026),
-                            borderColor: '#009EE3', // Azul MP
+                            data: processAndScaleData(rawGraphData.actual2026),
+                            borderColor: '#009EE3', 
                             backgroundColor: '#009EE3',
                             borderWidth: 3,
                             tension: 0.3,
-                            spanGaps: false, // Não ligar pontos nulos
+                            spanGaps: false, 
                             pointRadius: 4,
-                            pointHoverRadius: 6
+                            pointHoverRadius: 6,
+                            datalabels: { align: 'top' }
                         },
                         {
                             label: 'Plano 2026',
-                            data: processData(dataGraph.plano2026),
-                            borderColor: '#9CA3AF', // Cinzento
+                            data: processAndScaleData(rawGraphData.plano2026),
+                            borderColor: '#9CA3AF', 
                             backgroundColor: '#9CA3AF',
                             borderWidth: 2,
-                            borderDash: [5, 5], // Linha tracejada
+                            borderDash: [5, 5], 
                             tension: 0.3,
-                            pointRadius: 3
+                            pointRadius: 3,
+                            datalabels: { align: 'bottom' }
                         }
                     ]
                 },
@@ -573,29 +568,16 @@
             });
         }
 
-        // Listeners de Interação
-        document.getElementById('channelSelector').addEventListener('change', function(e) {
-            currentChannel = e.target.value;
-            updateDashboard();
-        });
+        // Manejo de eventos de la UI
+        document.getElementById('channelSelector').addEventListener('change', e => { currentChannel = e.target.value; updateDashboard(); });
+        document.getElementById('cicloSelector').addEventListener('change', e => { currentCiclo = e.target.value; updateDashboard(); });
+        document.getElementById('magnitudeSelector').addEventListener('change', e => { currentMagnitude = Number(e.target.value); updateDashboard(); });
+        document.getElementById('toggleJanuary').addEventListener('change', e => { hideJanuary = e.target.checked; updateDashboard(); });
+        document.getElementById('toggleFebruary').addEventListener('change', e => { hideFebruary = e.target.checked; updateDashboard(); });
+        document.getElementById('toggleDataLabels').addEventListener('change', e => { showDataLabels = e.target.checked; updateDashboard(); });
 
-        document.getElementById('cicloSelector').addEventListener('change', function(e) {
-            currentCiclo = e.target.value;
-            updateDashboard();
-        });
-
-        document.getElementById('toggleJanuary').addEventListener('change', function(e) {
-            hideJanuary = e.target.checked;
-            updateDashboard();
-        });
-
-        document.getElementById('toggleFebruary').addEventListener('change', function(e) {
-            hideFebruary = e.target.checked;
-            updateDashboard();
-        });
-
-        // Função para Exportar CSV baseado na visão atual ativa (Filtro aplicado)
-        function exportToCSV() {
+        // Exportar a CSV (exporta los valores brutos sin escalar)
+        document.getElementById('btnExport').addEventListener('click', () => {
             let csvContent = `Filtro de Canal:;${currentChannel}\n`;
             csvContent += `Filtro de Ciclo Vida:;${currentCiclo}\n\n`;
             csvContent += "Cenario;" + months.join(";") + "\n";
@@ -622,13 +604,11 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        }
+        });
 
-        document.getElementById('btnExport').addEventListener('click', exportToCSV);
-
-        // Inicialização
+        // Inicialización: Hacer Fetch e invocar render
         window.onload = () => {
-            updateDashboard();
+            fetchAndParseData();
         };
 
     </script>
