@@ -197,7 +197,7 @@ tbody td:first-child{text-align:left}
     <select class="fsel" id="fMesFim" onchange="applyFilters()" style="min-width:80px">
       <option value="0">Jan</option>
       <option value="1">Fev</option>
-      <option value="2" selected>Mar</option>
+      <option value="2">Mar</option>
       <option value="3">Abr</option>
       <option value="4">Mai</option>
       <option value="5">Jun</option>
@@ -206,7 +206,7 @@ tbody td:first-child{text-align:left}
       <option value="8">Set</option>
       <option value="9">Out</option>
       <option value="10">Nov</option>
-      <option value="11">Dez</option>
+      <option value="11" selected>Dez</option>
     </select>
     <div class="fdiv"></div>
   </div>
@@ -419,7 +419,7 @@ const M25=["Jan/25","Fev/25","Mar/25","Abr/25","Mai/25","Jun/25","Jul/25","Ago/2
 const M26=["Jan/26","Fev/26","Mar/26","Abr/26","Mai/26","Jun/26","Jul/26","Ago/26","Set/26","Out/26","Nov/26","Dez/26"];
 
 // ── STATE ─────────────────────────────────────────────────────────────────
-const ST={ano:"2025",canal:"all",subbu:"all",role:"all",rv:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{},mes26ini:0,mes26fim:2};
+const ST={ano:"2025",canal:"all",subbu:"all",role:"all",rv:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{},mes26ini:0,mes26fim:11};
 
 // ── HELPERS ───────────────────────────────────────────────────────────────
 function avg(arr){if(!arr||!arr.length)return 0;return arr.reduce((a,b)=>a+b,0)/arr.length;}
