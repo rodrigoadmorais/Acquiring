@@ -9,118 +9,108 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <style>
-:root {
+:root{
   --bg-primary:#F0F4F8;--bg-secondary:#FFFFFF;--bg-card:#FFFFFF;
   --text-primary:#1A2332;--text-secondary:#546E7A;--text-muted:#90A4AE;
-  --border:#E0E7EF;--blue:#009EE3;--blue-dark:#003087;--yellow:#FFE600;
+  --border:#E0E7EF;--blue:#009EE3;--blue-dark:#003087;
   --green:#00A650;--red:#E03131;--orange:#F76707;
   --shadow:0 2px 12px rgba(0,0,0,.08);--shadow-h:0 4px 24px rgba(0,0,0,.14);--r:12px;
 }
 [data-theme="dark"]{
   --bg-primary:#0D1B2A;--bg-secondary:#1A2B3C;--bg-card:#1E3148;
-  --text-primary:#E8F4FD;--text-secondary:#90CAF9;--text-muted:#546E7A;
+  --text-primary:#E8F4FD;--text-secondary:#90CAF9;--text-muted:#4A6080;
   --border:#2A3F5A;--shadow:0 2px 12px rgba(0,0,0,.3);--shadow-h:0 4px 24px rgba(0,0,0,.5);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Proxima Nova','Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);transition:background .3s,color .3s;min-height:100vh}
 
-/* HEADER */
-.hdr{background:linear-gradient(135deg,var(--blue-dark) 0%,#005A9C 100%);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+.hdr{background:linear-gradient(135deg,var(--blue-dark) 0%,#005A9C 100%);padding:13px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.25)}
 .hdr-l{display:flex;align-items:center;gap:14px}
-.logo{background:var(--blue);color:#fff;padding:7px 14px;border-radius:8px;font-weight:800;font-size:14px;letter-spacing:.5px}
-.hdr-title h1{font-size:17px;font-weight:700;color:#fff}
-.hdr-title p{font-size:11px;color:rgba(255,255,255,.65);margin-top:2px}
+.logo{background:var(--blue);color:#fff;padding:6px 13px;border-radius:8px;font-weight:800;font-size:14px;letter-spacing:.5px}
+.hdr-title h1{font-size:16px;font-weight:700;color:#fff}
+.hdr-title p{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
 .hdr-ctrl{display:flex;align-items:center;gap:8px}
-.btn-theme{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 13px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:5px;font-family:inherit}
+.btn-theme{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:5px;font-family:inherit}
 .btn-theme:hover{background:rgba(255,255,255,.25)}
 
-/* FILTER BAR */
-.fbar{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:57px;z-index:99;box-shadow:var(--shadow)}
+.fbar{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:9px 28px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;position:sticky;top:54px;z-index:99;box-shadow:var(--shadow)}
 .fl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-.fsel{background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:5px 10px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer;outline:none;transition:border-color .2s;min-width:110px}
+.fsel{background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:5px 9px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer;outline:none;transition:border-color .2s}
 .fsel:focus{border-color:var(--blue)}
-.fdiv{width:1px;height:26px;background:var(--border)}
-.btn-tgl{background:var(--bg-primary);border:1px solid var(--border);color:var(--text-secondary);padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
-.btn-tgl.on,.btn-tgl:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+.fsel.sm{min-width:95px}
+.fdiv{width:1px;height:24px;background:var(--border);flex-shrink:0}
+.fgrp{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.month-range{display:flex;align-items:center;gap:6px;background:rgba(0,158,227,.08);border:1px solid rgba(0,158,227,.25);border-radius:8px;padding:4px 10px}
+.month-range .fl{color:var(--blue)}
 
-/* UNIT */
 .unit-wrap{display:flex;gap:2px;background:var(--bg-primary);border:1px solid var(--border);border-radius:7px;padding:2px}
 .unit-btn{padding:4px 9px;border-radius:5px;border:none;background:transparent;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
 .unit-btn.on{background:var(--blue);color:#fff}
+.btn-tgl{background:var(--bg-primary);border:1px solid var(--border);color:var(--text-secondary);padding:5px 11px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+.btn-tgl.on,.btn-tgl:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-exp{background:var(--green);color:#fff;border:none;padding:6px 13px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn-exp:hover{opacity:.88}
 
-/* EXPORT */
-.btn-exp{background:var(--green);color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;display:flex;align-items:center;gap:5px}
-.btn-exp:hover{opacity:.88;transform:translateY(-1px)}
+.main{padding:20px 28px;max-width:1600px;margin:0 auto}
 
-/* MAIN */
-.main{padding:22px 28px;max-width:1600px;margin:0 auto}
-
-/* KPI */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
-.kpi{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:13px;margin-bottom:20px}
+.kpi{background:var(--bg-card);border-radius:var(--r);padding:17px 18px;box-shadow:var(--shadow);border:1px solid var(--border);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
 .kpi.c-blue::before{background:var(--blue)}.kpi.c-green::before{background:var(--green)}
 .kpi.c-orange::before{background:var(--orange)}.kpi.c-dark::before{background:var(--blue-dark)}
-.kpi.c-yellow::before{background:#F59F00}
+.kpi.c-red::before{background:var(--red)}
 .kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-h)}
-.kpi-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
-.kpi-val{font-size:26px;font-weight:800;color:var(--text-primary);margin-bottom:5px;line-height:1}
-.kpi-sub{font-size:11px;color:var(--text-secondary);margin-bottom:7px}
+.kpi-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text-primary);margin-bottom:4px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text-secondary);margin-bottom:7px;line-height:1.4}
 .badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700}
 .badge.pos{background:rgba(0,166,80,.12);color:var(--green)}
 .badge.neg{background:rgba(224,49,49,.12);color:var(--red)}
 .badge.neu{background:rgba(0,158,227,.12);color:var(--blue)}
 .badge.warn{background:rgba(247,103,7,.12);color:var(--orange)}
 
-/* CHARTS */
-.charts-r1{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
-.charts-r2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
-.c-card{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border)}
-.c-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.charts-r1{display:grid;grid-template-columns:2fr 1fr;gap:13px;margin-bottom:13px}
+.charts-r2{display:grid;grid-template-columns:2fr 1fr;gap:13px;margin-bottom:13px}
+.charts-r3{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:20px}
+.c-card{background:var(--bg-card);border-radius:var(--r);padding:17px 18px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.c-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:13px}
 .c-title{font-size:13px;font-weight:700;color:var(--text-primary)}
 .c-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
 
-/* INSIGHTS */
-.insights{background:linear-gradient(135deg,var(--blue-dark),#005A9C);border-radius:var(--r);padding:18px 22px;margin-bottom:22px;color:#fff;position:relative;overflow:hidden}
-.insights::after{content:'✦';position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:72px;color:rgba(255,255,255,.04)}
-.ins-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.insights{background:linear-gradient(135deg,var(--blue-dark),#005A9C);border-radius:var(--r);padding:16px 22px;margin-bottom:20px;color:#fff;position:relative;overflow:hidden}
+.insights::after{content:'✦';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:64px;color:rgba(255,255,255,.04)}
+.ins-hdr{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .ins-badge{background:var(--blue);color:#fff;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
 .ins-title{font-size:14px;font-weight:700}
-.ins-text{font-size:12px;line-height:1.75;color:rgba(255,255,255,.9);max-width:960px}
+.ins-text{font-size:12px;line-height:1.75;color:rgba(255,255,255,.9);max-width:980px}
 
-/* TABLE */
-.tbl-card{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:22px}
+.tbl-card{background:var(--bg-card);border-radius:var(--r);padding:17px 18px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:20px}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-thead th{background:var(--bg-primary);color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:2px solid var(--border)}
+thead th{background:var(--bg-primary);color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:2px solid var(--border)}
 thead th:first-child{text-align:left}
 tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
 tbody tr:hover{background:rgba(0,158,227,.04)}
 tbody tr.g-row{background:rgba(0,48,135,.05);font-weight:700;cursor:pointer}
-[data-theme="dark"] tbody tr.g-row{background:rgba(0,158,227,.08)}
-tbody td{padding:9px 10px;color:var(--text-primary);text-align:right;white-space:nowrap}
+[data-theme="dark"] tbody tr.g-row{background:rgba(0,158,227,.07)}
+tbody td{padding:8px 10px;color:var(--text-primary);text-align:right;white-space:nowrap}
 tbody td:first-child{text-align:left}
 .ach{display:inline-block;padding:2px 7px;border-radius:11px;font-size:10px;font-weight:700}
-.ach.g{background:rgba(0,166,80,.12);color:var(--green)}
-.ach.w{background:rgba(247,103,7,.12);color:var(--orange)}
-.ach.b{background:rgba(224,49,49,.12);color:var(--red)}
-.exp-ico{display:inline-flex;align-items:center;justify-content:center;margin-right:7px;width:16px;height:16px;background:var(--blue);color:#fff;border-radius:3px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0}
-.ch-row{display:none}
-.ch-row.vis{display:table-row}
-.ch-row td:first-child{padding-left:32px;color:var(--text-secondary)}
+.ach.g{background:rgba(0,166,80,.12);color:var(--green)}.ach.w{background:rgba(247,103,7,.12);color:var(--orange)}.ach.b{background:rgba(224,49,49,.12);color:var(--red)}
+.exp-ico{display:inline-flex;align-items:center;justify-content:center;margin-right:7px;width:15px;height:15px;background:var(--blue);color:#fff;border-radius:3px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0}
+.ch-row{display:none}.ch-row.vis{display:table-row}
+.ch-row td:first-child{padding-left:30px;color:var(--text-secondary)}
 
-/* RANKINGS */
-.rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.rank-item{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border)}
 .rank-item:last-child{border-bottom:none}
-.rank-n{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
-.rn1{background:#FFD700;color:#7A5C00}.rn2{background:#C0C0C0;color:#4A4A4A}
-.rn3{background:#CD7F32;color:#fff}.rn4,.rn5{background:var(--bg-primary);color:var(--text-muted)}
-.rank-name{flex:1;font-size:12px;font-weight:600;color:var(--text-primary)}
+.rank-n{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+.rn1{background:#FFD700;color:#7A5C00}.rn2{background:#C0C0C0;color:#444}.rn3{background:#CD7F32;color:#fff}.rn4,.rn5{background:var(--bg-primary);color:var(--text-muted)}
+.rank-name{flex:1;font-size:11px;font-weight:600;color:var(--text-primary);line-height:1.3}
 .rank-val{font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap}
-.rank-bar-w{width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
+.rank-bar-w{width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
 .rank-bar{height:100%;background:var(--blue);border-radius:3px}
 
-@media(max-width:1024px){.charts-r1,.charts-r2{grid-template-columns:1fr}}
+@media(max-width:1100px){.charts-r1,.charts-r2,.charts-r3{grid-template-columns:1fr}}
 @media(max-width:768px){.fbar,.main,.hdr{padding-left:14px;padding-right:14px}}
 </style>
 </head>
@@ -148,26 +138,36 @@ tbody td:first-child{text-align:left}
 </header>
 
 <div class="fbar">
-  <div style="display:flex;align-items:center;gap:6px">
+  <div class="fgrp">
     <span class="fl">Ano</span>
-    <select class="fsel" id="fAno" onchange="applyFilters()">
+    <select class="fsel sm" id="fAno" onchange="onYearChange()">
       <option value="2025">2025</option>
       <option value="2026">2026</option>
       <option value="all">2025 + 2026</option>
     </select>
   </div>
   <div class="fdiv"></div>
-  <div style="display:flex;align-items:center;gap:6px">
+
+  <!-- Month range — visible only for single year -->
+  <div class="month-range" id="monthRangeWrap">
+    <span class="fl">De</span>
+    <select class="fsel sm" id="fMesIni" onchange="applyFilters()"></select>
+    <span class="fl">Até</span>
+    <select class="fsel sm" id="fMesFim" onchange="applyFilters()"></select>
+  </div>
+  <div class="fdiv" id="mrDivider"></div>
+
+  <div class="fgrp">
     <span class="fl">Canal</span>
     <select class="fsel" id="fCanal" onchange="applyFilters()">
       <option value="all">Todos</option>
       <option value="BIG SELLERS">Big Sellers</option>
       <option value="FDVP">FDVP</option>
-      <option value="FARMING ASSESSORADO">Farming Assessorado</option>
+      <option value="FARMING ASSESSORADO">Farming Assess.</option>
     </select>
   </div>
   <div class="fdiv"></div>
-  <div style="display:flex;align-items:center;gap:6px">
+  <div class="fgrp">
     <span class="fl">Sub-BU</span>
     <select class="fsel" id="fSubBu" onchange="applyFilters()">
       <option value="all">Todas</option>
@@ -179,18 +179,18 @@ tbody td:first-child{text-align:left}
     </select>
   </div>
   <div class="fdiv"></div>
-  <div style="display:flex;align-items:center;gap:6px">
+  <div class="fgrp">
     <span class="fl">Role</span>
-    <select class="fsel" id="fRole" onchange="applyFilters()">
+    <select class="fsel sm" id="fRole" onchange="applyFilters()">
       <option value="all">Todos</option>
       <option value="Analistas">Analistas</option>
       <option value="Lideres">Líderes</option>
     </select>
   </div>
   <div class="fdiv"></div>
-  <div style="display:flex;align-items:center;gap:6px">
+  <div class="fgrp">
     <span class="fl">RV</span>
-    <select class="fsel" id="fRV" onchange="applyFilters()">
+    <select class="fsel sm" id="fRV" onchange="applyFilters()">
       <option value="all">Todos</option>
       <option value="Sim">Com RV</option>
       <option value="Não">Sem RV</option>
@@ -211,51 +211,62 @@ tbody td:first-child{text-align:left}
     <p class="ins-text" id="insText">Carregando análise...</p>
   </div>
 
+  <!-- Row 1: Line Evolution + Rankings -->
   <div class="charts-r1">
     <div class="c-card">
       <div class="c-hdr">
-        <div><div class="c-title">Evolução Mensal — Headcount Total</div><div class="c-sub">Plano vs Realizado/FCST por mês</div></div>
+        <div><div class="c-title">Evolução Mensal — Headcount</div><div class="c-sub">Linha pontilhada = Plano · Linha sólida = Realizado/FCST</div></div>
       </div>
       <div style="position:relative;height:270px"><canvas id="cEvol"></canvas></div>
     </div>
     <div class="c-card">
       <div class="c-hdr">
-        <div><div class="c-title">Top 5 Cargos</div><div class="c-sub">Por headcount realizado/FCST acumulado</div></div>
+        <div><div class="c-title">Top 5 Cargos</div><div class="c-sub" id="rankSubtitle">Headcount do último mês selecionado</div></div>
       </div>
       <div id="rankList"></div>
     </div>
   </div>
 
+  <!-- Row 2: Gap Mensal + Sub-BU -->
   <div class="charts-r2">
     <div class="c-card">
       <div class="c-hdr">
-        <div><div class="c-title">Headcount por Canal</div><div class="c-sub">Plano vs Realizado — acumulado anual</div></div>
+        <div><div class="c-title">Gap Mensal (Real − Plano)</div><div class="c-sub">Verde = acima do plano · Vermelho = abaixo do plano</div></div>
       </div>
-      <div style="position:relative;height:250px"><canvas id="cCanal"></canvas></div>
+      <div style="position:relative;height:250px"><canvas id="cGap"></canvas></div>
     </div>
     <div class="c-card">
       <div class="c-hdr">
-        <div><div class="c-title">Atingimento por Sub-BU</div><div class="c-sub">% Realizado / Plano — acumulado anual</div></div>
+        <div><div class="c-title">Atingimento por Sub-BU</div><div class="c-sub">% Realizado / Plano — período selecionado</div></div>
       </div>
       <div style="position:relative;height:250px"><canvas id="cSubBu"></canvas></div>
     </div>
   </div>
 
+  <!-- Row 3: Canal -->
+  <div class="charts-r3">
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Headcount por Canal — Média Mensal</div><div class="c-sub">Plano vs Realizado — média do período selecionado</div></div>
+      </div>
+      <div style="position:relative;height:240px"><canvas id="cCanal"></canvas></div>
+    </div>
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Comparativo de Médias — 1ª vs 2ª Metade</div><div class="c-sub">Média mensal Real: primeira metade vs segunda metade do período</div></div>
+      </div>
+      <div style="position:relative;height:240px"><canvas id="cHalves"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Table -->
   <div class="tbl-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div><div class="c-title">Tabela Detalhada — Drill-down por Canal</div><div class="c-sub">Clique no canal para expandir os cargos</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
+      <div><div class="c-title">Tabela Detalhada — Drill-down por Canal</div><div class="c-sub">Clique no "+" para expandir os cargos · Valores do período selecionado</div></div>
     </div>
     <div class="tbl-wrap">
       <table>
-        <thead>
-          <tr>
-            <th style="text-align:left;min-width:210px">Canal / Cargo</th>
-            <th id="th0">Jan</th><th id="th1">Fev</th><th id="th2">Mar</th><th id="th3">Abr</th>
-            <th id="th4">Mai</th><th id="th5">Jun</th><th id="th6">Jul</th><th id="th7">Ago</th>
-            <th id="th8">Set</th><th id="th9">Out</th><th id="th10">Nov</th><th id="th11">Dez</th>
-            <th>Total Plano</th><th>Total Real</th><th>Ating. %</th>
-          </tr>
-        </thead>
+        <thead><tr id="tHead"></tr></thead>
         <tbody id="tBody"></tbody>
       </table>
     </div>
@@ -263,7 +274,7 @@ tbody td:first-child{text-align:left}
 </div>
 
 <script>
-// ── DATA ──────────────────────────────────────────────────────────────────
+// ── DATA ─────────────────────────────────────────────────────────────────
 const P25=[
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,8,10,10,11,14,14,15,15,15,15,15]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,5,5,5,5,5,5,5,5,5,5]},
@@ -403,27 +414,42 @@ const R26=[
 const M25=["Jan/25","Fev/25","Mar/25","Abr/25","Mai/25","Jun/25","Jul/25","Ago/25","Set/25","Out/25","Nov/25","Dez/25"];
 const M26=["Jan/26","Fev/26","Mar/26","Abr/26","Mai/26","Jun/26","Jul/26","Ago/26","Set/26","Out/26","Nov/26","Dez/26"];
 
-// ── STATE ──────────────────────────────────────────────────────────────────
-const ST={ano:"2025",canal:"all",subbu:"all",role:"all",rv:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{}};
+// ── STATE ─────────────────────────────────────────────────────────────────
+const ST={ano:"2026",canal:"all",subbu:"all",role:"all",rv:"all",
+          mesIni:0,mesFim:2, // 2026 default: Jan-Mar
+          unit:1,unitLbl:"",showY:true,showL:true,charts:{}};
 
-// ── HELPERS ────────────────────────────────────────────────────────────────
-const sum=arr=>arr.reduce((a,b)=>a+b,0);
-const sumRows=(rows,n)=>{const r=Array(n||12).fill(0);rows.forEach(x=>x.m.forEach((v,i)=>r[i]+=v));return r};
+// ── HELPERS ───────────────────────────────────────────────────────────────
+const sum=a=>a.reduce((s,v)=>s+v,0);
+const avg=a=>a.length?sum(a)/a.length:0;
 function fmt(v){
   if(ST.unit===1)return Math.round(v).toLocaleString('pt-BR');
   return (v/ST.unit).toLocaleString('pt-BR',{maximumFractionDigits:1})+ST.unitLbl;
 }
-function fp(v){return v.toFixed(1)+'%'}
-function achClass(a){return a>=100?'g':a>=85?'w':'b'}
-function badgeCls(a){return a>=100?'pos':a>=85?'warn':'neg'}
+const fp=v=>v.toFixed(1)+'%';
+const achCls=a=>a>=100?'g':a>=85?'w':'b';
+const badgeCls=a=>a>=100?'pos':a>=85?'warn':'neg';
 
-function ds(){
+// Returns sliced data for the current state (year + month range)
+function getDS(){
   const a=ST.ano;
-  if(a==='2025')return{plan:P25,real:R25,months:M25,lbl:"Realizado"};
-  if(a==='2026')return{plan:P26,real:R26,months:M26,lbl:"Real+FCST"};
-  return{plan:[...P25,...P26],real:[...R25,...R26],months:[...M25,...M26],lbl:"Real/FCST"};
+  let plan,real,months,lbl;
+  if(a==='2025'){plan=P25;real=R25;months=M25;lbl='Realizado';}
+  else if(a==='2026'){plan=P26;real=R26;months=M26;lbl='Real+FCST';}
+  else{plan=[...P25,...P26];real=[...R25,...R26];months=[...M25,...M26];lbl='Real/FCST';}
+
+  const mi=ST.mesIni, mf=ST.mesFim;
+  return{
+    plan: plan.map(r=>({...r,m:r.m.slice(mi,mf+1)})),
+    real: real.map(r=>({...r,m:r.m.slice(mi,mf+1)})),
+    months: months.slice(mi,mf+1),
+    lbl,
+    // also keep originals for last-month rankings
+    planFull: plan, realFull: real, monthsFull: months
+  };
 }
-function filter(rows){
+
+function filt(rows){
   return rows.filter(r=>{
     if(ST.canal!=='all'&&r.canal!==ST.canal)return false;
     if(ST.subbu!=='all'&&r.subbu!==ST.subbu)return false;
@@ -433,9 +459,46 @@ function filter(rows){
   });
 }
 
-// ── FILTERS ────────────────────────────────────────────────────────────────
-function applyFilters(){
+function sumByMonth(rows,n){
+  const r=Array(n).fill(0);
+  rows.forEach(x=>x.m.forEach((v,i)=>r[i]+=v));
+  return r;
+}
+
+// ── MONTH RANGE UI ────────────────────────────────────────────────────────
+function initMonthRange(){
+  const a=ST.ano;
+  const wrap=document.getElementById('monthRangeWrap');
+  const div=document.getElementById('mrDivider');
+  const show=a!=='all';
+  wrap.style.display=show?'flex':'none';
+  div.style.display=show?'block':'none';
+  if(!show)return;
+
+  const months=a==='2025'?M25:M26;
+  const selIni=document.getElementById('fMesIni');
+  const selFim=document.getElementById('fMesFim');
+  selIni.innerHTML=months.map((m,i)=>`<option value="${i}"${i===ST.mesIni?' selected':''}>${m}</option>`).join('');
+  selFim.innerHTML=months.map((m,i)=>`<option value="${i}"${i===ST.mesFim?' selected':''}>${m}</option>`).join('');
+}
+
+function onYearChange(){
   ST.ano=document.getElementById('fAno').value;
+  if(ST.ano==='2025'){ST.mesIni=0;ST.mesFim=11;}
+  else if(ST.ano==='2026'){ST.mesIni=0;ST.mesFim=2;}
+  else{ST.mesIni=0;ST.mesFim=23;}
+  initMonthRange();
+  applyFilters();
+}
+
+function applyFilters(){
+  const a=ST.ano;
+  if(a!=='all'){
+    const ni=parseInt(document.getElementById('fMesIni').value);
+    const nf=parseInt(document.getElementById('fMesFim').value);
+    ST.mesIni=Math.min(ni,nf);
+    ST.mesFim=Math.max(ni,nf);
+  }
   ST.canal=document.getElementById('fCanal').value;
   ST.subbu=document.getElementById('fSubBu').value;
   ST.role=document.getElementById('fRole').value;
@@ -443,100 +506,171 @@ function applyFilters(){
   render();
 }
 
-// ── MAIN RENDER ────────────────────────────────────────────────────────────
+// ── RENDER ────────────────────────────────────────────────────────────────
 function render(){
-  const d=ds();
-  const plan=filter(d.plan), real=filter(d.real);
+  const d=getDS();
+  const plan=filt(d.plan), real=filt(d.real);
   const n=d.months.length;
-  const pm=sumRows(plan,n), rm=sumRows(real,n);
-  // update table headers
-  d.months.forEach((m,i)=>{const el=document.getElementById('th'+i);if(el)el.textContent=m});
+  const pm=sumByMonth(plan,n), rm=sumByMonth(real,n);
   renderKPIs(pm,rm,d);
   renderInsights(pm,rm,d);
   renderEvol(pm,rm,d);
+  renderGap(pm,rm,d);
   renderCanal(d);
   renderSubBu(d);
-  renderRankings(real,d);
+  renderHalves(rm,d);
+  renderRankings(filt(d.realFull),d);
   renderTable(plan,real,d);
 }
 
 // ── KPIs ──────────────────────────────────────────────────────────────────
 function renderKPIs(pm,rm,d){
-  const tP=sum(pm),tR=sum(rm),ach=tP>0?tR/tP*100:0;
-  const last=pm.length-1,lP=pm[last],lR=rm[last],lA=lP>0?lR/lP*100:0;
-  const prev=last>0?rm[last-1]:0,mom=prev>0?(lR-prev)/prev*100:0,momAbs=lR-prev;
-  const canais=[...new Set(d.real.map(r=>r.canal))];
+  const n=d.months.length;
+  const avgP=avg(pm), avgR=avg(rm);
+  const achAvg=avgP>0?avgR/avgP*100:0;
+  const lastP=pm[n-1], lastR=rm[n-1], achLast=lastP>0?lastR/lastP*100:0;
+  const gapAvg=avg(rm.map((r,i)=>r-pm[i]));
+  const gapTotal=sum(rm.map((r,i)=>r-pm[i]));
+
+  // Half comparison
+  const half=Math.floor(n/2);
+  const avgH1=n>=2?avg(rm.slice(0,half||1)):null;
+  const avgH2=n>=2?avg(rm.slice(half||1)):null;
+  const halfDelta=avgH1&&avgH2&&avgH1>0?(avgH2-avgH1)/avgH1*100:null;
+
   document.getElementById('kpiGrid').innerHTML=`
     <div class="kpi c-blue">
-      <div class="kpi-lbl">Headcount Plano — Acumulado</div>
-      <div class="kpi-val">${fmt(tP)}</div>
-      <div class="kpi-sub">${d.months[0]} → ${d.months[last]}</div>
-      <span class="badge neu">Plano Total</span>
+      <div class="kpi-lbl">Média Mensal — Plano</div>
+      <div class="kpi-val">${fmt(avgP)}</div>
+      <div class="kpi-sub">${d.months[0]} a ${d.months[n-1]}</div>
+      <span class="badge neu">headcounts/mês</span>
     </div>
     <div class="kpi c-green">
-      <div class="kpi-lbl">Headcount ${d.lbl} — Acumulado</div>
-      <div class="kpi-val">${fmt(tR)}</div>
-      <div class="kpi-sub">Atingimento: ${fp(ach)}</div>
-      <span class="badge ${badgeCls(ach)}">${ach>=100?'▲ Acima':'▼ Abaixo'} — ${fp(Math.abs(ach-100))} do plano</span>
+      <div class="kpi-lbl">Média Mensal — ${d.lbl}</div>
+      <div class="kpi-val">${fmt(avgR)}</div>
+      <div class="kpi-sub">Atingimento médio: ${fp(achAvg)}</div>
+      <span class="badge ${badgeCls(achAvg)}">${achAvg>=100?'▲ Acima':'▼ Abaixo'} do plano</span>
     </div>
-    <div class="kpi ${ach>=100?'c-green':ach>=85?'c-orange':'c-dark'}">
-      <div class="kpi-lbl">Atingimento — ${d.months[last]}</div>
-      <div class="kpi-val">${fp(lA)}</div>
-      <div class="kpi-sub">Real: ${fmt(lR)} · Plano: ${fmt(lP)}</div>
-      <span class="badge ${badgeCls(lA)}">${lA>=100?'✓ Superado':'✗ Gap de '+fmt(lP-lR)}</span>
+    <div class="kpi ${achLast>=100?'c-green':achLast>=85?'c-orange':'c-dark'}">
+      <div class="kpi-lbl">Atingimento — ${d.months[n-1]}</div>
+      <div class="kpi-val">${fp(achLast)}</div>
+      <div class="kpi-sub">Real: ${fmt(lastR)} · Plano: ${fmt(lastP)}</div>
+      <span class="badge ${badgeCls(achLast)}">${achLast>=100?'✓ Superado':'Gap: '+fmt(lastP-lastR)}</span>
     </div>
+    <div class="kpi ${gapAvg>=0?'c-green':'c-red'}">
+      <div class="kpi-lbl">Gap Médio Mensal (Real − Plano)</div>
+      <div class="kpi-val">${gapAvg>=0?'+':''}${fmt(gapAvg)}</div>
+      <div class="kpi-sub">Gap total período: ${gapTotal>=0?'+':''}${fmt(gapTotal)}</div>
+      <span class="badge ${gapAvg>=0?'pos':'neg'}">${gapAvg>=0?'▲ Excedente':'▼ Déficit'}</span>
+    </div>
+    ${halfDelta!==null&&n>=2?`
     <div class="kpi c-orange">
-      <div class="kpi-lbl">Variação MoM — ${d.months[last]}</div>
-      <div class="kpi-val">${mom>=0?'+':''}${fp(mom)}</div>
-      <div class="kpi-sub">Δ Absoluto: ${mom>=0?'+':''}${fmt(momAbs)} headcounts</div>
-      <span class="badge ${mom>=0?'pos':'neg'}">${mom>=0?'▲ Crescimento':'▼ Redução'} MoM</span>
-    </div>
-    <div class="kpi c-yellow">
-      <div class="kpi-lbl">Canais no Escopo</div>
-      <div class="kpi-val">${canais.length}</div>
-      <div class="kpi-sub">${canais.join(' · ')}</div>
-      <span class="badge neu">Segmentos ativos</span>
-    </div>
+      <div class="kpi-lbl">Tendência — 1ª vs 2ª Metade</div>
+      <div class="kpi-val">${halfDelta>=0?'+':''}${fp(halfDelta)}</div>
+      <div class="kpi-sub">Média 1ª metade: ${fmt(avgH1)} · 2ª: ${fmt(avgH2)}</div>
+      <span class="badge ${halfDelta>=0?'pos':'neg'}">${halfDelta>=0?'▲ Crescimento':'▼ Queda'} no período</span>
+    </div>`:`
+    <div class="kpi c-orange">
+      <div class="kpi-lbl">Tendência do Período</div>
+      <div class="kpi-val">—</div>
+      <div class="kpi-sub">Selecione ≥ 2 meses para ver a tendência</div>
+      <span class="badge neu">N/A</span>
+    </div>`}
   `;
 }
 
 // ── INSIGHTS ──────────────────────────────────────────────────────────────
 function renderInsights(pm,rm,d){
-  const tP=sum(pm),tR=sum(rm),ach=tP>0?tR/tP*100:0;
-  const last=pm.length-1,lP=pm[last],lR=rm[last],lA=lP>0?lR/lP*100:0;
-  const prev=last>0?rm[last-1]:0,mom=prev>0?(lR-prev)/prev*100:0;
+  const n=d.months.length;
+  const avgP=avg(pm), avgR=avg(rm);
+  const achAvg=avgP>0?avgR/avgP*100:0;
+  const lastP=pm[n-1], lastR=rm[n-1], achLast=lastP>0?lastR/lastP*100:0;
+  const gapAvg=avg(rm.map((r,i)=>r-pm[i]));
   const cf=ST.canal==='all'?'todos os canais':ST.canal;
-  const momTxt=mom>=0?`crescimento de ${fp(mom)}`:`queda de ${fp(Math.abs(mom))}`;
-  const achTxt=ach>=100?'com superação do objetivo':ach>=90?'muito próximo do objetivo, com pequeno gap a recuperar':'com gap relevante frente ao planejado — requer atenção na execução';
+  const half=Math.floor(n/2);
+  const avgH1=n>=2?avg(rm.slice(0,half||1)):null;
+  const avgH2=n>=2?avg(rm.slice(half||1)):null;
+  const trend=avgH1&&avgH2&&avgH1>0?(avgH2-avgH1)/avgH1*100:null;
+
+  const achTxt=achAvg>=100?'superando o objetivo planejado':achAvg>=90?'muito próximo ao objetivo, com gap residual a recuperar':'abaixo do objetivo — gap relevante que requer atenção';
+  const gapTxt=gapAvg>=0?`superávit médio de ${fmt(gapAvg)} headcounts/mês`:`déficit médio de ${fmt(Math.abs(gapAvg))} headcounts/mês`;
+  const trendTxt=trend!==null?`A comparação entre a primeira e segunda metade do período indica ${trend>=0?`crescimento de ${fp(trend)}`:`queda de ${fp(Math.abs(trend))}`} na média de headcounts.`:'';
+
   document.getElementById('insText').innerHTML=`
-    No período <strong>${d.months[0]} a ${d.months[last]}</strong>, analisando <strong>${cf}</strong>,
-    o headcount acumulado atingiu <strong>${fmt(tR)}</strong> posições frente a um plano de
-    <strong>${fmt(tP)}</strong> — representando <strong>${fp(ach)} de atingimento</strong>, ${achTxt}.
-    Em <strong>${d.months[last]}</strong>, o headcount foi de <strong>${fmt(lR)}</strong>
-    (plano: ${fmt(lP)} | ${fp(lA)} do plano), com ${momTxt} vs mês anterior.
-    ${ach<90?' Recomenda-se revisar ações de atração e contratação para os próximos meses.':
-      ach>=100?' O desempenho acima do plano sinaliza boa execução da estratégia de expansão.':
-      ' A tendência indica recuperação positiva — manter foco no ramp-up dos novos headcounts.'}
+    No período <strong>${d.months[0]} a ${d.months[n-1]}</strong>, analisando <strong>${cf}</strong>,
+    a média mensal de headcounts ${d.lbl.toLowerCase()} foi de <strong>${fmt(avgR)}</strong> vs plano de
+    <strong>${fmt(avgP)}</strong> — ${fp(achAvg)} de atingimento médio, ${achTxt}.
+    O indicador de gap aponta um <strong>${gapTxt}</strong> no período.
+    Em <strong>${d.months[n-1]}</strong> (último mês selecionado), o atingimento pontual foi de
+    <strong>${fp(achLast)}</strong> (real: ${fmt(lastR)} · plano: ${fmt(lastP)}).
+    ${trendTxt}
+    ${achAvg<90?' Recomenda-se revisão urgente das metas de atração e do pipeline de contratações.':
+      achAvg>=100?' A estratégia de expansão está sendo bem executada, com headcounts acima do orçado.':
+      ' Manter o ritmo atual e monitorar o fechamento de posições em aberto.'}
   `;
 }
 
-// ── CHART: EVOLUTION ──────────────────────────────────────────────────────
+// ── CHART: LINE EVOLUTION ─────────────────────────────────────────────────
 function renderEvol(pm,rm,d){
   const ctx=document.getElementById('cEvol').getContext('2d');
-  if(ST.charts.evol){ST.charts.evol.destroy()}
+  if(ST.charts.evol)ST.charts.evol.destroy();
   const dark=document.body.getAttribute('data-theme')==='dark';
   const tc=dark?'#90CAF9':'#546E7A';
+  const gridC=dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
   ST.charts.evol=new Chart(ctx,{
-    type:'bar',
+    type:'line',
     data:{labels:d.months,datasets:[
-      {label:'Plano',data:pm,backgroundColor:'rgba(0,48,135,0.12)',borderColor:'#003087',borderWidth:2,borderRadius:4,order:2},
-      {label:d.lbl,data:rm,backgroundColor:'rgba(0,158,227,0.72)',borderColor:'#009EE3',borderWidth:0,borderRadius:4,order:1}
+      {label:'Plano',data:pm,borderColor:'rgba(0,48,135,0.7)',borderWidth:2.5,borderDash:[7,4],
+       pointBackgroundColor:'rgba(0,48,135,0.7)',pointRadius:4,pointHoverRadius:6,
+       fill:false,tension:0.3,order:2},
+      {label:d.lbl,data:rm,borderColor:'#009EE3',borderWidth:2.5,borderDash:[],
+       pointBackgroundColor:'#009EE3',pointRadius:4,pointHoverRadius:6,
+       fill:false,tension:0.3,order:1,
+       backgroundColor:'rgba(0,158,227,0.06)'}
     ]},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:11,padding:14}},
-        datalabels:{display:ST.showL,anchor:'end',align:'top',color:tc,font:{size:8,weight:'700'},formatter:v=>fmt(v),padding:{top:2}},
+        legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:12,padding:14,
+          generateLabels:chart=>chart.data.datasets.map((ds,i)=>({
+            text:ds.label,fillStyle:ds.borderColor,strokeStyle:ds.borderColor,
+            lineDash:ds.borderDash,lineWidth:2.5,hidden:false,datasetIndex:i
+          }))}},
+        datalabels:{display:ST.showL,anchor:'end',align:'top',color:tc,
+          font:{size:8,weight:'700'},formatter:v=>fmt(v),padding:{bottom:2}},
         tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:tc,font:{size:9}},border:{display:false}},
+        y:{display:ST.showY,grid:{color:gridC,drawBorder:false},
+           ticks:{color:tc,font:{size:9},callback:v=>fmt(v)},border:{display:false}}
+      }
+    },plugins:[ChartDataLabels]
+  });
+}
+
+// ── CHART: GAP MENSAL ─────────────────────────────────────────────────────
+function renderGap(pm,rm,d){
+  const ctx=document.getElementById('cGap').getContext('2d');
+  if(ST.charts.gap)ST.charts.gap.destroy();
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  const gap=rm.map((r,i)=>r-pm[i]);
+  const colors=gap.map(g=>g>=0?'rgba(0,166,80,0.8)':'rgba(224,49,49,0.8)');
+  const borderColors=gap.map(g=>g>=0?'#00A650':'#E03131');
+  ST.charts.gap=new Chart(ctx,{
+    type:'bar',
+    data:{labels:d.months,datasets:[{
+      label:'Gap (Real − Plano)',data:gap,
+      backgroundColor:colors,borderColor:borderColors,borderWidth:1,borderRadius:4
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:ST.showL,anchor:ctx=>ctx.raw>=0?'end':'start',
+          align:ctx=>ctx.raw>=0?'top':'bottom',
+          color:(ctx)=>ctx.raw>=0?'rgba(0,130,60,0.9)':'rgba(200,30,30,0.9)',
+          font:{size:10,weight:'700'},formatter:v=>(v>=0?'+':'')+fmt(v)},
+        tooltip:{callbacks:{label:c=>` Gap: ${c.raw>=0?'+':''}${fmt(c.raw)}`}}
       },
       scales:{
         x:{grid:{display:false},ticks:{color:tc,font:{size:9}},border:{display:false}},
@@ -546,21 +680,22 @@ function renderEvol(pm,rm,d){
   });
 }
 
-// ── CHART: CANAL ──────────────────────────────────────────────────────────
+// ── CHART: CANAL (avg) ────────────────────────────────────────────────────
 function renderCanal(d){
   const ctx=document.getElementById('cCanal').getContext('2d');
-  if(ST.charts.canal){ST.charts.canal.destroy()}
+  if(ST.charts.canal)ST.charts.canal.destroy();
   const dark=document.body.getAttribute('data-theme')==='dark';
   const tc=dark?'#90CAF9':'#546E7A';
-  const plan=filter(d.plan),real=filter(d.real);
+  const plan=filt(d.plan), real=filt(d.real);
   const canais=[...new Set([...plan,...real].map(r=>r.canal))];
-  const pT=canais.map(c=>sum(sumRows(plan.filter(r=>r.canal===c),d.months.length)));
-  const rT=canais.map(c=>sum(sumRows(real.filter(r=>r.canal===c),d.months.length)));
+  const n=d.months.length;
+  const pA=canais.map(c=>avg(sumByMonth(plan.filter(r=>r.canal===c),n)));
+  const rA=canais.map(c=>avg(sumByMonth(real.filter(r=>r.canal===c),n)));
   ST.charts.canal=new Chart(ctx,{
     type:'bar',
     data:{labels:canais,datasets:[
-      {label:'Plano',data:pT,backgroundColor:'rgba(0,48,135,0.12)',borderColor:'#003087',borderWidth:2,borderRadius:6},
-      {label:d.lbl,data:rT,backgroundColor:'rgba(0,158,227,0.72)',borderColor:'#009EE3',borderWidth:0,borderRadius:6}
+      {label:'Plano (média/mês)',data:pA,backgroundColor:'rgba(0,48,135,0.12)',borderColor:'rgba(0,48,135,0.6)',borderWidth:2,borderRadius:6},
+      {label:d.lbl+' (média/mês)',data:rA,backgroundColor:'rgba(0,158,227,0.72)',borderColor:'#009EE3',borderWidth:0,borderRadius:6}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{
@@ -579,14 +714,15 @@ function renderCanal(d){
 // ── CHART: SUB-BU ─────────────────────────────────────────────────────────
 function renderSubBu(d){
   const ctx=document.getElementById('cSubBu').getContext('2d');
-  if(ST.charts.subbu){ST.charts.subbu.destroy()}
+  if(ST.charts.subbu)ST.charts.subbu.destroy();
   const dark=document.body.getAttribute('data-theme')==='dark';
   const tc=dark?'#90CAF9':'#546E7A';
-  const plan=filter(d.plan),real=filter(d.real);
+  const plan=filt(d.plan), real=filt(d.real);
+  const n=d.months.length;
   const subus=[...new Set([...plan,...real].map(r=>r.subbu))];
   const achs=subus.map(s=>{
-    const p=sum(sumRows(plan.filter(r=>r.subbu===s),d.months.length));
-    const r=sum(sumRows(real.filter(r=>r.subbu===s),d.months.length));
+    const p=sum(sumByMonth(plan.filter(r=>r.subbu===s),n));
+    const r=sum(sumByMonth(real.filter(r=>r.subbu===s),n));
     return p>0?r/p*100:0;
   });
   const colors=achs.map(a=>a>=100?'rgba(0,166,80,0.75)':a>=85?'rgba(247,103,7,0.75)':'rgba(224,49,49,0.75)');
@@ -600,18 +736,64 @@ function renderSubBu(d){
         tooltip:{callbacks:{label:c=>` Atingimento: ${c.raw.toFixed(1)}%`}}
       },
       scales:{
-        x:{display:ST.showY,grid:{display:false},ticks:{color:tc,callback:v=>v+'%',font:{size:9}},border:{display:false},min:0,max:Math.max(130,...achs)+5},
+        x:{display:ST.showY,grid:{display:false},ticks:{color:tc,callback:v=>v+'%',font:{size:9}},border:{display:false},min:0,max:Math.max(130,...achs)+8},
         y:{grid:{display:false},ticks:{color:tc,font:{size:11,weight:'600'}},border:{display:false}}
       }
     },plugins:[ChartDataLabels]
   });
 }
 
-// ── RANKINGS ──────────────────────────────────────────────────────────────
-function renderRankings(real,d){
+// ── CHART: 1ª vs 2ª METADE ────────────────────────────────────────────────
+function renderHalves(rm,d){
+  const ctx=document.getElementById('cHalves').getContext('2d');
+  if(ST.charts.halves)ST.charts.halves.destroy();
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  const n=rm.length;
+  if(n<2){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.font='13px Inter,sans-serif';ctx.fillStyle=tc;ctx.textAlign='center';
+    ctx.fillText('Selecione ≥ 2 meses para ver a comparação',ctx.canvas.width/2,ctx.canvas.height/2);
+    return;
+  }
+  const half=Math.floor(n/2);
+  const h1=rm.slice(0,half||1), h2=rm.slice(half||1);
+  const labels1=d.months.slice(0,half||1), labels2=d.months.slice(half||1);
+  const lbl1=`${labels1[0]}–${labels1[labels1.length-1]}`;
+  const lbl2=`${labels2[0]}–${labels2[labels2.length-1]}`;
+  const a1=avg(h1), a2=avg(h2);
+  const delta=a1>0?(a2-a1)/a1*100:0;
+  ST.charts.halves=new Chart(ctx,{
+    type:'bar',
+    data:{labels:[lbl1,lbl2],datasets:[{
+      label:'Média Mensal Real',
+      data:[a1,a2],
+      backgroundColor:['rgba(0,158,227,0.55)',delta>=0?'rgba(0,166,80,0.75)':'rgba(224,49,49,0.75)'],
+      borderColor:['#009EE3',delta>=0?'#00A650':'#E03131'],
+      borderWidth:0,borderRadius:8
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:ST.showL,anchor:'end',align:'top',color:tc,font:{size:11,weight:'700'},
+          formatter:(v,ctx)=>{const d2=ctx.dataIndex===1&&delta!==0?` (${delta>=0?'+':''}${fp(delta)})`:'';return fmt(v)+d2;}},
+        tooltip:{callbacks:{label:c=>` Média: ${fmt(c.raw)}`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:tc,font:{size:11,weight:'600'}},border:{display:false}},
+        y:{display:ST.showY,grid:{display:false},ticks:{color:tc,font:{size:9},callback:v=>fmt(v)},border:{display:false}}
+      }
+    },plugins:[ChartDataLabels]
+  });
+}
+
+// ── RANKINGS (último mês selecionado) ─────────────────────────────────────
+function renderRankings(realFull,d){
+  const lastIdx=ST.mesFim; // absolute index in the year's data
+  document.getElementById('rankSubtitle').textContent=`Headcount em ${d.months[d.months.length-1]}`;
   const m={};
-  real.forEach(r=>{const t=sum(r.m);m[r.cargo]=(m[r.cargo]||0)+t});
-  const sorted=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  realFull.forEach(r=>{ m[r.cargo]=(m[r.cargo]||0)+(r.m[lastIdx]||0); });
+  const sorted=Object.entries(m).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const mx=sorted[0]?.[1]||1;
   document.getElementById('rankList').innerHTML=sorted.map(([c,t],i)=>`
     <div class="rank-item">
@@ -622,38 +804,41 @@ function renderRankings(real,d){
       </div>
       <div class="rank-val">${fmt(t)}</div>
     </div>
-  `).join('');
+  `).join('')||'<p style="color:var(--text-muted);font-size:12px;padding:10px 0">Sem dados para o filtro selecionado.</p>';
 }
 
 // ── TABLE ─────────────────────────────────────────────────────────────────
 function renderTable(plan,real,d){
   const n=d.months.length;
+  // header
+  const th=document.getElementById('tHead');
+  th.innerHTML=`<th style="text-align:left;min-width:200px">Canal / Cargo</th>`
+    +d.months.map(m=>`<th>${m}</th>`).join('')
+    +`<th>Média Plan.</th><th>Média Real</th><th>Ating. %</th>`;
   const canais=[...new Set([...plan,...real].map(r=>r.canal))];
   const tb=document.getElementById('tBody');
   tb.innerHTML='';
   canais.forEach((canal,ci)=>{
-    const pR=plan.filter(r=>r.canal===canal),rR=real.filter(r=>r.canal===canal);
-    const pm=sumRows(pR,n),rm=sumRows(rR,n);
-    const tP=sum(pm),tR=sum(rm),ach=tP>0?tR/tP*100:0;
+    const pR=plan.filter(r=>r.canal===canal), rR=real.filter(r=>r.canal===canal);
+    const pm=sumByMonth(pR,n), rm=sumByMonth(rR,n);
+    const avgP=avg(pm), avgR=avg(rm), ach=avgP>0?avgR/avgP*100:0;
     const gid='g'+ci;
-    const tr=document.createElement('tr');
-    tr.className='g-row';tr.onclick=()=>toggleG(gid);
-    tr.innerHTML=`<td><span class="exp-ico" id="ic-${gid}">+</span>${canal}</td>
-      ${rm.map(v=>`<td>${fmt(v)}</td>`).join('')}
-      <td><strong>${fmt(tP)}</strong></td><td><strong>${fmt(tR)}</strong></td>
-      <td><span class="ach ${achClass(ach)}">${fp(ach)}</span></td>`;
+    const tr=document.createElement('tr');tr.className='g-row';tr.onclick=()=>toggleG(gid);
+    tr.innerHTML=`<td><span class="exp-ico" id="ic-${gid}">+</span>${canal}</td>`
+      +rm.map(v=>`<td>${fmt(v)}</td>`).join('')
+      +`<td><strong>${fmt(avgP)}</strong></td><td><strong>${fmt(avgR)}</strong></td>`
+      +`<td><span class="ach ${achCls(ach)}">${fp(ach)}</span></td>`;
     tb.appendChild(tr);
     const cargos=[...new Set([...pR,...rR].map(r=>r.cargo))];
     cargos.forEach(cargo=>{
-      const cp=pR.filter(r=>r.cargo===cargo),cr=rR.filter(r=>r.cargo===cargo);
-      const cpm=sumRows(cp,n),crm=sumRows(cr,n);
-      const ctP=sum(cpm),ctR=sum(crm),ca=ctP>0?ctR/ctP*100:0;
-      const ch=document.createElement('tr');
-      ch.className='ch-row';ch.setAttribute('data-p',gid);
-      ch.innerHTML=`<td>${cargo}</td>
-        ${crm.map(v=>`<td>${fmt(v)}</td>`).join('')}
-        <td>${fmt(ctP)}</td><td>${fmt(ctR)}</td>
-        <td><span class="ach ${achClass(ca)}">${fp(ca)}</span></td>`;
+      const cp=pR.filter(r=>r.cargo===cargo), cr=rR.filter(r=>r.cargo===cargo);
+      const cpm=sumByMonth(cp,n), crm=sumByMonth(cr,n);
+      const cAvgP=avg(cpm), cAvgR=avg(crm), ca=cAvgP>0?cAvgR/cAvgP*100:0;
+      const ch=document.createElement('tr');ch.className='ch-row';ch.setAttribute('data-p',gid);
+      ch.innerHTML=`<td>${cargo}</td>`
+        +crm.map(v=>`<td>${fmt(v)}</td>`).join('')
+        +`<td>${fmt(cAvgP)}</td><td>${fmt(cAvgR)}</td>`
+        +`<td><span class="ach ${achCls(ca)}">${fp(ca)}</span></td>`;
       tb.appendChild(ch);
     });
   });
@@ -674,31 +859,36 @@ function toggleTheme(){
   document.getElementById('tTxt').textContent=dark?'Dark':'Light';
   render();
 }
-function toggleYAxis(){ST.showY=!ST.showY;document.getElementById('btnY').classList.toggle('on',ST.showY);render()}
-function toggleLabels(){ST.showL=!ST.showL;document.getElementById('btnL').classList.toggle('on',ST.showL);render()}
-function setUnit(u,l,el){
+function toggleYAxis(){ST.showY=!ST.showY;document.getElementById('btnY').classList.toggle('on',ST.showY);render();}
+function toggleLabels(){ST.showL=!ST.showL;document.getElementById('btnL').classList.toggle('on',ST.showL);render();}
+function setUnit(u,l){
   ST.unit=u;ST.unitLbl=l;
   document.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('on'));
-  if(event?.target)event.target.classList.add('on');
+  event.target.classList.add('on');
   render();
 }
 
 // ── EXPORT ────────────────────────────────────────────────────────────────
 function exportExcel(){
-  const d=ds();
-  const plan=filter(d.plan),real=filter(d.real);
+  const d=getDS();
+  const plan=filt(d.plan), real=filt(d.real);
   const rows=[['Canal','Sub-BU','Cargo','Role','RV','Cenário',...d.months,'TOTAL']];
   [...plan.map(r=>({...r,c:'PLANO'})),...real.map(r=>({...r,c:d.lbl}))].forEach(r=>{
     rows.push([r.canal,r.subbu,r.cargo,r.role,r.rv,r.c,...r.m,sum(r.m)]);
   });
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Headcount');
-  XLSX.writeFile(wb,`headcount_${ST.ano}.xlsx`);
+  XLSX.writeFile(wb,`headcount_${ST.ano}_${d.months[0]}_${d.months[d.months.length-1]}.xlsx`);
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 Chart.register(ChartDataLabels);
-document.addEventListener('DOMContentLoaded',render);
+document.addEventListener('DOMContentLoaded',()=>{
+  // Set year selector to 2026 (default state)
+  document.getElementById('fAno').value='2026';
+  initMonthRange();
+  render();
+});
 </script>
 </body>
 </html>
