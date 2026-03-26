@@ -36,7 +36,7 @@
       "id": "a1b2c3d4-0002-4000-8000-000000000002",
       "name": "Read Sheet 2025",
       "type": "n8n-nodes-base.googleSheets",
-      "position": [224, -120],
+      "position": [224, -100],
       "executeOnce": true,
       "typeVersion": 4.7,
       "credentials": {
@@ -48,24 +48,37 @@
     },
     {
       "parameters": {
-        "mode": "manual",
-        "duplicateItem": false,
-        "fields": {
-          "values": [
-            {
-              "name": "__year",
-              "type": "stringValue",
-              "value": "2025"
-            }
-          ]
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
         },
-        "options": {}
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "headcount_2025.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "Atualizando dados 2025 via Verdi",
+        "additionalParameters": {
+          "branch": "master"
+        }
       },
       "id": "a1b2c3d4-0003-4000-8000-000000000003",
-      "name": "Tag Year 2025",
-      "type": "n8n-nodes-base.set",
-      "position": [448, -120],
-      "typeVersion": 3.4
+      "name": "Write 2025 to GitHub",
+      "type": "n8n-nodes-base.github",
+      "position": [448, -100],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
     },
     {
       "parameters": {
@@ -84,7 +97,7 @@
       "id": "a1b2c3d4-0004-4000-8000-000000000004",
       "name": "Read Sheet 2026",
       "type": "n8n-nodes-base.googleSheets",
-      "position": [224, 120],
+      "position": [224, 100],
       "executeOnce": true,
       "typeVersion": 4.7,
       "credentials": {
@@ -93,37 +106,6 @@
           "name": "Google account cIlo-Xx5bNUIVd3qo"
         }
       }
-    },
-    {
-      "parameters": {
-        "mode": "manual",
-        "duplicateItem": false,
-        "fields": {
-          "values": [
-            {
-              "name": "__year",
-              "type": "stringValue",
-              "value": "2026"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "a1b2c3d4-0005-4000-8000-000000000005",
-      "name": "Tag Year 2026",
-      "type": "n8n-nodes-base.set",
-      "position": [448, 120],
-      "typeVersion": 3.4
-    },
-    {
-      "parameters": {
-        "mode": "append"
-      },
-      "id": "a1b2c3d4-0006-4000-8000-000000000006",
-      "name": "Merge Years",
-      "type": "n8n-nodes-base.merge",
-      "position": [672, 0],
-      "typeVersion": 3
     },
     {
       "parameters": {
@@ -139,17 +121,17 @@
           "mode": "name",
           "value": "Acquiring"
         },
-        "filePath": "headcount_data.json",
+        "filePath": "headcount_2026.json",
         "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
-        "commitMessage": "Atualizando dados do dash via Verdi",
+        "commitMessage": "Atualizando dados 2026 via Verdi",
         "additionalParameters": {
           "branch": "master"
         }
       },
-      "id": "a1b2c3d4-0008-4000-8000-000000000008",
-      "name": "Write JSON to GitHub",
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Write 2026 to GitHub",
       "type": "n8n-nodes-base.github",
-      "position": [896, 0],
+      "position": [448, 100],
       "executeOnce": true,
       "typeVersion": 1.1,
       "credentials": {
@@ -172,27 +154,12 @@
     },
     "Read Sheet 2025": {
       "main": [
-        [{ "node": "Tag Year 2025", "type": "main", "index": 0 }]
-      ]
-    },
-    "Tag Year 2025": {
-      "main": [
-        [{ "node": "Merge Years", "type": "main", "index": 0 }]
+        [{ "node": "Write 2025 to GitHub", "type": "main", "index": 0 }]
       ]
     },
     "Read Sheet 2026": {
       "main": [
-        [{ "node": "Tag Year 2026", "type": "main", "index": 0 }]
-      ]
-    },
-    "Tag Year 2026": {
-      "main": [
-        [{ "node": "Merge Years", "type": "main", "index": 1 }]
-      ]
-    },
-    "Merge Years": {
-      "main": [
-        [{ "node": "Write JSON to GitHub", "type": "main", "index": 0 }]
+        [{ "node": "Write 2026 to GitHub", "type": "main", "index": 0 }]
       ]
     }
   },

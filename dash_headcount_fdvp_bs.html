@@ -964,51 +964,49 @@ function exportExcel(){
 }
 
 // ── INIT (carrega dados vivos do JSON; fallback = arrays embutidos) ────────
-// O Verdi Flow salva linhas brutas da planilha; a transformação ocorre aqui.
-function transformRows(rows){
+// O Verdi Flow salva headcount_2025.json e headcount_2026.json com linhas brutas.
+function transformRows(rows, year){
   const mk={
     '2025':['jan./25','fev./25','mar./25','abr./25','mai./25','jun./25','jul./25','ago./25','set./25','out./25','nov./25','dez./25'],
     '2026':['jan./26','fev./26','mar./26','abr./26','mai./26','jun./26','jul./26','ago./26','set./26','out./26','nov./26','dez./26']
   };
-  const res={P25:[],R25:[],P26:[],R26:[]};
+  const keys=mk[year];
+  if(!keys)return{plan:[],real:[]};
+  const plan=[],real=[];
   rows.forEach(row=>{
     const cenario=(row['CENÁRIO']||row['CENARIO']||'').trim().toUpperCase();
-    const year=(row['__year']||'').trim();
-    if(!year||!mk[year])return;
     const obj={
       canal:(row['Canal']||'').trim(),
       subbu:(row['Sub-bu']||row['Sub-BU']||'').trim(),
       cargo:(row['Cargo']||'').trim(),
       role:(row['Role']||'').trim(),
       rv:(row['RV']||'').trim(),
-      m:mk[year].map(k=>{const n=parseFloat(String(row[k]||'0').replace(',','.'));return isNaN(n)?0:n;})
+      m:keys.map(k=>{const n=parseFloat(String(row[k]||'0').replace(',','.'));return isNaN(n)?0:n;})
     };
     if(!obj.canal)return;
-    if(cenario==='PLANO'&&year==='2025')res.P25.push(obj);
-    else if(year==='2025')res.R25.push(obj);
-    else if(cenario==='PLANO'&&year==='2026')res.P26.push(obj);
-    else if(year==='2026')res.R26.push(obj);
+    if(cenario==='PLANO') plan.push(obj);
+    else real.push(obj);
   });
-  return res;
+  return{plan,real};
 }
 async function loadData(){
   try{
-    const resp=await fetch('headcount_data.json?t='+Date.now());
-    if(resp.ok){
-      const payload=await resp.json();
-      // Suporta formato bruto (array de linhas) ou formato estruturado {P25,R25,P26,R26}
-      if(Array.isArray(payload)){
-        const res=transformRows(payload);
-        if(res.P25.length)P25=res.P25;
-        if(res.R25.length)R25=res.R25;
-        if(res.P26.length)P26=res.P26;
-        if(res.R26.length)R26=res.R26;
-      }else{
-        if(payload.P25&&payload.P25.length)P25=payload.P25;
-        if(payload.R25&&payload.R25.length)R25=payload.R25;
-        if(payload.P26&&payload.P26.length)P26=payload.P26;
-        if(payload.R26&&payload.R26.length)R26=payload.R26;
-      }
+    const t=Date.now();
+    const [r25,r26]=await Promise.all([
+      fetch('headcount_2025.json?t='+t).catch(()=>null),
+      fetch('headcount_2026.json?t='+t).catch(()=>null)
+    ]);
+    if(r25&&r25.ok){
+      const rows=await r25.json();
+      const res=transformRows(rows,'2025');
+      if(res.plan.length)P25=res.plan;
+      if(res.real.length)R25=res.real;
+    }
+    if(r26&&r26.ok){
+      const rows=await r26.json();
+      const res=transformRows(rows,'2026');
+      if(res.plan.length)P26=res.plan;
+      if(res.real.length)R26=res.real;
     }
   }catch(e){/* usa fallback embutido */}
   render();
