@@ -278,8 +278,8 @@ tbody td:first-child{text-align:left}
 </div>
 
 <script>
-// ── DATA ──────────────────────────────────────────────────────────────────
-const P25=[
+// ── DATA (fallback — sobrescrito pelo fetch de headcount_data.json) ────────
+let P25=[
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,8,10,10,11,14,14,15,15,15,15,15]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,5,5,5,5,5,5,5,5,5,5]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
@@ -310,7 +310,7 @@ const P25=[
   {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[505,505,650,570,697,690,815,830,958,950,950,950]},
   {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[55,55,70,60,73,80,94,80,92,100,100,100]},
 ];
-const R25=[
+let R25=[
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,6,7,8,11,12,12,11,11,12,11,11]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[5,5,4,4,3,5,5,6,6,7,5,4]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,1,2,2,2,3,2,2,1,2,2]},
@@ -341,7 +341,7 @@ const R25=[
   {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[511,516,581,596,648,774,727,779,823,761,746,744]},
   {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[29,38,40,43,46,44,44,63,62,61,61,61]},
 ];
-const P26=[
+let P26=[
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[15,15,15,15,15,15,15,15,15,15,15,15]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
@@ -378,7 +378,7 @@ const P26=[
   {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Gerente Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
   {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Supervisor Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
 ];
-const R26=[
+let R26=[
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[11,12,15,15,15,15,15,15,15,15,15,15]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,6,6,6,6,6,6,6,6,6,6]},
   {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
@@ -963,8 +963,21 @@ function exportExcel(){
   XLSX.writeFile(wb,'Headcount_FDVP_BigSellers.xlsx');
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────
-render();
+// ── INIT (carrega dados vivos do JSON; fallback = arrays embutidos) ────────
+async function loadData(){
+  try{
+    const resp=await fetch('headcount_data.json?t='+Date.now());
+    if(resp.ok){
+      const data=await resp.json();
+      if(data.P25&&data.P25.length) P25=data.P25;
+      if(data.R25&&data.R25.length) R25=data.R25;
+      if(data.P26&&data.P26.length) P26=data.P26;
+      if(data.R26&&data.R26.length) R26=data.R26;
+    }
+  }catch(e){/* usa fallback embutido */}
+  render();
+}
+loadData();
 </script>
 </body>
 </html>
