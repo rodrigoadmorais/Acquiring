@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado Pago - Dashboard de TPV</title>
+    
+    <!-- Integração do Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configuração de identidade visual do Mercado Pago -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mpBlue: '#009EE3',
+                        mpDark: '#2D3277',
+                        mpBg: '#F5F5F5',
+                        mpGreen: '#00a650',
+                        mpRed: '#FF6060'
+                    },
+                    fontFamily: {
+                        sans: ['"Proxima Nova"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Integração do Chart.js para os gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background-color: #F5F5F5;
+        }
+        .card-shadow {
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,.15);
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased h-screen flex flex-col">
+
+    <!-- Cabeçalho (Header) -->
+    <header class="bg-mpBlue text-white p-4 shadow-md flex justify-between items-center shrink-0">
+        <div class="flex items-center space-x-3">
+            <!-- Ícone/Logo simplificado do Mercado Pago -->
+            <svg class="w-8 h-8 fill-current text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9c0-.28.22-.5.5-.5h1c.28 0 .5.22.5.5v9c0 .28-.22.5-.5.5h-1c-.28 0-.5-.22-.5-.5z" opacity="0.3"/>
+                <path d="M14.5 9h-5c-.28 0-.5.22-.5.5v9c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-4h3.5c1.93 0 3.5-1.57 3.5-3.5S16.43 9 14.5 9zm0 5.5h-3.5v-4H14.5c1.1 0 2 .9 2 2s-.9 2-2 2z"/>
+            </svg>
+            <h1 class="text-xl font-bold tracking-wide">Performance de Canais - TPV M1</h1>
+        </div>
+        <div class="text-sm font-medium bg-blue-600 px-3 py-1 rounded">
+            Plano vs Actual
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-grow p-6 overflow-auto">
+        
+        <!-- Filtro de Canais -->
+        <div class="bg-white p-5 rounded-lg card-shadow mb-6 flex items-center space-x-4">
+            <label for="channelSelector" class="font-semibold text-gray-700 text-lg">Selecionar Canal:</label>
+            <select id="channelSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2.5 min-w-[250px] outline-none transition-colors">
+                <option value="ALL">Visão Geral (Todos os Canais)</option>
+                <option value="CANAIS DIGITAIS">Canais Digitais</option>
+                <option value="FDV PROPRIA">FDV Própria</option>
+                <option value="FDV TERCEIRA">FDV Terceira</option>
+                <option value="MGM">MGM</option>
+                <option value="PARTNERS ONLINE">Partners Online</option>
+                <option value="RESELLERS">Resellers</option>
+                <option value="TELEVENDAS">Televendas</option>
+            </select>
+        </div>
+
+        <!-- Indicadores Chave (KPIs) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- KPI 1: Actual 2025 Total -->
+            <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-gray-400">
+                <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV Total 2025 (Plano)</h3>
+                <p id="kpiPlan2025" class="text-2xl font-bold text-gray-800">R$ 0</p>
+            </div>
+            <!-- KPI 2: Actual 2025 Total vs Plano -->
+            <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-mpBlue">
+                <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV Total 2025 (Actual)</h3>
+                <div class="flex items-end space-x-2">
+                    <p id="kpiActual2025" class="text-2xl font-bold text-mpBlue">R$ 0</p>
+                    <span id="kpiVar2025" class="text-sm font-semibold mb-1">0%</span>
+                </div>
+            </div>
+            <!-- KPI 3: Actual 2026 (YTD) -->
+            <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-gray-400">
+                <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV 2026 YTD (Plano Fev-Mar)</h3>
+                <p id="kpiPlan2026" class="text-2xl font-bold text-gray-800">R$ 0</p>
+            </div>
+            <!-- KPI 4: Actual 2026 (YTD) vs Plano -->
+            <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-mpBlue">
+                <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV 2026 YTD (Actual Fev-Mar)</h3>
+                <div class="flex items-end space-x-2">
+                    <p id="kpiActual2026" class="text-2xl font-bold text-mpBlue">R$ 0</p>
+                    <span id="kpiVar2026" class="text-sm font-semibold mb-1">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Gráfico 2025 -->
+            <div class="bg-white p-5 rounded-lg card-shadow">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolução Mensal TPV - 2025</h2>
+                <div class="relative h-[350px]">
+                    <canvas id="chart2025"></canvas>
+                </div>
+            </div>
+            <!-- Gráfico 2026 -->
+            <div class="bg-white p-5 rounded-lg card-shadow">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolução Mensal TPV - 2026</h2>
+                <div class="relative h-[350px]">
+                    <canvas id="chart2026"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Lógica JavaScript e Dados -->
+    <script>
+        // Meses para os eixos X
+        const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+        // Base de dados extraída da imagem
+        // Apenas os 7 canais presentes nas 3 tabelas
+        // Janeiro zerado conforme instruído (TPV M1)
+        const rawData = {
+            "CANAIS DIGITAIS": {
+                plano2025: [0, 239901218, 259241419, 273054456, 289664796, 311597834, 307657846, 319688259, 310751264, 317437756, 332268354, 345852757],
+                actual2025: [0, 292034256, 284308767, 298838334, 312705839, 362537401, 343203369, 383730393, 380317629, 423975550, 464627066, 472923678],
+                plano2026: [0, 328214894, 327113491, 349410922, 357209393, 360671699, 354633727, 386114250, 388164414, 404349666, 428577814, 453328424],
+                actual2026: [0, 432502093, 369649762, null, null, null, null, null, null, null, null, null]
+            },
+            "FDV PROPRIA": {
+                plano2025: [0, 116964270, 112166309, 109744521, 135399774, 150729591, 177154865, 206274417, 220785603, 234892567, 275031120, 269617400],
+                actual2025: [0, 84125963, 118321200, 137637473, 187997376, 203840475, 223167027, 243794129, 231212331, 240387578, 275364899, 328917946],
+                plano2026: [0, 240545720, 265483367, 318218736, 311008576, 329949847, 342003634, 357539866, 362254336, 369148618, 379392373, 413915096],
+                actual2026: [0, 220703453, 203671475, null, null, null, null, null, null, null, null, null]
+            },
+            "FDV TERCEIRA": {
+                plano2025: [0, 70725853, 63977729, 60219827, 64712782, 67978138, 67902226, 72350486, 68082503, 71227847, 73020894, 71205015],
+                actual2025: [0, 49788381, 51174962, 50499536, 63233871, 62431978, 62926210, 74765173, 69621671, 67654799, 71399501, 79503833],
+                plano2026: [0, 67434336, 55172093, 60122555, 55105609, 53890164, 50378395, 50954161, 48460284, 48516850, 49612585, 50153870],
+                actual2026: [0, 47616737, 35464950, null, null, null, null, null, null, null, null, null]
+            },
+            "MGM": {
+                plano2025: [0, 34760124, 38461869, 41848669, 40728355, 45022047, 47970712, 49372402, 49453358, 48188883, 48194747, 50173678],
+                actual2025: [0, 47233087, 45626501, 46247867, 52944156, 52139226, 47498268, 59701667, 56341664, 61453534, 53639420, 55284690],
+                plano2026: [0, 61722915, 57935695, 55582445, 61354633, 60624953, 55174513, 64808898, 62260871, 70468776, 67118246, 79417452],
+                actual2026: [0, 40888442, 29758238, null, null, null, null, null, null, null, null, null]
+            },
+            "PARTNERS ONLINE": {
+                plano2025: [0, 14453098, 14199561, 15872198, 15117682, 16517197, 13532378, 14416492, 12854741, 11494588, 11595780, 11199759],
+                actual2025: [0, 15648051, 10323329, 9752581, 12258507, 9588642, 11466267, 10337392, 10130032, 11864789, 13308175, 10259505],
+                plano2026: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                actual2026: [0, 10959565, 8630467, null, null, null, null, null, null, null, null, null]
+            },
+            "RESELLERS": {
+                plano2025: [0, 45474471, 44813259, 49792060, 52457509, 62105989, 67195054, 71286422, 72924030, 70067054, 74830491, 69222121],
+                actual2025: [0, 61277995, 58869814, 51059025, 66989323, 69256263, 70220127, 78417415, 68781540, 67916794, 82780347, 88069853],
+                plano2026: [0, 65674243, 68158492, 61369696, 75879762, 78078972, 82094610, 92236394, 89691859, 77382037, 85930869, 90802306],
+                actual2026: [0, 57460123, 43050670, null, null, null, null, null, null, null, null, null]
+            },
+            "TELEVENDAS": {
+                plano2025: [0, 21665993, 19910444, 27440712, 30434541, 33233496, 33682921, 29960069, 34093050, 32212298, 33933343, 33933455],
+                actual2025: [0, 20367567, 21901475, 20932567, 20157388, 21673952, 19992869, 23959599, 21859742, 21723332, 22668865, 20359705],
+                plano2026: [0, 11318262, 11240056, 11203356, 10815367, 10622263, 10930898, 13060569, 13193521, 16834163, 18233737, 16633576],
+                actual2026: [0, 13204641, 11422067, null, null, null, null, null, null, null, null, null]
+            }
+        };
+
+        // Função para agregar dados quando a "Visão Geral" é selecionada
+        function getAggregatedData() {
+            const keys = Object.keys(rawData);
+            const aggregated = {
+                plano2025: Array(12).fill(0),
+                actual2025: Array(12).fill(0),
+                plano2026: Array(12).fill(0),
+                actual2026: Array(12).fill(0)
+            };
+
+            keys.forEach(key => {
+                for (let i = 0; i < 12; i++) {
+                    aggregated.plano2025[i] += rawData[key].plano2025[i];
+                    aggregated.actual2025[i] += rawData[key].actual2025[i];
+                    aggregated.plano2026[i] += rawData[key].plano2026[i];
+                    
+                    if (rawData[key].actual2026[i] !== null) {
+                        aggregated.actual2026[i] += rawData[key].actual2026[i];
+                    } else if (key === keys[0]) {
+                        // Inicia como null se estivermos no futuro
+                        aggregated.actual2026[i] = null;
+                    }
+                }
+            });
+            return aggregated;
+        }
+
+        // Instâncias dos gráficos
+        let chartInst2025 = null;
+        let chartInst2026 = null;
+
+        // Utilitário para formatar moeda
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('pt-BR', { 
+                style: 'currency', 
+                currency: 'BRL',
+                maximumFractionDigits: 0
+            }).format(value);
+        };
+
+        // Utilitário para formatar variação percentual com cores
+        const formatVar = (plan, actual, elementId) => {
+            const el = document.getElementById(elementId);
+            if (!plan || plan === 0) {
+                el.innerText = "-";
+                el.className = "text-sm font-semibold mb-1 text-gray-500";
+                return;
+            }
+            const variance = ((actual / plan) - 1) * 100;
+            const sign = variance >= 0 ? '+' : '';
+            el.innerText = `${sign}${variance.toFixed(1)}%`;
+            
+            if (variance > 0) {
+                el.className = "text-sm font-semibold mb-1 text-[#00a650]"; // Verde Mercado Pago
+            } else {
+                el.className = "text-sm font-semibold mb-1 text-[#FF6060]"; // Vermelho
+            }
+        };
+
+        // Configuração partilhada para os gráficos
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += formatCurrency(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                },
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: { family: 'sans-serif', size: 13 }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            if(value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(0) + 'M';
+                            return 'R$ ' + value;
+                        }
+                    },
+                    grid: { color: '#E5E7EB' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        };
+
+        // Função principal para atualizar o Dashboard
+        function updateDashboard(channelKey) {
+            const data = channelKey === 'ALL' ? getAggregatedData() : rawData[channelKey];
+
+            // 1. Atualizar KPIs de 2025
+            const plan25Total = data.plano2025.reduce((a, b) => a + b, 0);
+            const actual25Total = data.actual2025.reduce((a, b) => a + b, 0);
+            
+            document.getElementById('kpiPlan2025').innerText = formatCurrency(plan25Total);
+            document.getElementById('kpiActual2025').innerText = formatCurrency(actual25Total);
+            formatVar(plan25Total, actual25Total, 'kpiVar2025');
+
+            // 2. Atualizar KPIs de 2026 (Apenas Fev e Mar)
+            // Janeiro é zerado, então índice 1 (Fev) e 2 (Mar)
+            const plan26YTD = data.plano2026[1] + data.plano2026[2];
+            const actual26YTD = (data.actual2026[1] || 0) + (data.actual2026[2] || 0);
+
+            document.getElementById('kpiPlan2026').innerText = formatCurrency(plan26YTD);
+            document.getElementById('kpiActual2026').innerText = formatCurrency(actual26YTD);
+            formatVar(plan26YTD, actual26YTD, 'kpiVar2026');
+
+            // 3. Atualizar/Criar Gráfico 2025
+            const ctx2025 = document.getElementById('chart2025').getContext('2d');
+            if (chartInst2025) chartInst2025.destroy();
+            chartInst2025 = new Chart(ctx2025, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Actual 2025',
+                            data: data.actual2025,
+                            borderColor: '#009EE3', // Azul MP
+                            backgroundColor: '#009EE3',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Plano 2025',
+                            data: data.plano2025,
+                            borderColor: '#9CA3AF', // Cinzento
+                            backgroundColor: '#9CA3AF',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            tension: 0.3,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: commonOptions
+            });
+
+            // 4. Atualizar/Criar Gráfico 2026
+            const ctx2026 = document.getElementById('chart2026').getContext('2d');
+            if (chartInst2026) chartInst2026.destroy();
+            chartInst2026 = new Chart(ctx2026, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Actual 2026',
+                            data: data.actual2026,
+                            borderColor: '#009EE3', // Azul MP
+                            backgroundColor: '#009EE3',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            spanGaps: false, // Não ligar pontos nulos
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Plano 2026',
+                            data: data.plano2026,
+                            borderColor: '#9CA3AF', // Cinzento
+                            backgroundColor: '#9CA3AF',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Linha tracejada
+                            tension: 0.3,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: commonOptions
+            });
+        }
+
+        // Listener para o Dropdown
+        document.getElementById('channelSelector').addEventListener('change', function(e) {
+            updateDashboard(e.target.value);
+        });
+
+        // Inicialização
+        window.onload = () => {
+            updateDashboard('ALL'); // Arranca na Visão Geral
+        };
+
+    </script>
+</body>
+</html>

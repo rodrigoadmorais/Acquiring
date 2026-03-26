@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Canais TPV</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #00174A;
+    --blue: #009EE3;
+    --green: #00B551;
+    --red: #E53935;
+    --bg: #F4F6FA;
+    --white: #FFFFFF;
+    --border: #E0E4EE;
+    --text: #1A2340;
+    --muted: #6B7A99;
+  }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  /* HEADER */
+  #app-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 2px 8px rgba(0,23,74,0.3);
+  }
+  #app-header .logo-block { display: flex; align-items: center; gap: 10px; }
+  #app-header .logo-mp {
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  #app-header h1 { font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
+
+  /* FILTER BAR */
+  #filter-bar {
+    background: var(--white);
+    border-bottom: 2px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 56px;
+    z-index: 100;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .filter-group { display: flex; align-items: center; gap: 6px; }
+  .filter-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  .btn-group { display: flex; gap: 2px; }
+  .btn {
+    padding: 5px 12px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--blue); color: var(--blue); }
+  .btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn.toggle-on { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .btn-export {
+    padding: 5px 14px;
+    background: var(--green);
+    border: 1.5px solid var(--green);
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  .btn-export:hover { opacity: 0.85; }
+
+  /* MAIN CONTENT */
+  #main-content { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+  .tab-btn {
+    padding: 10px 22px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--blue); }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--blue); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* KPI CARDS */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    border-left: 4px solid var(--blue);
+  }
+  .kpi-card.kpi-plan   { border-left-color: var(--navy); }
+  .kpi-card.kpi-actual { border-left-color: var(--blue); }
+  .kpi-card.kpi-pos    { border-left-color: var(--green); }
+  .kpi-card.kpi-neg    { border-left-color: var(--red); }
+  .kpi-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.red   { color: var(--red); }
+
+  /* CHART CARDS */
+  .chart-card {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    margin-bottom: 18px;
+  }
+  .chart-card h3 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .chart-wrap    { position: relative; height: 280px; }
+  .chart-wrap-sm { position: relative; height: 220px; }
+
+  /* TABLE */
+  .table-card {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    margin-bottom: 18px;
+    overflow-x: auto;
+  }
+  .table-card h3 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--navy);
+    color: #fff;
+    padding: 9px 12px;
+    text-align: right;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  thead th:first-child { text-align: left; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: #F0F4FF; }
+  tbody tr.total-row { background: #EAF3FB; font-weight: 700; border-top: 2px solid var(--blue); }
+  tbody td { padding: 8px 12px; text-align: right; white-space: nowrap; }
+  tbody td:first-child { text-align: left; font-weight: 500; }
+  .pct-green { color: var(--green); font-weight: 700; }
+  .pct-red   { color: var(--red);   font-weight: 700; }
+  .diff-pos  { color: var(--green); }
+  .diff-neg  { color: var(--red);   }
+
+  /* POR CANAL */
+  .canal-selector { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .canal-cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* LOADING / ERROR */
+  #loading-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.93);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; gap: 16px;
+  }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 4px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading-overlay p { color: var(--navy); font-weight: 600; font-size: 15px; }
+  #error-msg {
+    background: #FFEBEE;
+    border: 1.5px solid var(--red);
+    color: var(--red);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 24px;
+    font-weight: 600;
+    display: none;
+    font-size: 13px;
+  }
+
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .canal-cards-row { grid-template-columns: 1fr; }
+    #filter-bar { gap: 10px; }
+  }
+  @media (max-width: 600px) {
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    #main-content { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="app-header">
+  <div class="logo-block">
+    <span class="logo-mp">MP</span>
+    <h1>Performance Canais TPV</h1>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div id="filter-bar">
+  <div class="filter-group">
+    <span class="filter-label">Ciclo de Vida</span>
+    <div class="btn-group" id="ciclo-group">
+      <button class="btn active" data-ciclo="M0">M0</button>
+      <button class="btn" data-ciclo="M1">M1</button>
+      <button class="btn" data-ciclo="TRIANGLE">Triangle</button>
+      <button class="btn" data-ciclo="ALL">Total</button>
+    </div>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Ocultar meses</span>
+    <div class="btn-group">
+      <button class="btn" id="btn-hide-jan">Jan</button>
+      <button class="btn" id="btn-hide-feb">Fev</button>
+    </div>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Unidade</span>
+    <div class="btn-group" id="unit-group">
+      <button class="btn active" data-unit="unit">Unidade</button>
+      <button class="btn" data-unit="k">Mil</button>
+      <button class="btn" data-unit="m">Milhão</button>
+      <button class="btn" data-unit="b">Bilhão</button>
+    </div>
+  </div>
+  <div class="filter-group">
+    <button class="btn" id="btn-labels">Rótulos</button>
+  </div>
+  <div class="filter-group">
+    <button class="btn-export" id="btn-export">Exportar Excel</button>
+  </div>
+</div>
+
+<div id="error-msg"></div>
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p>Carregando dados...</p>
+</div>
+
+<!-- MAIN -->
+<div id="main-content" style="display:none;">
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab2025">Plano 2025</button>
+    <button class="tab-btn" data-tab="tab2026">Plano 2026</button>
+    <button class="tab-btn" data-tab="tabCanal">Por Canal</button>
+  </div>
+
+  <!-- TAB 2025 -->
+  <div id="tab2025" class="tab-pane active">
+    <div class="kpi-row" id="kpi2025"></div>
+    <div class="chart-card">
+      <h3>Plano 2025 vs Actual por Mes</h3>
+      <div class="chart-wrap"><canvas id="chart-bar-2025"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Atingimento % - 2025</h3>
+      <div class="chart-wrap"><canvas id="chart-pct-2025"></canvas></div>
+    </div>
+    <div class="table-card">
+      <h3>Detalhe por Canal - 2025</h3>
+      <div style="overflow-x:auto;"><table id="tbl-2025"></table></div>
+    </div>
+  </div>
+
+  <!-- TAB 2026 -->
+  <div id="tab2026" class="tab-pane">
+    <div class="kpi-row" id="kpi2026"></div>
+    <div class="chart-card">
+      <h3>Plano 2026 vs Actual por Mes</h3>
+      <div class="chart-wrap"><canvas id="chart-bar-2026"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Atingimento % - 2026</h3>
+      <div class="chart-wrap"><canvas id="chart-pct-2026"></canvas></div>
+    </div>
+    <div class="table-card">
+      <h3>Detalhe por Canal - 2026</h3>
+      <div style="overflow-x:auto;"><table id="tbl-2026"></table></div>
+    </div>
+  </div>
+
+  <!-- TAB POR CANAL -->
+  <div id="tabCanal" class="tab-pane">
+    <div class="canal-selector" id="canal-selector"></div>
+    <div class="canal-cards-row">
+      <div class="chart-card">
+        <h3 id="canal-title-2025">2025 - Canal: Plano vs Actual</h3>
+        <div class="chart-wrap-sm"><canvas id="chart-canal-2025"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3 id="canal-title-2026">2026 - Canal: Plano vs Actual</h3>
+        <div class="chart-wrap-sm"><canvas id="chart-canal-2026"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// NOTE: If fetch fails with CORS error, ensure the JSON file at
+// https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/tpvcanais.json
+// is publicly accessible (public GitHub repository).
+// ============================================================
+
+// Register ChartDataLabels globally
+Chart.register(ChartDataLabels);
+
+// ---- CONSTANTS ----
+const DATA_URL = 'https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/tpvcanais.json';
+
+const COMMON_CHANNELS = [
+  'CANAIS DIGITAIS',
+  'FDV PROPRIA',
+  'FDV TERCEIRA',
+  'MGM',
+  'PARTNERS ONLINE',
+  'RESELLERS',
+  'TELEVENDAS'
+];
+
+const MONTH_LABELS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const CYCLES = ['M0', 'M1', 'TRIANGLE'];
+
+// ---- STATE ----
+const state = {
+  ciclo:     'M0',
+  hideJan:   false,
+  hideFeb:   false,
+  unit:      'unit',
+  showLabels: false,
+  activeTab:  'tab2025',
+  activeCanal: COMMON_CHANNELS[0]
+};
+
+// Parsed data
+// p25[channel][cycle] = Array(12) monthly plan values for 2025
+// p26[channel][cycle] = Array(12) monthly plan values for 2026
+// act[channel][cycle] = Array(15): indices 0-11 = 2025 Jan-Dec, 12-14 = 2026 Jan-Mar
+let p25 = {};
+let p26 = {};
+let act = {};
+
+// Chart instances keyed by canvas id
+const charts = {};
+
+// ---- UTILITIES ----
+function parseVal(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  if (typeof v === 'number') return v;
+  const s = String(v).replace(/\s/g, '').replace(/,/g, '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatVal(v, unit) {
+  if (v === null || v === undefined) return '\u2014';
+  const u = unit || state.unit;
+  if (u === 'unit') return v.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+  if (u === 'k')    return (v / 1e3).toFixed(1) + 'K';
+  if (u === 'm')    return (v / 1e6).toFixed(2) + 'M';
+  if (u === 'b')    return (v / 1e9).toFixed(3) + 'B';
+  return v.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+}
+
+function getCycles() {
+  return state.ciclo === 'ALL' ? ['M0', 'M1', 'TRIANGLE'] : [state.ciclo];
+}
+
+function getMonthIndices() {
+  let idx = [0,1,2,3,4,5,6,7,8,9,10,11];
+  if (state.hideJan) idx = idx.filter(i => i !== 0);
+  if (state.hideFeb) idx = idx.filter(i => i !== 1);
+  return idx;
+}
+
+function getPlanArr(channel, year) {
+  const store  = year === 2025 ? p25 : p26;
+  const cycles = getCycles();
+  const arr    = new Array(12).fill(0);
+  for (const cy of cycles) {
+    const src = (store[channel] || {})[cy];
+    if (!src) continue;
+    for (let i = 0; i < 12; i++) arr[i] += (src[i] || 0);
+  }
+  return arr;
+}
+
+function getActArr(channel, year) {
+  const cycles = getCycles();
+  const arr    = new Array(12).fill(null);
+
+  if (year === 2025) {
+    for (const cy of cycles) {
+      const src = (act[channel] || {})[cy];
+      if (!src) continue;
+      for (let i = 0; i < 12; i++) {
+        const v = src[i];
+        if (v !== null && v !== undefined) {
+          arr[i] = (arr[i] === null ? 0 : arr[i]) + v;
+        }
+      }
+    }
+  } else {
+    // 2026: actual only Jan (idx 0), Feb (idx 1), Mar (idx 2) — stored at act[ch][cy][12,13,14]
+    for (const cy of cycles) {
+      const src = (act[channel] || {})[cy];
+      if (!src) continue;
+      for (let mi = 0; mi < 3; mi++) {
+        const v = src[12 + mi];
+        if (v !== null && v !== undefined) {
+          arr[mi] = (arr[mi] === null ? 0 : arr[mi]) + v;
+        }
+      }
+    }
+    // Apr-Dec remain null (no actual data yet for 2026)
+  }
+  return arr;
+}
+
+// ---- PARSE JSON ----
+function normCycle(cv) {
+  if (cv === null || cv === undefined) return null;
+  const s = String(cv).trim().toUpperCase();
+  if (s === 'M0') return 'M0';
+  if (s === 'M1') return 'M1';
+  if (s === 'TRIANGLE' || s === 'TRIANGULO' || s.includes('TRIAN')) return 'TRIANGLE';
+  return null;
+}
+
+function getColVals(row, startColNum, count) {
+  const vals = [];
+  for (let i = 0; i < count; i++) {
+    vals.push(parseVal(row['col_' + (startColNum + i)]));
+  }
+  return vals;
+}
+
+function isSkippedName(n) {
+  if (n === null || n === undefined) return true;
+  const s = String(n).trim();
+  if (s === '') return true;
+  if (['SUM de TPV','CANAL','Plano 2025','Actual','null'].includes(s)) return true;
+  // Skip if it looks like a pure number
+  if (!isNaN(parseFloat(s)) && isFinite(s)) return true;
+  return false;
+}
+
+function isCommonChannel(name) {
+  if (!name) return false;
+  return COMMON_CHANNELS.includes(String(name).trim());
+}
+
+function parseData(rows) {
+  let sec2026Start = -1;
+  let sec2025Start = -1;
+  let secActStart  = -1;
+
+  // Find section header rows
+  for (let i = 0; i < rows.length; i++) {
+    const r   = rows[i];
+    const canal = r['Plano 2026'];
+    const cv    = String(r['col_2'] || '').trim().toUpperCase();
+    const c3    = r['col_3'];
+
+    if (String(canal).trim() === 'CANAL') {
+      if (cv === 'CICLO_VIDA' && (c3 === 202601 || c3 === '202601' || Number(c3) === 202601)) {
+        sec2026Start = i;
+      } else if (cv === 'CICLO_VIDA' && (c3 === 202501 || c3 === '202501' || Number(c3) === 202501)) {
+        sec2025Start = i;
+      } else if (cv.includes('TRIANGULO') || cv.includes('M0_TRIANGULO')) {
+        secActStart = i;
+      }
+    }
+  }
+
+  // Helper: check if row is a section header (stops parsing)
+  function isSectionHeader(r) {
+    const cv = String(r['col_2'] || '').trim().toUpperCase();
+    return String(r['Plano 2026']).trim() === 'CANAL' && (cv.startsWith('CICLO_VIDA'));
+  }
+
+  // Parse a plan section
+  function parsePlanSection(store, startIdx) {
+    if (startIdx < 0) return;
+    for (let i = startIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (isSectionHeader(r) && i !== startIdx) break;
+
+      const chName = r['Plano 2026'];
+      if (!isCommonChannel(chName) || isSkippedName(chName)) continue;
+
+      const ch = String(chName).trim();
+      const cy = normCycle(r['col_2']);
+      if (!cy) continue;
+
+      if (!store[ch]) store[ch] = {};
+      store[ch][cy] = getColVals(r, 3, 12); // col_3..col_14
+    }
+  }
+
+  // Parse actual section (col_3..col_14 = 2025, col_15..col_17 = 2026 Jan-Mar)
+  function parseActSection(startIdx) {
+    if (startIdx < 0) return;
+    for (let i = startIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (isSectionHeader(r) && i !== startIdx) break;
+
+      const chName = r['Plano 2026'];
+      if (!isCommonChannel(chName) || isSkippedName(chName)) continue;
+
+      const ch = String(chName).trim();
+      const cy = normCycle(r['col_2']);
+      if (!cy) continue;
+
+      if (!act[ch]) act[ch] = {};
+      const vals2025 = getColVals(r, 3, 12);   // 2025 Jan-Dec -> indices 0-11
+      const vals2026 = getColVals(r, 15, 3);   // 2026 Jan-Mar -> indices 12-14
+      act[ch][cy]    = [...vals2025, ...vals2026];
+    }
+  }
+
+  parsePlanSection(p26, sec2026Start);
+  parsePlanSection(p25, sec2025Start);
+  parseActSection(secActStart);
+}
+
+// ---- CHART HELPERS ----
+function destroyChart(key) {
+  if (charts[key]) {
+    charts[key].destroy();
+    delete charts[key];
+  }
+}
+
+function makeBarChart(canvasId, labels, planData, actualData) {
+  destroyChart(canvasId);
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  // Replace null with NaN so Chart.js skips them
+  const planSafe   = planData.map(v   => (v   === null || v   === undefined) ? NaN : v);
+  const actualSafe = actualData.map(v => (v   === null || v   === undefined) ? NaN : v);
+
+  charts[canvasId] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Plano',
+          data: planSafe,
+          backgroundColor: '#00174A',
+          borderRadius: 4,
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
+        },
+        {
+          label: 'Actual',
+          data: actualSafe,
+          backgroundColor: '#009EE3',
+          borderRadius: 4,
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { boxWidth: 12, font: { size: 11 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + (isNaN(ctx.raw) ? '\u2014' : formatVal(ctx.raw))
+          }
+        },
+        datalabels: {
+          display: state.showLabels,
+          color: '#fff',
+          font: { size: 9, weight: '600' },
+          formatter: v => (isNaN(v) || v === null) ? '' : formatVal(v),
+          anchor: 'center',
+          align: 'center',
+          clamp: true
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 } }
+        },
+        y: {
+          grid: { display: false },
+          ticks: {
+            font: { size: 11 },
+            callback: v => formatVal(v)
+          }
+        }
+      }
+    }
+  });
+}
+
+function makePctChart(canvasId, labels, pctArr) {
+  destroyChart(canvasId);
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const pointColors = pctArr.map(v => (v === null || isNaN(v)) ? '#aaa' : (v >= 100 ? '#00B551' : '#E53935'));
+  const validData   = pctArr.map(v => (v === null || isNaN(v)) ? NaN : v);
+
+  charts[canvasId] = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Atingimento %',
+          data: validData,
+          borderColor: '#009EE3',
+          backgroundColor: 'rgba(0,158,227,0.08)',
+          pointBackgroundColor: pointColors,
+          pointBorderColor: pointColors,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          tension: 0.3,
+          fill: false,
+          borderWidth: 2
+        },
+        {
+          label: '100%',
+          data: new Array(labels.length).fill(100),
+          borderColor: '#00174A',
+          borderDash: [6, 4],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          datalabels: { display: false }
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { boxWidth: 12, font: { size: 11 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === '100%') return null;
+              return 'Atingimento: ' + (isNaN(ctx.raw) ? '\u2014' : ctx.raw.toFixed(1) + '%');
+            }
+          }
+        },
+        datalabels: {
+          display: ctx => {
+            if (ctx.dataset.label === '100%') return false;
+            return state.showLabels;
+          },
+          color: ctx => {
+            const v = ctx.dataset.data[ctx.dataIndex];
+            return (v >= 100) ? '#00B551' : '#E53935';
+          },
+          font: { size: 10, weight: '700' },
+          formatter: v => isNaN(v) ? '' : v.toFixed(1) + '%',
+          anchor: 'top',
+          align: 'top',
+          offset: 4
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 } }
+        },
+        y: {
+          grid: { display: false },
+          ticks: {
+            font: { size: 11 },
+            callback: v => v.toFixed(0) + '%'
+          }
+        }
+      }
+    }
+  });
+}
+
+// ---- RENDER FUNCTIONS ----
+function renderKPI(containerId, year) {
+  const idxs      = getMonthIndices();
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  let totalPlan = 0;
+  let totalAct  = 0;
+
+  for (const ch of COMMON_CHANNELS) {
+    const plan   = getPlanArr(ch, year);
+    const actual = getActArr(ch, year);
+    for (const i of idxs) {
+      totalPlan += plan[i] || 0;
+      if (actual[i] !== null && actual[i] !== undefined && !isNaN(actual[i])) {
+        totalAct += actual[i];
+      }
+    }
+  }
+
+  const diff    = totalAct - totalPlan;
+  const pct     = totalPlan !== 0 ? (totalAct / totalPlan * 100) : 0;
+  const diffCls = diff >= 0 ? 'kpi-pos' : 'kpi-neg';
+  const pctCls  = pct  >= 100 ? 'kpi-pos' : 'kpi-neg';
+  const diffCol = diff >= 0 ? 'green'  : 'red';
+  const pctCol  = pct  >= 100 ? 'green' : 'red';
+
+  container.innerHTML = `
+    <div class="kpi-card kpi-plan">
+      <div class="kpi-label">Plano Acumulado</div>
+      <div class="kpi-value">${formatVal(totalPlan)}</div>
+    </div>
+    <div class="kpi-card kpi-actual">
+      <div class="kpi-label">Actual Acumulado</div>
+      <div class="kpi-value">${formatVal(totalAct)}</div>
+    </div>
+    <div class="kpi-card ${diffCls}">
+      <div class="kpi-label">Diferenca</div>
+      <div class="kpi-value ${diffCol}">${diff >= 0 ? '+' : ''}${formatVal(diff)}</div>
+    </div>
+    <div class="kpi-card ${pctCls}">
+      <div class="kpi-label">Atingimento %</div>
+      <div class="kpi-value ${pctCol}">${pct.toFixed(1)}%</div>
+    </div>`;
+}
+
+function renderBarAndPct(barId, pctId, year) {
+  const idxs = getMonthIndices();
+  const labels = idxs.map(i => MONTH_LABELS[i]);
+
+  const planTotals = new Array(12).fill(0);
+  const actTotals  = new Array(12).fill(null);
+
+  for (const ch of COMMON_CHANNELS) {
+    const plan   = getPlanArr(ch, year);
+    const actual = getActArr(ch, year);
+    for (let i = 0; i < 12; i++) {
+      planTotals[i] += plan[i] || 0;
+      if (actual[i] !== null && actual[i] !== undefined) {
+        actTotals[i] = (actTotals[i] === null ? 0 : actTotals[i]) + actual[i];
+      }
+    }
+  }
+
+  makeBarChart(barId,  labels, idxs.map(i => planTotals[i]), idxs.map(i => actTotals[i]));
+
+  const pctData = idxs.map(i => {
+    const p = planTotals[i];
+    const a = actTotals[i];
+    if (p === 0 || a === null) return NaN;
+    return (a / p) * 100;
+  });
+  makePctChart(pctId, labels, pctData);
+}
+
+function renderTable(tableId, year) {
+  const idxs  = getMonthIndices();
+  const table = document.getElementById(tableId);
+  if (!table) return;
+
+  let totalPlan = 0;
+  let totalAct  = 0;
+  const rowsData = [];
+
+  for (const ch of COMMON_CHANNELS) {
+    const plan   = getPlanArr(ch, year);
+    const actual = getActArr(ch, year);
+    let rPlan = 0, rAct = 0;
+    for (const i of idxs) {
+      rPlan += plan[i] || 0;
+      if (actual[i] !== null && !isNaN(actual[i])) rAct += actual[i] || 0;
+    }
+    totalPlan += rPlan;
+    totalAct  += rAct;
+    const diff = rAct - rPlan;
+    const pct  = rPlan !== 0 ? (rAct / rPlan * 100) : 0;
+    rowsData.push({ ch, rPlan, rAct, diff, pct });
+  }
+
+  const totalDiff = totalAct - totalPlan;
+  const totalPct  = totalPlan !== 0 ? (totalAct / totalPlan * 100) : 0;
+
+  let html = `<thead><tr>
+    <th>Canal</th>
+    <th>Plano Acum.</th>
+    <th>Actual Acum.</th>
+    <th>Diferenca</th>
+    <th>Atingimento %</th>
+  </tr></thead><tbody>`;
+
+  for (const r of rowsData) {
+    const dc = r.diff >= 0 ? 'diff-pos' : 'diff-neg';
+    const pc = r.pct  >= 100 ? 'pct-green' : 'pct-red';
+    html += `<tr>
+      <td>${r.ch}</td>
+      <td>${formatVal(r.rPlan)}</td>
+      <td>${formatVal(r.rAct)}</td>
+      <td class="${dc}">${r.diff >= 0 ? '+' : ''}${formatVal(r.diff)}</td>
+      <td class="${pc}">${r.pct.toFixed(1)}%</td>
+    </tr>`;
+  }
+
+  const tdc = totalDiff >= 0 ? 'diff-pos' : 'diff-neg';
+  const tpc = totalPct  >= 100 ? 'pct-green' : 'pct-red';
+  html += `<tr class="total-row">
+    <td>TOTAL</td>
+    <td>${formatVal(totalPlan)}</td>
+    <td>${formatVal(totalAct)}</td>
+    <td class="${tdc}">${totalDiff >= 0 ? '+' : ''}${formatVal(totalDiff)}</td>
+    <td class="${tpc}">${totalPct.toFixed(1)}%</td>
+  </tr></tbody>`;
+
+  table.innerHTML = html;
+}
+
+function renderCanalSelector() {
+  const container = document.getElementById('canal-selector');
+  if (!container) return;
+  container.innerHTML = '';
+  for (const ch of COMMON_CHANNELS) {
+    const btn = document.createElement('button');
+    btn.className = 'btn' + (ch === state.activeCanal ? ' active' : '');
+    btn.textContent = ch;
+    btn.addEventListener('click', () => {
+      state.activeCanal = ch;
+      renderCanalTab();
+    });
+    container.appendChild(btn);
+  }
+}
+
+function renderCanalTab() {
+  renderCanalSelector();
+  const ch     = state.activeCanal;
+  const idxs   = getMonthIndices();
+  const labels = idxs.map(i => MONTH_LABELS[i]);
+
+  document.getElementById('canal-title-2025').textContent = `2025 \u2014 ${ch}: Plano vs Actual`;
+  document.getElementById('canal-title-2026').textContent = `2026 \u2014 ${ch}: Plano vs Actual`;
+
+  const plan25 = getPlanArr(ch, 2025);
+  const act25  = getActArr(ch, 2025);
+  makeBarChart('chart-canal-2025', labels, idxs.map(i => plan25[i]), idxs.map(i => act25[i]));
+
+  const plan26 = getPlanArr(ch, 2026);
+  const act26  = getActArr(ch, 2026);
+  makeBarChart('chart-canal-2026', labels, idxs.map(i => plan26[i]), idxs.map(i => act26[i]));
+}
+
+function renderActiveTab() {
+  const t = state.activeTab;
+  if (t === 'tab2025') {
+    renderKPI('kpi2025', 2025);
+    renderBarAndPct('chart-bar-2025', 'chart-pct-2025', 2025);
+    renderTable('tbl-2025', 2025);
+  } else if (t === 'tab2026') {
+    renderKPI('kpi2026', 2026);
+    renderBarAndPct('chart-bar-2026', 'chart-pct-2026', 2026);
+    renderTable('tbl-2026', 2026);
+  } else if (t === 'tabCanal') {
+    renderCanalTab();
+  }
+}
+
+// ---- TABS ----
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const tabId = btn.dataset.tab;
+    document.getElementById(tabId).classList.add('active');
+    state.activeTab = tabId;
+    renderActiveTab();
+  });
+});
+
+// ---- CICLO FILTER ----
+document.querySelectorAll('#ciclo-group .btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#ciclo-group .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.ciclo = btn.dataset.ciclo;
+    renderActiveTab();
+  });
+});
+
+// ---- UNIT FILTER ----
+document.querySelectorAll('#unit-group .btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#unit-group .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.unit = btn.dataset.unit;
+    renderActiveTab();
+  });
+});
+
+// ---- HIDE JAN ----
+document.getElementById('btn-hide-jan').addEventListener('click', function () {
+  state.hideJan = !state.hideJan;
+  this.classList.toggle('toggle-on', state.hideJan);
+  renderActiveTab();
+});
+
+// ---- HIDE FEB ----
+document.getElementById('btn-hide-feb').addEventListener('click', function () {
+  state.hideFeb = !state.hideFeb;
+  this.classList.toggle('toggle-on', state.hideFeb);
+  renderActiveTab();
+});
+
+// ---- DATA LABELS TOGGLE ----
+document.getElementById('btn-labels').addEventListener('click', function () {
+  state.showLabels = !state.showLabels;
+  this.classList.toggle('toggle-on', state.showLabels);
+  renderActiveTab();
+});
+
+// ---- EXCEL EXPORT ----
+document.getElementById('btn-export').addEventListener('click', exportExcel);
+
+function exportExcel() {
+  if (typeof XLSX === 'undefined') {
+    alert('SheetJS nao foi carregado. Verifique a conexao com a internet.');
+    return;
+  }
+
+  const wb   = XLSX.utils.book_new();
+  const idxs = getMonthIndices();
+  const mHdr = idxs.map(i => MONTH_LABELS[i]);
+
+  function buildPlanSheet(store) {
+    const rows = [['Canal', 'Ciclo', ...mHdr]];
+    for (const ch of COMMON_CHANNELS) {
+      for (const cy of CYCLES) {
+        const src = (store[ch] || {})[cy] || new Array(12).fill(0);
+        rows.push([ch, cy, ...idxs.map(i => src[i] || 0)]);
+      }
+    }
+    return XLSX.utils.aoa_to_sheet(rows);
+  }
+
+  function buildActSheet(year) {
+    const rows   = [['Canal', 'Ciclo', ...mHdr]];
+    const offset = year === 2025 ? 0 : 12;
+    const maxMo  = year === 2025 ? 12 : 3;
+
+    for (const ch of COMMON_CHANNELS) {
+      for (const cy of CYCLES) {
+        const src = (act[ch] || {})[cy];
+        const row = [ch, cy];
+        for (const i of idxs) {
+          if (year === 2026 && i >= 3) {
+            row.push(null);
+          } else {
+            row.push(src ? (src[offset + i] || 0) : 0);
+          }
+        }
+        rows.push(row);
+      }
+    }
+    return XLSX.utils.aoa_to_sheet(rows);
+  }
+
+  XLSX.utils.book_append_sheet(wb, buildPlanSheet(p26), 'Plano 2026');
+  XLSX.utils.book_append_sheet(wb, buildPlanSheet(p25), 'Plano 2025');
+  XLSX.utils.book_append_sheet(wb, buildActSheet(2025), 'Actual 2025');
+  XLSX.utils.book_append_sheet(wb, buildActSheet(2026), 'Actual 2026');
+
+  XLSX.writeFile(wb, 'Performance_Canais_TPV.xlsx');
+}
+
+// ---- FETCH & INIT ----
+async function loadData() {
+  try {
+    const resp = await fetch(DATA_URL);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+    const json = await resp.json();
+
+    // Handle possible JSON wrapping
+    let rows;
+    if (Array.isArray(json)) {
+      rows = json;
+    } else if (json && Array.isArray(json.data)) {
+      rows = json.data;
+    } else if (json && Array.isArray(json.rows)) {
+      rows = json.rows;
+    } else {
+      rows = Object.values(json);
+    }
+
+    parseData(rows);
+
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+
+    state.activeTab = 'tab2025';
+    renderActiveTab();
+
+  } catch (err) {
+    document.getElementById('loading-overlay').style.display = 'none';
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'block';
+    errEl.innerHTML =
+      '<strong>Erro ao carregar dados:</strong> ' + err.message +
+      '<br>Verifique se o arquivo JSON está publicamente acessível no GitHub: ' +
+      '<a href="' + DATA_URL + '" target="_blank" style="color:var(--red)">' + DATA_URL + '</a>';
+    console.error('[TPV Dashboard] Fetch error:', err);
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>

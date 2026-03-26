@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="utf-8">
+
+<title>Dashboard Plano vs Realizado vs FCST (2025/2026)</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Chart.js -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- jQuery + DataTables -->
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+
+<style>
+
+body { font-family: Arial, sans-serif; margin: 16px; color: #222; }
+
+h1 { font-size: 20px; margin: 0 0 8px 0; }
+
+.filters { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 10px; align-items: end; margin: 10px 0 20px; }
+
+label { font-size: 12px; color: #444; margin-bottom: 4px; display: block; }
+
+select, input { width: 100%; padding: 7px; font-size: 13px; }
+
+.actions { display: flex; gap: 10px; margin-top: 6px; }
+
+button { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+
+.section { margin-top: 20px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: #fafafa; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+
+.kpi { border: 1px solid #eee; border-radius: 6px; padding: 10px; background: #fff; }
+
+.kpi .title { font-size: 12px; color: #666; }
+
+.kpi .value { font-size: 16px; font-weight: bold; }
+
+canvas { background: #fff; border: 1px solid #eee; border-radius: 8px; }
+
+table.dataTable thead th { font-size: 12px; }
+
+table.dataTable tbody td { font-size: 12px; }
+
+.footer-note { font-size: 11px; color: #666; margin-top: 10px; }
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Dashboard Plano vs Realizado vs FCST (2025/2026)</h1>
+
+<div class="filters card">
+
+<div>
+
+<label for="yearSelect">Ano</label>
+
+<select id="yearSelect">
+
+<option value="2025">2025</option>
+
+<option value="2026">2026</option>
+
+</select>
+
+</div>
+
+<div>
+
+<label for="scenarioSelect">Cenário</label>
+
+<select id="scenarioSelect" multiple size="3">
+
+<option value="PLANO" selected>PLANO</option>
+
+<option value="REALIZADO" selected>REALIZADO</option>
+
+<option value="REALIZADO+FCST" selected>REALIZADO+FCST</option>
+
+</select>
+
+</div>
+
+<div>
+
+<label for="segmentSelect">Segmento</label>
+
+<select id="segmentSelect" multiple size="4"></select>
+
+</div>
+
+<div>
+
+<label for="channelSelect">Canal</label>
+
+<select id="channelSelect" multiple size="6"></select>
+
+</div>
+
+<div>
+
+<label for="positionTypeSelect">Tipo de posição</label>
+
+<select id="positionTypeSelect" multiple size="3"></select>
+
+</div>
+
+<div>
+
+<label for="rvSelect">RV</label>
+
+<select id="rvSelect" multiple size="2">
+
+<option value="Sim" selected>Sim</option>
+
+<option value="Não" selected>Não</option>
+
+</select>
+
+</div>
+
+<div>
+
+<label for="cargoSearch">Pesquisar cargo</label>
+
+<input id="cargoSearch" type="text" placeholder="Digite parte do cargo...">
+
+</div>
+
+<div class="actions">
+
+<button id="applyFiltersBtn">Aplicar filtros</button>
+
+<button id="resetFiltersBtn">Redefinir</button>
+
+</div>
+
+</div>
+
+<div class="section grid-2">
+
+<div class="card">
+
+<h2 style="font-size:16px;margin:0 0 8px 0;">Totais mensais por cenário</h2>
+
+<div class="kpis">
+
+<div class="kpi"><div class="title">Total PLANO</div><div class="value" id="kpiPlanTotal">0</div></div>
+
+<div class="kpi"><div class="title">Total REALIZADO</div><div class="value" id="kpiActualTotal">0</div></div>
+
+<div class="kpi"><div class="title">Total FCST</div><div class="value" id="kpiFcstTotal">0</div></div>
+
+<div class="kpi"><div class="title">Dif. REALIZADO - PLANO</div><div class="value" id="kpiDeltaActualPlan">0</div></div>
+
+</div>
+
+<canvas id="monthlyTotalsChart" height="220"></canvas>
+
+<div class="footer-note">Soma das linhas filtradas por mês. Selecione o ano e filtros acima.</div>
+
+</div>
+
+<div class="card">
+
+<h2 style="font-size:16px;margin:0 0 8px 0;">Comparação por chave (Site | Segmento | Função | Tipo | Canal | Cargo)</h2>
+
+<label for="keySelect">Chave</label>
+
+<select id="keySelect" size="8" style="width:100%;"></select>
+
+<canvas id="keyComparisonChart" height="220" style="margin-top:10px;"></canvas>
+
+<div class="footer-note">Seleciona uma combinação específica para comparar linhas de PLANO, REALIZADO e FCST.</div>
+
+</div>
+
+</div>
+
+<div class="section card">
+
+<h2 style="font-size:16px;margin:0 0 8px 0;">Tabela detalhada</h2>
+
+<table id="dataTable" class="display" style="width:100%;">
+
+<thead>
+
+<tr>
+
+<th>Cenário</th>
+
+<th>Ano</th>
+
+<th>Grupo (antes de MLB)</th>
+
+<th>Site</th>
+
+<th>Segmento</th>
+
+<th>Função</th>
+
+<th>Tipo de posição</th>
+
+<th>Canal</th>
+
+<th>Cargo</th>
+
+<th>RV</th>
+
+<th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
+
+<th>Total</th>
+
+</tr>
+
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+</div>
+
+<!-- Bloco de dados brutos conforme fornecido -->
+
+<script type="text/plain" id="rawData">
+
+gere um dashboard com esses dados abaixo:
+
+Budget_2025_FDVP_BS Cenário CANAL 1 Site Segment Sub-bu Role Position type Canal Cargo RV jan./25 fev./25 mar./25 abr./25 mai./25 jun./25 jul./25 ago./25 set./25 out./25 nov./25 dez./25 PLANO BIG SELLERS MLB BM Cross Engagement Analistas Engagement Ejecutivo Comercial Semi senior Sim 7 8 10 10 11 14 14 15 15 15 15 15 PLANO BIG SELLERS MLB BM Cross Engagement Analistas Engagement Ejecutivo Comercial Senior Sim 4 5 5 5 5 5 5 5 5 5 5 5 PLANO BIG SELLERS MLB BM Cross Engagement Lideres Engagement Supervisor Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO BIG SELLERS MLB BM Cross Engagement Lideres Engagement Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM Cross Engagement Lideres Engagement Gerente Sr Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Semi senior Sim 31 33 36 36 40 42 42 42 42 42 42 42 PLANO BIG SELLERS MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Senior Sim 12 13 14 15 16 18 18 18 18 18 18 18 PLANO BIG SELLERS MLB BM Instore Acquisition Lideres Instore Supervisor Não 3 4 4 4 4 5 5 5 5 5 5 5 PLANO BIG SELLERS MLB BM Instore Acquisition Lideres Instore Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM OP Acquisition Analistas OP Ejecutivo Comercial Semi senior Sim 21 23 26 26 26 26 26 26 26 26 26 26 PLANO BIG SELLERS MLB BM OP Acquisition Analistas OP Ejecutivo Comercial Senior Sim 9 9 10 10 10 10 10 10 10 10 10 10 PLANO BIG SELLERS MLB BM OP Acquisition Lideres OP Supervisor Não 3 3 3 3 3 3 3 3 3 3 3 3 PLANO BIG SELLERS MLB BM OP Acquisition Lideres OP Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM OP Acquisition Lideres OP Gerente Sr Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM OP Acquisition Analistas LC Expert Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO BIG SELLERS MLB BM OP Acquisition Analistas LC Specialist Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO BIG SELLERS MLB BM OP Acquisition Lideres LC Gerente Sr Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM Onboarding Acquisition Analistas Onboarding Assistente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM Onboarding Acquisition Analistas Onboarding Analista Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM Onboarding Acquisition Analistas Onboarding Analista Ssr Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM Onboarding Acquisition Analistas Onboarding Analista Sr Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS MLB BM Onboarding Acquisition Lideres Onboarding Supervisor Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO FDVP MLB SMB Point Acquisition Lideres Gerente Sr Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO FDVP MLB SMB Point Acquisition Lideres Gerente Não 4 4 4 4 5 5 6 6 7 7 7 7 PLANO FDVP MLB SMB Point Acquisition Lideres Supervisor Não 4 4 6 6 7 7 8 8 9 9 9 9 PLANO FDVP MLB SMB Point Acquisition Lideres Team Leader Sim 70 70 90 90 110 110 130 130 150 150 150 150 PLANO FDVP MLB SMB Point Acquisition Analistas Ejecutivo de Ventas de Campo Sim 140 140 180 270 330 330 390 390 450 450 450 450 PLANO FDVP MLB SMB Point Acquisition Analistas Ejecutivo Comercial Sim 505 505 650 570 697 690 815 830 958 950 950 950 PLANO FDVP MLB SMB Point Acquisition Analistas Ejecutivo Comercial Semi Senior Sim 55 55 70 60 73 80 94 80 92 100 100 100
+
+Cenário CANAL 1 Site Segment Sub-bu Role Position type Canal Cargo RV jan./25 fev./25 mar./25 abr./25 mai./25 jun./25 jul./25 ago./25 set./25 out./25 nov./25 dez./25 REALIZADO BIG SELLERS MLB BM Cross Engagement Analistas Engagement Ejecutivo Comercial Semi senior Sim 7 6 7 8 11 12 12 11 11 12 11 11 REALIZADO BIG SELLERS MLB BM Cross Engagement Analistas Engagement Ejecutivo Comercial Senior Sim 5 5 4 4 3 5 5 6 6 7 5 4 REALIZADO BIG SELLERS MLB BM Cross Engagement Lideres Engagement Supervisor Não 2 2 1 2 2 2 3 2 2 1 2 2 REALIZADO BIG SELLERS MLB BM Cross Engagement Lideres Engagement Gerente Não 1 1 2 1 1 1 1 1 2 2 2 2 REALIZADO BIG SELLERS MLB BM Cross Engagement Lideres Engagement Gerente Senior Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO BIG SELLERS MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Semi Senior Sim 29 33 33 30 37 43 42 38 48 57 63 67 REALIZADO BIG SELLERS MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Senior Sim 5 6 6 6 6 5 5 5 5 3 3 3 REALIZADO BIG SELLERS MLB BM Instore Acquisition Lideres Instore Supervisor Não 2 3 4 4 4 5 5 5 5 5 5 5 REALIZADO BIG SELLERS MLB BM Instore Acquisition Lideres Instore Gerente Não 1 1 1 1 1 1 1 1 1 1 1 0 REALIZADO BIG SELLERS MLB BM OP Acquisition Analistas OP Ejecutivo Comercial Semi Senior Sim 20 18 23 34 28 27 28 27 29 31 33 34 REALIZADO BIG SELLERS MLB BM OP Acquisition Analistas OP Ejecutivo Comercial Senior Sim 4 4 4 3 3 3 3 3 3 3 2 2 REALIZADO BIG SELLERS MLB BM OP Acquisition Lideres OP Supervisor Não 3 3 3 4 4 4 4 4 4 4 4 4 REALIZADO BIG SELLERS MLB BM OP Acquisition Lideres OP Gerente Não 1 1 1 1 1 1 1 1 1 1 0 0 REALIZADO BIG SELLERS MLB BM OP Acquisition Lideres OP Gerente Senior Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO BIG SELLERS MLB BM OP Acquisition Analistas LC Expert Não 2 2 2 2 2 2 1 1 1 1 1 1 REALIZADO BIG SELLERS MLB BM OP Acquisition Analistas LC Specialist Não 3 2 2 2 3 3 3 3 3 3 3 3 REALIZADO BIG SELLERS MLB BM OP Acquisition Lideres LC Gerente Senior Não 1 1 1 1 1 1 1 1 1 1 0 0 REALIZADO BIG SELLERS MLB BM Onboarding Acquisition Analistas Onboarding Asistente Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO BIG SELLERS MLB BM Onboarding Acquisition Analistas Onboarding Analista Não 1 1 1 1 1 1 2 2 2 2 2 2 REALIZADO BIG SELLERS MLB BM Onboarding Acquisition Analistas Onboarding Analista Semi Senior Não 3 3 3 3 3 3 3 2 2 2 2 2 REALIZADO BIG SELLERS MLB BM Onboarding Acquisition Analistas Onboarding Analista Senior Não 2 2 2 2 2 2 1 2 2 2 2 2 REALIZADO BIG SELLERS MLB BM Onboarding Acquisition Lideres Onboarding Supervisor Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO FDVP MLB SMB Point Acquisition Lideres FDVP Gerente Senior Não 2 2 2 2 2 2 2 2 2 2 2 2 REALIZADO FDVP MLB SMB Point Acquisition Lideres FDVP Gerente Não 4 4 4 4 4 5 6 6 6 6 6 6 REALIZADO FDVP MLB SMB Point Acquisition Lideres FDVP Supervisor Não 2 5 5 5 5 5 4 4 4 4 4 4 REALIZADO FDVP MLB SMB Point Acquisition Lideres FDVP Team Leader Sim 67 66 70 82 86 101 100 105 114 116 126 131 REALIZADO FDVP MLB SMB Point Acquisition Analistas FDVP Ejecutivo de Ventas de Campo Sim 134 107 129 137 152 211 218 277 305 405 519 579 REALIZADO FDVP MLB SMB Point Acquisition Analistas FDVP Ejecutivo Comercial Sim 511 516 581 596 648 774 727 779 823 761 746 744 REALIZADO FDVP MLB SMB Point Acquisition Analistas FDVP Ejecutivo Comercial Semi Senior Sim 29 38 40 43 46 44 44 63 62 61 61 61
+
+Budget_2026_FDVP_BS_Assessorado Cenário CANAL 1 CANAL 2 Chave Site Segment Sub-bu Role Position type Canal Cargo RV jan./26 fev./26 mar./26 abr./26 mai./26 jun./26 jul./26 ago./26 set./26 out./26 nov./26 dez./26 PLANO BIG SELLERS BIG SELLERS - E&G BMEngagementEjecutivo Comercial Semi senior MLB BM Cross Engagement Analistas Engagement Ejecutivo Comercial Semi senior Sim 15 15 15 15 15 15 15 15 15 15 15 15 PLANO BIG SELLERS BIG SELLERS - E&G BMEngagementEjecutivo Comercial Senior MLB BM Cross Engagement Analistas Engagement Ejecutivo Comercial Senior Sim 6 6 6 6 6 6 6 6 6 6 6 6 PLANO BIG SELLERS BIG SELLERS - E&G BMEngagementSupervisor MLB BM Cross Engagement Lideres Engagement Supervisor Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO BIG SELLERS BIG SELLERS - E&G BMEngagementGerente MLB BM Cross Engagement Lideres Engagement Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS BIG SELLERS - E&G BMEngagementGerente Sr MLB BM Cross Engagement Lideres Engagement Gerente Sr Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreEjecutivo Comercial Semi senior MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Semi senior Sim 65 65 65 65 65 65 65 65 65 65 65 65 PLANO BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreEjecutivo Comercial Senior MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Senior Sim 10 10 10 10 10 10 10 10 10 10 10 10 PLANO BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreSupervisor MLB BM Instore Acquisition Lideres Instore Supervisor Não 6 6 6 6 6 6 6 6 6 6 6 6 PLANO BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreGerente MLB BM Instore Acquisition Lideres Instore Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS BIG SELLERS - HUNTING OP BMOPEjecutivo Comercial Semi senior MLB BM OP Acquisition Analistas OP Ejecutivo Comercial Semi senior Sim 30 30 30 30 30 30 30 29 29 29 29 29 PLANO BIG SELLERS BIG SELLERS - HUNTING OP BMOPEjecutivo Comercial Senior MLB BM OP Acquisition Analistas OP Ejecutivo Comercial Senior Sim 5 5 5 5 5 5 5 6 6 6 6 6 PLANO BIG SELLERS BIG SELLERS - HUNTING OP BMOPSupervisor MLB BM OP Acquisition Lideres OP Supervisor Não 4 4 4 4 4 4 4 4 4 4 4 4 PLANO BIG SELLERS BIG SELLERS - HUNTING OP BMOPGerente Sr MLB BM OP Acquisition Lideres OP Gerente Sr Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreEjecutivo Comercial MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Sim 0 0 0 0 0 0 0 0 0 0 0 0 PLANO BIG SELLERS BIG SELLERS - OTHERS BMLCExpert MLB BM OP Acquisition Analistas LC Expert Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS BIG SELLERS - OTHERS BMLCSpecialist MLB BM OP Acquisition Analistas LC Specialist Não 3 3 3 3 3 3 3 3 3 3 3 3 PLANO BIG SELLERS BIG SELLERS - OTHERS BMLCGerente MLB BM OP Acquisition Lideres LC Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS BIG SELLERS - OTHERS BMOnboardingAssistente MLB BM Onboarding Acquisition Analistas Onboarding Assistente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO BIG SELLERS BIG SELLERS - OTHERS BMOnboardingAnalista MLB BM Onboarding Acquisition Analistas Onboarding Analista Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO BIG SELLERS BIG SELLERS - OTHERS BMOnboardingAnalista Ssr MLB BM Onboarding Acquisition Analistas Onboarding Analista Ssr Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO BIG SELLERS BIG SELLERS - OTHERS BMOnboardingAnalista Sr MLB BM Onboarding Acquisition Analistas Onboarding Analista Sr Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO BIG SELLERS BIG SELLERS - OTHERS BMOnboardingSupervisor MLB BM Onboarding Acquisition Lideres Onboarding Supervisor Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO FDVP FDVP SMBFDVPGerente Sr MLB SMB Point Acquisition Lideres FDVP Gerente Sr Não 2 2 2 2 2 2 2 2 2 2 2 2 PLANO FDVP FDVP SMBFDVPGerente MLB SMB Point Acquisition Lideres FDVP Gerente Não 7 7 7 7 7 7 7 7 7 7 7 7 PLANO FDVP FDVP SMBFDVPSupervisor MLB SMB Point Acquisition Lideres FDVP Supervisor Não 6 6 6 7 7 7 8 8 8 8 8 8 PLANO FDVP FDVP SMBFDVPTeam Leader MLB SMB Point Acquisition Lideres FDVP Team Leader Sim 150 150 162 162 162 173 173 173 173 173 173 173 PLANO FDVP FDVP SMBFDVPEjecutivo de Ventas de Campo MLB SMB Point Acquisition Analistas FDVP Ejecutivo de Ventas de Campo Sim 622 622 670 737 737 789 852 852 852 852 852 852 PLANO FDVP FDVP SMBFDVPEjecutivo Comercial MLB SMB Point Acquisition Analistas FDVP Ejecutivo Comercial Sim 799 799 860 772 772 827 730 730 730 730 730 730 PLANO FDVP FDVP SMBFDVPEjecutivo Comercial Semi Senior MLB SMB Point Acquisition Analistas FDVP Ejecutivo Comercial Semi Senior Sim 79 79 85 106 106 114 148 148 148 148 148 148 PLANO FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoEjecutivo de Ventas de Campo MLB SMB Point Engagement Analistas Assessorado Ejecutivo de Ventas de Campo Sim 6 6 6 6 6 6 6 6 6 6 6 6 PLANO FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoEjecutivo Comercial MLB SMB Point Engagement Analistas Assessorado Ejecutivo Comercial Sim 0 0 0 0 0 0 0 0 0 0 0 0 PLANO FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoEjecutivo Comercial Semi Senior MLB SMB Point Engagement Analistas Assessorado Ejecutivo Comercial Semi Senior Sim 5 5 5 5 5 5 5 5 5 5 5 5 PLANO FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoEjecutivo Comercial Senior MLB SMB Point Engagement Analistas Assessorado Ejecutivo Comercial Senior Sim 1 1 1 1 1 1 1 1 1 1 1 1 PLANO FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoGerente MLB SMB Point Engagement Lideres Assessorado Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 PLANO FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoSupervisor MLB SMB Point Engagement Lideres Assessorado Supervisor Não 1 1 1 1 1 1 1 1 1 1 1 1
+
+CENÁRIO CANAL 1 CANAL 2 Chave Site Segment Sub-bu Role Position type Canal Cargo RV jan./26 fev./26 mar./26 abr./26 mai./26 jun./26 jul./26 ago./26 set./26 out./26 nov./26 dez./26 REALIZADO+FCST BIG SELLERS BIG SELLERS - E&G BMEngagementEjecutivo Comercial Semi senior MLB BM Cross Engagement Analistas Engagement Ejecutivo Comercial Semi senior Sim 11 12 15 15 15 15 15 15 15 15 15 15 REALIZADO+FCST BIG SELLERS BIG SELLERS - E&G BMEngagementEjecutivo Comercial Senior MLB BM Cross Engagement Analistas Engagement Ejecutivo Comercial Senior Sim 4 5 6 6 6 6 6 6 6 6 6 6 REALIZADO+FCST BIG SELLERS BIG SELLERS - E&G BMEngagementSupervisor MLB BM Cross Engagement Lideres Engagement Supervisor Não 2 2 2 2 2 2 2 2 2 2 2 2 REALIZADO+FCST BIG SELLERS BIG SELLERS - E&G BMEngagementGerente MLB BM Cross Engagement Lideres Engagement Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST BIG SELLERS BIG SELLERS - E&G BMEngagementGerente Sr MLB BM Cross Engagement Lideres Engagement Gerente Sr Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreEjecutivo Comercial Semi senior MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Semi senior Sim 64 64 65 74 83 83 83 83 83 83 83 83 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreEjecutivo Comercial Senior MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Senior Sim 1 1 10 10 10 10 10 10 10 10 10 10 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreSupervisor MLB BM Instore Acquisition Lideres Instore Supervisor Não 5 5 6 6 6 6 6 6 6 6 6 6 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreGerente MLB BM Instore Acquisition Lideres Instore Gerente Não 0 0 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING OP BMOPEjecutivo Comercial Semi senior MLB BM OP Acquisition Analistas OP Ejecutivo Comercial Semi senior Sim 34 33 30 30 30 30 30 29 29 29 29 29 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING OP BMOPEjecutivo Comercial Senior MLB BM OP Acquisition Analistas OP Ejecutivo Comercial Senior Sim 2 2 5 5 5 5 5 6 6 6 6 6 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING OP BMOPSupervisor MLB BM OP Acquisition Lideres OP Supervisor Não 4 4 4 4 4 4 4 4 4 4 4 4 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING OP BMOPGerente Sr MLB BM OP Acquisition Lideres OP Gerente Sr Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST BIG SELLERS BIG SELLERS - HUNTING INSTORE BMInstoreEjecutivo Comercial MLB BM Instore Acquisition Analistas Instore Ejecutivo Comercial Sim 0 1 0 0 0 0 0 0 0 0 0 0 REALIZADO+FCST BIG SELLERS BIG SELLERS - OTHERS BMLCExpert MLB BM OP Acquisition Analistas LC Expert Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST BIG SELLERS BIG SELLERS - OTHERS BMLCSpecialist MLB BM OP Acquisition Analistas LC Specialist Não 3 3 3 3 3 3 3 3 3 3 3 3 REALIZADO+FCST BIG SELLERS BIG SELLERS - OTHERS BMLCGerente MLB BM OP Acquisition Lideres LC Gerente Não 0 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST BIG SELLERS BIG SELLERS - OTHERS BMOnboardingAssistente MLB BM Onboarding Acquisition Analistas Onboarding Assistente Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST BIG SELLERS BIG SELLERS - OTHERS BMOnboardingAnalista MLB BM Onboarding Acquisition Analistas Onboarding Analista Não 2 2 2 2 2 2 2 2 2 2 2 2 REALIZADO+FCST BIG SELLERS BIG SELLERS - OTHERS BMOnboardingAnalista Ssr MLB BM Onboarding Acquisition Analistas Onboarding Analista Ssr Não 2 2 2 2 2 2 2 2 2 2 2 2 REALIZADO+FCST BIG SELLERS BIG SELLERS - OTHERS BMOnboardingAnalista Sr MLB BM Onboarding Acquisition Analistas Onboarding Analista Sr Não 2 2 2 2 2 2 2 2 2 2 2 2 REALIZADO+FCST BIG SELLERS BIG SELLERS - OTHERS BMOnboardingSupervisor MLB BM Onboarding Acquisition Lideres Onboarding Supervisor Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST FDVP FDVP SMBFDVPGerente Sr MLB SMB Point Acquisition Lideres FDVP Gerente Sr Não 2 2 2 2 2 2 2 2 2 2 2 2 REALIZADO+FCST FDVP FDVP SMBFDVPGerente MLB SMB Point Acquisition Lideres FDVP Gerente Não 6 6 7 7 7 7 7 7 7 7 7 7 REALIZADO+FCST FDVP FDVP SMBFDVPSupervisor MLB SMB Point Acquisition Lideres FDVP Supervisor Não 4 4 6 7 7 7 8 8 8 8 8 8 REALIZADO+FCST FDVP FDVP SMBFDVPTeam Leader MLB SMB Point Acquisition Lideres FDVP Team Leader Sim 131 132 162 162 162 173 173 173 173 173 173 173 REALIZADO+FCST FDVP FDVP SMBFDVPEjecutivo de Ventas de Campo MLB SMB Point Acquisition Analistas FDVP Ejecutivo de Ventas de Campo Sim 624 661 670 737 737 789 852 852 852 852 852 852 REALIZADO+FCST FDVP FDVP SMBFDVPEjecutivo Comercial MLB SMB Point Acquisition Analistas FDVP Ejecutivo Comercial Sim 743 681 860 772 772 827 730 730 730 730 730 730 REALIZADO+FCST FDVP FDVP SMBFDVPEjecutivo Comercial Semi Senior MLB SMB Point Acquisition Analistas FDVP Ejecutivo Comercial Semi Senior Sim 72 76 85 106 106 114 148 148 148 148 148 148 REALIZADO+FCST FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoEjecutivo de Ventas de Campo MLB SMB Point Engagement Analistas Assessorado Ejecutivo de Ventas de Campo Sim 3 2 6 6 6 6 6 6 6 6 6 6 REALIZADO+FCST FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoEjecutivo Comercial MLB SMB Point Engagement Analistas Assessorado Ejecutivo Comercial Sim 0 0 0 0 0 0 0 0 0 0 0 0 REALIZADO+FCST FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoEjecutivo Comercial Semi Senior MLB SMB Point Engagement Analistas Assessorado Ejecutivo Comercial Semi Senior Sim 5 5 5 5 5 5 5 5 5 5 5 5 REALIZADO+FCST FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoEjecutivo Comercial Senior MLB SMB Point Engagement Analistas Assessorado Ejecutivo Comercial Senior Sim 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoGerente MLB SMB Point Engagement Lideres Assessorado Gerente Não 1 1 1 1 1 1 1 1 1 1 1 1 REALIZADO+FCST FARMING ASSESSORADO FARMING ASSESSORADO SMBAssessoradoSupervisor MLB SMB Point Engagement Lideres Assessorado Supervisor Não 1 1 1 1 1 1 1 1 1 1 1 1
+
+</script>
+
+<script>
+
+const months25 = ['jan./25','fev./25','mar./25','abr./25','mai./25','jun./25','jul./25','ago./25','set./25','out./25','nov./25','dez./25'];
+
+const months26 = ['jan./26','fev./26','mar./26','abr./26','mai./26','jun./26','jul./26','ago./26','set./26','out./26','nov./26','dez./26'];
+
+
+
+function isNumeric(val) {
+
+return /^-?\d+(\.\d+)?$/.test(val);
+
+}
+
+
+
+function sum(arr) {
+
+return arr.reduce((a,b)=>a+(isFinite(b)?Number(b):0),0);
+
+}
+
+
+
+function parseRawData(raw) {
+
+const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+
+const data = [];
+
+let currentMonths = null;
+
+
+
+for (let line of lines) {
+
+// set current months by header hints
+
+if (line.includes('jan./25')) { currentMonths = months25; continue; }
+
+if (line.includes('jan./26')) { currentMonths = months26; continue; }
+
+
+
+// Only parse data lines starting with scenario
+
+if (!(line.startsWith('PLANO') || line.startsWith('REALIZADO') || line.startsWith('REALIZADO+FCST'))) {
+
+continue;
+
+}
+
+
+
+const tokens = line.split(/\s+/);
+
+if (tokens.length < 20) continue;
+
+
+
+// Identify last 12 numeric tokens
+
+const last12 = tokens.slice(-12);
+
+if (!last12.every(isNumeric)) continue;
+
+
+
+const rv = tokens[tokens.length - 13];
+
+const categoricalTokens = tokens.slice(0, tokens.length - 13);
+
+
+
+const scenario = categoricalTokens[0];
+
+const siteIdx = categoricalTokens.indexOf('MLB');
+
+if (siteIdx === -1) continue;
+
+
+
+const canalGroup = categoricalTokens.slice(1, siteIdx).join(' ');
+
+const site = 'MLB';
+
+const segment = categoricalTokens[siteIdx + 1] || '';
+
+
+
+const posAnalistasIdx = categoricalTokens.indexOf('Analistas');
+
+const posLideresIdx = categoricalTokens.indexOf('Lideres');
+
+let posTypeIdx = -1;
+
+let positionType = '';
+
+if (posAnalistasIdx !== -1) { posTypeIdx = posAnalistasIdx; positionType = 'Analistas'; }
+
+else if (posLideresIdx !== -1) { posTypeIdx = posLideresIdx; positionType = 'Lideres'; }
+
+else { continue; }
+
+
+
+const rolePath = categoricalTokens.slice(siteIdx + 2, posTypeIdx).join(' ');
+
+const channelName = categoricalTokens[posTypeIdx + 1] || '';
+
+const cargoName = categoricalTokens.slice(posTypeIdx + 2).join(' ').trim();
+
+
+
+const monthsLabels = currentMonths || months25; // default if not set
+
+const monthValues = last12.map(v => Number(v));
+
+const year = monthsLabels[0].includes('/25') ? 2025 : 2026;
+
+
+
+const key = [site, segment, rolePath, positionType, channelName, cargoName].join(' | ');
+
+
+
+const record = {
+
+scenario,
+
+year,
+
+canalGroup,
+
+site,
+
+segment,
+
+rolePath,
+
+positionType,
+
+channelName,
+
+cargoName,
+
+rv,
+
+months: {},
+
+total: sum(monthValues),
+
+key
+
+};
+
+for (let i=0;i<12;i++) {
+
+record.months[monthsLabels[i]] = monthValues[i];
+
+}
+
+data.push(record);
+
+}
+
+return data;
+
+}
+
+
+
+function uniqueSorted(data, field) {
+
+return Array.from(new Set(data.map(d => d[field]).filter(Boolean))).sort((a,b) => a.localeCompare(b));
+
+}
+
+
+
+function getMonthLabelsByYear(year) {
+
+return year === 2025 ? months25 : months26;
+
+}
+
+
+
+function filterData(allData, filters) {
+
+return allData.filter(d => {
+
+if (filters.year && d.year !== filters.year) return false;
+
+if (filters.scenarios && filters.scenarios.length && !filters.scenarios.includes(d.scenario)) return false;
+
+if (filters.segments && filters.segments.length && !filters.segments.includes(d.segment)) return false;
+
+if (filters.channels && filters.channels.length && !filters.channels.includes(d.channelName)) return false;
+
+if (filters.positionTypes && filters.positionTypes.length && !filters.positionTypes.includes(d.positionType)) return false;
+
+if (filters.rv && filters.rv.length && !filters.rv.includes(d.rv)) return false;
+
+if (filters.cargoSearch && filters.cargoSearch.trim().length) {
+
+const term = filters.cargoSearch.trim().toLowerCase();
+
+if (!d.cargoName.toLowerCase().includes(term)) return false;
+
+}
+
+return true;
+
+});
+
+}
+
+
+
+function aggregateMonthlyTotals(dataSubset, year) {
+
+const labels = getMonthLabelsByYear(year);
+
+const scenarios = ['PLANO','REALIZADO','REALIZADO+FCST'];
+
+const totals = { PLANO: Array(12).fill(0), REALIZADO: Array(12).fill(0), 'REALIZADO+FCST': Array(12).fill(0) };
+
+for (let d of dataSubset) {
+
+const idxArr = totals[d.scenario];
+
+if (!idxArr) continue;
+
+for (let i=0;i<12;i++) {
+
+idxArr[i] += (d.months[labels[i]] || 0);
+
+}
+
+}
+
+return { labels, totals };
+
+}
+
+
+
+function formatNumber(n) {
+
+return n.toLocaleString('pt-BR');
+
+}
+
+
+
+let allData = [];
+
+let dataTableInstance = null;
+
+let monthlyChart = null;
+
+let keyChart = null;
+
+
+
+function populateFilterOptions(data) {
+
+const segmentSelect = document.getElementById('segmentSelect');
+
+const channelSelect = document.getElementById('channelSelect');
+
+const positionTypeSelect = document.getElementById('positionTypeSelect');
+
+segmentSelect.innerHTML = '';
+
+channelSelect.innerHTML = '';
+
+positionTypeSelect.innerHTML = '';
+
+
+
+for (const seg of uniqueSorted(data, 'segment')) {
+
+const opt = document.createElement('option');
+
+opt.value = seg; opt.textContent = seg;
+
+opt.selected = true;
+
+segmentSelect.appendChild(opt);
+
+}
+
+for (const ch of uniqueSorted(data, 'channelName')) {
+
+const opt = document.createElement('option');
+
+opt.value = ch; opt.textContent = ch;
+
+opt.selected = true;
+
+channelSelect.appendChild(opt);
+
+}
+
+for (const pt of uniqueSorted(data, 'positionType')) {
+
+const opt = document.createElement('option');
+
+opt.value = pt; opt.textContent = pt;
+
+opt.selected = true;
+
+positionTypeSelect.appendChild(opt);
+
+}
+
+}
+
+
+
+function getSelectedValues(selectEl) {
+
+return Array.from(selectEl.options).filter(o => o.selected).map(o => o.value);
+
+}
+
+
+
+function updateKPIs(agg) {
+
+const planTotal = sum(agg.totals['PLANO']);
+
+const actualTotal = sum(agg.totals['REALIZADO']);
+
+const fcstTotal = sum(agg.totals['REALIZADO+FCST']);
+
+document.getElementById('kpiPlanTotal').textContent = formatNumber(planTotal);
+
+document.getElementById('kpiActualTotal').textContent = formatNumber(actualTotal);
+
+document.getElementById('kpiFcstTotal').textContent = formatNumber(fcstTotal);
+
+document.getElementById('kpiDeltaActualPlan').textContent = formatNumber(actualTotal - planTotal);
+
+}
+
+
+
+function renderMonthlyChart(agg) {
+
+const ctx = document.getElementById('monthlyTotalsChart').getContext('2d');
+
+const datasets = [];
+
+if (sum(agg.totals['PLANO']) > 0) {
+
+datasets.push({
+
+label: 'PLANO',
+
+data: agg.totals['PLANO'],
+
+borderColor: '#2a66b0',
+
+backgroundColor: 'rgba(42,102,176,0.2)',
+
+fill: true,
+
+tension: 0.25
+
+});
+
+}
+
+if (sum(agg.totals['REALIZADO']) > 0) {
+
+datasets.push({
+
+label: 'REALIZADO',
+
+data: agg.totals['REALIZADO'],
+
+borderColor: '#2e8b57',
+
+backgroundColor: 'rgba(46,139,87,0.2)',
+
+fill: true,
+
+tension: 0.25
+
+});
+
+}
+
+if (sum(agg.totals['REALIZADO+FCST']) > 0) {
+
+datasets.push({
+
+label: 'REALIZADO+FCST',
+
+data: agg.totals['REALIZADO+FCST'],
+
+borderColor: '#d2691e',
+
+backgroundColor: 'rgba(210,105,30,0.2)',
+
+fill: true,
+
+tension: 0.25
+
+});
+
+}
+
+
+
+if (monthlyChart) monthlyChart.destroy();
+
+monthlyChart = new Chart(ctx, {
+
+type: 'line',
+
+data: { labels: agg.labels.map(l => l.split('/')[0].toUpperCase()), datasets },
+
+options: {
+
+responsive: true,
+
+plugins: {
+
+legend: { position: 'top' },
+
+tooltip: { mode: 'index', intersect: false }
+
+},
+
+scales: {
+
+y: { beginAtZero: true }
+
+}
+
+}
+
+});
+
+}
+
+
+
+function populateKeySelect(dataSubset) {
+
+const keySelect = document.getElementById('keySelect');
+
+// unique keys present in subset
+
+const keys = Array.from(new Set(dataSubset.map(d => d.key))).sort();
+
+keySelect.innerHTML = '';
+
+for (const k of keys) {
+
+const opt = document.createElement('option');
+
+opt.value = k; opt.textContent = k;
+
+keySelect.appendChild(opt);
+
+}
+
+if (keys.length) {
+
+keySelect.selectedIndex = 0;
+
+}
+
+}
+
+
+
+function renderKeyChart(dataSubset, year) {
+
+const keySelect = document.getElementById('keySelect');
+
+const selectedKey = keySelect.value;
+
+const ctx = document.getElementById('keyComparisonChart').getContext('2d');
+
+const labels = getMonthLabelsByYear(year);
+
+const datasets = [];
+
+const colors = {
+
+'PLANO': '#2a66b0',
+
+'REALIZADO': '#2e8b57',
+
+'REALIZADO+FCST': '#d2691e'
+
+};
+
+
+
+const byScenario = { 'PLANO': null, 'REALIZADO': null, 'REALIZADO+FCST': null };
+
+for (let d of dataSubset) {
+
+if (d.key === selectedKey) {
+
+byScenario[d.scenario] = d;
+
+}
+
+}
+
+for (const sc of Object.keys(byScenario)) {
+
+const rec = byScenario[sc];
+
+if (rec) {
+
+datasets.push({
+
+label: sc,
+
+data: labels.map(m => rec.months[m] || 0),
+
+borderColor: colors[sc],
+
+backgroundColor: 'transparent',
+
+tension: 0.25
+
+});
+
+}
+
+}
+
+if (keyChart) keyChart.destroy();
+
+keyChart = new Chart(ctx, {
+
+type: 'line',
+
+data: { labels: labels.map(l => l.split('/')[0].toUpperCase()), datasets },
+
+options: {
+
+responsive: true,
+
+plugins: { legend: { position: 'top' } },
+
+scales: { y: { beginAtZero: true } }
+
+}
+
+});
+
+}
+
+
+
+function renderTable(dataSubset, year) {
+
+const labels = getMonthLabelsByYear(year);
+
+const rows = dataSubset.map(d => {
+
+const monthsRow = labels.map(m => d.months[m] || 0);
+
+return [
+
+d.scenario, d.year, d.canalGroup, d.site, d.segment, d.rolePath,
+
+d.positionType, d.channelName, d.cargoName, d.rv,
+
+...monthsRow, d.total
+
+];
+
+});
+
+
+
+if (dataTableInstance) {
+
+dataTableInstance.clear().rows.add(rows).draw();
+
+} else {
+
+dataTableInstance = $('#dataTable').DataTable({
+
+data: rows,
+
+pageLength: 10,
+
+columns: [
+
+{ title: 'Cenário' },
+
+{ title: 'Ano' },
+
+{ title: 'Grupo (antes de MLB)' },
+
+{ title: 'Site' },
+
+{ title: 'Segmento' },
+
+{ title: 'Função' },
+
+{ title: 'Tipo de posição' },
+
+{ title: 'Canal' },
+
+{ title: 'Cargo' },
+
+{ title: 'RV' },
+
+{ title: 'Jan' },{ title: 'Fev' },{ title: 'Mar' },{ title: 'Abr' },{ title: 'Mai' },{ title: 'Jun' },{ title: 'Jul' },{ title: 'Ago' },{ title: 'Set' },{ title: 'Out' },{ title: 'Nov' },{ title: 'Dez' },
+
+{ title: 'Total' }
+
+]
+
+});
+
+}
+
+}
+
+
+
+function applyFilters() {
+
+const year = Number(document.getElementById('yearSelect').value);
+
+const scenarios = getSelectedValues(document.getElementById('scenarioSelect'));
+
+const segments = getSelectedValues(document.getElementById('segmentSelect'));
+
+const channels = getSelectedValues(document.getElementById('channelSelect'));
+
+const positionTypes = getSelectedValues(document.getElementById('positionTypeSelect'));
+
+const rv = getSelectedValues(document.getElementById('rvSelect'));
+
+const cargoSearch = document.getElementById('cargoSearch').value || '';
+
+
+
+const filters = { year, scenarios, segments, channels, positionTypes, rv, cargoSearch };
+
+const subset = filterData(allData, filters);
+
+
+
+const agg = aggregateMonthlyTotals(subset, year);
+
+updateKPIs(agg);
+
+renderMonthlyChart(agg);
+
+populateKeySelect(subset);
+
+renderKeyChart(subset, year);
+
+renderTable(subset, year);
+
+}
+
+
+
+function resetFilters() {
+
+document.getElementById('yearSelect').value = '2025';
+
+for (const selId of ['scenarioSelect','segmentSelect','channelSelect','positionTypeSelect','rvSelect']) {
+
+const el = document.getElementById(selId);
+
+for (let i=0;i<el.options.length;i++) el.options[i].selected = true;
+
+}
+
+document.getElementById('cargoSearch').value = '';
+
+applyFilters();
+
+}
+
+
+
+window.addEventListener('DOMContentLoaded', () => {
+
+const raw = document.getElementById('rawData').textContent;
+
+allData = parseRawData(raw);
+
+
+
+populateFilterOptions(allData);
+
+applyFilters();
+
+
+
+document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
+
+document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
+
+document.getElementById('keySelect').addEventListener('change', () => {
+
+const year = Number(document.getElementById('yearSelect').value);
+
+const scenarios = getSelectedValues(document.getElementById('scenarioSelect'));
+
+const segments = getSelectedValues(document.getElementById('segmentSelect'));
+
+const channels = getSelectedValues(document.getElementById('channelSelect'));
+
+const positionTypes = getSelectedValues(document.getElementById('positionTypeSelect'));
+
+const rv = getSelectedValues(document.getElementById('rvSelect'));
+
+const cargoSearch = document.getElementById('cargoSearch').value || '';
+
+const subset = filterData(allData, { year, scenarios, segments, channels, positionTypes, rv, cargoSearch });
+
+renderKeyChart(subset, year);
+
+});
+
+document.getElementById('yearSelect').addEventListener('change', applyFilters);
+
+});
+
+</script>
+
+</body>
+
+</html>
