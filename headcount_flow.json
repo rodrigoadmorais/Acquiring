@@ -141,7 +141,10 @@
         },
         "filePath": "headcount_data.json",
         "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
-        "commitMessage": "Atualizando dados do dash via Verdi"
+        "commitMessage": "Atualizando dados do dash via Verdi",
+        "additionalParameters": {
+          "branch": "master"
+        }
       },
       "id": "a1b2c3d4-0008-4000-8000-000000000008",
       "name": "Write JSON to GitHub",
