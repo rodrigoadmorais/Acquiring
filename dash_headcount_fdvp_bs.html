@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Headcount — FDVP & Big Sellers</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg-primary:#F0F4F8;--bg-secondary:#FFFFFF;--bg-card:#FFFFFF;
+  --text-primary:#1A2332;--text-secondary:#546E7A;--text-muted:#90A4AE;
+  --border:#E0E7EF;--blue:#009EE3;--blue-dark:#003087;--yellow:#FFE600;
+  --green:#00A650;--red:#E03131;--orange:#F76707;
+  --shadow:0 2px 12px rgba(0,0,0,.08);--shadow-h:0 4px 24px rgba(0,0,0,.14);--r:12px;
+}
+[data-theme="dark"]{
+  --bg-primary:#0D1B2A;--bg-secondary:#1A2B3C;--bg-card:#1E3148;
+  --text-primary:#E8F4FD;--text-secondary:#90CAF9;--text-muted:#546E7A;
+  --border:#2A3F5A;--shadow:0 2px 12px rgba(0,0,0,.3);--shadow-h:0 4px 24px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Proxima Nova','Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);transition:background .3s,color .3s;min-height:100vh}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,var(--blue-dark) 0%,#005A9C 100%);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+.hdr-l{display:flex;align-items:center;gap:14px}
+.logo{background:var(--blue);color:#fff;padding:7px 14px;border-radius:8px;font-weight:800;font-size:14px;letter-spacing:.5px}
+.hdr-title h1{font-size:17px;font-weight:700;color:#fff}
+.hdr-title p{font-size:11px;color:rgba(255,255,255,.65);margin-top:2px}
+.hdr-ctrl{display:flex;align-items:center;gap:8px}
+.btn-theme{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 13px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:5px;font-family:inherit}
+.btn-theme:hover{background:rgba(255,255,255,.25)}
+
+/* FILTER BAR */
+.fbar{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:57px;z-index:99;box-shadow:var(--shadow)}
+.fl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.fsel{background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:5px 10px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer;outline:none;transition:border-color .2s;min-width:110px}
+.fsel:focus{border-color:var(--blue)}
+.fdiv{width:1px;height:26px;background:var(--border)}
+.btn-tgl{background:var(--bg-primary);border:1px solid var(--border);color:var(--text-secondary);padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+.btn-tgl.on,.btn-tgl:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* UNIT */
+.unit-wrap{display:flex;gap:2px;background:var(--bg-primary);border:1px solid var(--border);border-radius:7px;padding:2px}
+.unit-btn{padding:4px 9px;border-radius:5px;border:none;background:transparent;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.unit-btn.on{background:var(--blue);color:#fff}
+
+/* EXPORT */
+.btn-exp{background:var(--green);color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn-exp:hover{opacity:.88;transform:translateY(-1px)}
+
+/* MAIN */
+.main{padding:22px 28px;max-width:1600px;margin:0 auto}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.kpi.c-blue::before{background:var(--blue)}.kpi.c-green::before{background:var(--green)}
+.kpi.c-orange::before{background:var(--orange)}.kpi.c-dark::before{background:var(--blue-dark)}
+.kpi.c-yellow::before{background:#F59F00}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-h)}
+.kpi-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text-primary);margin-bottom:5px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text-secondary);margin-bottom:7px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.badge.pos{background:rgba(0,166,80,.12);color:var(--green)}
+.badge.neg{background:rgba(224,49,49,.12);color:var(--red)}
+.badge.neu{background:rgba(0,158,227,.12);color:var(--blue)}
+.badge.warn{background:rgba(247,103,7,.12);color:var(--orange)}
+
+/* CHARTS */
+.charts-r1{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+.charts-r2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.c-card{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.c-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.c-title{font-size:13px;font-weight:700;color:var(--text-primary)}
+.c-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
+
+/* INSIGHTS */
+.insights{background:linear-gradient(135deg,var(--blue-dark),#005A9C);border-radius:var(--r);padding:18px 22px;margin-bottom:22px;color:#fff;position:relative;overflow:hidden}
+.insights::after{content:'✦';position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:72px;color:rgba(255,255,255,.04)}
+.ins-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ins-badge{background:var(--blue);color:#fff;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.ins-title{font-size:14px;font-weight:700}
+.ins-text{font-size:12px;line-height:1.75;color:rgba(255,255,255,.9);max-width:960px}
+
+/* TABLE */
+.tbl-card{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:22px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--bg-primary);color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:2px solid var(--border)}
+thead th:first-child{text-align:left}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:hover{background:rgba(0,158,227,.04)}
+tbody tr.g-row{background:rgba(0,48,135,.05);font-weight:700;cursor:pointer}
+[data-theme="dark"] tbody tr.g-row{background:rgba(0,158,227,.08)}
+tbody td{padding:9px 10px;color:var(--text-primary);text-align:right;white-space:nowrap}
+tbody td:first-child{text-align:left}
+.ach{display:inline-block;padding:2px 7px;border-radius:11px;font-size:10px;font-weight:700}
+.ach.g{background:rgba(0,166,80,.12);color:var(--green)}
+.ach.w{background:rgba(247,103,7,.12);color:var(--orange)}
+.ach.b{background:rgba(224,49,49,.12);color:var(--red)}
+.exp-ico{display:inline-flex;align-items:center;justify-content:center;margin-right:7px;width:16px;height:16px;background:var(--blue);color:#fff;border-radius:3px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0}
+.ch-row{display:none}
+.ch-row.vis{display:table-row}
+.ch-row td:first-child{padding-left:32px;color:var(--text-secondary)}
+
+/* RANKINGS */
+.rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.rank-item:last-child{border-bottom:none}
+.rank-n{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+.rn1{background:#FFD700;color:#7A5C00}.rn2{background:#C0C0C0;color:#4A4A4A}
+.rn3{background:#CD7F32;color:#fff}.rn4,.rn5{background:var(--bg-primary);color:var(--text-muted)}
+.rank-name{flex:1;font-size:12px;font-weight:600;color:var(--text-primary)}
+.rank-val{font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap}
+.rank-bar-w{width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
+.rank-bar{height:100%;background:var(--blue);border-radius:3px}
+
+@media(max-width:1024px){.charts-r1,.charts-r2{grid-template-columns:1fr}}
+@media(max-width:768px){.fbar,.main,.hdr{padding-left:14px;padding-right:14px}}
+</style>
+</head>
+<body data-theme="light">
+
+<header class="hdr">
+  <div class="hdr-l">
+    <div class="logo">MP</div>
+    <div class="hdr-title">
+      <h1>Dashboard Headcount — FDVP & Big Sellers</h1>
+      <p>Plano vs Realizado · Budget 2025 & 2026 · Atualizado em março/2026</p>
+    </div>
+  </div>
+  <div class="hdr-ctrl">
+    <div class="unit-wrap">
+      <button class="unit-btn on" onclick="setUnit(1,'')">1</button>
+      <button class="unit-btn" onclick="setUnit(1000,'k')">k</button>
+    </div>
+    <button class="btn-tgl on" id="btnY" onclick="toggleYAxis()">Eixo Y</button>
+    <button class="btn-tgl on" id="btnL" onclick="toggleLabels()">Rótulos</button>
+    <button class="btn-theme" onclick="toggleTheme()">
+      <span id="tIcon">🌙</span><span id="tTxt">Dark</span>
+    </button>
+  </div>
+</header>
+
+<div class="fbar">
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">Ano</span>
+    <select class="fsel" id="fAno" onchange="applyFilters()">
+      <option value="2025">2025</option>
+      <option value="2026">2026</option>
+      <option value="all">2025 + 2026</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">Canal</span>
+    <select class="fsel" id="fCanal" onchange="applyFilters()">
+      <option value="all">Todos</option>
+      <option value="BIG SELLERS">Big Sellers</option>
+      <option value="FDVP">FDVP</option>
+      <option value="FARMING ASSESSORADO">Farming Assessorado</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">Sub-BU</span>
+    <select class="fsel" id="fSubBu" onchange="applyFilters()">
+      <option value="all">Todas</option>
+      <option value="Cross">Cross (E&amp;G)</option>
+      <option value="Instore">Instore</option>
+      <option value="OP">OP</option>
+      <option value="Onboarding">Onboarding</option>
+      <option value="Point">FDVP / Point</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">Role</span>
+    <select class="fsel" id="fRole" onchange="applyFilters()">
+      <option value="all">Todos</option>
+      <option value="Analistas">Analistas</option>
+      <option value="Lideres">Líderes</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">RV</span>
+    <select class="fsel" id="fRV" onchange="applyFilters()">
+      <option value="all">Todos</option>
+      <option value="Sim">Com RV</option>
+      <option value="Não">Sem RV</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <button class="btn-exp" onclick="exportExcel()">⬇ Exportar Excel</button>
+</div>
+
+<div class="main">
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="insights">
+    <div class="ins-hdr">
+      <span class="ins-badge">✦ Insight IA</span>
+      <span class="ins-title">Resumo Executivo Dinâmico</span>
+    </div>
+    <p class="ins-text" id="insText">Carregando análise...</p>
+  </div>
+
+  <div class="charts-r1">
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Evolução Mensal — Headcount Total</div><div class="c-sub">Plano vs Realizado/FCST por mês</div></div>
+      </div>
+      <div style="position:relative;height:270px"><canvas id="cEvol"></canvas></div>
+    </div>
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Top 5 Cargos</div><div class="c-sub">Por headcount realizado/FCST acumulado</div></div>
+      </div>
+      <div id="rankList"></div>
+    </div>
+  </div>
+
+  <div class="charts-r2">
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Headcount por Canal</div><div class="c-sub">Plano vs Realizado — acumulado anual</div></div>
+      </div>
+      <div style="position:relative;height:250px"><canvas id="cCanal"></canvas></div>
+    </div>
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Atingimento por Sub-BU</div><div class="c-sub">% Realizado / Plano — acumulado anual</div></div>
+      </div>
+      <div style="position:relative;height:250px"><canvas id="cSubBu"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tbl-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div><div class="c-title">Tabela Detalhada — Drill-down por Canal</div><div class="c-sub">Clique no canal para expandir os cargos</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align:left;min-width:210px">Canal / Cargo</th>
+            <th id="th0">Jan</th><th id="th1">Fev</th><th id="th2">Mar</th><th id="th3">Abr</th>
+            <th id="th4">Mai</th><th id="th5">Jun</th><th id="th6">Jul</th><th id="th7">Ago</th>
+            <th id="th8">Set</th><th id="th9">Out</th><th id="th10">Nov</th><th id="th11">Dez</th>
+            <th>Total Plano</th><th>Total Real</th><th>Ating. %</th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const P25=[
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,8,10,10,11,14,14,15,15,15,15,15]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,5,5,5,5,5,5,5,5,5,5]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[31,33,36,36,40,42,42,42,42,42,42,42]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[12,13,14,15,16,18,18,18,18,18,18,18]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[3,4,4,4,4,5,5,5,5,5,5,5]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[21,23,26,26,26,26,26,26,26,26,26,26]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[9,9,10,10,10,10,10,10,10,10,10,10]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente Sr",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[4,4,4,4,5,5,6,6,7,7,7,7]},
+  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[4,4,6,6,7,7,8,8,9,9,9,9]},
+  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[70,70,90,90,110,110,130,130,150,150,150,150]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[140,140,180,270,330,330,390,390,450,450,450,450]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[505,505,650,570,697,690,815,830,958,950,950,950]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[55,55,70,60,73,80,94,80,92,100,100,100]},
+];
+const R25=[
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,6,7,8,11,12,12,11,11,12,11,11]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[5,5,4,4,3,5,5,6,6,7,5,4]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,1,2,2,2,3,2,2,1,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,2,1,1,1,1,1,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[29,33,33,30,37,43,42,38,48,57,63,67]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[5,6,6,6,6,5,5,5,5,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[2,3,4,4,4,5,5,5,5,5,5,5]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,0]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[20,18,23,34,28,27,28,27,29,31,33,34]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[4,4,4,3,3,3,3,3,3,3,2,2]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[3,3,3,4,4,4,4,4,4,4,4,4]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,0,0]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,2,2,2,3,3,3,3,3,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente Sr",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,0,0]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,1,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,5,6,6,6,6,6,6]},
+  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[2,5,5,5,5,5,4,4,4,4,4,4]},
+  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[67,66,70,82,86,101,100,105,114,116,126,131]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[134,107,129,137,152,211,218,277,305,405,519,579]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[511,516,581,596,648,774,727,779,823,761,746,744]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[29,38,40,43,46,44,44,63,62,61,61,61]},
+];
+const P26=[
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[15,15,15,15,15,15,15,15,15,15,15,15]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[65,65,65,65,65,65,65,65,65,65,65,65]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[10,10,10,10,10,10,10,10,10,10,10,10]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[30,30,30,30,30,30,30,29,29,29,29,29]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,4,4,4,4,4,4,4]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Instore",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[7,7,7,7,7,7,7,7,7,7,7,7]},
+  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[6,6,6,7,7,7,8,8,8,8,8,8]},
+  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[150,150,162,162,162,173,173,173,173,173,173,173]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[622,622,670,737,737,789,852,852,852,852,852,852]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[799,799,860,772,772,827,730,730,730,730,730,730]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[79,79,85,106,106,114,148,148,148,148,148,148]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. de Ventas Campo Assess.",role:"Analistas",rv:"Sim",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Assess.",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Semi Sr Assess.",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,5,5,5,5,5]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Senior Assess.",role:"Analistas",rv:"Sim",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Gerente Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Supervisor Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+];
+const R26=[
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[11,12,15,15,15,15,15,15,15,15,15,15]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[64,64,65,74,83,83,83,83,83,83,83,83]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[1,1,10,10,10,10,10,10,10,10,10,10]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[5,5,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[0,0,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[34,33,30,30,30,30,30,29,29,29,29,29]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[2,2,5,5,5,5,5,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,4,4,4,4,4,4,4]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Instore",role:"Analistas",rv:"Sim",m:[0,1,0,0,0,0,0,0,0,0,0,0]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente",role:"Lideres",rv:"Não",m:[0,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[6,6,7,7,7,7,7,7,7,7,7,7]},
+  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[4,4,6,7,7,7,8,8,8,8,8,8]},
+  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[131,132,162,162,162,173,173,173,173,173,173,173]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[624,661,670,737,737,789,852,852,852,852,852,852]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[743,681,860,772,772,827,730,730,730,730,730,730]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[72,76,85,106,106,114,148,148,148,148,148,148]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. de Ventas Campo Assess.",role:"Analistas",rv:"Sim",m:[3,2,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Assess.",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Semi Sr Assess.",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,5,5,5,5,5]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Senior Assess.",role:"Analistas",rv:"Sim",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Gerente Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Supervisor Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+];
+const M25=["Jan/25","Fev/25","Mar/25","Abr/25","Mai/25","Jun/25","Jul/25","Ago/25","Set/25","Out/25","Nov/25","Dez/25"];
+const M26=["Jan/26","Fev/26","Mar/26","Abr/26","Mai/26","Jun/26","Jul/26","Ago/26","Set/26","Out/26","Nov/26","Dez/26"];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+const ST={ano:"2025",canal:"all",subbu:"all",role:"all",rv:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{}};
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+const sum=arr=>arr.reduce((a,b)=>a+b,0);
+const sumRows=(rows,n)=>{const r=Array(n||12).fill(0);rows.forEach(x=>x.m.forEach((v,i)=>r[i]+=v));return r};
+function fmt(v){
+  if(ST.unit===1)return Math.round(v).toLocaleString('pt-BR');
+  return (v/ST.unit).toLocaleString('pt-BR',{maximumFractionDigits:1})+ST.unitLbl;
+}
+function fp(v){return v.toFixed(1)+'%'}
+function achClass(a){return a>=100?'g':a>=85?'w':'b'}
+function badgeCls(a){return a>=100?'pos':a>=85?'warn':'neg'}
+
+function ds(){
+  const a=ST.ano;
+  if(a==='2025')return{plan:P25,real:R25,months:M25,lbl:"Realizado"};
+  if(a==='2026')return{plan:P26,real:R26,months:M26,lbl:"Real+FCST"};
+  return{plan:[...P25,...P26],real:[...R25,...R26],months:[...M25,...M26],lbl:"Real/FCST"};
+}
+function filter(rows){
+  return rows.filter(r=>{
+    if(ST.canal!=='all'&&r.canal!==ST.canal)return false;
+    if(ST.subbu!=='all'&&r.subbu!==ST.subbu)return false;
+    if(ST.role!=='all'&&r.role!==ST.role)return false;
+    if(ST.rv!=='all'&&r.rv!==ST.rv)return false;
+    return true;
+  });
+}
+
+// ── FILTERS ────────────────────────────────────────────────────────────────
+function applyFilters(){
+  ST.ano=document.getElementById('fAno').value;
+  ST.canal=document.getElementById('fCanal').value;
+  ST.subbu=document.getElementById('fSubBu').value;
+  ST.role=document.getElementById('fRole').value;
+  ST.rv=document.getElementById('fRV').value;
+  render();
+}
+
+// ── MAIN RENDER ────────────────────────────────────────────────────────────
+function render(){
+  const d=ds();
+  const plan=filter(d.plan), real=filter(d.real);
+  const n=d.months.length;
+  const pm=sumRows(plan,n), rm=sumRows(real,n);
+  // update table headers
+  d.months.forEach((m,i)=>{const el=document.getElementById('th'+i);if(el)el.textContent=m});
+  renderKPIs(pm,rm,d);
+  renderInsights(pm,rm,d);
+  renderEvol(pm,rm,d);
+  renderCanal(d);
+  renderSubBu(d);
+  renderRankings(real,d);
+  renderTable(plan,real,d);
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────
+function renderKPIs(pm,rm,d){
+  const tP=sum(pm),tR=sum(rm),ach=tP>0?tR/tP*100:0;
+  const last=pm.length-1,lP=pm[last],lR=rm[last],lA=lP>0?lR/lP*100:0;
+  const prev=last>0?rm[last-1]:0,mom=prev>0?(lR-prev)/prev*100:0,momAbs=lR-prev;
+  const canais=[...new Set(d.real.map(r=>r.canal))];
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi c-blue">
+      <div class="kpi-lbl">Headcount Plano — Acumulado</div>
+      <div class="kpi-val">${fmt(tP)}</div>
+      <div class="kpi-sub">${d.months[0]} → ${d.months[last]}</div>
+      <span class="badge neu">Plano Total</span>
+    </div>
+    <div class="kpi c-green">
+      <div class="kpi-lbl">Headcount ${d.lbl} — Acumulado</div>
+      <div class="kpi-val">${fmt(tR)}</div>
+      <div class="kpi-sub">Atingimento: ${fp(ach)}</div>
+      <span class="badge ${badgeCls(ach)}">${ach>=100?'▲ Acima':'▼ Abaixo'} — ${fp(Math.abs(ach-100))} do plano</span>
+    </div>
+    <div class="kpi ${ach>=100?'c-green':ach>=85?'c-orange':'c-dark'}">
+      <div class="kpi-lbl">Atingimento — ${d.months[last]}</div>
+      <div class="kpi-val">${fp(lA)}</div>
+      <div class="kpi-sub">Real: ${fmt(lR)} · Plano: ${fmt(lP)}</div>
+      <span class="badge ${badgeCls(lA)}">${lA>=100?'✓ Superado':'✗ Gap de '+fmt(lP-lR)}</span>
+    </div>
+    <div class="kpi c-orange">
+      <div class="kpi-lbl">Variação MoM — ${d.months[last]}</div>
+      <div class="kpi-val">${mom>=0?'+':''}${fp(mom)}</div>
+      <div class="kpi-sub">Δ Absoluto: ${mom>=0?'+':''}${fmt(momAbs)} headcounts</div>
+      <span class="badge ${mom>=0?'pos':'neg'}">${mom>=0?'▲ Crescimento':'▼ Redução'} MoM</span>
+    </div>
+    <div class="kpi c-yellow">
+      <div class="kpi-lbl">Canais no Escopo</div>
+      <div class="kpi-val">${canais.length}</div>
+      <div class="kpi-sub">${canais.join(' · ')}</div>
+      <span class="badge neu">Segmentos ativos</span>
+    </div>
+  `;
+}
+
+// ── INSIGHTS ──────────────────────────────────────────────────────────────
+function renderInsights(pm,rm,d){
+  const tP=sum(pm),tR=sum(rm),ach=tP>0?tR/tP*100:0;
+  const last=pm.length-1,lP=pm[last],lR=rm[last],lA=lP>0?lR/lP*100:0;
+  const prev=last>0?rm[last-1]:0,mom=prev>0?(lR-prev)/prev*100:0;
+  const cf=ST.canal==='all'?'todos os canais':ST.canal;
+  const momTxt=mom>=0?`crescimento de ${fp(mom)}`:`queda de ${fp(Math.abs(mom))}`;
+  const achTxt=ach>=100?'com superação do objetivo':ach>=90?'muito próximo do objetivo, com pequeno gap a recuperar':'com gap relevante frente ao planejado — requer atenção na execução';
+  document.getElementById('insText').innerHTML=`
+    No período <strong>${d.months[0]} a ${d.months[last]}</strong>, analisando <strong>${cf}</strong>,
+    o headcount acumulado atingiu <strong>${fmt(tR)}</strong> posições frente a um plano de
+    <strong>${fmt(tP)}</strong> — representando <strong>${fp(ach)} de atingimento</strong>, ${achTxt}.
+    Em <strong>${d.months[last]}</strong>, o headcount foi de <strong>${fmt(lR)}</strong>
+    (plano: ${fmt(lP)} | ${fp(lA)} do plano), com ${momTxt} vs mês anterior.
+    ${ach<90?' Recomenda-se revisar ações de atração e contratação para os próximos meses.':
+      ach>=100?' O desempenho acima do plano sinaliza boa execução da estratégia de expansão.':
+      ' A tendência indica recuperação positiva — manter foco no ramp-up dos novos headcounts.'}
+  `;
+}
+
+// ── CHART: EVOLUTION ──────────────────────────────────────────────────────
+function renderEvol(pm,rm,d){
+  const ctx=document.getElementById('cEvol').getContext('2d');
+  if(ST.charts.evol){ST.charts.evol.destroy()}
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  ST.charts.evol=new Chart(ctx,{
+    type:'bar',
+    data:{labels:d.months,datasets:[
+      {label:'Plano',data:pm,backgroundColor:'rgba(0,48,135,0.12)',borderColor:'#003087',borderWidth:2,borderRadius:4,order:2},
+      {label:d.lbl,data:rm,backgroundColor:'rgba(0,158,227,0.72)',borderColor:'#009EE3',borderWidth:0,borderRadius:4,order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:11,padding:14}},
+        datalabels:{display:ST.showL,anchor:'end',align:'top',color:tc,font:{size:8,weight:'700'},formatter:v=>fmt(v),padding:{top:2}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:tc,font:{size:9}},border:{display:false}},
+        y:{display:ST.showY,grid:{display:false},ticks:{color:tc,font:{size:9},callback:v=>fmt(v)},border:{display:false}}
+      }
+    },plugins:[ChartDataLabels]
+  });
+}
+
+// ── CHART: CANAL ──────────────────────────────────────────────────────────
+function renderCanal(d){
+  const ctx=document.getElementById('cCanal').getContext('2d');
+  if(ST.charts.canal){ST.charts.canal.destroy()}
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  const plan=filter(d.plan),real=filter(d.real);
+  const canais=[...new Set([...plan,...real].map(r=>r.canal))];
+  const pT=canais.map(c=>sum(sumRows(plan.filter(r=>r.canal===c),d.months.length)));
+  const rT=canais.map(c=>sum(sumRows(real.filter(r=>r.canal===c),d.months.length)));
+  ST.charts.canal=new Chart(ctx,{
+    type:'bar',
+    data:{labels:canais,datasets:[
+      {label:'Plano',data:pT,backgroundColor:'rgba(0,48,135,0.12)',borderColor:'#003087',borderWidth:2,borderRadius:6},
+      {label:d.lbl,data:rT,backgroundColor:'rgba(0,158,227,0.72)',borderColor:'#009EE3',borderWidth:0,borderRadius:6}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:11,padding:12}},
+        datalabels:{display:ST.showL,anchor:'end',align:'top',color:tc,font:{size:9,weight:'700'},formatter:v=>fmt(v),padding:{top:2}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:tc,font:{size:10}},border:{display:false}},
+        y:{display:ST.showY,grid:{display:false},ticks:{color:tc,font:{size:9},callback:v=>fmt(v)},border:{display:false}}
+      }
+    },plugins:[ChartDataLabels]
+  });
+}
+
+// ── CHART: SUB-BU ─────────────────────────────────────────────────────────
+function renderSubBu(d){
+  const ctx=document.getElementById('cSubBu').getContext('2d');
+  if(ST.charts.subbu){ST.charts.subbu.destroy()}
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  const plan=filter(d.plan),real=filter(d.real);
+  const subus=[...new Set([...plan,...real].map(r=>r.subbu))];
+  const achs=subus.map(s=>{
+    const p=sum(sumRows(plan.filter(r=>r.subbu===s),d.months.length));
+    const r=sum(sumRows(real.filter(r=>r.subbu===s),d.months.length));
+    return p>0?r/p*100:0;
+  });
+  const colors=achs.map(a=>a>=100?'rgba(0,166,80,0.75)':a>=85?'rgba(247,103,7,0.75)':'rgba(224,49,49,0.75)');
+  ST.charts.subbu=new Chart(ctx,{
+    type:'bar',
+    data:{labels:subus,datasets:[{label:'Atingimento %',data:achs,backgroundColor:colors,borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:ST.showL,anchor:'end',align:'right',color:tc,font:{size:10,weight:'700'},formatter:v=>v.toFixed(1)+'%'},
+        tooltip:{callbacks:{label:c=>` Atingimento: ${c.raw.toFixed(1)}%`}}
+      },
+      scales:{
+        x:{display:ST.showY,grid:{display:false},ticks:{color:tc,callback:v=>v+'%',font:{size:9}},border:{display:false},min:0,max:Math.max(130,...achs)+5},
+        y:{grid:{display:false},ticks:{color:tc,font:{size:11,weight:'600'}},border:{display:false}}
+      }
+    },plugins:[ChartDataLabels]
+  });
+}
+
+// ── RANKINGS ──────────────────────────────────────────────────────────────
+function renderRankings(real,d){
+  const m={};
+  real.forEach(r=>{const t=sum(r.m);m[r.cargo]=(m[r.cargo]||0)+t});
+  const sorted=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const mx=sorted[0]?.[1]||1;
+  document.getElementById('rankList').innerHTML=sorted.map(([c,t],i)=>`
+    <div class="rank-item">
+      <div class="rank-n rn${i+1}">${i+1}</div>
+      <div style="flex:1">
+        <div class="rank-name">${c}</div>
+        <div class="rank-bar-w"><div class="rank-bar" style="width:${(t/mx*100).toFixed(0)}%"></div></div>
+      </div>
+      <div class="rank-val">${fmt(t)}</div>
+    </div>
+  `).join('');
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────────────
+function renderTable(plan,real,d){
+  const n=d.months.length;
+  const canais=[...new Set([...plan,...real].map(r=>r.canal))];
+  const tb=document.getElementById('tBody');
+  tb.innerHTML='';
+  canais.forEach((canal,ci)=>{
+    const pR=plan.filter(r=>r.canal===canal),rR=real.filter(r=>r.canal===canal);
+    const pm=sumRows(pR,n),rm=sumRows(rR,n);
+    const tP=sum(pm),tR=sum(rm),ach=tP>0?tR/tP*100:0;
+    const gid='g'+ci;
+    const tr=document.createElement('tr');
+    tr.className='g-row';tr.onclick=()=>toggleG(gid);
+    tr.innerHTML=`<td><span class="exp-ico" id="ic-${gid}">+</span>${canal}</td>
+      ${rm.map(v=>`<td>${fmt(v)}</td>`).join('')}
+      <td><strong>${fmt(tP)}</strong></td><td><strong>${fmt(tR)}</strong></td>
+      <td><span class="ach ${achClass(ach)}">${fp(ach)}</span></td>`;
+    tb.appendChild(tr);
+    const cargos=[...new Set([...pR,...rR].map(r=>r.cargo))];
+    cargos.forEach(cargo=>{
+      const cp=pR.filter(r=>r.cargo===cargo),cr=rR.filter(r=>r.cargo===cargo);
+      const cpm=sumRows(cp,n),crm=sumRows(cr,n);
+      const ctP=sum(cpm),ctR=sum(crm),ca=ctP>0?ctR/ctP*100:0;
+      const ch=document.createElement('tr');
+      ch.className='ch-row';ch.setAttribute('data-p',gid);
+      ch.innerHTML=`<td>${cargo}</td>
+        ${crm.map(v=>`<td>${fmt(v)}</td>`).join('')}
+        <td>${fmt(ctP)}</td><td>${fmt(ctR)}</td>
+        <td><span class="ach ${achClass(ca)}">${fp(ca)}</span></td>`;
+      tb.appendChild(ch);
+    });
+  });
+}
+function toggleG(gid){
+  const rows=document.querySelectorAll(`[data-p="${gid}"]`);
+  const ic=document.getElementById('ic-'+gid);
+  const open=rows[0]?.classList.contains('vis');
+  rows.forEach(r=>r.classList.toggle('vis',!open));
+  if(ic)ic.textContent=open?'+':'-';
+}
+
+// ── TOGGLES ───────────────────────────────────────────────────────────────
+function toggleTheme(){
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  document.body.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('tIcon').textContent=dark?'🌙':'☀️';
+  document.getElementById('tTxt').textContent=dark?'Dark':'Light';
+  render();
+}
+function toggleYAxis(){ST.showY=!ST.showY;document.getElementById('btnY').classList.toggle('on',ST.showY);render()}
+function toggleLabels(){ST.showL=!ST.showL;document.getElementById('btnL').classList.toggle('on',ST.showL);render()}
+function setUnit(u,l,el){
+  ST.unit=u;ST.unitLbl=l;
+  document.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('on'));
+  if(event?.target)event.target.classList.add('on');
+  render();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function exportExcel(){
+  const d=ds();
+  const plan=filter(d.plan),real=filter(d.real);
+  const rows=[['Canal','Sub-BU','Cargo','Role','RV','Cenário',...d.months,'TOTAL']];
+  [...plan.map(r=>({...r,c:'PLANO'})),...real.map(r=>({...r,c:d.lbl}))].forEach(r=>{
+    rows.push([r.canal,r.subbu,r.cargo,r.role,r.rv,r.c,...r.m,sum(r.m)]);
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Headcount');
+  XLSX.writeFile(wb,`headcount_${ST.ano}.xlsx`);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+Chart.register(ChartDataLabels);
+document.addEventListener('DOMContentLoaded',render);
+</script>
+</body>
+</html>
