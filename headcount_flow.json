@@ -127,17 +127,6 @@
     },
     {
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "// Map sheet column names → dashboard field names\n// Sheet cols: CENÁRIO, Canal, Sub-bu, Cargo, Role, RV + monthly cols\n// Dashboard fields: canal, subbu, cargo, role, rv, m[12]\n\nconst months = {\n  '2025': ['jan./25','fev./25','mar./25','abr./25','mai./25','jun./25','jul./25','ago./25','set./25','out./25','nov./25','dez./25'],\n  '2026': ['jan./26','fev./26','mar./26','abr./26','mai./26','jun./26','jul./26','ago./26','set./26','out./26','nov./26','dez./26']\n};\n\nconst result = { P25: [], R25: [], P26: [], R26: [] };\n\nfor (const item of $input.all()) {\n  const row = item.json;\n  const cenario = (row['CENÁRIO'] || row['CENARIO'] || row['Cenário'] || '').trim().toUpperCase();\n  const year = (row['__year'] || '').trim();\n  if (!year || !months[year]) continue;\n\n  const obj = {\n    canal: (row['Canal'] || '').trim(),\n    subbu: (row['Sub-bu'] || row['Sub-BU'] || row['Subbu'] || '').trim(),\n    cargo: (row['Cargo'] || '').trim(),\n    role:  (row['Role']  || '').trim(),\n    rv:    (row['RV']    || '').trim(),\n    m: months[year].map(k => {\n      const v = row[k];\n      const n = parseFloat(String(v || '0').replace(',', '.'));\n      return isNaN(n) ? 0 : n;\n    })\n  };\n\n  if (!obj.canal) continue; // skip header/empty rows\n\n  if (cenario === 'PLANO' && year === '2025')       result.P25.push(obj);\n  else if (cenario !== 'PLANO' && year === '2025')  result.R25.push(obj);\n  else if (cenario === 'PLANO' && year === '2026')  result.P26.push(obj);\n  else if (year === '2026')                         result.R26.push(obj);\n}\n\nreturn [{ json: { output: JSON.stringify(result, null, 2) } }];"
-      },
-      "id": "a1b2c3d4-0007-4000-8000-000000000007",
-      "name": "Transform to Dashboard Format",
-      "type": "n8n-nodes-base.code",
-      "position": [896, 0],
-      "typeVersion": 2
-    },
-    {
-      "parameters": {
         "resource": "file",
         "operation": "edit",
         "owner": {
@@ -151,13 +140,13 @@
           "value": "Acquiring"
         },
         "filePath": "headcount_data.json",
-        "fileContent": "={{ $json.output }}",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
         "commitMessage": "Atualizando dados do dash via Verdi"
       },
       "id": "a1b2c3d4-0008-4000-8000-000000000008",
       "name": "Write JSON to GitHub",
       "type": "n8n-nodes-base.github",
-      "position": [1120, 0],
+      "position": [896, 0],
       "executeOnce": true,
       "typeVersion": 1.1,
       "credentials": {
@@ -199,11 +188,6 @@
       ]
     },
     "Merge Years": {
-      "main": [
-        [{ "node": "Transform to Dashboard Format", "type": "main", "index": 0 }]
-      ]
-    },
-    "Transform to Dashboard Format": {
       "main": [
         [{ "node": "Write JSON to GitHub", "type": "main", "index": 0 }]
       ]
