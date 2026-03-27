@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acquiring Data Center</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #2D3277 0%, #1a1f5e 100%);
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: #FFF159;
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .logo-badge {
+      width: 60px;
+      height: 60px;
+      background: #FFF159;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-text h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #FFF159;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .header-text p {
+      color: rgba(255,255,255,0.65);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+    .header-badge {
+      margin-left: auto;
+      background: rgba(255,241,89,0.15);
+      border: 1px solid rgba(255,241,89,0.4);
+      color: #FFF159;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    /* ── Main grid ── */
+    main {
+      max-width: 1200px;
+      margin: 48px auto;
+      padding: 0 32px 64px;
+    }
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #8898aa;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+      gap: 28px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.13);
+    }
+    .card-thumb {
+      display: block;
+      width: 100%;
+      cursor: pointer;
+      border-bottom: 1px solid #eef0f4;
+      background: #f8f9fc;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-thumb svg {
+      display: block;
+      width: 100%;
+    }
+    .card-thumb:hover svg { opacity: 0.92; }
+    .card-body {
+      padding: 22px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .card-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: #eef4ff;
+      color: #3483FA;
+      border-radius: 6px;
+      padding: 3px 9px;
+      margin-bottom: 10px;
+      width: fit-content;
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1a1f3c;
+      text-decoration: none;
+      line-height: 1.3;
+      transition: color 0.15s;
+    }
+    .card-title:hover { color: #3483FA; }
+    .card-desc {
+      color: #6b7280;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-top: 8px;
+      flex: 1;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid #f0f2f5;
+    }
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #3483FA;
+      text-decoration: none;
+      transition: gap 0.15s;
+    }
+    .card-link:hover { gap: 10px; }
+    .card-link svg { flex-shrink: 0; }
+    .card-platform {
+      font-size: 0.75rem;
+      color: #aab0c0;
+      font-weight: 500;
+    }
+
+    @media (max-width: 700px) {
+      .grid { grid-template-columns: 1fr; }
+      .header-inner { flex-wrap: wrap; }
+      .header-badge { margin-left: 0; }
+      main { padding: 0 16px 48px; }
+      .header-inner { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-badge">
+      <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 20.5c1.5-1 3.5-1 5 0l2 1.5c1 .7 2.5.7 3.5 0l2-1.5c1.5-1 3.5-1 5 0" stroke="#2D3277" stroke-width="2" stroke-linecap="round"/>
+        <path d="M11 17c0-2.5 3.5-5 8-5s8 2.5 8 5" stroke="#2D3277" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="19" cy="13" r="2.5" fill="#2D3277"/>
+        <path d="M14 24l-3 4M24 24l3 4" stroke="#2D3277" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Acquiring Data Center</h1>
+      <p>Mercado Pago - FP&amp;A Acquiring MLB</p>
+    </div>
+    <span class="header-badge">4 Dashboards</span>
+  </div>
+</header>
+
+<main>
+  <div class="section-title">Painéis disponíveis</div>
+  <div class="grid">
+
+    <!-- ── Card 1: Acquiring 2.0 ── -->
+    <div class="card">
+      <a class="card-thumb" href="https://us-east-1.online.tableau.com/#/site/melicross/views/Acquiring2_0_ProjetoSimplifica/PLTotal?:iid=1" target="_blank" rel="noopener">
+        <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#0d1b3e">
+          <rect width="560" height="44" fill="#2D3277"/>
+          <rect x="12" y="13" width="110" height="18" rx="4" fill="#FFF159" opacity="0.9"/>
+          <text x="18" y="26" font-size="11" font-weight="bold" fill="#2D3277" font-family="Arial">Acquiring 2.0</text>
+          <rect x="134" y="15" width="60" height="14" rx="3" fill="white" opacity="0.15"/>
+          <rect x="200" y="15" width="60" height="14" rx="3" fill="white" opacity="0.15"/>
+          <rect x="266" y="15" width="60" height="14" rx="3" fill="white" opacity="0.15"/>
+          <rect x="332" y="15" width="60" height="14" rx="3" fill="white" opacity="0.15"/>
+          <!-- Table header -->
+          <rect y="44" width="560" height="28" fill="#1a3055"/>
+          <text x="14" y="63" font-size="9" fill="white" opacity="0.7" font-family="Arial">Métrica</text>
+          <text x="155" y="57" font-size="8" fill="white" opacity="0.5" font-family="Arial">ACTUAL</text>
+          <text x="155" y="68" font-size="8" fill="white" opacity="0.4" font-family="Arial">2024  2025  2026</text>
+          <text x="290" y="57" font-size="8" fill="white" opacity="0.5" font-family="Arial">FORECAST</text>
+          <text x="290" y="68" font-size="8" fill="white" opacity="0.4" font-family="Arial">CAS.. CAS.. CAS..</text>
+          <text x="420" y="57" font-size="8" fill="white" opacity="0.5" font-family="Arial">PLAN V5</text>
+          <text x="490" y="57" font-size="8" fill="white" opacity="0.5" font-family="Arial">Margem</text>
+          <!-- Row TPV -->
+          <rect y="72" width="560" height="24" fill="#112540"/>
+          <text x="14" y="88" font-size="9" font-weight="bold" fill="white" font-family="Arial">TPV</text>
+          <text x="155" y="88" font-size="9" fill="#7ec8e3" font-family="Arial">12.4K  15.8K  3.2K</text>
+          <text x="295" y="88" font-size="9" fill="#7ec8e3" font-family="Arial">16.1K  15.9K  16.3K</text>
+          <text x="420" y="88" font-size="9" fill="#7ec8e3" font-family="Arial">17.2K</text>
+          <text x="490" y="88" font-size="9" fill="#7ec8e3" font-family="Arial">14.3%</text>
+          <!-- Row Processing_Fees -->
+          <rect y="96" width="560" height="24" fill="#0d1f38"/>
+          <text x="14" y="112" font-size="9" font-weight="bold" fill="white" font-family="Arial">Processing_Fees</text>
+          <text x="155" y="112" font-size="9" fill="#a8d8ea" font-family="Arial">4.412  5.238  1.106</text>
+          <text x="295" y="112" font-size="9" fill="#a8d8ea" font-family="Arial">5.301  5.290  5.274</text>
+          <text x="420" y="112" font-size="9" fill="#a8d8ea" font-family="Arial">5.022</text>
+          <text x="490" y="112" font-size="9" fill="#a8d8ea" font-family="Arial">10.8%</text>
+          <!-- Row Financing_Revenues -->
+          <rect y="120" width="560" height="24" fill="#112540"/>
+          <text x="14" y="136" font-size="9" font-weight="bold" fill="white" font-family="Arial">Financing_Revenues</text>
+          <text x="155" y="136" font-size="9" fill="#a8d8ea" font-family="Arial">3.541  4.632  1.287</text>
+          <text x="295" y="136" font-size="9" fill="#a8d8ea" font-family="Arial">4.760  4.757  4.763</text>
+          <text x="420" y="136" font-size="9" fill="#a8d8ea" font-family="Arial">6.714</text>
+          <text x="490" y="136" font-size="9" fill="#a8d8ea" font-family="Arial">13.9%</text>
+          <!-- Row Sales_Taxes -->
+          <rect y="144" width="560" height="24" fill="#0d1f38"/>
+          <text x="14" y="160" font-size="9" font-weight="bold" fill="white" font-family="Arial">Sales_Taxes_Econ</text>
+          <text x="155" y="160" font-size="9" fill="#ff8080" font-family="Arial">-631  -460  -104</text>
+          <text x="295" y="160" font-size="9" fill="#ff8080" font-family="Arial">-509  -502  -491</text>
+          <text x="420" y="160" font-size="9" fill="#ff8080" font-family="Arial">-450</text>
+          <text x="490" y="160" font-size="9" fill="#ff8080" font-family="Arial">-3.8%</text>
+          <!-- Row Collection_Fees -->
+          <rect y="168" width="560" height="24" fill="#112540"/>
+          <text x="14" y="184" font-size="9" font-weight="bold" fill="white" font-family="Arial">Collection_Fees</text>
+          <text x="155" y="184" font-size="9" fill="#a8d8ea" font-family="Arial">-582  -663  -671</text>
+          <text x="295" y="184" font-size="9" fill="#a8d8ea" font-family="Arial">-698  -701  -695</text>
+          <text x="420" y="184" font-size="9" fill="#a8d8ea" font-family="Arial">-712</text>
+          <text x="490" y="184" font-size="9" fill="#a8d8ea" font-family="Arial">-5.6%</text>
+          <!-- Row TR_ECONOMICO highlight -->
+          <rect y="192" width="560" height="26" fill="#1a3a5c"/>
+          <text x="14" y="210" font-size="9" font-weight="bold" fill="#FFF159" font-family="Arial">TR_ECONOMICO</text>
+          <text x="155" y="210" font-size="9" font-weight="bold" fill="#FFF159" font-family="Arial">5.348  3.751  1.048</text>
+          <text x="295" y="210" font-size="9" font-weight="bold" fill="#FFF159" font-family="Arial">4.963  4.716  4.425</text>
+          <text x="420" y="210" font-size="9" font-weight="bold" fill="#FFF159" font-family="Arial">4.329</text>
+          <text x="490" y="210" font-size="9" fill="#FFF159" font-family="Arial">15.4%</text>
+          <!-- Bottom chart area -->
+          <rect y="218" width="560" height="82" fill="#091828"/>
+          <text x="14" y="236" font-size="8" fill="white" opacity="0.35" font-family="Arial">P&amp;L Evolutivo · TPV Produto · Take Rate Segmento/BU · P&amp;L Actual · P&amp;L Actual Evolutivo …</text>
+          <polyline points="30,275 75,265 120,268 165,258 210,265 255,252 300,258 345,248 390,254" fill="none" stroke="#3483FA" stroke-width="1.8" opacity="0.8"/>
+          <polyline points="30,278 75,274 120,271 165,272 210,268 255,269 300,265 345,262 390,260" fill="none" stroke="#FFF159" stroke-width="1.5" stroke-dasharray="5,2" opacity="0.7"/>
+          <polyline points="30,281 75,279 120,276 165,278 210,274 255,275 300,272 345,270 390,267" fill="none" stroke="#80e080" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6"/>
+        </svg>
+      </a>
+      <div class="card-body">
+        <span class="card-tag">P&amp;L</span>
+        <a class="card-title" href="https://us-east-1.online.tableau.com/#/site/melicross/views/Acquiring2_0_ProjetoSimplifica/PLTotal?:iid=1" target="_blank" rel="noopener">
+          Acquiring 2.0
+        </a>
+        <p class="card-desc">Evolutivos do P&amp;L actual, plano e forecast nível SubBU e Segmento.</p>
+        <div class="card-footer">
+          <a class="card-link" href="https://us-east-1.online.tableau.com/#/site/melicross/views/Acquiring2_0_ProjetoSimplifica/PLTotal?:iid=1" target="_blank" rel="noopener">
+            Abrir dashboard
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <span class="card-platform">Tableau</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 2: MPOS Analytics ── -->
+    <div class="card">
+      <a class="card-thumb" href="https://rodrigoadmorais.github.io/Acquiring/MPOS%20-%20Plan%202026.html" target="_blank" rel="noopener">
+        <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff">
+          <rect width="560" height="48" fill="#2D3277"/>
+          <text x="16" y="30" font-size="13" font-weight="bold" fill="white" font-family="Arial">MPOS Analytics</text>
+          <rect x="310" y="14" width="80" height="20" rx="10" fill="#3483FA" opacity="0.9"/>
+          <text x="321" y="28" font-size="9" fill="white" font-family="Arial">Plan 2026</text>
+          <!-- Filter bar -->
+          <rect y="48" width="560" height="30" fill="#f8f9fc"/>
+          <rect x="12" y="55" width="76" height="15" rx="4" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+          <text x="18" y="66" font-size="8" fill="#6b7280" font-family="Arial">Canal ▾</text>
+          <rect x="96" y="55" width="76" height="15" rx="4" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+          <text x="102" y="66" font-size="8" fill="#6b7280" font-family="Arial">Modelo ▾</text>
+          <rect x="180" y="55" width="100" height="15" rx="4" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+          <text x="186" y="66" font-size="8" fill="#6b7280" font-family="Arial">Mês a Mês ▾</text>
+          <!-- KPI Cards -->
+          <rect x="12" y="90" width="118" height="50" rx="7" fill="#EFF6FF" stroke="#bfdbfe" stroke-width="1"/>
+          <text x="20" y="108" font-size="7.5" fill="#6b7280" font-family="Arial">Volume (A)</text>
+          <text x="20" y="128" font-size="16" font-weight="bold" fill="#1e40af" font-family="Arial">1.248</text>
+          <rect x="138" y="90" width="118" height="50" rx="7" fill="#F0FDF4" stroke="#bbf7d0" stroke-width="1"/>
+          <text x="146" y="108" font-size="7.5" fill="#6b7280" font-family="Arial">Volume (B)</text>
+          <text x="146" y="128" font-size="16" font-weight="bold" fill="#166534" font-family="Arial">1.389</text>
+          <rect x="264" y="90" width="118" height="50" rx="7" fill="#FFFBEB" stroke="#fde68a" stroke-width="1"/>
+          <text x="272" y="108" font-size="7.5" fill="#6b7280" font-family="Arial">Variação %</text>
+          <text x="272" y="128" font-size="16" font-weight="bold" fill="#92400e" font-family="Arial">+11.3%</text>
+          <rect x="390" y="90" width="158" height="50" rx="7" fill="#F5F3FF" stroke="#ddd6fe" stroke-width="1"/>
+          <text x="398" y="108" font-size="7.5" fill="#6b7280" font-family="Arial">Variação Absoluta</text>
+          <text x="398" y="128" font-size="16" font-weight="bold" fill="#5b21b6" font-family="Arial">+141 un.</text>
+          <!-- Bar chart -->
+          <text x="14" y="160" font-size="9" font-weight="bold" fill="#374151" font-family="Arial">Comparativo por Canal (Top 5)</text>
+          <!-- bars grouped -->
+          <rect x="20" y="170" width="50" height="14" rx="2" fill="#3B82F6" opacity="0.85"/>
+          <rect x="20" y="186" width="64" height="14" rx="2" fill="#10B981" opacity="0.85"/>
+          <rect x="92" y="170" width="38" height="14" rx="2" fill="#3B82F6" opacity="0.85"/>
+          <rect x="92" y="186" width="46" height="14" rx="2" fill="#10B981" opacity="0.85"/>
+          <rect x="150" y="170" width="32" height="14" rx="2" fill="#3B82F6" opacity="0.85"/>
+          <rect x="150" y="186" width="38" height="14" rx="2" fill="#10B981" opacity="0.85"/>
+          <rect x="200" y="170" width="24" height="14" rx="2" fill="#3B82F6" opacity="0.85"/>
+          <rect x="200" y="186" width="28" height="14" rx="2" fill="#10B981" opacity="0.85"/>
+          <rect x="240" y="170" width="18" height="14" rx="2" fill="#3B82F6" opacity="0.85"/>
+          <rect x="240" y="186" width="22" height="14" rx="2" fill="#10B981" opacity="0.85"/>
+          <!-- Line chart -->
+          <rect x="296" y="152" width="252" height="60" rx="6" fill="#f8f9fc" stroke="#e2e8f0" stroke-width="1"/>
+          <text x="304" y="166" font-size="8" fill="#6b7280" font-family="Arial">Evolução Mensal</text>
+          <polyline points="310,200 340,192 370,196 400,184 430,189 460,178 490,183 520,174" fill="none" stroke="#3B82F6" stroke-width="2"/>
+          <polyline points="310,203 340,200 370,205 400,192 430,198 460,186 490,192 520,182" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="4,2"/>
+          <!-- Legend -->
+          <rect x="14" y="214" width="8" height="8" rx="2" fill="#3B82F6"/>
+          <text x="26" y="222" font-size="8" fill="#6b7280" font-family="Arial">Actual</text>
+          <rect x="68" y="214" width="8" height="8" rx="2" fill="#10B981"/>
+          <text x="80" y="222" font-size="8" fill="#6b7280" font-family="Arial">Plan</text>
+          <rect x="116" y="214" width="8" height="8" rx="2" fill="#F59E0B"/>
+          <text x="128" y="222" font-size="8" fill="#6b7280" font-family="Arial">Forecast</text>
+          <!-- AI badge -->
+          <rect x="384" y="225" width="164" height="22" rx="11" fill="#EFF6FF" stroke="#bfdbfe" stroke-width="1"/>
+          <text x="400" y="240" font-size="8" fill="#1e40af" font-family="Arial">✦ Resumo AI (Gemini)</text>
+          <!-- Table -->
+          <rect x="14" y="238" width="358" height="48" rx="5" fill="#f8f9fc" stroke="#e2e8f0" stroke-width="1"/>
+          <rect x="22" y="246" width="70" height="8" rx="2" fill="#e2e8f0"/>
+          <rect x="100" y="246" width="45" height="8" rx="2" fill="#e2e8f0"/>
+          <rect x="153" y="246" width="45" height="8" rx="2" fill="#e2e8f0"/>
+          <rect x="206" y="246" width="45" height="8" rx="2" fill="#e2e8f0"/>
+          <rect x="22" y="260" width="80" height="8" rx="2" fill="#dbeafe"/>
+          <rect x="110" y="260" width="35" height="8" rx="2" fill="#dcfce7"/>
+          <rect x="153" y="260" width="40" height="8" rx="2" fill="#fef9c3"/>
+          <rect x="22" y="274" width="60" height="8" rx="2" fill="#dbeafe"/>
+          <rect x="90" y="274" width="35" height="8" rx="2" fill="#dcfce7"/>
+        </svg>
+      </a>
+      <div class="card-body">
+        <span class="card-tag">Devices</span>
+        <a class="card-title" href="https://rodrigoadmorais.github.io/Acquiring/MPOS%20-%20Plan%202026.html" target="_blank" rel="noopener">
+          MPOS Analytics
+        </a>
+        <p class="card-desc">Comparativos de Devices Sold — plano, actual e forecast nível canal.</p>
+        <div class="card-footer">
+          <a class="card-link" href="https://rodrigoadmorais.github.io/Acquiring/MPOS%20-%20Plan%202026.html" target="_blank" rel="noopener">
+            Abrir dashboard
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <span class="card-platform">GitHub Pages</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 3: HCs FDVP e BS ── -->
+    <div class="card">
+      <a class="card-thumb" href="https://rodrigoadmorais.github.io/Acquiring/dash_headcount_fdvp_bs.html" target="_blank" rel="noopener">
+        <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff">
+          <defs>
+            <linearGradient id="hcGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#009EE3"/>
+              <stop offset="100%" stop-color="#0075be"/>
+            </linearGradient>
+          </defs>
+          <rect width="560" height="48" fill="url(#hcGrad)"/>
+          <text x="16" y="30" font-size="13" font-weight="bold" fill="white" font-family="Arial">HCs FDVP e Big Sellers</text>
+          <rect x="480" y="15" width="66" height="18" rx="9" fill="rgba(255,255,255,0.2)"/>
+          <text x="490" y="27" font-size="8.5" fill="white" font-family="Arial">&#9728; Light</text>
+          <!-- Filter bar -->
+          <rect y="48" width="560" height="30" fill="#f0f7ff"/>
+          <rect x="12" y="55" width="68" height="15" rx="3" fill="white" stroke="#c3ddf7" stroke-width="1"/>
+          <text x="18" y="66" font-size="7.5" fill="#5b6e7a" font-family="Arial">Ano ▾</text>
+          <rect x="88" y="55" width="86" height="15" rx="3" fill="white" stroke="#c3ddf7" stroke-width="1"/>
+          <text x="94" y="66" font-size="7.5" fill="#5b6e7a" font-family="Arial">Canal ▾</text>
+          <rect x="182" y="55" width="86" height="15" rx="3" fill="white" stroke="#c3ddf7" stroke-width="1"/>
+          <text x="188" y="66" font-size="7.5" fill="#5b6e7a" font-family="Arial">Cargo ▾</text>
+          <!-- KPI Cards -->
+          <rect x="12" y="90" width="96" height="46" rx="6" fill="white" stroke="#e2eef7" stroke-width="1"/>
+          <text x="20" y="107" font-size="7.5" fill="#8898aa" font-family="Arial">Média Planejada</text>
+          <text x="20" y="126" font-size="15" font-weight="bold" fill="#009EE3" font-family="Arial">842</text>
+          <rect x="116" y="90" width="96" height="46" rx="6" fill="white" stroke="#e2eef7" stroke-width="1"/>
+          <text x="124" y="107" font-size="7.5" fill="#8898aa" font-family="Arial">Média Realizado</text>
+          <text x="124" y="126" font-size="15" font-weight="bold" fill="#00A650" font-family="Arial">798</text>
+          <rect x="220" y="90" width="96" height="46" rx="6" fill="white" stroke="#e2eef7" stroke-width="1"/>
+          <text x="228" y="107" font-size="7.5" fill="#8898aa" font-family="Arial">Atingimento</text>
+          <text x="228" y="126" font-size="15" font-weight="bold" fill="#f76707" font-family="Arial">94.8%</text>
+          <rect x="324" y="90" width="96" height="46" rx="6" fill="white" stroke="#e2eef7" stroke-width="1"/>
+          <text x="332" y="107" font-size="7.5" fill="#8898aa" font-family="Arial">Gap Médio</text>
+          <text x="332" y="126" font-size="15" font-weight="bold" fill="#E03131" font-family="Arial">-44</text>
+          <rect x="428" y="90" width="120" height="46" rx="6" fill="white" stroke="#e2eef7" stroke-width="1"/>
+          <text x="436" y="107" font-size="7.5" fill="#8898aa" font-family="Arial">Tendência</text>
+          <text x="436" y="120" font-size="9" font-weight="bold" fill="#00A650" font-family="Arial">&#8679; Melhorando</text>
+          <rect x="436" y="124" width="64" height="6" rx="3" fill="#bbf7d0"/>
+          <rect x="436" y="124" width="44" height="6" rx="3" fill="#00A650"/>
+          <!-- Line chart -->
+          <rect x="12" y="148" width="335" height="92" rx="6" fill="white" stroke="#e2eef7" stroke-width="1"/>
+          <text x="22" y="164" font-size="8.5" font-weight="bold" fill="#374151" font-family="Arial">Evolução Mensal HC</text>
+          <polyline points="30,225 72,218 114,220 156,215 198,218 240,212 282,214 322,209" fill="none" stroke="#009EE3" stroke-width="2" stroke-dasharray="5,3"/>
+          <polyline points="30,230 72,226 114,224 156,222 198,218 240,217 282,213 322,211" fill="none" stroke="#00A650" stroke-width="2"/>
+          <path d="M30,230 72,226 114,224 156,222 198,218 240,217 282,213 322,211 322,232 30,232Z" fill="#00A650" opacity="0.07"/>
+          <text x="28" y="244" font-size="7" fill="#9ca3af" font-family="Arial">Jan</text>
+          <text x="68" y="244" font-size="7" fill="#9ca3af" font-family="Arial">Fev</text>
+          <text x="110" y="244" font-size="7" fill="#9ca3af" font-family="Arial">Mar</text>
+          <text x="152" y="244" font-size="7" fill="#9ca3af" font-family="Arial">Abr</text>
+          <text x="194" y="244" font-size="7" fill="#9ca3af" font-family="Arial">Mai</text>
+          <text x="236" y="244" font-size="7" fill="#9ca3af" font-family="Arial">Jun</text>
+          <text x="278" y="244" font-size="7" fill="#9ca3af" font-family="Arial">Jul</text>
+          <text x="316" y="244" font-size="7" fill="#9ca3af" font-family="Arial">Ago</text>
+          <!-- Bar chart gap -->
+          <rect x="356" y="148" width="192" height="92" rx="6" fill="white" stroke="#e2eef7" stroke-width="1"/>
+          <text x="366" y="164" font-size="8.5" font-weight="bold" fill="#374151" font-family="Arial">Gap por Canal</text>
+          <rect x="366" y="172" width="30" height="9" rx="2" fill="#E03131" opacity="0.8"/>
+          <rect x="366" y="184" width="20" height="9" rx="2" fill="#E03131" opacity="0.8"/>
+          <rect x="366" y="196" width="40" height="9" rx="2" fill="#E03131" opacity="0.8"/>
+          <rect x="366" y="208" width="12" height="9" rx="2" fill="#f76707" opacity="0.8"/>
+          <rect x="366" y="220" width="24" height="9" rx="2" fill="#E03131" opacity="0.8"/>
+          <text x="400" y="181" font-size="7.5" fill="#6b7280" font-family="Arial">FDV Própria</text>
+          <text x="390" y="193" font-size="7.5" fill="#6b7280" font-family="Arial">Televendas</text>
+          <text x="410" y="205" font-size="7.5" fill="#6b7280" font-family="Arial">Parceiros</text>
+          <text x="382" y="217" font-size="7.5" fill="#6b7280" font-family="Arial">Digital</text>
+          <text x="394" y="229" font-size="7.5" fill="#6b7280" font-family="Arial">Franquias</text>
+          <!-- Table -->
+          <rect x="12" y="250" width="536" height="36" rx="4" fill="#f0f7ff" stroke="#c3ddf7" stroke-width="1"/>
+          <rect x="20" y="258" width="80" height="8" rx="2" fill="#c3ddf7"/>
+          <rect x="108" y="258" width="50" height="8" rx="2" fill="#bbf7d0"/>
+          <rect x="166" y="258" width="50" height="8" rx="2" fill="#fecaca"/>
+          <rect x="224" y="258" width="50" height="8" rx="2" fill="#c3ddf7"/>
+          <rect x="20" y="272" width="60" height="8" rx="2" fill="#e2eef7"/>
+          <rect x="88" y="272" width="60" height="8" rx="2" fill="#dcfce7"/>
+          <rect x="156" y="272" width="60" height="8" rx="2" fill="#fecaca"/>
+        </svg>
+      </a>
+      <div class="card-body">
+        <span class="card-tag">Headcount</span>
+        <a class="card-title" href="https://rodrigoadmorais.github.io/Acquiring/dash_headcount_fdvp_bs.html" target="_blank" rel="noopener">
+          HCs FDVP e BS
+        </a>
+        <p class="card-desc">Comparativos realizado e plano de HCs de FDVP e BS nível canal e cargo.</p>
+        <div class="card-footer">
+          <a class="card-link" href="https://rodrigoadmorais.github.io/Acquiring/dash_headcount_fdvp_bs.html" target="_blank" rel="noopener">
+            Abrir dashboard
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <span class="card-platform">GitHub Pages</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card 4: Performance Canais TPV ── -->
+    <div class="card">
+      <a class="card-thumb" href="https://rodrigoadmorais.github.io/Acquiring/TPVm1.html" target="_blank" rel="noopener">
+        <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#f5f5f5">
+          <rect width="560" height="48" fill="#2D3277"/>
+          <text x="16" y="21" font-size="10" fill="rgba(255,255,255,0.55)" font-family="Arial">Mercado Pago · Acquiring</text>
+          <text x="16" y="38" font-size="13" font-weight="bold" fill="white" font-family="Arial">Performance Canais — TPV</text>
+          <!-- Filter bar -->
+          <rect y="48" width="560" height="30" fill="white"/>
+          <rect x="12" y="55" width="88" height="15" rx="4" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="18" y="66" font-size="8" fill="#6b7280" font-family="Arial">Canal ▾</text>
+          <rect x="108" y="55" width="88" height="15" rx="4" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="114" y="66" font-size="8" fill="#6b7280" font-family="Arial">Ciclo de Vida ▾</text>
+          <rect x="204" y="55" width="88" height="15" rx="4" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="210" y="66" font-size="8" fill="#6b7280" font-family="Arial">Unidade ▾</text>
+          <!-- KPI row -->
+          <rect x="12" y="88" width="122" height="48" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="20" y="104" font-size="7.5" fill="#9ca3af" font-family="Arial">Plan 2025 TPV</text>
+          <text x="20" y="124" font-size="15" font-weight="bold" fill="#2D3277" font-family="Arial">R$ 892B</text>
+          <rect x="142" y="88" width="122" height="48" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="150" y="104" font-size="7.5" fill="#9ca3af" font-family="Arial">Actual 2025 TPV</text>
+          <text x="150" y="124" font-size="15" font-weight="bold" fill="#009EE3" font-family="Arial">R$ 871B</text>
+          <rect x="272" y="88" width="122" height="48" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="280" y="104" font-size="7.5" fill="#9ca3af" font-family="Arial">Plan 2026 YTD</text>
+          <text x="280" y="124" font-size="15" font-weight="bold" fill="#2D3277" font-family="Arial">R$ 245B</text>
+          <rect x="402" y="88" width="146" height="48" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="410" y="104" font-size="7.5" fill="#9ca3af" font-family="Arial">Actual 2026 YTD</text>
+          <text x="410" y="120" font-size="15" font-weight="bold" fill="#009EE3" font-family="Arial">R$ 261B</text>
+          <text x="410" y="134" font-size="9" font-weight="bold" fill="#00A650" font-family="Arial">&#9650; +6.5% vs Plan</text>
+          <!-- Chart 2025 -->
+          <rect x="12" y="148" width="256" height="96" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="22" y="164" font-size="8.5" font-weight="bold" fill="#374151" font-family="Arial">Evolução TPV 2025</text>
+          <path d="M28,228 60,218 92,210 124,214 156,206 188,200 220,204 252,196 252,232 28,232Z" fill="#009EE3" opacity="0.1"/>
+          <polyline points="28,228 60,218 92,210 124,214 156,206 188,200 220,204 252,196" fill="none" stroke="#009EE3" stroke-width="2.5"/>
+          <polyline points="28,225 60,216 92,212 124,210 156,208 188,204 220,206 252,201" fill="none" stroke="#2D3277" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="22" y="242" font-size="6.5" fill="#9ca3af" font-family="Arial">J  F  M  A  M  J  J  A  S  O  N  D</text>
+          <!-- Chart 2026 -->
+          <rect x="276" y="148" width="272" height="96" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="286" y="164" font-size="8.5" font-weight="bold" fill="#374151" font-family="Arial">Evolução TPV 2026 YTD</text>
+          <path d="M294,228 340,218 386,208 432,212 432,232 294,232Z" fill="#00A650" opacity="0.09"/>
+          <polyline points="294,228 340,218 386,208 432,212" fill="none" stroke="#009EE3" stroke-width="2.5"/>
+          <polyline points="294,230 340,224 386,218 432,220 478,214 524,208" fill="none" stroke="#2D3277" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <polyline points="432,212 478,205 524,198" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="3,3"/>
+          <text x="286" y="242" font-size="6.5" fill="#9ca3af" font-family="Arial">Jan  Fev  Mar  Abr  Mai  Jun  Jul  Ago  Set  Out  Nov  Dez</text>
+          <!-- Legend -->
+          <rect x="12" y="254" width="536" height="34" rx="4" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+          <rect x="22" y="264" width="10" height="4" rx="1" fill="#009EE3"/>
+          <text x="36" y="271" font-size="7.5" fill="#6b7280" font-family="Arial">Actual</text>
+          <rect x="76" y="263" width="14" height="4" rx="1" fill="#2D3277"/>
+          <rect x="78" y="263" width="3" height="4" fill="white"/>
+          <rect x="83" y="263" width="3" height="4" fill="white"/>
+          <text x="94" y="271" font-size="7.5" fill="#6b7280" font-family="Arial">Plan (tracejado)</text>
+          <rect x="188" y="263" width="14" height="4" rx="1" fill="#F59E0B"/>
+          <rect x="190" y="263" width="3" height="4" fill="white"/>
+          <text x="206" y="271" font-size="7.5" fill="#6b7280" font-family="Arial">Forecast</text>
+          <text x="22" y="283" font-size="7.5" fill="#00A650" font-family="Arial">&#9650; Acima do plano</text>
+          <text x="120" y="283" font-size="7.5" fill="#FF6060" font-family="Arial">&#9660; Abaixo do plano</text>
+          <text x="450" y="275" font-size="7.5" fill="#9ca3af" font-family="Arial">&#128194; CSV Export</text>
+        </svg>
+      </a>
+      <div class="card-body">
+        <span class="card-tag">TPV</span>
+        <a class="card-title" href="https://rodrigoadmorais.github.io/Acquiring/TPVm1.html" target="_blank" rel="noopener">
+          Performance Canais TPV
+        </a>
+        <p class="card-desc">Canais por ciclo de vida e por canal.</p>
+        <div class="card-footer">
+          <a class="card-link" href="https://rodrigoadmorais.github.io/Acquiring/TPVm1.html" target="_blank" rel="noopener">
+            Abrir dashboard
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <span class="card-platform">GitHub Pages</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>
