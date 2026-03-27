@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "Static File Server",
-      "runtimeExecutable": "powershell",
-      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "serve.ps1"],
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["serve.py"],
       "port": 3000
     }
   ]
