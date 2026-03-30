@@ -68,6 +68,9 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
+                <button onclick="toggleFullscreen()" id="fs-btn" title="Tela Cheia" class="bg-white border border-gray-300 text-gray-600 p-2 rounded-lg hover:bg-gray-50 transition-all shadow-sm">
+                    <i data-lucide="maximize-2" id="fs-icon" class="w-4 h-4"></i>
+                </button>
                 <span id="status-badge" class="bg-white text-green-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-green-200 shadow-sm flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Bases Sincronizadas
                 </span>
@@ -337,6 +340,7 @@
                         <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
                             <button onclick="setPlMetric('resultado')" id="pl-metric-resultado" class="pl-metric-btn active" style="color:#1d4ed8;">Resultado</button>
                             <button onclick="setPlMetric('receita')" id="pl-metric-receita" class="pl-metric-btn">Receita</button>
+                            <button onclick="setPlMetric('salesTaxes')" id="pl-metric-salesTaxes" class="pl-metric-btn">Sales Taxes</button>
                             <button onclick="setPlMetric('cmv')" id="pl-metric-cmv" class="pl-metric-btn">CMV</button>
                         </div>
                         <button id="pl-unit-btn" onclick="togglePLUnitMode()" class="flex items-center gap-2 bg-white border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-gray-50 transition-all">
@@ -1215,8 +1219,32 @@
             document.body.removeChild(link);
         }
 
+        // FULLSCREEN
+        function toggleFullscreen() {
+            const icon = document.getElementById('fs-icon');
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    icon.setAttribute('data-lucide', 'minimize-2');
+                    lucide.createIcons();
+                }).catch(() => {});
+            } else {
+                document.exitFullscreen().then(() => {
+                    icon.setAttribute('data-lucide', 'maximize-2');
+                    lucide.createIcons();
+                }).catch(() => {});
+            }
+        }
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fs-icon');
+            icon.setAttribute('data-lucide', document.fullscreenElement ? 'minimize-2' : 'maximize-2');
+            lucide.createIcons();
+        });
+
         // RELATÓRIO EXECUTIVO PDF
         function generateExecutiveReport() {
+            const plTabActive = document.getElementById('tab-content-pl').style.display !== 'none';
+            if (plTabActive) { generatePLExecutiveReport(); return; }
+
             const compType = document.querySelector('input[name="comp-type"]:checked').value;
             if (compType === 'YEAR') {
                 alert("Por favor, ative uma chave de meses (Mês a Mês, YTD ou YTG) no Motor de Comparação antes de gerar o Relatório Executivo.");
@@ -1416,26 +1444,32 @@
         let plUnitMode = false;
         let plMetric = 'resultado';
 
-        const PL_METRIC_LABELS = { resultado: 'Resultado', receita: 'Receita', cmv: 'CMV' };
-        const PL_METRIC_COLORS = { resultado: '', receita: 'color:#2563eb;', cmv: 'color:#dc2626;' };
+        const PL_METRIC_LABELS = { resultado: 'Resultado', receita: 'Receita', salesTaxes: 'Sales Taxes', cmv: 'CMV' };
+        const PL_METRIC_ACTIVE_COLOR = { resultado: '#1d4ed8', receita: '#1d4ed8', salesTaxes: '#d97706', cmv: '#dc2626' };
+        const PL_METRIC_ARTICLE = { resultado: 'o Resultado', receita: 'a Receita', salesTaxes: 'o Sales Taxes', cmv: 'o CMV' };
 
         function getMetricTotal(pl) {
             if (plMetric === 'receita') return pl.totalReceita;
             if (plMetric === 'cmv') return pl.totalCMV;
+            if (plMetric === 'salesTaxes') return pl.totalSalesTaxes;
             return pl.totalResultado;
         }
 
         function getMetricVal(obj) {
-            return obj[plMetric] || 0;
+            if (plMetric === 'receita') return obj.receita || 0;
+            if (plMetric === 'cmv') return obj.cmv || 0;
+            if (plMetric === 'salesTaxes') return obj.salesTaxes || 0;
+            return obj.resultado || 0;
         }
 
         function setPlMetric(metric) {
             plMetric = metric;
-            ['resultado', 'receita', 'cmv'].forEach(m => {
+            ['resultado', 'receita', 'salesTaxes', 'cmv'].forEach(m => {
                 const btn = document.getElementById(`pl-metric-${m}`);
+                if (!btn) return;
                 if (m === metric) {
                     btn.classList.add('active');
-                    btn.style.color = m === 'receita' ? '#1d4ed8' : (m === 'cmv' ? '#dc2626' : '#1d4ed8');
+                    btn.style.color = PL_METRIC_ACTIVE_COLOR[m];
                 } else {
                     btn.classList.remove('active');
                     btn.style.color = '';
@@ -1469,19 +1503,22 @@
                     const cost = getCostBRL(device);
                     const receita = qty * price;
                     const cmv = qty * cost;
-                    devPL[device] = { qty, receita, cmv, resultado: receita + cmv };
+                    const salesTaxes = -0.35 * receita;
+                    devPL[device] = { qty, receita, cmv, salesTaxes, resultado: receita + salesTaxes + cmv };
                     cReceita += receita;
                     cCMV += cmv;
                     cQty += qty;
                 });
 
-                byCanal[canal] = { receita: cReceita, cmv: cCMV, resultado: cReceita + cCMV, qty: cQty, devices: devPL };
+                const cSalesTaxes = -0.35 * cReceita;
+                byCanal[canal] = { receita: cReceita, cmv: cCMV, salesTaxes: cSalesTaxes, resultado: cReceita + cSalesTaxes + cCMV, qty: cQty, devices: devPL };
                 totalReceita += cReceita;
                 totalCMV += cCMV;
             });
 
             const totalQty = Object.values(byCanal).reduce((s, c) => s + c.qty, 0);
-            return { totalReceita, totalCMV, totalResultado: totalReceita + totalCMV, totalQty, byCanal };
+            const totalSalesTaxes = -0.35 * totalReceita;
+            return { totalReceita, totalCMV, totalSalesTaxes, totalResultado: totalReceita + totalSalesTaxes + totalCMV, totalQty, byCanal };
         }
 
         function formatBRL(val) {
@@ -1656,64 +1693,88 @@
 
         function generatePLAI(plA, plB, nameA, nameB, typeB) {
             const container = document.getElementById('pl-ai-text');
-            const deltaAbs = plB.totalResultado - plA.totalResultado;
-            const deltaPct = plA.totalResultado !== 0 ? (deltaAbs / Math.abs(plA.totalResultado)) * 100 : 0;
 
-            if (plA.totalResultado === 0 && plB.totalResultado === 0) {
+            const totA = getMetricTotal(plA), totB = getMetricTotal(plB);
+            const deltaAbs = totB - totA;
+            const deltaPct = totA !== 0 ? (deltaAbs / Math.abs(totA)) * 100 : 0;
+            const metricLabel = PL_METRIC_LABELS[plMetric];
+            const metricArticle = PL_METRIC_ARTICLE[plMetric];
+
+            if (totA === 0 && totB === 0) {
                 container.innerHTML = '<p>Dados insuficientes para gerar insights neste recorte.</p>'; return;
             }
 
-            // --- Volume vs Mix decomposition ---
-            const avgUnitResA = plA.totalQty > 0 ? plA.totalResultado / plA.totalQty : 0;
-            const volEffect   = (plB.totalQty - plA.totalQty) * avgUnitResA;
-            const mixEffect   = deltaAbs - volEffect;
-            const volPct  = plA.totalResultado !== 0 ? (volEffect  / Math.abs(plA.totalResultado)) * 100 : 0;
-            const mixPct  = plA.totalResultado !== 0 ? (mixEffect  / Math.abs(plA.totalResultado)) * 100 : 0;
-            const unitResA = plA.totalQty > 0 ? plA.totalResultado / plA.totalQty : 0;
-            const unitResB = plB.totalQty > 0 ? plB.totalResultado / plB.totalQty : 0;
-            const unitPct  = unitResA !== 0 ? ((unitResB - unitResA) / Math.abs(unitResA)) * 100 : 0;
-
             function signFmt(v) { return v >= 0 ? '+' : ''; }
             function colorSpan(v, txt) {
-                return v > 0
-                    ? `<span class="text-green-600 font-bold">${txt}</span>`
-                    : (v < 0 ? `<span class="text-red-600 font-bold">${txt}</span>`
-                             : `<span class="text-gray-500">${txt}</span>`);
+                return v > 0 ? `<span class="text-green-600 font-bold">${txt}</span>`
+                     : (v < 0 ? `<span class="text-red-600 font-bold">${txt}</span>`
+                              : `<span class="text-gray-500">${txt}</span>`);
             }
 
-            // --- Canal-level contributors (up to 85%) ---
-            const isGrowth = deltaAbs > 0;
+            // --- Volume effect using selected metric ---
+            const avgUnitA = plA.totalQty > 0 ? totA / plA.totalQty : 0;
+            const volEffect = (plB.totalQty - plA.totalQty) * avgUnitA;
+            const mixEffect = deltaAbs - volEffect;
+            const volPct = totA !== 0 ? (volEffect / Math.abs(totA)) * 100 : 0;
+            const mixPct = totA !== 0 ? (mixEffect / Math.abs(totA)) * 100 : 0;
+            const unitA = plA.totalQty > 0 ? totA / plA.totalQty : 0;
+            const unitB = plB.totalQty > 0 ? totB / plB.totalQty : 0;
+            const unitPct = unitA !== 0 ? ((unitB - unitA) / Math.abs(unitA)) * 100 : 0;
+
+            // --- Volume effect breakdown by canal (up to 85%) ---
             const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
-            let diffs = allCanals.map(c => ({ name: c, diff: (plB.byCanal[c]?.resultado || 0) - (plA.byCanal[c]?.resultado || 0) }));
+            const volByCanal = allCanals.map(c => {
+                const cA = plA.byCanal[c] || { qty: 0 };
+                const cB = plB.byCanal[c] || { qty: 0 };
+                const metA = getMetricVal(plA.byCanal[c] || {});
+                const unitMetA = cA.qty > 0 ? metA / cA.qty : 0;
+                return { name: c, effect: (cB.qty - cA.qty) * unitMetA };
+            });
+            volByCanal.sort((a, b) => Math.abs(b.effect) - Math.abs(a.effect));
+            let volExpl = 0, volDrivers = [];
+            const absVol = Math.abs(volEffect);
+            for (const c of volByCanal) {
+                if (Math.abs(c.effect) < 1) continue;
+                volExpl += Math.abs(c.effect);
+                volDrivers.push(c);
+                if (absVol > 0 && (volExpl / absVol) >= 0.85) break;
+            }
+
+            // --- Canal-level contributors to total delta (up to 85%) ---
+            const isGrowth = deltaAbs > 0;
+            let diffs = allCanals.map(c => ({ name: c, diff: getMetricVal(plB.byCanal[c] || {}) - getMetricVal(plA.byCanal[c] || {}) }));
             let contributors = diffs.filter(c => isGrowth ? c.diff > 0 : c.diff < 0);
             contributors.sort((a, b) => isGrowth ? b.diff - a.diff : a.diff - b.diff);
-
             let explained = 0, driversText = [];
             const absTotal = Math.abs(deltaAbs);
-            for (let i = 0; i < contributors.length; i++) {
-                const c = contributors[i];
+            for (const c of contributors) {
                 explained += Math.abs(c.diff);
-                const vA = plA.byCanal[c.name]?.resultado || 0;
+                const vA = getMetricVal(plA.byCanal[c.name] || {});
                 const cPct = vA !== 0 ? (c.diff / Math.abs(vA)) * 100 : 100;
                 driversText.push(`o canal <strong class="text-gray-900">${c.name}</strong> com <strong>${signFmt(c.diff)}${formatBRL(c.diff)}</strong> (${signFmt(cPct)}${formatBRPct(cPct)} vs base)`);
                 if ((explained / absTotal) >= 0.85) break;
             }
 
-            // --- Assemble text ---
-            let text = `<p>${nameB} frente a ${nameA}, o <strong>Resultado</strong> apresenta `;
+            // --- Assemble ---
+            let text = `<p>${nameB} frente a ${nameA}, ${metricArticle} apresenta `;
             text += isGrowth
                 ? `${colorSpan(1, `melhora de +${formatBRPct(deltaPct)}`)} (+${formatBRL(deltaAbs)}). `
                 : `${colorSpan(-1, `piora de ${formatBRPct(deltaPct)}`)} (${formatBRL(deltaAbs)}). `;
             text += `</p>`;
 
-            // Volume + Mix paragraph
-            text += `<p class="mt-2">`;
-            text += `▸ <strong>Efeito Volume</strong>: ${colorSpan(volEffect, `${signFmt(volEffect)}${formatBRL(volEffect)}`)} `;
-            text += `(${signFmt(volPct)}${formatBRPct(volPct)} do resultado base) — volume passou de <strong>${formatBRNum(plA.totalQty)}</strong> para <strong>${formatBRNum(plB.totalQty)}</strong> un. `;
-            text += `Resultado/un. variou de <strong>${formatBRLDecimal(unitResA)}</strong> para <strong>${formatBRLDecimal(unitResB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).`;
-            text += `<br>▸ <strong>Efeito Mix de Devices</strong>: ${colorSpan(mixEffect, `${signFmt(mixEffect)}${formatBRL(mixEffect)}`)} `;
-            text += `(${signFmt(mixPct)}${formatBRPct(mixPct)} do resultado base) — variação explicada pela mudança na composição de modelos.`;
+            // Volume paragraph with canal breakdown
+            text += `<p class="mt-2">▸ <strong>Efeito Volume</strong>: ${colorSpan(volEffect, `${signFmt(volEffect)}${formatBRL(volEffect)}`)} `;
+            text += `(${signFmt(volPct)}${formatBRPct(volPct)} da base) — volume passou de <strong>${formatBRNum(plA.totalQty)}</strong> para <strong>${formatBRNum(plB.totalQty)}</strong> un.`;
+            if (volDrivers.length > 0) {
+                text += ` Principais canais: `;
+                text += volDrivers.map(c => `<strong>${c.name}</strong> ${colorSpan(c.effect, `${signFmt(c.effect)}${formatBRL(c.effect)}`)}`).join(', ') + '.';
+            }
             text += `</p>`;
+
+            // Mix paragraph with unit variation
+            text += `<p class="mt-1">▸ <strong>Efeito Mix de Devices</strong>: ${colorSpan(mixEffect, `${signFmt(mixEffect)}${formatBRL(mixEffect)}`)} `;
+            text += `(${signFmt(mixPct)}${formatBRPct(mixPct)} da base) — variação explicada pela mudança na composição de modelos. `;
+            text += `${metricLabel}/un. variou de <strong>${formatBRLDecimal(unitA)}</strong> para <strong>${formatBRLDecimal(unitB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).</p>`;
 
             // Canal drivers
             if (driversText.length > 0) {
@@ -1806,6 +1867,113 @@
             document.getElementById('pl-total-abs').innerText = plUnitMode ? '—' : ((totDelta > 0 ? '+' : '') + formatBRL(totDelta));
             document.getElementById('pl-total-pct').className = `p-4 text-xs font-black ${totColor} text-right`;
             document.getElementById('pl-total-abs').className = `p-4 text-xs font-black ${totColor} text-right`;
+        }
+
+        function generatePLExecutiveReport() {
+            const scA = document.getElementById('pl-scenario-a');
+            const scB = document.getElementById('pl-scenario-b');
+            if (!scA.value || !scB.value) return;
+
+            const compType = document.querySelector('input[name="pl-comp-type"]:checked').value;
+            const [typeA, yearA] = scA.value.split('|');
+            const [typeB, yearB] = scB.value.split('|');
+            const moA = document.getElementById('pl-month-a').value;
+            const moB = (compType === 'YTD' || compType === 'YTG') ? moA : document.getElementById('pl-month-b').value;
+            const filterCanal = document.getElementById('filter-canal').value;
+            const filterDevice = document.getElementById('filter-device').value;
+
+            const periodA = compType === 'YEAR' ? `YEAR|${yearA}` : `${compType}|${yearA}${moA}`;
+            const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `${compType}|${yearB}${moB}`;
+            let prefix = compType === 'YTD' ? 'YTD até Mês ' : (compType === 'YTG' ? 'YTG a partir de ' : (compType === 'MONTH' ? 'Mês ' : ''));
+            const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${prefix}${moA})`;
+            const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${prefix}${moB})`;
+
+            const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
+            const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
+            const plA = computePL(dataA.byCanalDevice);
+            const plB = computePL(dataB.byCanalDevice);
+
+            const metricLabel = PL_METRIC_LABELS[plMetric];
+            const totA = getMetricTotal(plA), totB = getMetricTotal(plB);
+            const deltaAbs = totB - totA;
+            const deltaPct = totA !== 0 ? (deltaAbs / Math.abs(totA)) * 100 : 0;
+            const bColor = getBaseColor(typeB, true);
+
+            function signFmt(v) { return v >= 0 ? '+' : ''; }
+            function getVarHTML(val, base) {
+                if (base === 0 && val === 0) return `<span style="color:#6b7280;">—</span>`;
+                if (base === 0) return `<span style="color:#16a34a;">+100,0%</span>`;
+                const pct = ((val - base) / Math.abs(base)) * 100;
+                const color = pct > 0 ? '#16a34a' : (pct < 0 ? '#dc2626' : '#6b7280');
+                return `<span style="color:${color};font-weight:bold;">${signFmt(pct)}${pct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</span>`;
+            }
+
+            // Build AI summary text (plain, without HTML color classes for PDF)
+            generatePLAI(plA, plB, nameA, nameB, typeB);
+            const aiHTML = document.getElementById('pl-ai-text').innerHTML;
+
+            // Canal rows
+            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
+            allCanals.sort((a,b) => Math.abs(getMetricVal(plB.byCanal[b]||{})) - Math.abs(getMetricVal(plB.byCanal[a]||{})));
+
+            let canalRows = '';
+            allCanals.forEach(canal => {
+                const cA = plA.byCanal[canal] || { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0 };
+                const cB = plB.byCanal[canal] || { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0 };
+                const mA = getMetricVal(cA), mB = getMetricVal(cB);
+                if (mA === 0 && mB === 0) return;
+                canalRows += `<tr>
+                    <td><strong>${canal}</strong></td>
+                    <td style="text-align:right;">${mA.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</td>
+                    <td style="text-align:right;color:${bColor};">${mB.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</td>
+                    <td style="text-align:right;">${getVarHTML(mB, mA)}</td>
+                    <td style="text-align:right;">${signFmt(mB-mA)}${(mB-mA).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</td>
+                </tr>`;
+            });
+
+            const html = `<html><head><title>Relatório P&L — ${metricLabel}</title>
+            <style>
+                body{font-family:Arial,sans-serif;color:#333;margin:0;background:#f9fafb;padding:20px;}
+                .container{max-width:1000px;margin:0 auto;background:white;padding:40px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.05);}
+                h1{color:#1e3a8a;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:5px;font-size:22px;}
+                .subtitle{font-size:12px;color:#6b7280;margin-bottom:28px;text-transform:uppercase;letter-spacing:1px;}
+                h2{color:#1f2937;margin-top:28px;font-size:16px;border-left:4px solid ${bColor};padding-left:10px;}
+                .kpi-box{display:flex;gap:12px;margin-top:12px;}
+                .kpi{background:#f3f4f6;padding:16px;border-radius:8px;flex:1;text-align:center;border:1px solid #e5e7eb;}
+                .kpi-label{display:block;font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:bold;margin-bottom:6px;}
+                .kpi-val{font-size:20px;color:#111827;font-weight:900;}
+                .insight{background:#eff6ff;padding:14px;border-radius:8px;margin-top:14px;border-left:4px solid ${bColor};color:#1e40af;font-size:13px;line-height:1.7;}
+                table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px;}
+                th,td{padding:10px;text-align:right;border-bottom:1px solid #e5e7eb;}
+                th{background:#f9fafb;font-size:11px;text-transform:uppercase;color:#4b5563;}
+                th:first-child,td:first-child{text-align:left;}
+                .no-print-btn{display:block;width:fit-content;margin:0 auto 28px;padding:12px 24px;background:#4f46e5;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;}
+                @media print{body{background:white;padding:0;}.container{box-shadow:none;padding:0;max-width:100%;}.no-print-btn{display:none!important;}}
+            </style></head>
+            <body>
+                <button class="no-print-btn" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
+                <div class="container">
+                    <h1>MPOS Analytics: Visão Executiva P&L — ${metricLabel}</h1>
+                    <div class="subtitle">${nameB} vs ${nameA}${filterCanal !== 'ALL' ? ' | Canal: '+filterCanal : ''}${filterDevice !== 'ALL' ? ' | Device: '+filterDevice : ''}</div>
+                    <h2>Visão Geral — ${metricLabel}</h2>
+                    <div class="kpi-box">
+                        <div class="kpi"><span class="kpi-label">${metricLabel} (A) — ${nameA}</span><div class="kpi-val">${totA.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</div></div>
+                        <div class="kpi"><span class="kpi-label">${metricLabel} (B) — ${nameB}</span><div class="kpi-val" style="color:${bColor}">${totB.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</div></div>
+                        <div class="kpi"><span class="kpi-label">Variação (%)</span><div class="kpi-val">${getVarHTML(totB, totA)}</div></div>
+                        <div class="kpi"><span class="kpi-label">Variação (Abs)</span><div class="kpi-val">${signFmt(deltaAbs)}${deltaAbs.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</div></div>
+                    </div>
+                    <div class="insight">${aiHTML}</div>
+                    <h2>Detalhamento por Canal</h2>
+                    <table>
+                        <thead><tr><th>Canal</th><th>${metricLabel} (A)</th><th style="color:${bColor};">${metricLabel} (B)</th><th>Var (%)</th><th>Var (Abs)</th></tr></thead>
+                        <tbody>${canalRows}</tbody>
+                    </table>
+                </div>
+            </body></html>`;
+
+            const w = window.open('', '_blank');
+            w.document.write(html);
+            w.document.close();
         }
 
         window.onload = boot;
