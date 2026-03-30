@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs/dist/pptxgen.bundle.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
         
@@ -98,6 +99,9 @@
                 </button>
                 <button onclick="exportJoinedCSV()" class="flex items-center gap-2 bg-gray-500 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-gray-600 transition-all active:scale-95">
                     <i data-lucide="download" class="w-4 h-4"></i> CSV
+                </button>
+                <button onclick="generatePPT()" id="ppt-gen-btn" class="flex items-center gap-2 bg-yellow-400 text-gray-900 px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-yellow-500 transition-all active:scale-95 border border-yellow-500">
+                    <i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT
                 </button>
             </div>
         </div>
@@ -330,6 +334,22 @@
                 <div id="pl-ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2"></div>
             </div>
 
+            <!-- P&L Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="card p-6 lg:col-span-2">
+                    <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                        <i data-lucide="line-chart" class="w-4 h-4 text-gray-400"></i> Evolução Focada (A vs B)
+                    </h4>
+                    <div class="h-80"><canvas id="plTimelineChart"></canvas></div>
+                </div>
+                <div class="card p-6">
+                    <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-gray-400"></i> Comparativo por Canal (Top 5)
+                    </h4>
+                    <div class="h-80"><canvas id="plBarChart"></canvas></div>
+                </div>
+            </div>
+
             <!-- P&L Table -->
             <div class="card overflow-hidden">
                 <div class="bg-gray-50 px-6 py-5 border-b border-gray-200 flex items-center justify-between">
@@ -376,6 +396,52 @@
         </div> <!-- end tab-content-pl -->
 
     </main>
+
+    <!-- PPT Modal -->
+    <div id="ppt-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/50 backdrop-blur-sm" style="display:none;">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 animate-fade-in">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-yellow-400 p-2.5 rounded-xl shadow-sm">
+                    <i data-lucide="presentation" class="w-5 h-5 text-gray-900"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-gray-900">Gerar Apresentação PPT</h3>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5">Mercado Libre — Executive Performance Report</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-black text-gray-500 uppercase tracking-widest block mb-2">Ano de Referência</label>
+                    <select id="ppt-ref-year" class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm font-bold rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 focus:outline-none cursor-pointer"></select>
+                </div>
+                <div>
+                    <label class="text-xs font-black text-gray-500 uppercase tracking-widest block mb-2">Mês de Referência (YTD e MxM)</label>
+                    <select id="ppt-ref-month" class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm font-bold rounded-lg p-3 focus:ring-2 focus:ring-yellow-400 focus:outline-none cursor-pointer">
+                        <option value="1">01 — Janeiro</option><option value="2">02 — Fevereiro</option><option value="3">03 — Março</option>
+                        <option value="4">04 — Abril</option><option value="5">05 — Maio</option><option value="6">06 — Junho</option>
+                        <option value="7">07 — Julho</option><option value="8">08 — Agosto</option><option value="9">09 — Setembro</option>
+                        <option value="10">10 — Outubro</option><option value="11">11 — Novembro</option><option value="12">12 — Dezembro</option>
+                    </select>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 space-y-1">
+                    <p class="text-xs text-yellow-900 font-black uppercase tracking-wider mb-2">📌 Estrutura da Apresentação</p>
+                    <p class="text-xs text-yellow-800"><strong>YTD:</strong> Plano vs Realizado — Meses 1 ao mês selecionado</p>
+                    <p class="text-xs text-yellow-800"><strong>YTG:</strong> Plano vs Forecast — Mês selecionado a Dezembro</p>
+                    <p class="text-xs text-yellow-800"><strong>FY:</strong> Plano vs Forecast — Ano completo</p>
+                    <p class="text-xs text-yellow-800"><strong>MxM:</strong> Plano vs Realizado — Mês selecionado</p>
+                    <p class="text-xs text-gray-500 mt-2">Filtros de canal e device aplicados serão refletidos nos slides.</p>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="hidePPTModal()" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-all">
+                    Cancelar
+                </button>
+                <button onclick="executePPTGeneration()" id="ppt-exec-btn" class="flex-1 bg-yellow-400 text-gray-900 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 shadow-md active:scale-95">
+                    <i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         Chart.register(ChartDataLabels);
@@ -1155,68 +1221,139 @@
         }
 
         function exportExcel() {
+            const plTabActive = document.getElementById('tab-content-pl').style.display !== 'none';
+            if (plTabActive) { exportPLExcel(); return; }
             if(!window.currentExportData) return;
             const { dataA, dataB, nameA, nameB } = window.currentExportData;
             const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
             allCanals.sort((a,b) => (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0));
-
-            let rows = [];
-            rows.push(["Canal", "Modelo", nameA, nameB, "Var (%)", "Var (Abs)"]);
-
+            let rows = [["Canal", "Modelo", nameA, nameB, "Var (%)", "Var (Abs)"]];
             allCanals.forEach(canal => {
                 const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
                 const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
                 rows.push([canal, "TOTAL CANAL", Math.round(cA), Math.round(cB), cPct.toFixed(1).replace('.',',') + '%', Math.round(cAbs)]);
-
                 const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
-                const allDevices = Array.from(new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]));
-                allDevices.sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
-
-                allDevices.forEach(dev => {
-                    const dA = devicesA[dev] || 0; const dB = devicesB[dev] || 0;
-                    const dAbs = dB - dA; const dPct = dA > 0 ? (dAbs/dA)*100 : (dB > 0 ? 100 : 0);
-                    rows.push([canal, dev, Math.round(dA), Math.round(dB), dPct.toFixed(1).replace('.',',') + '%', Math.round(dAbs)]);
+                Array.from(new Set([...Object.keys(devicesA), ...Object.keys(devicesB)])).sort((a,b)=>(devicesB[b]||0)-(devicesB[a]||0)).forEach(dev => {
+                    const dA = devicesA[dev]||0, dB = devicesB[dev]||0, dAbs=dB-dA, dPct=dA>0?(dAbs/dA)*100:(dB>0?100:0);
+                    rows.push([canal, dev, Math.round(dA), Math.round(dB), dPct.toFixed(1).replace('.',',')+'%', Math.round(dAbs)]);
                 });
             });
-
-            const wsFinal = XLSX.utils.aoa_to_sheet(rows);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, wsFinal, "MPOS Analytics");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Quantidade");
             XLSX.writeFile(wb, `MPOS_Analytics_${new Date().getTime()}.xlsx`);
         }
 
+        function exportPLExcel() {
+            if(!window.currentPLExportData) return;
+            const { plA, plB, nameA, nameB } = window.currentPLExportData;
+            const metricLabel = PL_METRIC_LABELS[plMetric];
+            const unitSuffix = plUnitMode ? '/un' : '';
+            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
+            allCanals.sort((a,b) => Math.abs(getMetricVal(plB.byCanal[b]||{})) - Math.abs(getMetricVal(plB.byCanal[a]||{})));
+
+            // Sheet 1: Selected metric
+            const metricRows = [['Canal', 'Device', 'Qtd A', 'Qtd B', `${metricLabel} A${unitSuffix}`, `${metricLabel} B${unitSuffix}`, 'Var (%)', 'Var (Abs)']];
+            allCanals.forEach(canal => {
+                const cA = plA.byCanal[canal] || { qty:0, resultado:0, receita:0, cmv:0, salesTaxes:0, devices:{} };
+                const cB = plB.byCanal[canal] || { qty:0, resultado:0, receita:0, cmv:0, salesTaxes:0, devices:{} };
+                const mA = getMetricVal(cA), mB = getMetricVal(cB);
+                if (mA === 0 && mB === 0) return;
+                const uA = (plUnitMode && cA.qty > 0) ? mA/cA.qty : mA;
+                const uB = (plUnitMode && cB.qty > 0) ? mB/cB.qty : mB;
+                const pct = uA !== 0 ? ((uB-uA)/Math.abs(uA))*100 : (uB !== 0 ? 100 : 0);
+                metricRows.push([canal, 'TOTAL CANAL', Math.round(cA.qty), Math.round(cB.qty), parseFloat(uA.toFixed(2)), parseFloat(uB.toFixed(2)), pct.toFixed(1).replace('.',',')+'%', plUnitMode ? '—' : Math.round(mB-mA)]);
+                const allDevs = Array.from(new Set([...Object.keys(cA.devices||{}), ...Object.keys(cB.devices||{})]));
+                allDevs.sort((a,b) => Math.abs(getMetricVal(cB.devices[b]||{})) - Math.abs(getMetricVal(cA.devices[a]||{})));
+                allDevs.forEach(dev => {
+                    const dA = cA.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
+                    const dB = cB.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
+                    const dmA = getMetricVal(dA), dmB = getMetricVal(dB);
+                    if (dmA === 0 && dmB === 0) return;
+                    const duA = (plUnitMode && dA.qty>0) ? dmA/dA.qty : dmA;
+                    const duB = (plUnitMode && dB.qty>0) ? dmB/dB.qty : dmB;
+                    const dPct = duA !== 0 ? ((duB-duA)/Math.abs(duA))*100 : (duB !== 0 ? 100 : 0);
+                    metricRows.push([canal, dev, Math.round(dA.qty), Math.round(dB.qty), parseFloat(duA.toFixed(2)), parseFloat(duB.toFixed(2)), dPct.toFixed(1).replace('.',',')+'%', plUnitMode ? '—' : Math.round(dmB-dmA)]);
+                });
+            });
+
+            // Sheet 2: Full P&L
+            const plRows = [['Canal', 'Device', 'Qtd A', 'Qtd B', 'Receita A', 'Receita B', 'Sales Taxes A', 'Sales Taxes B', 'CMV A', 'CMV B', 'Resultado A', 'Resultado B', 'Var Resultado (%)']];
+            allCanals.forEach(canal => {
+                const cA = plA.byCanal[canal] || { qty:0, resultado:0, receita:0, cmv:0, salesTaxes:0, devices:{} };
+                const cB = plB.byCanal[canal] || { qty:0, resultado:0, receita:0, cmv:0, salesTaxes:0, devices:{} };
+                if (cA.receita === 0 && cB.receita === 0) return;
+                const varRes = cA.resultado !== 0 ? ((cB.resultado-cA.resultado)/Math.abs(cA.resultado))*100 : (cB.resultado !== 0 ? 100 : 0);
+                plRows.push([canal, 'TOTAL CANAL', Math.round(cA.qty), Math.round(cB.qty), Math.round(cA.receita), Math.round(cB.receita), Math.round(cA.salesTaxes), Math.round(cB.salesTaxes), Math.round(cA.cmv), Math.round(cB.cmv), Math.round(cA.resultado), Math.round(cB.resultado), varRes.toFixed(1).replace('.',',')+'%']);
+                Object.keys(cA.devices||{}).concat(Object.keys(cB.devices||{})).filter((v,i,a)=>a.indexOf(v)===i).forEach(dev => {
+                    const dA = cA.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
+                    const dB = cB.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
+                    if (dA.qty === 0 && dB.qty === 0) return;
+                    const dVar = dA.resultado !== 0 ? ((dB.resultado-dA.resultado)/Math.abs(dA.resultado))*100 : 0;
+                    plRows.push([canal, dev, Math.round(dA.qty), Math.round(dB.qty), Math.round(dA.receita), Math.round(dB.receita), Math.round(dA.salesTaxes), Math.round(dB.salesTaxes), Math.round(dA.cmv), Math.round(dB.cmv), Math.round(dA.resultado), Math.round(dB.resultado), dVar.toFixed(1).replace('.',',')+'%']);
+                });
+            });
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(metricRows), `P&L ${metricLabel}`);
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(plRows), 'P&L Completo');
+            XLSX.writeFile(wb, `MPOS_PL_${metricLabel.replace(/\s/g,'_')}_${new Date().getTime()}.xlsx`);
+        }
+
         function exportJoinedCSV() {
+            const plTabActive = document.getElementById('tab-content-pl').style.display !== 'none';
+            if (plTabActive) { exportPLCSV(); return; }
             if(!window.currentExportData) return;
             const { dataA, dataB, nameA, nameB } = window.currentExportData;
             const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
             allCanals.sort((a,b) => (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0));
-
             let csvContent = `Canal;Modelo;${nameA};${nameB};Var (%);Var (Abs)\n`;
-
             allCanals.forEach(canal => {
-                const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
-                const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
+                const cA = dataA.byCanal[canal]||0, cB = dataB.byCanal[canal]||0, cAbs=cB-cA, cPct=cA>0?(cAbs/cA)*100:(cB>0?100:0);
                 csvContent += `${canal};TOTAL CANAL;${Math.round(cA)};${Math.round(cB)};${cPct.toFixed(1).replace('.',',')}%;${Math.round(cAbs)}\n`;
-
-                const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
-                const allDevices = Array.from(new Set([...Object.keys(devicesA), ...Object.keys(devicesB)]));
-                allDevices.sort((a,b) => (devicesB[b]||0) - (devicesB[a]||0));
-
-                allDevices.forEach(dev => {
-                    const dA = devicesA[dev] || 0; const dB = devicesB[dev] || 0;
-                    const dAbs = dB - dA; const dPct = dA > 0 ? (dAbs/dA)*100 : (dB > 0 ? 100 : 0);
+                const devicesA = dataA.byCanalDevice[canal]||{}, devicesB = dataB.byCanalDevice[canal]||{};
+                Array.from(new Set([...Object.keys(devicesA),...Object.keys(devicesB)])).forEach(dev => {
+                    const dA=devicesA[dev]||0, dB=devicesB[dev]||0, dAbs=dB-dA, dPct=dA>0?(dAbs/dA)*100:(dB>0?100:0);
                     csvContent += `${canal};${dev};${Math.round(dA)};${Math.round(dB)};${dPct.toFixed(1).replace('.',',')}%;${Math.round(dAbs)}\n`;
                 });
             });
-
-            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(["\uFEFF" + csvContent], {type:'text/csv;charset=utf-8;'});
             const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `MPOS_Analytics_Export_${new Date().getTime()}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `MPOS_Analytics_${new Date().getTime()}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        function exportPLCSV() {
+            if(!window.currentPLExportData) return;
+            const { plA, plB, nameA, nameB } = window.currentPLExportData;
+            const metricLabel = PL_METRIC_LABELS[plMetric];
+            const unitSuffix = plUnitMode ? '/un' : '';
+            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
+            allCanals.sort((a,b) => Math.abs(getMetricVal(plB.byCanal[b]||{})) - Math.abs(getMetricVal(plB.byCanal[a]||{})));
+            let csv = `Canal;Device;Qtd A;Qtd B;Receita A;Receita B;Sales Taxes A;Sales Taxes B;CMV A;CMV B;Resultado A;Resultado B;${metricLabel} A${unitSuffix};${metricLabel} B${unitSuffix};Var (%);Var (Abs)\n`;
+            allCanals.forEach(canal => {
+                const cA = plA.byCanal[canal]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0,devices:{}};
+                const cB = plB.byCanal[canal]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0,devices:{}};
+                const mA = getMetricVal(cA), mB = getMetricVal(cB);
+                if (mA === 0 && mB === 0) return;
+                const uA = (plUnitMode && cA.qty>0) ? mA/cA.qty : mA, uB = (plUnitMode && cB.qty>0) ? mB/cB.qty : mB;
+                const pct = uA !== 0 ? ((uB-uA)/Math.abs(uA))*100 : 0;
+                csv += `${canal};TOTAL CANAL;${Math.round(cA.qty)};${Math.round(cB.qty)};${Math.round(cA.receita)};${Math.round(cB.receita)};${Math.round(cA.salesTaxes)};${Math.round(cB.salesTaxes)};${Math.round(cA.cmv)};${Math.round(cB.cmv)};${Math.round(cA.resultado)};${Math.round(cB.resultado)};${uA.toFixed(2).replace('.',',')};${uB.toFixed(2).replace('.',',')};${pct.toFixed(1).replace('.',',')}%;${plUnitMode?'—':Math.round(mB-mA)}\n`;
+                const allDevs = Array.from(new Set([...Object.keys(cA.devices||{}),...Object.keys(cB.devices||{})]));
+                allDevs.forEach(dev => {
+                    const dA = cA.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
+                    const dB = cB.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
+                    const dmA = getMetricVal(dA), dmB = getMetricVal(dB);
+                    const duA = (plUnitMode && dA.qty>0) ? dmA/dA.qty : dmA, duB = (plUnitMode && dB.qty>0) ? dmB/dB.qty : dmB;
+                    const dPct = duA !== 0 ? ((duB-duA)/Math.abs(duA))*100 : 0;
+                    csv += `${canal};${dev};${Math.round(dA.qty)};${Math.round(dB.qty)};${Math.round(dA.receita)};${Math.round(dB.receita)};${Math.round(dA.salesTaxes)};${Math.round(dB.salesTaxes)};${Math.round(dA.cmv)};${Math.round(dB.cmv)};${Math.round(dA.resultado)};${Math.round(dB.resultado)};${duA.toFixed(2).replace('.',',')};${duB.toFixed(2).replace('.',',')};${dPct.toFixed(1).replace('.',',')}%;${plUnitMode?'—':Math.round(dmB-dmA)}\n`;
+                });
+            });
+            const blob = new Blob(["\uFEFF"+csv],{type:'text/csv;charset=utf-8;'});
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download",`MPOS_PL_${metricLabel.replace(/\s/g,'_')}_${new Date().getTime()}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         // FULLSCREEN
@@ -1443,6 +1580,7 @@
 
         let plUnitMode = false;
         let plMetric = 'resultado';
+        let plTimelineChartObj = null, plBarChartObj = null;
 
         const PL_METRIC_LABELS = { resultado: 'Resultado', receita: 'Receita', salesTaxes: 'Sales Taxes', cmv: 'CMV' };
         const PL_METRIC_ACTIVE_COLOR = { resultado: '#1d4ed8', receita: '#1d4ed8', salesTaxes: '#d97706', cmv: '#dc2626' };
@@ -1688,6 +1826,8 @@
 
             generatePLAI(plA, plB, nameA, nameB, typeB);
             drawPLTable(plA, plB, typeB);
+            window.currentPLExportData = { plA, plB, nameA, nameB, dataA, dataB };
+            drawPLCharts(plA, plB, typeA, typeB, nameA, nameB, compType, yearA, moA_val, yearB, moB_val, filterCanal, filterDevice);
             lucide.createIcons();
         }
 
@@ -1873,7 +2013,6 @@
             const scA = document.getElementById('pl-scenario-a');
             const scB = document.getElementById('pl-scenario-b');
             if (!scA.value || !scB.value) return;
-
             const compType = document.querySelector('input[name="pl-comp-type"]:checked').value;
             const [typeA, yearA] = scA.value.split('|');
             const [typeB, yearB] = scB.value.split('|');
@@ -1881,99 +2020,424 @@
             const moB = (compType === 'YTD' || compType === 'YTG') ? moA : document.getElementById('pl-month-b').value;
             const filterCanal = document.getElementById('filter-canal').value;
             const filterDevice = document.getElementById('filter-device').value;
-
             const periodA = compType === 'YEAR' ? `YEAR|${yearA}` : `${compType}|${yearA}${moA}`;
             const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `${compType}|${yearB}${moB}`;
-            let prefix = compType === 'YTD' ? 'YTD até Mês ' : (compType === 'YTG' ? 'YTG a partir de ' : (compType === 'MONTH' ? 'Mês ' : ''));
+            let prefix = compType === 'YTD' ? 'YTD até Mês ' : (compType === 'YTG' ? 'YTG a partir de Mês ' : (compType === 'MONTH' ? 'Mês ' : ''));
             const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${prefix}${moA})`;
             const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${prefix}${moB})`;
-
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
             const plA = computePL(dataA.byCanalDevice);
             const plB = computePL(dataB.byCanalDevice);
-
-            const metricLabel = PL_METRIC_LABELS[plMetric];
-            const totA = getMetricTotal(plA), totB = getMetricTotal(plB);
-            const deltaAbs = totB - totA;
-            const deltaPct = totA !== 0 ? (deltaAbs / Math.abs(totA)) * 100 : 0;
             const bColor = getBaseColor(typeB, true);
-
-            function signFmt(v) { return v >= 0 ? '+' : ''; }
+            const fmtC = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0});
+            const sgn = v => v >= 0 ? '+' : '';
             function getVarHTML(val, base) {
-                if (base === 0 && val === 0) return `<span style="color:#6b7280;">—</span>`;
-                if (base === 0) return `<span style="color:#16a34a;">+100,0%</span>`;
-                const pct = ((val - base) / Math.abs(base)) * 100;
-                const color = pct > 0 ? '#16a34a' : (pct < 0 ? '#dc2626' : '#6b7280');
-                return `<span style="color:${color};font-weight:bold;">${signFmt(pct)}${pct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</span>`;
+                if (base===0&&val===0) return `<span style="color:#6b7280;">—</span>`;
+                if (base===0) return val>0?`<span style="color:#16a34a;">+100,0%</span>`:`<span style="color:#dc2626;">-100,0%</span>`;
+                const pct = ((val-base)/Math.abs(base))*100;
+                const c = pct>0?'#16a34a':(pct<0?'#dc2626':'#6b7280');
+                return `<span style="color:${c};font-weight:bold;">${pct>0?'+':''}${pct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</span>`;
             }
-
-            // Build AI summary text (plain, without HTML color classes for PDF)
             generatePLAI(plA, plB, nameA, nameB, typeB);
             const aiHTML = document.getElementById('pl-ai-text').innerHTML;
-
-            // Canal rows
-            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
-            allCanals.sort((a,b) => Math.abs(getMetricVal(plB.byCanal[b]||{})) - Math.abs(getMetricVal(plB.byCanal[a]||{})));
-
-            let canalRows = '';
+            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal),...Object.keys(plB.byCanal)]));
+            allCanals.sort((a,b) => Math.abs(plB.byCanal[b]?.resultado||0)-Math.abs(plA.byCanal[a]?.resultado||0));
+            let bodyRows = '';
             allCanals.forEach(canal => {
-                const cA = plA.byCanal[canal] || { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0 };
-                const cB = plB.byCanal[canal] || { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0 };
-                const mA = getMetricVal(cA), mB = getMetricVal(cB);
-                if (mA === 0 && mB === 0) return;
-                canalRows += `<tr>
-                    <td><strong>${canal}</strong></td>
-                    <td style="text-align:right;">${mA.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</td>
-                    <td style="text-align:right;color:${bColor};">${mB.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</td>
-                    <td style="text-align:right;">${getVarHTML(mB, mA)}</td>
-                    <td style="text-align:right;">${signFmt(mB-mA)}${(mB-mA).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</td>
-                </tr>`;
+                const cA = plA.byCanal[canal]||{receita:0,salesTaxes:0,cmv:0,resultado:0,qty:0,devices:{}};
+                const cB = plB.byCanal[canal]||{receita:0,salesTaxes:0,cmv:0,resultado:0,qty:0,devices:{}};
+                if (cA.receita===0&&cB.receita===0&&cA.resultado===0&&cB.resultado===0) return;
+                bodyRows += `<tr style="background:#eff6ff;"><td colspan="5" style="padding:8px 12px;font-weight:900;color:#1e3a8a;font-size:12px;border-top:2px solid #bfdbfe;">📍 ${canal} &nbsp;<span style="font-weight:400;color:#6b7280;font-size:11px;">Qtd A: ${formatBRNum(cA.qty)} | B: ${formatBRNum(cB.qty)}</span></td></tr>
+                <tr><td style="padding:5px 12px 5px 24px;font-size:12px;color:#374151;">↳ Receita</td><td style="text-align:right;font-size:12px;">${fmtC(cA.receita)}</td><td style="text-align:right;font-size:12px;color:${bColor};">${fmtC(cB.receita)}</td><td style="text-align:right;">${getVarHTML(cB.receita,cA.receita)}</td><td style="text-align:right;font-size:12px;color:${(cB.receita-cA.receita)>=0?'#16a34a':'#dc2626'}">${sgn(cB.receita-cA.receita)}${fmtC(cB.receita-cA.receita)}</td></tr>
+                <tr style="background:#fffbeb;"><td style="padding:5px 12px 5px 24px;font-size:12px;color:#92400e;">↳ Sales Taxes</td><td style="text-align:right;font-size:12px;">${fmtC(cA.salesTaxes)}</td><td style="text-align:right;font-size:12px;color:${bColor};">${fmtC(cB.salesTaxes)}</td><td style="text-align:right;">${getVarHTML(cB.salesTaxes,cA.salesTaxes)}</td><td style="text-align:right;font-size:12px;">${sgn(cB.salesTaxes-cA.salesTaxes)}${fmtC(cB.salesTaxes-cA.salesTaxes)}</td></tr>
+                <tr style="background:#fef2f2;"><td style="padding:5px 12px 5px 24px;font-size:12px;color:#991b1b;">↳ CMV</td><td style="text-align:right;font-size:12px;">${fmtC(cA.cmv)}</td><td style="text-align:right;font-size:12px;color:${bColor};">${fmtC(cB.cmv)}</td><td style="text-align:right;">${getVarHTML(cB.cmv,cA.cmv)}</td><td style="text-align:right;font-size:12px;">${sgn(cB.cmv-cA.cmv)}${fmtC(cB.cmv-cA.cmv)}</td></tr>
+                <tr style="background:#f0fdf4;"><td style="padding:5px 12px 5px 24px;font-size:12px;font-weight:900;color:#166534;">= Resultado</td><td style="text-align:right;font-size:12px;font-weight:900;">${fmtC(cA.resultado)}</td><td style="text-align:right;font-size:12px;font-weight:900;color:${bColor};">${fmtC(cB.resultado)}</td><td style="text-align:right;font-weight:900;">${getVarHTML(cB.resultado,cA.resultado)}</td><td style="text-align:right;font-size:12px;font-weight:900;color:${(cB.resultado-cA.resultado)>=0?'#16a34a':'#dc2626'}">${sgn(cB.resultado-cA.resultado)}${fmtC(cB.resultado-cA.resultado)}</td></tr>`;
+                const allDevs = Array.from(new Set([...Object.keys(cA.devices||{}),...Object.keys(cB.devices||{})]));
+                allDevs.sort((a,b)=>Math.abs(cB.devices[b]?.resultado||0)-Math.abs(cA.devices[a]?.resultado||0));
+                if (allDevs.length>0) {
+                    bodyRows += `<tr style="background:#f8fafc;"><td colspan="5" style="padding:4px 12px 4px 32px;font-size:10px;color:#9ca3af;font-style:italic;border-top:1px dashed #e5e7eb;">Devices:</td></tr>`;
+                    allDevs.forEach(dev => {
+                        const dA=cA.devices[dev]||{qty:0,resultado:0}; const dB=cB.devices[dev]||{qty:0,resultado:0};
+                        if (dA.qty===0&&dB.qty===0) return;
+                        bodyRows += `<tr style="background:#f8fafc;"><td style="padding:4px 12px 4px 40px;font-size:11px;color:#374151;">📱 ${dev} <span style="color:#9ca3af;">(${formatBRNum(dA.qty)}/${formatBRNum(dB.qty)} un.)</span></td><td style="text-align:right;font-size:11px;color:#6b7280;">${fmtC(dA.resultado)}</td><td style="text-align:right;font-size:11px;color:${bColor};">${fmtC(dB.resultado)}</td><td style="text-align:right;">${getVarHTML(dB.resultado,dA.resultado)}</td><td style="text-align:right;font-size:11px;color:${(dB.resultado-dA.resultado)>=0?'#16a34a':'#dc2626'}">${sgn(dB.resultado-dA.resultado)}${fmtC(dB.resultado-dA.resultado)}</td></tr>`;
+                    });
+                }
             });
-
-            const html = `<html><head><title>Relatório P&L — ${metricLabel}</title>
-            <style>
-                body{font-family:Arial,sans-serif;color:#333;margin:0;background:#f9fafb;padding:20px;}
-                .container{max-width:1000px;margin:0 auto;background:white;padding:40px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.05);}
-                h1{color:#1e3a8a;border-bottom:2px solid #e5e7eb;padding-bottom:10px;margin-bottom:5px;font-size:22px;}
-                .subtitle{font-size:12px;color:#6b7280;margin-bottom:28px;text-transform:uppercase;letter-spacing:1px;}
-                h2{color:#1f2937;margin-top:28px;font-size:16px;border-left:4px solid ${bColor};padding-left:10px;}
-                .kpi-box{display:flex;gap:12px;margin-top:12px;}
-                .kpi{background:#f3f4f6;padding:16px;border-radius:8px;flex:1;text-align:center;border:1px solid #e5e7eb;}
-                .kpi-label{display:block;font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:bold;margin-bottom:6px;}
-                .kpi-val{font-size:20px;color:#111827;font-weight:900;}
-                .insight{background:#eff6ff;padding:14px;border-radius:8px;margin-top:14px;border-left:4px solid ${bColor};color:#1e40af;font-size:13px;line-height:1.7;}
-                table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px;}
-                th,td{padding:10px;text-align:right;border-bottom:1px solid #e5e7eb;}
-                th{background:#f9fafb;font-size:11px;text-transform:uppercase;color:#4b5563;}
-                th:first-child,td:first-child{text-align:left;}
-                .no-print-btn{display:block;width:fit-content;margin:0 auto 28px;padding:12px 24px;background:#4f46e5;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;}
-                @media print{body{background:white;padding:0;}.container{box-shadow:none;padding:0;max-width:100%;}.no-print-btn{display:none!important;}}
-            </style></head>
-            <body>
-                <button class="no-print-btn" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
-                <div class="container">
-                    <h1>MPOS Analytics: Visão Executiva P&L — ${metricLabel}</h1>
-                    <div class="subtitle">${nameB} vs ${nameA}${filterCanal !== 'ALL' ? ' | Canal: '+filterCanal : ''}${filterDevice !== 'ALL' ? ' | Device: '+filterDevice : ''}</div>
-                    <h2>Visão Geral — ${metricLabel}</h2>
-                    <div class="kpi-box">
-                        <div class="kpi"><span class="kpi-label">${metricLabel} (A) — ${nameA}</span><div class="kpi-val">${totA.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</div></div>
-                        <div class="kpi"><span class="kpi-label">${metricLabel} (B) — ${nameB}</span><div class="kpi-val" style="color:${bColor}">${totB.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</div></div>
-                        <div class="kpi"><span class="kpi-label">Variação (%)</span><div class="kpi-val">${getVarHTML(totB, totA)}</div></div>
-                        <div class="kpi"><span class="kpi-label">Variação (Abs)</span><div class="kpi-val">${signFmt(deltaAbs)}${deltaAbs.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})}</div></div>
-                    </div>
-                    <div class="insight">${aiHTML}</div>
-                    <h2>Detalhamento por Canal</h2>
-                    <table>
-                        <thead><tr><th>Canal</th><th>${metricLabel} (A)</th><th style="color:${bColor};">${metricLabel} (B)</th><th>Var (%)</th><th>Var (Abs)</th></tr></thead>
-                        <tbody>${canalRows}</tbody>
-                    </table>
+            const tAR=plA.totalReceita,tBR=plB.totalReceita,tAS=plA.totalSalesTaxes,tBS=plB.totalSalesTaxes,tAC=plA.totalCMV,tBC=plB.totalCMV,tARes=plA.totalResultado,tBRes=plB.totalResultado;
+            const fi=[filterCanal!=='ALL'?`Canal: ${filterCanal}`:'',filterDevice!=='ALL'?`Device: ${filterDevice}`:''].filter(Boolean).join(' | ');
+            const html=`<html><head><title>Relatório Executivo P&L</title><style>
+            body{font-family:Arial,sans-serif;color:#333;margin:0;background:#f9fafb;padding:20px;}
+            .ct{max-width:1100px;margin:0 auto;background:white;padding:40px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,.05);}
+            .badge{background:#FFE600;color:#111;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:900;display:inline-block;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
+            h1{color:#1e3a8a;border-bottom:3px solid #FFE600;padding-bottom:10px;font-size:22px;margin-top:0;}
+            .sub{font-size:12px;color:#6b7280;margin-bottom:28px;text-transform:uppercase;letter-spacing:1px;}
+            h2{color:#1f2937;margin-top:28px;font-size:15px;border-left:4px solid ${bColor};padding-left:10px;}
+            .kg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;}
+            .kg3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;}
+            .k{background:#f3f4f6;padding:14px;border-radius:8px;text-align:center;border:1px solid #e5e7eb;}
+            .kl{display:block;font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:bold;margin-bottom:5px;}
+            .kv{font-size:18px;color:#111827;font-weight:900;}
+            .ins{background:#eff6ff;padding:14px;border-radius:8px;margin-top:14px;border-left:4px solid ${bColor};color:#1e40af;font-size:13px;line-height:1.7;}
+            table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12px;}
+            th,td{padding:7px 12px;text-align:right;border-bottom:1px solid #e5e7eb;}
+            th{background:#f9fafb;font-size:10px;text-transform:uppercase;color:#4b5563;font-weight:700;}
+            th:first-child,td:first-child{text-align:left;}
+            tfoot td{font-weight:900;background:#f0fdf4;border-top:2px solid #86efac;}
+            .nb{display:block;width:fit-content;margin:0 auto 28px;padding:12px 24px;background:#4f46e5;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;}
+            @media print{body{background:white;padding:0;}.ct{box-shadow:none;padding:0;}.nb{display:none!important;}}
+            </style></head><body>
+            <button class="nb" onclick="window.print()">🖨️ Salvar como PDF / Imprimir</button>
+            <div class="ct">
+                <div class="badge">MPOS Analytics</div>
+                <h1>Visão Executiva — Simulação P&L</h1>
+                <div class="sub">${nameB} vs ${nameA}${fi?' | '+fi:''}</div>
+                <h2>Consolidado Geral</h2>
+                <div class="kg">
+                    <div class="k"><span class="kl">Receita (A)</span><div class="kv">${fmtC(tAR)}</div></div>
+                    <div class="k"><span class="kl">Receita (B)</span><div class="kv" style="color:${bColor}">${fmtC(tBR)}</div></div>
+                    <div class="k"><span class="kl">CMV (A)</span><div class="kv">${fmtC(tAC)}</div></div>
+                    <div class="k"><span class="kl">CMV (B)</span><div class="kv" style="color:${bColor}">${fmtC(tBC)}</div></div>
                 </div>
-            </body></html>`;
+                <div class="kg" style="margin-top:8px;">
+                    <div class="k"><span class="kl">Sales Taxes (A)</span><div class="kv">${fmtC(tAS)}</div></div>
+                    <div class="k"><span class="kl">Sales Taxes (B)</span><div class="kv" style="color:${bColor}">${fmtC(tBS)}</div></div>
+                    <div class="k" style="border-top:3px solid #16a34a;"><span class="kl">= Resultado (A)</span><div class="kv">${fmtC(tARes)}</div></div>
+                    <div class="k" style="border-top:3px solid ${bColor};"><span class="kl">= Resultado (B)</span><div class="kv" style="color:${bColor}">${fmtC(tBRes)}</div></div>
+                </div>
+                <div class="kg3" style="margin-top:8px;">
+                    <div class="k"><span class="kl">Var Resultado (%)</span><div class="kv">${getVarHTML(tBRes,tARes)}</div></div>
+                    <div class="k"><span class="kl">Var Resultado (Abs)</span><div class="kv" style="color:${(tBRes-tARes)>=0?'#16a34a':'#dc2626'}">${sgn(tBRes-tARes)}${fmtC(tBRes-tARes)}</div></div>
+                    <div class="k"><span class="kl">Var Receita (%)</span><div class="kv">${getVarHTML(tBR,tAR)}</div></div>
+                </div>
+                <h2>Análise gerada por IA</h2>
+                <div class="ins">${aiHTML}</div>
+                <h2>Detalhamento por Canal e Device</h2>
+                <table>
+                    <thead><tr><th>Canal / Linha P&L</th><th>${nameA}</th><th style="color:${bColor};">${nameB}</th><th>Var (%)</th><th>Var (Abs)</th></tr></thead>
+                    <tbody>${bodyRows}</tbody>
+                    <tfoot><tr><td>TOTAL — Resultado</td><td style="text-align:right;">${fmtC(tARes)}</td><td style="text-align:right;color:${bColor};">${fmtC(tBRes)}</td><td style="text-align:right;">${getVarHTML(tBRes,tARes)}</td><td style="text-align:right;color:${(tBRes-tARes)>=0?'#16a34a':'#dc2626'}">${sgn(tBRes-tARes)}${fmtC(tBRes-tARes)}</td></tr></tfoot>
+                </table>
+            </div></body></html>`;
+            const w=window.open('','_blank'); w.document.write(html); w.document.close();
+        }
 
-            const w = window.open('', '_blank');
-            w.document.write(html);
-            w.document.close();
+        // ============================================================
+        // P&L CHARTS
+        // ============================================================
+        function drawPLCharts(plA, plB, typeA, typeB, nameA, nameB, compType, yearA, moA, yearB, moB, filterCanal, filterDevice) {
+            const bColor = getBaseColor(typeB, true);
+            const bBgColor = getBaseBgColor(typeB);
+
+            // Bar chart (top 5 canals)
+            const allC = Array.from(new Set([...Object.keys(plA.byCanal),...Object.keys(plB.byCanal)]));
+            allC.sort((a,b)=>Math.abs(getMetricVal(plB.byCanal[b]||{}))-Math.abs(getMetricVal(plB.byCanal[a]||{})));
+            const top5 = allC.slice(0,5);
+            const bCanalA = top5.map(c=>{ const d=plA.byCanal[c]||{}; const v=getMetricVal(d); return plUnitMode&&(d.qty||0)>0?v/d.qty:v; });
+            const bCanalB = top5.map(c=>{ const d=plB.byCanal[c]||{}; const v=getMetricVal(d); return plUnitMode&&(d.qty||0)>0?v/d.qty:v; });
+
+            if (plBarChartObj) plBarChartObj.destroy();
+            const plBarEl = document.getElementById('plBarChart');
+            if (plBarEl) {
+                plBarChartObj = new Chart(plBarEl, {
+                    type: 'bar',
+                    data: { labels: top5, datasets: [
+                        { label: nameA, data: bCanalA, backgroundColor: '#D1D5DB', borderRadius: 4 },
+                        { label: nameB, data: bCanalB, backgroundColor: bColor, borderRadius: 4 }
+                    ]},
+                    options: { responsive:true, maintainAspectRatio:false,
+                        plugins: {
+                            legend: { position:'bottom', labels:{ font:{size:10,weight:'bold'} } },
+                            datalabels: {
+                                display: ctx=>ctx.datasetIndex===1, align:'top', anchor:'end', offset:2,
+                                formatter:(val,ctx)=>{ const vA=ctx.chart.data.datasets[0].data[ctx.dataIndex]; if(vA===0&&val===0)return''; const d=vA!==0?((val-vA)/Math.abs(vA))*100:(val!==0?100:0); return(d>0?'+':'')+formatBRPct(d); },
+                                color: ctx=>{ const vA=ctx.chart.data.datasets[0].data[ctx.dataIndex],vB=ctx.dataset.data[ctx.dataIndex]; return(vB-vA)>0?'#16a34a':((vB-vA)<0?'#dc2626':'#6b7280'); },
+                                font:{weight:'bold',size:10}
+                            }
+                        },
+                        scales: { y:{grid:{color:'#f3f4f6'},ticks:{display:false}}, x:{grid:{display:false},ticks:{font:{size:10,weight:'bold'}}} },
+                        layout:{padding:{top:20}}
+                    }
+                });
+            }
+
+            // Timeline chart
+            function getPLMonthVal(type, yr, mo) {
+                const d = extractValue(type, `MONTH|${yr}${String(mo).padStart(2,'0')}`, filterCanal, filterDevice);
+                const pl = computePL(d.byCanalDevice);
+                const total = getMetricTotal(pl);
+                if (total === 0) return null;
+                return plUnitMode && pl.totalQty > 0 ? total/pl.totalQty : total;
+            }
+
+            let tlLabels=[], tlA=[], tlB=[];
+            if (compType==='YEAR') {
+                tlLabels=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                tlA=tlLabels.map((_,i)=>getPLMonthVal(typeA,yearA,i+1));
+                tlB=tlLabels.map((_,i)=>getPLMonthVal(typeB,yearB,i+1));
+            } else if (compType==='YTD') {
+                const maxM=parseInt(moA);
+                tlLabels=Array.from({length:maxM},(_,i)=>PT_MONTHS[i].substring(0,3));
+                tlA=tlLabels.map((_,i)=>getPLMonthVal(typeA,yearA,i+1));
+                tlB=tlLabels.map((_,i)=>getPLMonthVal(typeB,yearB,i+1));
+            } else if (compType==='YTG') {
+                const sm=parseInt(moA);
+                tlLabels=Array.from({length:12-sm+1},(_,i)=>PT_MONTHS[sm-1+i].substring(0,3));
+                tlA=tlLabels.map((_,i)=>getPLMonthVal(typeA,yearA,sm+i));
+                tlB=tlLabels.map((_,i)=>getPLMonthVal(typeB,yearB,sm+i));
+            } else {
+                tlLabels=[nameA,nameB];
+                const vA=getMetricTotal(plA); const vB=getMetricTotal(plB);
+                tlA=[plUnitMode&&plA.totalQty>0?vA/plA.totalQty:vA, null];
+                tlB=[null, plUnitMode&&plB.totalQty>0?vB/plB.totalQty:vB];
+            }
+
+            const fmtLbl = v => {
+                if (v===null||v===undefined) return '';
+                const abs=Math.abs(v);
+                if(abs>=1000000) return (v/1000000).toLocaleString('pt-BR',{maximumFractionDigits:1})+'M';
+                if(abs>=1000) return (v/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k';
+                return v.toLocaleString('pt-BR',{maximumFractionDigits:0});
+            };
+
+            if (plTimelineChartObj) plTimelineChartObj.destroy();
+            const plTLEl = document.getElementById('plTimelineChart');
+            if (plTLEl) {
+                plTimelineChartObj = new Chart(plTLEl, {
+                    type:'line',
+                    data:{ labels:tlLabels, datasets:[
+                        { label:nameA, data:tlA, borderColor:'#9CA3AF', backgroundColor:'transparent', fill:false, tension:0.3, borderWidth:3, borderDash:[5,5], pointRadius:4, pointBackgroundColor:'#fff', spanGaps:true },
+                        { label:nameB, data:tlB, borderColor:bColor, backgroundColor:bBgColor, fill:compType!=='MONTH', tension:0.3, borderWidth:3, pointRadius:4, pointBackgroundColor:'#fff', spanGaps:true }
+                    ]},
+                    options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+                        plugins:{
+                            legend:{position:'top',align:'end',labels:{boxWidth:12,usePointStyle:true,font:{weight:'bold',size:10}}},
+                            datalabels:{display:true,align:'top',offset:6,formatter:fmtLbl,font:{size:10,weight:'bold'},color:ctx=>ctx.dataset.borderColor},
+                            tooltip:{backgroundColor:'rgba(0,0,0,0.8)',padding:10,callbacks:{label:ctx=>{
+                                if(ctx.parsed.y===null)return'';
+                                return ctx.dataset.label+': '+ctx.parsed.y.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:plUnitMode?2:0});
+                            }}}
+                        },
+                        scales:{y:{grid:{color:'#f3f4f6'},ticks:{display:false}},x:{grid:{display:false},ticks:{font:{size:10,weight:'bold'}}}},
+                        layout:{padding:{top:25}}
+                    }
+                });
+            }
+        }
+
+        // ============================================================
+        // PPT GENERATOR
+        // ============================================================
+        function generatePPT() {
+            const yearSel = document.getElementById('ppt-ref-year');
+            yearSel.innerHTML = '';
+            const years = [...new Set(scenarioList.map(s=>s.id.split('|')[1]))].sort();
+            years.forEach(y => { const o=document.createElement('option'); o.value=y; o.textContent=y; yearSel.appendChild(o); });
+            if (years.includes(new Date().getFullYear().toString())) yearSel.value=new Date().getFullYear().toString();
+            document.getElementById('ppt-modal').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function hidePPTModal() {
+            document.getElementById('ppt-modal').style.display = 'none';
+        }
+
+        async function executePPTGeneration() {
+            hidePPTModal();
+            const refMonth = parseInt(document.getElementById('ppt-ref-month').value);
+            const refYear = document.getElementById('ppt-ref-year').value;
+            const filterCanal = document.getElementById('filter-canal').value;
+            const filterDevice = document.getElementById('filter-device').value;
+            const moStr = String(refMonth).padStart(2,'0');
+
+            const btn = document.getElementById('ppt-gen-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4"></i> Gerando PPT...';
+            lucide.createIcons();
+
+            await new Promise(r => setTimeout(r, 50)); // yield UI
+
+            try {
+                const pptx = new PptxGenJS();
+                pptx.layout = 'LAYOUT_WIDE';
+                pptx.theme = { headFontFace:'Arial', bodyFontFace:'Arial' };
+
+                const ML_Y='FFE600', ML_D='1A1A2E', ML_BL='3483FA', ML_GR='166534', ML_RD='DC2626', ML_GY='6B7280';
+
+                // --- Data helpers ---
+                function aggPeriod(type, months) {
+                    let total=0, byCanal={}, byCanalDevice={};
+                    months.forEach(m => {
+                        const d=extractValue(type,`MONTH|${refYear}${String(m).padStart(2,'0')}`,filterCanal,filterDevice);
+                        total+=d.total;
+                        Object.entries(d.byCanal).forEach(([c,v])=>{ byCanal[c]=(byCanal[c]||0)+v; });
+                        Object.entries(d.byCanalDevice).forEach(([c,devs])=>{
+                            if(!byCanalDevice[c])byCanalDevice[c]={};
+                            Object.entries(devs).forEach(([dv,v])=>{ byCanalDevice[c][dv]=(byCanalDevice[c][dv]||0)+v; });
+                        });
+                    });
+                    return {total, byCanal, byCanalDevice};
+                }
+                const ytdMonths=Array.from({length:refMonth},(_,i)=>i+1);
+                const ytgMonths=Array.from({length:12-refMonth+1},(_,i)=>refMonth+i);
+                const fyMonths=Array.from({length:12},(_,i)=>i+1);
+                const mxmMonths=[refMonth];
+
+                const periods=[
+                    {key:'YTD', label:`YTD — Jan a ${PT_MONTHS[refMonth-1]} ${refYear}`, typeA:'PLAN', typeB:'ACTUAL', months:ytdMonths, cA:'Plano', cB:'Realizado'},
+                    {key:'YTG', label:`YTG — ${PT_MONTHS[refMonth-1]} a Dez ${refYear}`, typeA:'PLAN', typeB:'FORECAST', months:ytgMonths, cA:'Plano', cB:'Forecast'},
+                    {key:'FY',  label:`FY — Ano Completo ${refYear}`, typeA:'PLAN', typeB:'FORECAST', months:fyMonths, cA:'Plano', cB:'Forecast'},
+                    {key:'MxM', label:`Mês a Mês — ${PT_MONTHS[refMonth-1]} ${refYear}`, typeA:'PLAN', typeB:'ACTUAL', months:mxmMonths, cA:'Plano', cB:'Realizado'},
+                ];
+
+                function qtyByDevice(raw) {
+                    const r={}; Object.values(raw.byCanalDevice||{}).forEach(devs=>{Object.entries(devs).forEach(([d,v])=>{r[d]=(r[d]||0)+v;})}); return r;
+                }
+                function plByDevice(pl, metric) {
+                    const r={}; Object.values(pl.byCanal||{}).forEach(cd=>{Object.entries(cd.devices||{}).forEach(([d,dd])=>{
+                        const v = metric==='receita'?dd.receita:(metric==='cmv'?dd.cmv:(metric==='salesTaxes'?dd.salesTaxes:dd.resultado));
+                        r[d]=(r[d]||0)+v;
+                    });}); return r;
+                }
+                function topN(obj, n=6) {
+                    return Object.entries(obj).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,n);
+                }
+                function aiQty(dA, dB, nA, nB) {
+                    const d=dB.total-dA.total, p=dA.total?((d/dA.total)*100):0, s=d>=0?'+':'';
+                    let t=`${nB} vs ${nA}: ${s}${formatBRNum(d)} un. (${s}${formatBRPct(p)}). `;
+                    const allC=Array.from(new Set([...Object.keys(dA.byCanal),...Object.keys(dB.byCanal)]));
+                    const isg=d>0;
+                    let diffs=allC.map(c=>({name:c,diff:(dB.byCanal[c]||0)-(dA.byCanal[c]||0)})).filter(c=>isg?c.diff>0:c.diff<0).sort((a,b)=>isg?b.diff-a.diff:a.diff-b.diff);
+                    let ex=0,dr=[];
+                    for(const c of diffs){ex+=Math.abs(c.diff);const pA=dA.byCanal[c.name]||0,cP=pA?(c.diff/pA)*100:100;dr.push(`${c.name}: ${c.diff>=0?'+':''}${formatBRNum(c.diff)} (${cP>=0?'+':''}${formatBRPct(cP)})`);if(Math.abs(d)>0&&ex/Math.abs(d)>=0.85)break;}
+                    if(dr.length)t+=`Drivers: ${dr.join(' | ')}.`;
+                    return t;
+                }
+                function aiPL(plA, plB, nA, nB, metric) {
+                    const savedM=plMetric; plMetric=metric;
+                    const tA=getMetricTotal(plA),tB=getMetricTotal(plB),d=tB-tA,p=tA?(d/Math.abs(tA))*100:0,s=d>=0?'+':'';
+                    const lbl=PL_METRIC_LABELS[metric];
+                    let t=`${nB} vs ${nA}: ${lbl} ${s}${tB.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})} vs ${tA.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})} → ${s}${formatBRPct(p)}. `;
+                    const allC=Array.from(new Set([...Object.keys(plA.byCanal),...Object.keys(plB.byCanal)]));
+                    const isg=d>0;
+                    let diffs=allC.map(c=>({name:c,diff:getMetricVal(plB.byCanal[c]||{})-getMetricVal(plA.byCanal[c]||{})})).filter(c=>isg?c.diff>0:c.diff<0).sort((a,b)=>isg?b.diff-a.diff:a.diff-b.diff);
+                    let ex=0,dr=[];
+                    for(const c of diffs){ex+=Math.abs(c.diff);const vA=getMetricVal(plA.byCanal[c.name]||{}),cP=vA?(c.diff/Math.abs(vA))*100:100;dr.push(`${c.name}: ${c.diff>=0?'+':''}${c.diff.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})} (${cP>=0?'+':''}${formatBRPct(cP)})`);if(Math.abs(d)>0&&ex/Math.abs(d)>=0.85)break;}
+                    if(dr.length)t+=`Canais: ${dr.join(' | ')}.`;
+                    plMetric=savedM; return t;
+                }
+
+                function hexColor(type) { return type==='ACTUAL'?'3B82F6':(type==='FORECAST'?'F59E0B':'10B981'); }
+
+                function addHeader(slide, title, period) {
+                    slide.addShape('rect',{x:0,y:0,w:'100%',h:0.65,fill:{color:ML_Y}});
+                    slide.addText(title,{x:0.3,y:0.08,w:9,h:0.5,fontSize:15,bold:true,color:ML_D,fontFace:'Arial'});
+                    slide.addText(period,{x:9.5,y:0.08,w:3.5,h:0.5,fontSize:9,color:'555555',align:'right',fontFace:'Arial'});
+                }
+
+                function addAI(slide, text) {
+                    slide.addShape('rect',{x:0.3,y:4.7,w:12.6,h:1.2,fill:{color:'EFF6FF'},line:{color:'3B82F6',width:1,dashType:'solid'}});
+                    slide.addText([{text:'✦ IA: ',options:{bold:true,color:'1E40AF',fontSize:9}},{text,options:{color:'1E3A8A',fontSize:8.5}}],{x:0.45,y:4.75,w:12.3,h:1.1,wrap:true,valign:'top'});
+                }
+
+                function addDataSlide(title, period, nA, nB, byCanalA, byCanalB, byDevA, byDevB, aiText, bColHex) {
+                    const slide=pptx.addSlide();
+                    addHeader(slide,title,period);
+                    const cEntries=topN({...byCanalA,...Object.fromEntries(Object.keys(byCanalB).map(k=>[k,byCanalB[k]]))},6).map(e=>e[0]);
+                    const uCanals=[...new Set([...Object.keys(byCanalA),...Object.keys(byCanalB)])].sort((a,b)=>Math.abs(byCanalB[b]||0)-Math.abs(byCanalB[a]||0)).slice(0,6);
+                    const cData=[{name:nA,labels:uCanals,values:uCanals.map(c=>Math.round(byCanalA[c]||0))},{name:nB,labels:uCanals,values:uCanals.map(c=>Math.round(byCanalB[c]||0))}];
+                    slide.addChart(pptx.ChartType.bar,cData,{x:0.3,y:0.75,w:6.3,h:3.85,barDir:'col',showLegend:true,legendPos:'b',legendFontSize:8,showValue:true,dataLabelFontSize:7,chartColors:['D1D5DB',bColHex||'3B82F6'],valAxisHidden:true,catAxisLabelFontSize:7,showTitle:true,title:'Por Canal',titleFontSize:10,titleBold:true,layout:{name:'custom',left:0,right:0,top:0,bottom:0}});
+                    const uDevs=[...new Set([...Object.keys(byDevA),...Object.keys(byDevB)])].sort((a,b)=>Math.abs(byDevB[b]||0)-Math.abs(byDevA[a]||0)).slice(0,6);
+                    const dData=[{name:nA,labels:uDevs,values:uDevs.map(d=>Math.round(byDevA[d]||0))},{name:nB,labels:uDevs,values:uDevs.map(d=>Math.round(byDevB[d]||0))}];
+                    slide.addChart(pptx.ChartType.bar,dData,{x:6.8,y:0.75,w:6.2,h:3.85,barDir:'col',showLegend:true,legendPos:'b',legendFontSize:8,showValue:true,dataLabelFontSize:7,chartColors:['D1D5DB',bColHex||'3B82F6'],valAxisHidden:true,catAxisLabelFontSize:8,showTitle:true,title:'Por Device',titleFontSize:10,titleBold:true,layout:{name:'custom',left:0,right:0,top:0,bottom:0}});
+                    addAI(slide,aiText);
+                }
+
+                function addSection(num, title, sub) {
+                    const sl=pptx.addSlide();
+                    sl.addShape('rect',{x:0,y:0,w:'100%',h:'100%',fill:{color:ML_Y}});
+                    sl.addShape('rect',{x:0,y:5.8,w:'100%',h:1.7,fill:{color:ML_D}});
+                    sl.addText(num,{x:0.5,y:1.2,w:2,h:1.4,fontSize:80,bold:true,color:'E5E7EB',fontFace:'Arial',alpha:40});
+                    sl.addText(title,{x:0.5,y:2.5,w:12,h:1.2,fontSize:36,bold:true,color:ML_D,fontFace:'Arial'});
+                    sl.addText(sub,{x:0.5,y:3.8,w:12,h:0.6,fontSize:15,color:'555555',fontFace:'Arial'});
+                    sl.addText('Mercado Libre — MPOS Analytics',{x:0.5,y:6.1,w:12,h:0.5,fontSize:12,color:'AAAAAA',fontFace:'Arial'});
+                }
+
+                // Cover
+                const cover=pptx.addSlide();
+                cover.addShape('rect',{x:0,y:0,w:'100%',h:2,fill:{color:ML_Y}});
+                cover.addShape('rect',{x:0,y:5.5,w:'100%',h:2,fill:{color:ML_D}});
+                cover.addText('MPOS Analytics',{x:0.5,y:0.2,w:12.3,h:1.2,fontSize:44,bold:true,color:ML_D,fontFace:'Arial'});
+                cover.addText('Executive Performance Report',{x:0.5,y:1.6,w:12.3,h:0.9,fontSize:26,color:ML_D,fontFace:'Arial'});
+                cover.addText(`Referência: ${PT_MONTHS[refMonth-1]} / ${refYear}`,{x:0.5,y:2.7,w:12.3,h:0.6,fontSize:18,color:'333333',fontFace:'Arial'});
+                cover.addText(`Filtros: Canal = ${filterCanal==='ALL'?'Todos':filterCanal}  |  Device = ${filterDevice==='ALL'?'Todos':filterDevice}`,{x:0.5,y:3.35,w:12.3,h:0.5,fontSize:13,color:'666666',fontFace:'Arial'});
+                cover.addText('Mercado Libre | MPOS Analytics Cross-Data Engine',{x:0.5,y:5.9,w:12.3,h:0.4,fontSize:11,color:'AAAAAA',fontFace:'Arial'});
+                cover.addText(new Date().toLocaleDateString('pt-BR'),{x:0.5,y:6.4,w:12.3,h:0.4,fontSize:10,color:'888888',fontFace:'Arial'});
+
+                // Index
+                const idx=pptx.addSlide();
+                idx.addShape('rect',{x:0,y:0,w:'100%',h:0.85,fill:{color:ML_Y}});
+                idx.addText('Índice da Apresentação',{x:0.4,y:0.12,w:12,h:0.65,fontSize:22,bold:true,color:ML_D,fontFace:'Arial'});
+                const secs=[
+                    {n:'01',t:'Quantidade de Dispositivos',s:'YTD · YTG · FY · MxM — Por Canal e Device'},
+                    {n:'02',t:'Resultado P&L',s:'Receita − Sales Taxes − CMV — Por Canal e Device'},
+                    {n:'03',t:'Receita Bruta',s:'Preços unitários por canal e device'},
+                    {n:'04',t:'CMV (Custo de Mercadoria)',s:'Custo em USD convertido a R$5,50'},
+                    {n:'05',t:'Sales Taxes',s:'35% da Receita — dedutor do Resultado'},
+                ];
+                secs.forEach((s,i)=>{
+                    const y=1.1+i*1.15;
+                    idx.addShape('rect',{x:0.4,y,w:0.65,h:0.65,fill:{color:ML_Y},line:{color:ML_D,width:1}});
+                    idx.addText(s.n,{x:0.4,y:y+0.1,w:0.65,h:0.45,fontSize:16,bold:true,color:ML_D,align:'center',fontFace:'Arial'});
+                    idx.addText(s.t,{x:1.25,y:y+0.02,w:11,h:0.38,fontSize:14,bold:true,color:ML_D,fontFace:'Arial'});
+                    idx.addText(s.s,{x:1.25,y:y+0.38,w:11,h:0.28,fontSize:10,color:'888888',fontFace:'Arial'});
+                });
+
+                // Section 1: Quantidade
+                addSection('01','Quantidade de Dispositivos','Análise de volume por canal e tipo de device');
+                for (const p of periods) {
+                    const dA=aggPeriod(p.typeA,p.months), dB=aggPeriod(p.typeB,p.months);
+                    const devA=qtyByDevice(dA), devB=qtyByDevice(dB);
+                    const byCanalA=Object.fromEntries(Object.entries(dA.byCanal).map(([k,v])=>[k,Math.round(v)]));
+                    const byCanalB=Object.fromEntries(Object.entries(dB.byCanal).map(([k,v])=>[k,Math.round(v)]));
+                    const byDevA=Object.fromEntries(Object.entries(devA).map(([k,v])=>[k,Math.round(v)]));
+                    const byDevB=Object.fromEntries(Object.entries(devB).map(([k,v])=>[k,Math.round(v)]));
+                    addDataSlide(`Quantidade — ${p.key}`,p.label,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,byCanalA,byCanalB,byDevA,byDevB,aiQty(dA,dB,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`),hexColor(p.typeB));
+                }
+
+                // Sections 2-5: P&L metrics
+                const plSecs=[
+                    {metric:'resultado',title:'Resultado P&L',sub:'Receita − Sales Taxes − CMV',num:'02'},
+                    {metric:'receita',title:'Receita Bruta',sub:'Receita por canal e tipo de device',num:'03'},
+                    {metric:'cmv',title:'CMV — Custo de Mercadoria',sub:'USD convertido a R$5,50 por unidade',num:'04'},
+                    {metric:'salesTaxes',title:'Sales Taxes',sub:'35% da Receita — dedutor do Resultado',num:'05'},
+                ];
+                for (const sec of plSecs) {
+                    addSection(sec.num, sec.title, sec.sub);
+                    for (const p of periods) {
+                        const dA=aggPeriod(p.typeA,p.months), dB=aggPeriod(p.typeB,p.months);
+                        const savedM=plMetric; plMetric=sec.metric;
+                        const plA=computePL(dA.byCanalDevice), plB=computePL(dB.byCanalDevice);
+                        const allC=Array.from(new Set([...Object.keys(plA.byCanal),...Object.keys(plB.byCanal)]));
+                        const byCanalA=Object.fromEntries(allC.map(c=>[c,Math.round(getMetricVal(plA.byCanal[c]||{}))]));
+                        const byCanalB=Object.fromEntries(allC.map(c=>[c,Math.round(getMetricVal(plB.byCanal[c]||{}))]));
+                        const byDevA=Object.fromEntries(Object.entries(plByDevice(plA,sec.metric)).map(([k,v])=>[k,Math.round(v)]));
+                        const byDevB=Object.fromEntries(Object.entries(plByDevice(plB,sec.metric)).map(([k,v])=>[k,Math.round(v)]));
+                        const ai=aiPL(plA,plB,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,sec.metric);
+                        plMetric=savedM;
+                        addDataSlide(`${PL_METRIC_LABELS[sec.metric]} — ${p.key}`,p.label,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,byCanalA,byCanalB,byDevA,byDevB,ai,hexColor(p.typeB));
+                    }
+                }
+
+                await pptx.writeFile({fileName:`MPOS_Executive_${refYear}_${moStr}.pptx`});
+            } catch(e) {
+                alert('Erro ao gerar PPT: '+e.message);
+                console.error(e);
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT';
+            lucide.createIcons();
         }
 
         window.onload = boot;
