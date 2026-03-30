@@ -184,7 +184,7 @@
 
         <div class="card bg-gradient-to-r from-blue-50 to-white border-l-4 border-l-blue-500 p-6" id="ai-container">
             <h4 class="text-sm font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-tight" id="ai-title">
-                <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo gerado pelo Gemini
+                <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo gerado por IA
             </h4>
             <div id="ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2"></div>
         </div>
@@ -322,7 +322,7 @@
             <!-- AI Summary -->
             <div class="card bg-gradient-to-r from-blue-50 to-white border-l-4 border-l-blue-500 p-6" id="pl-ai-container">
                 <h4 class="text-sm font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-tight">
-                    <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo P&amp;L gerado por IA
+                    <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo gerado por IA
                 </h4>
                 <div id="pl-ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2"></div>
             </div>
@@ -1663,6 +1663,25 @@
                 container.innerHTML = '<p>Dados insuficientes para gerar insights neste recorte.</p>'; return;
             }
 
+            // --- Volume vs Mix decomposition ---
+            const avgUnitResA = plA.totalQty > 0 ? plA.totalResultado / plA.totalQty : 0;
+            const volEffect   = (plB.totalQty - plA.totalQty) * avgUnitResA;
+            const mixEffect   = deltaAbs - volEffect;
+            const volPct  = plA.totalResultado !== 0 ? (volEffect  / Math.abs(plA.totalResultado)) * 100 : 0;
+            const mixPct  = plA.totalResultado !== 0 ? (mixEffect  / Math.abs(plA.totalResultado)) * 100 : 0;
+            const unitResA = plA.totalQty > 0 ? plA.totalResultado / plA.totalQty : 0;
+            const unitResB = plB.totalQty > 0 ? plB.totalResultado / plB.totalQty : 0;
+            const unitPct  = unitResA !== 0 ? ((unitResB - unitResA) / Math.abs(unitResA)) * 100 : 0;
+
+            function signFmt(v) { return v >= 0 ? '+' : ''; }
+            function colorSpan(v, txt) {
+                return v > 0
+                    ? `<span class="text-green-600 font-bold">${txt}</span>`
+                    : (v < 0 ? `<span class="text-red-600 font-bold">${txt}</span>`
+                             : `<span class="text-gray-500">${txt}</span>`);
+            }
+
+            // --- Canal-level contributors (up to 85%) ---
             const isGrowth = deltaAbs > 0;
             const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
             let diffs = allCanals.map(c => ({ name: c, diff: (plB.byCanal[c]?.resultado || 0) - (plA.byCanal[c]?.resultado || 0) }));
@@ -1671,35 +1690,41 @@
 
             let explained = 0, driversText = [];
             const absTotal = Math.abs(deltaAbs);
-
             for (let i = 0; i < contributors.length; i++) {
                 const c = contributors[i];
                 explained += Math.abs(c.diff);
                 const vA = plA.byCanal[c.name]?.resultado || 0;
                 const cPct = vA !== 0 ? (c.diff / Math.abs(vA)) * 100 : 100;
-                const pctStr = (cPct > 0 ? '+' : '') + formatBRPct(cPct);
-                const absStr = (c.diff > 0 ? '+' : '') + formatBRL(c.diff);
-                driversText.push(`o canal <strong class="text-gray-900">${c.name}</strong> com <strong>${absStr}</strong> (${pctStr} vs base)`);
+                driversText.push(`o canal <strong class="text-gray-900">${c.name}</strong> com <strong>${signFmt(c.diff)}${formatBRL(c.diff)}</strong> (${signFmt(cPct)}${formatBRPct(cPct)} vs base)`);
                 if ((explained / absTotal) >= 0.85) break;
             }
 
+            // --- Assemble text ---
             let text = `<p>${nameB} frente a ${nameA}, o <strong>Resultado</strong> apresenta `;
             text += isGrowth
-                ? `<span class="text-green-600 font-bold">melhora de +${formatBRPct(deltaPct)}</span> (+${formatBRL(deltaAbs)}). `
-                : `<span class="text-red-600 font-bold">piora de ${formatBRPct(deltaPct)}</span> (${formatBRL(deltaAbs)}). `;
+                ? `${colorSpan(1, `melhora de +${formatBRPct(deltaPct)}`)} (+${formatBRL(deltaAbs)}). `
+                : `${colorSpan(-1, `piora de ${formatBRPct(deltaPct)}`)} (${formatBRL(deltaAbs)}). `;
+            text += `</p>`;
 
+            // Volume + Mix paragraph
+            text += `<p class="mt-2">`;
+            text += `▸ <strong>Efeito Volume</strong>: ${colorSpan(volEffect, `${signFmt(volEffect)}${formatBRL(volEffect)}`)} `;
+            text += `(${signFmt(volPct)}${formatBRPct(volPct)} do resultado base) — volume passou de <strong>${formatBRNum(plA.totalQty)}</strong> para <strong>${formatBRNum(plB.totalQty)}</strong> un. `;
+            text += `Resultado/un. variou de <strong>${formatBRLDecimal(unitResA)}</strong> para <strong>${formatBRLDecimal(unitResB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).`;
+            text += `<br>▸ <strong>Efeito Mix de Devices</strong>: ${colorSpan(mixEffect, `${signFmt(mixEffect)}${formatBRL(mixEffect)}`)} `;
+            text += `(${signFmt(mixPct)}${formatBRPct(mixPct)} do resultado base) — variação explicada pela mudança na composição de modelos.`;
+            text += `</p>`;
+
+            // Canal drivers
             if (driversText.length > 0) {
-                text += `O principal impacto veio de ${driversText[0]}`;
+                text += `<p class="mt-2">O principal impacto por canal veio de ${driversText[0]}`;
                 if (driversText.length > 1) {
                     const rest = driversText.slice(1), last = rest.pop();
                     text += rest.length > 0 ? `, seguido por ${rest.join(', ')} e por ${last}` : ` e por ${last}`;
                 }
-                text += `.`;
+                text += `.</p>`;
             }
 
-            const recDiff = plB.totalReceita - plA.totalReceita;
-            const cmvDiff = plB.totalCMV - plA.totalCMV;
-            text += `</p><p class="text-gray-500 text-xs mt-2">Decomposição: Receita ${recDiff >= 0 ? '+' : ''}${formatBRL(recDiff)} | CMV ${cmvDiff >= 0 ? '+' : ''}${formatBRL(cmvDiff)}</p>`;
             container.innerHTML = text;
         }
 
@@ -1717,7 +1742,9 @@
                 if (mA === 0 && mB === 0) return;
 
                 const deltaAbs = mB - mA;
-                const deltaPct = mA !== 0 ? (deltaAbs / Math.abs(mA)) * 100 : (mB !== 0 ? 100 : 0);
+                const uA = (plUnitMode && cA.qty > 0) ? mA / cA.qty : mA;
+                const uB = (plUnitMode && cB.qty > 0) ? mB / cB.qty : mB;
+                const deltaPct = uA !== 0 ? ((uB - uA) / Math.abs(uA)) * 100 : (uB !== 0 ? 100 : 0);
                 const pctColor = deltaPct > 0 ? 'text-green-600' : (deltaPct < 0 ? 'text-red-600' : 'text-gray-400');
                 const absDisp = plUnitMode ? '—' : ((deltaAbs > 0 ? '+' : '') + formatBRL(deltaAbs));
 
@@ -1743,7 +1770,9 @@
 
                     const dmA = getMetricVal(dA), dmB = getMetricVal(dB);
                     const dDelta = dmB - dmA;
-                    const dDeltaPct = dmA !== 0 ? (dDelta / Math.abs(dmA)) * 100 : (dmB !== 0 ? 100 : 0);
+                    const duA = (plUnitMode && dA.qty > 0) ? dmA / dA.qty : dmA;
+                    const duB = (plUnitMode && dB.qty > 0) ? dmB / dB.qty : dmB;
+                    const dDeltaPct = duA !== 0 ? ((duB - duA) / Math.abs(duA)) * 100 : (duB !== 0 ? 100 : 0);
                     const dColor = dDeltaPct > 0 ? 'text-green-600' : (dDeltaPct < 0 ? 'text-red-600' : 'text-gray-400');
                     const dAbsDisp = plUnitMode ? '—' : ((dDelta > 0 ? '+' : '') + formatBRL(dDelta));
 
@@ -1766,7 +1795,9 @@
 
             const totA = getMetricTotal(plA), totB = getMetricTotal(plB);
             const totDelta = totB - totA;
-            const totPct = totA !== 0 ? (totDelta / Math.abs(totA)) * 100 : 0;
+            const totUA = (plUnitMode && plA.totalQty > 0) ? totA / plA.totalQty : totA;
+            const totUB = (plUnitMode && plB.totalQty > 0) ? totB / plB.totalQty : totB;
+            const totPct = totUA !== 0 ? ((totUB - totUA) / Math.abs(totUA)) * 100 : 0;
             const totColor = totPct > 0 ? 'text-green-600' : (totPct < 0 ? 'text-red-600' : 'text-gray-500');
 
             document.getElementById('pl-total-a').innerText = plUnitMode ? formatBRLDecimal(totA / Math.max(plA.totalQty, 1)) : formatBRL(totA);
