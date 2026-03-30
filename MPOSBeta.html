@@ -42,6 +42,8 @@
 
         .tab-btn { color: #6b7280; transition: all 0.2s; }
         .tab-btn.active { background: white; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+        .pl-metric-btn { color: #6b7280; transition: all 0.2s; padding: 6px 12px; font-size: 11px; font-weight: 700; border-radius: 6px; }
+        .pl-metric-btn.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
         .pl-positive { color: #16a34a; }
         .pl-negative { color: #dc2626; }
     </style>
@@ -332,8 +334,13 @@
                         <i data-lucide="table" class="w-4 h-4 text-gray-400"></i> P&amp;L por Canal e Modelo
                     </h4>
                     <div class="flex items-center gap-3">
+                        <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
+                            <button onclick="setPlMetric('resultado')" id="pl-metric-resultado" class="pl-metric-btn active" style="color:#1d4ed8;">Resultado</button>
+                            <button onclick="setPlMetric('receita')" id="pl-metric-receita" class="pl-metric-btn">Receita</button>
+                            <button onclick="setPlMetric('cmv')" id="pl-metric-cmv" class="pl-metric-btn">CMV</button>
+                        </div>
                         <button id="pl-unit-btn" onclick="togglePLUnitMode()" class="flex items-center gap-2 bg-white border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-gray-50 transition-all">
-                            <i data-lucide="divide" class="w-3.5 h-3.5"></i> Ver Por Unidade
+                            <i data-lucide="divide" class="w-3.5 h-3.5"></i> Por Unidade
                         </button>
                         <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Clique no canal para expandir</span>
                     </div>
@@ -1407,6 +1414,35 @@
         };
 
         let plUnitMode = false;
+        let plMetric = 'resultado';
+
+        const PL_METRIC_LABELS = { resultado: 'Resultado', receita: 'Receita', cmv: 'CMV' };
+        const PL_METRIC_COLORS = { resultado: '', receita: 'color:#2563eb;', cmv: 'color:#dc2626;' };
+
+        function getMetricTotal(pl) {
+            if (plMetric === 'receita') return pl.totalReceita;
+            if (plMetric === 'cmv') return pl.totalCMV;
+            return pl.totalResultado;
+        }
+
+        function getMetricVal(obj) {
+            return obj[plMetric] || 0;
+        }
+
+        function setPlMetric(metric) {
+            plMetric = metric;
+            ['resultado', 'receita', 'cmv'].forEach(m => {
+                const btn = document.getElementById(`pl-metric-${m}`);
+                if (m === metric) {
+                    btn.classList.add('active');
+                    btn.style.color = m === 'receita' ? '#1d4ed8' : (m === 'cmv' ? '#dc2626' : '#1d4ed8');
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.color = '';
+                }
+            });
+            renderPLTab();
+        }
 
         function getSellPrice(device, canal) {
             const d = String(device).toUpperCase().trim();
@@ -1580,11 +1616,15 @@
 
             document.getElementById('pl-label-kpi-a').innerText = nameA;
             document.getElementById('pl-label-kpi-b').innerText = nameB;
-            document.getElementById('pl-kpi-a').innerText = formatBRL(plA.totalResultado);
-            document.getElementById('pl-kpi-b').innerText = formatBRL(plB.totalResultado);
+            const label = PL_METRIC_LABELS[plMetric];
+            document.getElementById('pl-label-kpi-a').innerText = `${label} — ${nameA}`;
+            document.getElementById('pl-label-kpi-b').innerText = `${label} — ${nameB}`;
+            document.getElementById('pl-kpi-a').innerText = formatBRL(getMetricTotal(plA));
+            document.getElementById('pl-kpi-b').innerText = formatBRL(getMetricTotal(plB));
 
-            const deltaAbs = plB.totalResultado - plA.totalResultado;
-            const deltaPct = plA.totalResultado !== 0 ? (deltaAbs / Math.abs(plA.totalResultado)) * 100 : (plB.totalResultado !== 0 ? 100 : 0);
+            const totA = getMetricTotal(plA), totB = getMetricTotal(plB);
+            const deltaAbs = totB - totA;
+            const deltaPct = totA !== 0 ? (deltaAbs / Math.abs(totA)) * 100 : (totB !== 0 ? 100 : 0);
 
             document.getElementById('pl-val-delta-abs').innerText = (deltaAbs > 0 ? '+' : '') + formatBRL(deltaAbs);
             document.getElementById('pl-val-delta-pct').innerText = (deltaAbs > 0 ? '+' : '') + formatBRPct(deltaPct);
@@ -1605,9 +1645,9 @@
                 iconPct.setAttribute('data-lucide', 'minus'); iconPct.className = 'w-6 h-6 text-gray-400';
             }
 
-            const unitLabel = plUnitMode ? 'Resultado/Un.' : 'Resultado';
-            document.getElementById('pl-th-a').innerText = `${unitLabel} (A)`;
-            document.getElementById('pl-th-b').innerText = `${unitLabel} (B)`;
+            const unitSuffix = plUnitMode ? '/Un.' : '';
+            document.getElementById('pl-th-a').innerText = `${label}${unitSuffix} (A)`;
+            document.getElementById('pl-th-b').innerText = `${label}${unitSuffix} (B)`;
 
             generatePLAI(plA, plB, nameA, nameB, typeB);
             drawPLTable(plA, plB, typeB);
@@ -1667,16 +1707,17 @@
             const tbody = document.getElementById('pl-tbody');
             const bColor = getBaseColor(typeB, true);
             const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
-            allCanals.sort((a, b) => Math.abs(plB.byCanal[b]?.resultado || 0) - Math.abs(plB.byCanal[a]?.resultado || 0));
+            allCanals.sort((a, b) => Math.abs(getMetricVal(plB.byCanal[b] || {})) - Math.abs(getMetricVal(plB.byCanal[a] || {})));
 
             let html = '';
             allCanals.forEach((canal, idx) => {
                 const cA = plA.byCanal[canal] || { resultado: 0, receita: 0, cmv: 0, qty: 0, devices: {} };
                 const cB = plB.byCanal[canal] || { resultado: 0, receita: 0, cmv: 0, qty: 0, devices: {} };
-                if (cA.resultado === 0 && cB.resultado === 0) return;
+                const mA = getMetricVal(cA), mB = getMetricVal(cB);
+                if (mA === 0 && mB === 0) return;
 
-                const deltaAbs = cB.resultado - cA.resultado;
-                const deltaPct = cA.resultado !== 0 ? (deltaAbs / Math.abs(cA.resultado)) * 100 : (cB.resultado !== 0 ? 100 : 0);
+                const deltaAbs = mB - mA;
+                const deltaPct = mA !== 0 ? (deltaAbs / Math.abs(mA)) * 100 : (mB !== 0 ? 100 : 0);
                 const pctColor = deltaPct > 0 ? 'text-green-600' : (deltaPct < 0 ? 'text-red-600' : 'text-gray-400');
                 const absDisp = plUnitMode ? '—' : ((deltaAbs > 0 ? '+' : '') + formatBRL(deltaAbs));
 
@@ -1685,23 +1726,24 @@
                         <td class="p-4 flex items-center gap-2 font-black text-xs text-gray-800">
                             <i data-lucide="chevron-right" id="icon-pld-${idx}" class="w-4 h-4 text-blue-500 transition-transform"></i>${canal}
                         </td>
-                        <td class="p-4 text-xs font-semibold text-gray-500 text-right">${formatPLVal(cA.resultado, cA.qty)}</td>
-                        <td class="p-4 text-xs font-black text-right" style="color:${bColor};">${formatPLVal(cB.resultado, cB.qty)}</td>
+                        <td class="p-4 text-xs font-semibold text-gray-500 text-right">${formatPLVal(mA, cA.qty)}</td>
+                        <td class="p-4 text-xs font-black text-right" style="color:${bColor};">${formatPLVal(mB, cB.qty)}</td>
                         <td class="p-4 text-xs font-bold ${pctColor} bg-gray-50/30 text-right">${(deltaAbs > 0 ? '+' : '') + formatBRPct(deltaPct)}</td>
                         <td class="p-4 text-xs font-semibold ${pctColor} bg-gray-50/30 text-right">${absDisp}</td>
                     </tr>
                 `;
 
                 const allDevices = Array.from(new Set([...Object.keys(cA.devices), ...Object.keys(cB.devices)]));
-                allDevices.sort((a, b) => Math.abs(cB.devices[b]?.resultado || 0) - Math.abs(cB.devices[a]?.resultado || 0));
+                allDevices.sort((a, b) => Math.abs(getMetricVal(cB.devices[b] || {})) - Math.abs(getMetricVal(cB.devices[a] || {})));
 
                 allDevices.forEach(device => {
                     const dA = cA.devices[device] || { qty: 0, receita: 0, cmv: 0, resultado: 0 };
                     const dB = cB.devices[device] || { qty: 0, receita: 0, cmv: 0, resultado: 0 };
                     if (dA.qty === 0 && dB.qty === 0) return;
 
-                    const dDelta = dB.resultado - dA.resultado;
-                    const dDeltaPct = dA.resultado !== 0 ? (dDelta / Math.abs(dA.resultado)) * 100 : (dB.resultado !== 0 ? 100 : 0);
+                    const dmA = getMetricVal(dA), dmB = getMetricVal(dB);
+                    const dDelta = dmB - dmA;
+                    const dDeltaPct = dmA !== 0 ? (dDelta / Math.abs(dmA)) * 100 : (dmB !== 0 ? 100 : 0);
                     const dColor = dDeltaPct > 0 ? 'text-green-600' : (dDeltaPct < 0 ? 'text-red-600' : 'text-gray-400');
                     const dAbsDisp = plUnitMode ? '—' : ((dDelta > 0 ? '+' : '') + formatBRL(dDelta));
 
@@ -1709,17 +1751,12 @@
                         <tr class="pld-${idx} hidden bg-gray-50 border-b border-white">
                             <td class="p-3 pl-10 text-[11px] font-bold text-gray-700 flex items-center gap-2 border-l-2 border-l-blue-200">
                                 <i data-lucide="smartphone" class="w-3 h-3 text-gray-400"></i> ${device}
-                                <span class="text-[10px] text-gray-400 font-normal">Vol: A=${formatBRNum(dA.qty)} / B=${formatBRNum(dB.qty)}</span>
+                                <span class="text-[10px] text-gray-400 font-normal">Vol A=${formatBRNum(dA.qty)} / B=${formatBRNum(dB.qty)}</span>
                             </td>
-                            <td class="p-3 text-[11px] text-gray-500 text-right">${formatPLVal(dA.resultado, dA.qty)}</td>
-                            <td class="p-3 text-[11px] font-bold text-right" style="color:${bColor};">${formatPLVal(dB.resultado, dB.qty)}</td>
+                            <td class="p-3 text-[11px] text-gray-500 text-right">${formatPLVal(dmA, dA.qty)}</td>
+                            <td class="p-3 text-[11px] font-bold text-right" style="color:${bColor};">${formatPLVal(dmB, dB.qty)}</td>
                             <td class="p-3 text-[11px] font-bold ${dColor} text-right">${(dDelta > 0 ? '+' : '') + formatBRPct(dDeltaPct)}</td>
                             <td class="p-3 text-[11px] ${dColor} text-right">${dAbsDisp}</td>
-                        </tr>
-                        <tr class="pld-${idx} hidden bg-gray-50/60 border-b border-white">
-                            <td class="p-2 pl-14 text-[10px] text-gray-400 font-bold" colspan="5">
-                                ↳ Receita: A=${formatPLVal(dA.receita, dA.qty)} / B=${formatPLVal(dB.receita, dB.qty)} &nbsp;|&nbsp; CMV: A=${formatPLVal(dA.cmv, dA.qty)} / B=${formatPLVal(dB.cmv, dB.qty)}
-                            </td>
                         </tr>
                     `;
                 });
@@ -1727,12 +1764,13 @@
 
             tbody.innerHTML = html;
 
-            const totDelta = plB.totalResultado - plA.totalResultado;
-            const totPct = plA.totalResultado !== 0 ? (totDelta / Math.abs(plA.totalResultado)) * 100 : 0;
+            const totA = getMetricTotal(plA), totB = getMetricTotal(plB);
+            const totDelta = totB - totA;
+            const totPct = totA !== 0 ? (totDelta / Math.abs(totA)) * 100 : 0;
             const totColor = totPct > 0 ? 'text-green-600' : (totPct < 0 ? 'text-red-600' : 'text-gray-500');
 
-            document.getElementById('pl-total-a').innerText = plUnitMode ? formatBRLDecimal(plA.totalResultado / Math.max(plA.totalQty, 1)) : formatBRL(plA.totalResultado);
-            document.getElementById('pl-total-b').innerText = plUnitMode ? formatBRLDecimal(plB.totalResultado / Math.max(plB.totalQty, 1)) : formatBRL(plB.totalResultado);
+            document.getElementById('pl-total-a').innerText = plUnitMode ? formatBRLDecimal(totA / Math.max(plA.totalQty, 1)) : formatBRL(totA);
+            document.getElementById('pl-total-b').innerText = plUnitMode ? formatBRLDecimal(totB / Math.max(plB.totalQty, 1)) : formatBRL(totB);
             document.getElementById('pl-total-pct').innerText = (totDelta > 0 ? '+' : '') + formatBRPct(totPct);
             document.getElementById('pl-total-abs').innerText = plUnitMode ? '—' : ((totDelta > 0 ? '+' : '') + formatBRL(totDelta));
             document.getElementById('pl-total-pct').className = `p-4 text-xs font-black ${totColor} text-right`;
