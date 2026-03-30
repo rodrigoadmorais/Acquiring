@@ -89,6 +89,9 @@
                 </div>
                 <select id="filter-canal" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
                 <select id="filter-device" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                <button onclick="toggleDigitalGroup()" id="btn-digital-group" title="Agrupar APP, LP e TO como Canais Digitais" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all whitespace-nowrap">
+                    <i data-lucide="layers" class="w-4 h-4"></i> Canais Digitais
+                </button>
             </div>
             <div class="flex gap-2">
                 <button onclick="generateExecutiveReport()" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-indigo-700 transition-all active:scale-95">
@@ -460,6 +463,9 @@
         let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" } };
         let timelineChart, barChart;
         window.currentExportData = null;
+        let groupDigital = false;
+        const DIGITAL_CANALS = ['APP', 'LP', 'TO'];
+        const DIGITAL_GROUP_NAME = 'CANAIS DIGITAIS';
 
         function formatBRPct(num) { return num.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '%'; }
         function formatBRNum(num) { return Math.round(num).toLocaleString('pt-BR'); }
@@ -779,7 +785,13 @@
                     if(device) allDevices.add(device);
                 });
             });
-            document.getElementById('filter-canal').innerHTML = '<option value="ALL">Todos os Canais</option>' + [...allCanals].sort().map(c => `<option value="${c}">${c}</option>`).join('');
+            let canalList = [...allCanals].sort();
+            if (groupDigital) {
+                const hasDigital = DIGITAL_CANALS.some(d => allCanals.has(d));
+                canalList = canalList.filter(c => !DIGITAL_CANALS.includes(c));
+                if (hasDigital) canalList.unshift(DIGITAL_GROUP_NAME);
+            }
+            document.getElementById('filter-canal').innerHTML = '<option value="ALL">Todos os Canais</option>' + canalList.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('filter-device').innerHTML = '<option value="ALL">Todos os Modelos</option>' + [...allDevices].sort().map(d => `<option value="${d}">${d}</option>`).join('');
         }
 
@@ -800,7 +812,13 @@
                 let rawD = String(row[colD]||'');
                 let device = type === 'FORECAST' ? rawD : (classifyDevice(rawD) || rawD);
 
-                if (filterCanal !== 'ALL' && canal !== filterCanal) return;
+                if (filterCanal !== 'ALL') {
+                    if (filterCanal === DIGITAL_GROUP_NAME) {
+                        if (!DIGITAL_CANALS.includes(canal)) return;
+                    } else {
+                        if (canal !== filterCanal) return;
+                    }
+                }
                 if (filterDevice !== 'ALL' && device !== filterDevice) return;
 
                 let rowSum = 0;
@@ -834,7 +852,37 @@
                 if (!byCanalDevice[canal]) byCanalDevice[canal] = {};
                 byCanalDevice[canal][device] = (byCanalDevice[canal][device] || 0) + rowSum;
             });
+            if (groupDigital && (filterCanal === 'ALL' || filterCanal === DIGITAL_GROUP_NAME)) {
+                const groupedByCanal = {};
+                Object.entries(byCanal).forEach(([c,v]) => {
+                    const k = DIGITAL_CANALS.includes(c) ? DIGITAL_GROUP_NAME : c;
+                    groupedByCanal[k] = (groupedByCanal[k]||0) + v;
+                });
+                return { total, byCanal: groupedByCanal, byDevice, byCanalDevice };
+            }
             return { total, byCanal, byDevice, byCanalDevice };
+        }
+
+        function applyGroupingPL(pl) {
+            if (!groupDigital) return pl;
+            const newByCanal = {};
+            Object.entries(pl.byCanal).forEach(([canal, cd]) => {
+                const key = DIGITAL_CANALS.includes(canal) ? DIGITAL_GROUP_NAME : canal;
+                if (!newByCanal[key]) newByCanal[key] = { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0, devices:{} };
+                const tgt = newByCanal[key];
+                tgt.receita += cd.receita||0;
+                tgt.cmv += cd.cmv||0;
+                tgt.salesTaxes += cd.salesTaxes||0;
+                tgt.resultado += cd.resultado||0;
+                tgt.qty += cd.qty||0;
+                Object.entries(cd.devices||{}).forEach(([dev,dd]) => {
+                    if (!tgt.devices[dev]) tgt.devices[dev] = {qty:0,receita:0,cmv:0,salesTaxes:0,resultado:0};
+                    const td = tgt.devices[dev];
+                    td.qty += dd.qty||0; td.receita += dd.receita||0; td.cmv += dd.cmv||0;
+                    td.salesTaxes += dd.salesTaxes||0; td.resultado += dd.resultado||0;
+                });
+            });
+            return { ...pl, byCanal: newByCanal };
         }
 
         function getBaseColor(type, isBorder = false) {
@@ -1778,8 +1826,9 @@
 
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
-            const plA = computePL(dataA.byCanalDevice);
-            const plB = computePL(dataB.byCanalDevice);
+            let plA = computePL(dataA.byCanalDevice);
+            let plB = computePL(dataB.byCanalDevice);
+            if (groupDigital) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
 
             // KPI colors
             const bColor = getBaseColor(typeB, true);
@@ -2027,8 +2076,9 @@
             const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${prefix}${moB})`;
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
-            const plA = computePL(dataA.byCanalDevice);
-            const plB = computePL(dataB.byCanalDevice);
+            let plA = computePL(dataA.byCanalDevice);
+            let plB = computePL(dataB.byCanalDevice);
+            if (groupDigital) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
             const bColor = getBaseColor(typeB, true);
             const fmtC = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0});
             const sgn = v => v >= 0 ? '+' : '';
@@ -2225,6 +2275,22 @@
             }
         }
 
+        function toggleDigitalGroup() {
+            groupDigital = !groupDigital;
+            const btn = document.getElementById('btn-digital-group');
+            if (groupDigital) {
+                btn.classList.add('bg-blue-600','text-white','border-blue-700');
+                btn.classList.remove('bg-white','text-gray-600','border-gray-300');
+            } else {
+                btn.classList.remove('bg-blue-600','text-white','border-blue-700');
+                btn.classList.add('bg-white','text-gray-600','border-gray-300');
+            }
+            document.getElementById('filter-canal').value = 'ALL';
+            populateGlobalFilters();
+            processDashboard();
+            if (document.getElementById('tab-content-pl').style.display !== 'none') renderPLTab();
+        }
+
         // ============================================================
         // PPT GENERATOR
         // ============================================================
@@ -2254,30 +2320,41 @@
             btn.disabled = true;
             btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4"></i> Gerando PPT...';
             lucide.createIcons();
-
-            await new Promise(r => setTimeout(r, 50)); // yield UI
+            await new Promise(r => setTimeout(r, 50));
 
             try {
                 const pptx = new PptxGenJS();
                 pptx.layout = 'LAYOUT_WIDE';
                 pptx.theme = { headFontFace:'Arial', bodyFontFace:'Arial' };
-
-                const ML_Y='FFE600', ML_D='1A1A2E', ML_BL='3483FA', ML_GR='166534', ML_RD='DC2626', ML_GY='6B7280';
+                const ML_Y='FFE600', ML_D='1A1A2E', ML_BL='3483FA';
 
                 // --- Data helpers ---
-                function aggPeriod(type, months) {
-                    let total=0, byCanal={}, byCanalDevice={};
+                function aggPeriod(type, months, cFilter) {
+                    const cf = cFilter !== undefined ? cFilter : filterCanal;
+                    let total=0, byCanal={}, byDevice={}, byCanalDevice={};
                     months.forEach(m => {
-                        const d=extractValue(type,`MONTH|${refYear}${String(m).padStart(2,'0')}`,filterCanal,filterDevice);
+                        const d=extractValue(type,`MONTH|${refYear}${String(m).padStart(2,'0')}`,cf,filterDevice);
                         total+=d.total;
                         Object.entries(d.byCanal).forEach(([c,v])=>{ byCanal[c]=(byCanal[c]||0)+v; });
+                        Object.entries(d.byDevice||{}).forEach(([dv,v])=>{ byDevice[dv]=(byDevice[dv]||0)+v; });
                         Object.entries(d.byCanalDevice).forEach(([c,devs])=>{
                             if(!byCanalDevice[c])byCanalDevice[c]={};
                             Object.entries(devs).forEach(([dv,v])=>{ byCanalDevice[c][dv]=(byCanalDevice[c][dv]||0)+v; });
                         });
                     });
-                    return {total, byCanal, byCanalDevice};
+                    return {total, byCanal, byDevice, byCanalDevice};
                 }
+
+                // Merge device qty for a canal (handles CANAIS DIGITAIS grouping)
+                function getDeviceQty(byCanalDevice, canal) {
+                    if (canal !== DIGITAL_GROUP_NAME) return byCanalDevice[canal] || {};
+                    const merged = {};
+                    DIGITAL_CANALS.forEach(c => {
+                        Object.entries(byCanalDevice[c]||{}).forEach(([dev,qty]) => { merged[dev]=(merged[dev]||0)+qty; });
+                    });
+                    return merged;
+                }
+
                 const ytdMonths=Array.from({length:refMonth},(_,i)=>i+1);
                 const ytgMonths=Array.from({length:12-refMonth+1},(_,i)=>refMonth+i);
                 const fyMonths=Array.from({length:12},(_,i)=>i+1);
@@ -2287,145 +2364,208 @@
                     {key:'YTD', label:`YTD — Jan a ${PT_MONTHS[refMonth-1]} ${refYear}`, typeA:'PLAN', typeB:'ACTUAL', months:ytdMonths, cA:'Plano', cB:'Realizado'},
                     {key:'YTG', label:`YTG — ${PT_MONTHS[refMonth-1]} a Dez ${refYear}`, typeA:'PLAN', typeB:'FORECAST', months:ytgMonths, cA:'Plano', cB:'Forecast'},
                     {key:'FY',  label:`FY — Ano Completo ${refYear}`, typeA:'PLAN', typeB:'FORECAST', months:fyMonths, cA:'Plano', cB:'Forecast'},
-                    {key:'MxM', label:`Mês a Mês — ${PT_MONTHS[refMonth-1]} ${refYear}`, typeA:'PLAN', typeB:'ACTUAL', months:mxmMonths, cA:'Plano', cB:'Realizado'},
+                    {key:'MxM', label:`MxM — ${PT_MONTHS[refMonth-1]} ${refYear}`, typeA:'PLAN', typeB:'ACTUAL', months:mxmMonths, cA:'Plano', cB:'Realizado'},
                 ];
 
-                function qtyByDevice(raw) {
-                    const r={}; Object.values(raw.byCanalDevice||{}).forEach(devs=>{Object.entries(devs).forEach(([d,v])=>{r[d]=(r[d]||0)+v;})}); return r;
-                }
-                function plByDevice(pl, metric) {
-                    const r={}; Object.values(pl.byCanal||{}).forEach(cd=>{Object.entries(cd.devices||{}).forEach(([d,dd])=>{
-                        const v = metric==='receita'?dd.receita:(metric==='cmv'?dd.cmv:(metric==='salesTaxes'?dd.salesTaxes:dd.resultado));
-                        r[d]=(r[d]||0)+v;
-                    });}); return r;
-                }
-                function topN(obj, n=6) {
-                    return Object.entries(obj).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,n);
-                }
-                function aiQty(dA, dB, nA, nB) {
-                    const d=dB.total-dA.total, p=dA.total?((d/dA.total)*100):0, s=d>=0?'+':'';
-                    let t=`${nB} vs ${nA}: ${s}${formatBRNum(d)} un. (${s}${formatBRPct(p)}). `;
-                    const allC=Array.from(new Set([...Object.keys(dA.byCanal),...Object.keys(dB.byCanal)]));
-                    const isg=d>0;
-                    let diffs=allC.map(c=>({name:c,diff:(dB.byCanal[c]||0)-(dA.byCanal[c]||0)})).filter(c=>isg?c.diff>0:c.diff<0).sort((a,b)=>isg?b.diff-a.diff:a.diff-b.diff);
-                    let ex=0,dr=[];
-                    for(const c of diffs){ex+=Math.abs(c.diff);const pA=dA.byCanal[c.name]||0,cP=pA?(c.diff/pA)*100:100;dr.push(`${c.name}: ${c.diff>=0?'+':''}${formatBRNum(c.diff)} (${cP>=0?'+':''}${formatBRPct(cP)})`);if(Math.abs(d)>0&&ex/Math.abs(d)>=0.85)break;}
-                    if(dr.length)t+=`Drivers: ${dr.join(' | ')}.`;
-                    return t;
-                }
-                function aiPL(plA, plB, nA, nB, metric) {
-                    const savedM=plMetric; plMetric=metric;
-                    const tA=getMetricTotal(plA),tB=getMetricTotal(plB),d=tB-tA,p=tA?(d/Math.abs(tA))*100:0,s=d>=0?'+':'';
-                    const lbl=PL_METRIC_LABELS[metric];
-                    let t=`${nB} vs ${nA}: ${lbl} ${s}${tB.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})} vs ${tA.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})} → ${s}${formatBRPct(p)}. `;
-                    const allC=Array.from(new Set([...Object.keys(plA.byCanal),...Object.keys(plB.byCanal)]));
-                    const isg=d>0;
-                    let diffs=allC.map(c=>({name:c,diff:getMetricVal(plB.byCanal[c]||{})-getMetricVal(plA.byCanal[c]||{})})).filter(c=>isg?c.diff>0:c.diff<0).sort((a,b)=>isg?b.diff-a.diff:a.diff-b.diff);
-                    let ex=0,dr=[];
-                    for(const c of diffs){ex+=Math.abs(c.diff);const vA=getMetricVal(plA.byCanal[c.name]||{}),cP=vA?(c.diff/Math.abs(vA))*100:100;dr.push(`${c.name}: ${c.diff>=0?'+':''}${c.diff.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0})} (${cP>=0?'+':''}${formatBRPct(cP)})`);if(Math.abs(d)>0&&ex/Math.abs(d)>=0.85)break;}
-                    if(dr.length)t+=`Canais: ${dr.join(' | ')}.`;
-                    plMetric=savedM; return t;
+                // Determine canal sections to show
+                let sectionCanals;
+                if (filterCanal !== 'ALL') {
+                    sectionCanals = [filterCanal];
+                } else {
+                    const fullA=aggPeriod('PLAN',ytdMonths,'ALL'), fullB=aggPeriod('ACTUAL',ytdMonths,'ALL');
+                    sectionCanals=Array.from(new Set([...Object.keys(fullA.byCanal),...Object.keys(fullB.byCanal)])).filter(c=>c&&c!=='0'&&c!=='NULL'&&c!=='UNDEFINED').sort();
                 }
 
                 function hexColor(type) { return type==='ACTUAL'?'3B82F6':(type==='FORECAST'?'F59E0B':'10B981'); }
 
                 function addHeader(slide, title, period) {
-                    slide.addShape('rect',{x:0,y:0,w:'100%',h:0.65,fill:{color:ML_Y}});
-                    slide.addText(title,{x:0.3,y:0.08,w:9,h:0.5,fontSize:15,bold:true,color:ML_D,fontFace:'Arial'});
-                    slide.addText(period,{x:9.5,y:0.08,w:3.5,h:0.5,fontSize:9,color:'555555',align:'right',fontFace:'Arial'});
+                    slide.addShape('rect',{x:0,y:0,w:'100%',h:0.68,fill:{color:ML_Y}});
+                    slide.addText(title,{x:0.3,y:0.1,w:8.8,h:0.5,fontSize:14,bold:true,color:ML_D,fontFace:'Arial'});
+                    slide.addText(period,{x:9.3,y:0.1,w:3.8,h:0.5,fontSize:9,color:'444444',align:'right',fontFace:'Arial'});
                 }
 
                 function addAI(slide, text) {
-                    slide.addShape('rect',{x:0.3,y:4.7,w:12.6,h:1.2,fill:{color:'EFF6FF'},line:{color:'3B82F6',width:1,dashType:'solid'}});
-                    slide.addText([{text:'✦ IA: ',options:{bold:true,color:'1E40AF',fontSize:9}},{text,options:{color:'1E3A8A',fontSize:8.5}}],{x:0.45,y:4.75,w:12.3,h:1.1,wrap:true,valign:'top'});
-                }
-
-                function addDataSlide(title, period, nA, nB, byCanalA, byCanalB, byDevA, byDevB, aiText, bColHex) {
-                    const slide=pptx.addSlide();
-                    addHeader(slide,title,period);
-                    const cEntries=topN({...byCanalA,...Object.fromEntries(Object.keys(byCanalB).map(k=>[k,byCanalB[k]]))},6).map(e=>e[0]);
-                    const uCanals=[...new Set([...Object.keys(byCanalA),...Object.keys(byCanalB)])].sort((a,b)=>Math.abs(byCanalB[b]||0)-Math.abs(byCanalB[a]||0)).slice(0,6);
-                    const cData=[{name:nA,labels:uCanals,values:uCanals.map(c=>Math.round(byCanalA[c]||0))},{name:nB,labels:uCanals,values:uCanals.map(c=>Math.round(byCanalB[c]||0))}];
-                    slide.addChart(pptx.ChartType.bar,cData,{x:0.3,y:0.75,w:6.3,h:3.85,barDir:'col',showLegend:true,legendPos:'b',legendFontSize:8,showValue:true,dataLabelFontSize:7,chartColors:['D1D5DB',bColHex||'3B82F6'],valAxisHidden:true,catAxisLabelFontSize:7,showTitle:true,title:'Por Canal',titleFontSize:10,titleBold:true,layout:{name:'custom',left:0,right:0,top:0,bottom:0}});
-                    const uDevs=[...new Set([...Object.keys(byDevA),...Object.keys(byDevB)])].sort((a,b)=>Math.abs(byDevB[b]||0)-Math.abs(byDevA[a]||0)).slice(0,6);
-                    const dData=[{name:nA,labels:uDevs,values:uDevs.map(d=>Math.round(byDevA[d]||0))},{name:nB,labels:uDevs,values:uDevs.map(d=>Math.round(byDevB[d]||0))}];
-                    slide.addChart(pptx.ChartType.bar,dData,{x:6.8,y:0.75,w:6.2,h:3.85,barDir:'col',showLegend:true,legendPos:'b',legendFontSize:8,showValue:true,dataLabelFontSize:7,chartColors:['D1D5DB',bColHex||'3B82F6'],valAxisHidden:true,catAxisLabelFontSize:8,showTitle:true,title:'Por Device',titleFontSize:10,titleBold:true,layout:{name:'custom',left:0,right:0,top:0,bottom:0}});
-                    addAI(slide,aiText);
+                    slide.addShape('rect',{x:0.3,y:4.58,w:12.6,h:1.35,fill:{color:'EFF6FF'},line:{color:'BFDBFE',width:1.5}});
+                    slide.addText([{text:'✦ Análise Executiva: ',options:{bold:true,color:'1E40AF',fontSize:8.5}},{text,options:{color:'1E3A8A',fontSize:8}}],{x:0.45,y:4.63,w:12.3,h:1.25,wrap:true,valign:'top'});
                 }
 
                 function addSection(num, title, sub) {
                     const sl=pptx.addSlide();
                     sl.addShape('rect',{x:0,y:0,w:'100%',h:'100%',fill:{color:ML_Y}});
-                    sl.addShape('rect',{x:0,y:5.8,w:'100%',h:1.7,fill:{color:ML_D}});
-                    sl.addText(num,{x:0.5,y:1.2,w:2,h:1.4,fontSize:80,bold:true,color:'E5E7EB',fontFace:'Arial',alpha:40});
-                    sl.addText(title,{x:0.5,y:2.5,w:12,h:1.2,fontSize:36,bold:true,color:ML_D,fontFace:'Arial'});
-                    sl.addText(sub,{x:0.5,y:3.8,w:12,h:0.6,fontSize:15,color:'555555',fontFace:'Arial'});
-                    sl.addText('Mercado Libre — MPOS Analytics',{x:0.5,y:6.1,w:12,h:0.5,fontSize:12,color:'AAAAAA',fontFace:'Arial'});
+                    sl.addShape('rect',{x:0,y:5.65,w:'100%',h:1.85,fill:{color:ML_D}});
+                    sl.addText(num,{x:0.4,y:0.7,w:3,h:2,fontSize:100,bold:true,color:'1A1A2E',fontFace:'Arial',transparency:70});
+                    sl.addText(title,{x:0.5,y:2.3,w:12.2,h:1.1,fontSize:36,bold:true,color:ML_D,fontFace:'Arial'});
+                    sl.addText(sub,{x:0.5,y:3.5,w:12.2,h:0.6,fontSize:14,color:'444444',fontFace:'Arial'});
+                    sl.addText('Mercado Libre — MPOS Analytics',{x:0.5,y:5.95,w:12,h:0.45,fontSize:12,color:'AAAAAA',fontFace:'Arial'});
                 }
 
-                // Cover
+                // Comprehensive AI commentary with Vol+Mix decomposition
+                function aiComprehensive(dA, dB, plA, plB, canal, nA, nB) {
+                    const qtyA=dA.total||0, qtyB=dB.total||0, qtyDelta=qtyB-qtyA;
+                    const qtyPct=qtyA?(qtyDelta/qtyA)*100:0;
+
+                    // Canal P&L data (uses canal key or totals as fallback)
+                    const getCd = (pl, c) => {
+                        const cd=pl.byCanal[c]; if(cd) return cd;
+                        return {receita:pl.totalReceita||0,cmv:pl.totalCMV||0,salesTaxes:pl.totalSalesTaxes||0,resultado:pl.totalResultado||0,qty:pl.totalQty||0,devices:{}};
+                    };
+                    const pA=getCd(plA,canal), pB=getCd(plB,canal);
+                    const resDelta=(pB.resultado||0)-(pA.resultado||0);
+                    const recDelta=(pB.receita||0)-(pA.receita||0);
+                    const cmvDelta=(pB.cmv||0)-(pA.cmv||0);
+                    const resPct=pA.resultado?(resDelta/Math.abs(pA.resultado))*100:0;
+                    const recPct=pA.receita?(recDelta/Math.abs(pA.receita))*100:0;
+                    const cmvPct=pA.cmv?(cmvDelta/Math.abs(pA.cmv))*100:0;
+
+                    // Vol+Mix decomposition on Resultado
+                    const avgUnitResA=(pA.qty||0)>0?(pA.resultado||0)/pA.qty:0;
+                    const volEffRes=((pB.qty||0)-(pA.qty||0))*avgUnitResA;
+                    const mixEffRes=resDelta-volEffRes;
+                    const volResPct=pA.resultado?(volEffRes/Math.abs(pA.resultado))*100:0;
+                    const mixResPct=pA.resultado?(mixEffRes/Math.abs(pA.resultado))*100:0;
+
+                    // Vol+Mix on Receita
+                    const avgUnitRecA=(pA.qty||0)>0?(pA.receita||0)/pA.qty:0;
+                    const volEffRec=((pB.qty||0)-(pA.qty||0))*avgUnitRecA;
+                    const mixEffRec=recDelta-volEffRec;
+                    const mixRecPct=pA.receita?(mixEffRec/Math.abs(pA.receita))*100:0;
+
+                    const fmtP=v=>(v>=0?'+':'')+v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+                    const fmtN=v=>(v>=0?'+':'')+Math.round(v).toLocaleString('pt-BR');
+                    const fmtC=v=>{
+                        const a=Math.abs(v),sg=v>=0?'+':'-';
+                        if(a>=1e6) return sg+'R$'+(a/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+'M';
+                        if(a>=1e3) return sg+'R$'+(a/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k';
+                        return (v>=0?'':'-')+'R$'+a.toLocaleString('pt-BR',{maximumFractionDigits:0});
+                    };
+
+                    let parts=[];
+
+                    // 1. Volume headline
+                    if(Math.abs(qtyDelta)>0) {
+                        parts.push(`Volume: ${fmtN(qtyDelta)} unidades (${fmtP(qtyPct)})`);
+                    }
+
+                    // 2. Resultado com Vol+Mix
+                    if(Math.abs(resDelta)>0) {
+                        let resLine=`Resultado: ${fmtC(resDelta)} (${fmtP(resPct)})`;
+                        if((pA.qty||0)>0 && (Math.abs(volEffRes)>1||Math.abs(mixEffRes)>1)) {
+                            resLine+=` — Efeito Volume: ${fmtC(volEffRes)} (${fmtP(volResPct)}), Efeito Mix/Preço: ${fmtC(mixEffRes)} (${fmtP(mixResPct)})`;
+                        }
+                        parts.push(resLine);
+                    }
+
+                    // 3. Receita com mix
+                    if(Math.abs(recDelta)>0) {
+                        let recLine=`Receita: ${fmtC(recDelta)} (${fmtP(recPct)})`;
+                        if((pA.qty||0)>0 && Math.abs(mixEffRec)>1) {
+                            recLine+=` — Efeito Preço/Mix: ${fmtC(mixEffRec)} (${fmtP(mixRecPct)})`;
+                        }
+                        parts.push(recLine);
+                    }
+
+                    // 4. CMV
+                    if(Math.abs(cmvDelta)>0) parts.push(`CMV: ${fmtC(cmvDelta)} (${fmtP(cmvPct)})`);
+
+                    // 5. Device breakdown
+                    const allDevs=Array.from(new Set([...Object.keys(pA.devices||{}),...Object.keys(pB.devices||{})]));
+                    const devDrv=allDevs.map(d=>{
+                        const dA2=pA.devices[d]||{}, dB2=pB.devices[d]||{};
+                        const dd=(dB2.resultado||0)-(dA2.resultado||0);
+                        const dp=dA2.resultado?(dd/Math.abs(dA2.resultado))*100:0;
+                        const dq=(dB2.qty||0)-(dA2.qty||0);
+                        return {name:d,delta:dd,pct:dp,dq};
+                    }).filter(d=>Math.abs(d.delta)>0||Math.abs(d.dq)>0).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)).slice(0,4);
+                    if(devDrv.length>0) {
+                        parts.push(`Devices: ${devDrv.map(d=>`${d.name} Res.${fmtP(d.pct)} / Vol.${fmtN(d.dq)} un.`).join(' | ')}`);
+                    }
+
+                    if(parts.length===0) return `${nB} vs ${nA}: sem variações significativas neste período.`;
+                    return `${nB} vs ${nA}. ${parts.join(' · ')}.`;
+                }
+
+                // Add a slide for one canal + one period
+                function addCanalSlide(canal, period, nA, nB, dA, dB, plA, plB, bColHex) {
+                    const slide=pptx.addSlide();
+                    addHeader(slide,`${canal} — ${period.key}`,period.label);
+
+                    const canalDevA=getDeviceQty(dA.byCanalDevice,canal);
+                    const canalDevB=getDeviceQty(dB.byCanalDevice,canal);
+                    const allDevs=Array.from(new Set([...Object.keys(canalDevA),...Object.keys(canalDevB)])).filter(d=>d&&d!=='null'&&d!=='undefined'&&d!=='NULL');
+                    allDevs.sort((a,b)=>Math.abs(canalDevB[b]||0)-Math.abs(canalDevA[a]||0));
+
+                    const cPlA=(plA.byCanal||{})[canal]||{};
+                    const cPlB=(plB.byCanal||{})[canal]||{};
+
+                    if(allDevs.length===0) {
+                        slide.addText('Sem dados de device disponíveis para este recorte.',{x:1,y:2.8,w:11,h:0.6,fontSize:12,color:'888888',align:'center'});
+                    } else {
+                        const qtyA=allDevs.map(d=>Math.round(canalDevA[d]||0));
+                        const qtyB=allDevs.map(d=>Math.round(canalDevB[d]||0));
+                        const resA=allDevs.map(d=>Math.round(((cPlA.devices||{})[d]||{}).resultado||0));
+                        const resB=allDevs.map(d=>Math.round(((cPlB.devices||{})[d]||{}).resultado||0));
+
+                        const chartOpts={
+                            barDir:'col', showLegend:true, legendPos:'b', legendFontSize:8,
+                            showValue:true, dataLabelFontSize:7, dataLabelColor:'333333',
+                            valAxisHidden:true, catAxisLabelFontSize:7, catAxisLabelColor:'333333',
+                            valGridLine:{style:'none'}, catGridLine:{style:'none'},
+                            barGrouping:'clustered', showTitle:true, titleFontSize:9, titleBold:true,
+                            layout:{name:'custom',left:0.02,right:0.02,top:0.02,bottom:0.02}
+                        };
+
+                        slide.addChart(pptx.ChartType.bar,
+                            [{name:nA,labels:allDevs,values:qtyA},{name:nB,labels:allDevs,values:qtyB}],
+                            {...chartOpts, x:0.3,y:0.75,w:6.1,h:3.73, chartColors:['C8C8C8',bColHex||'3B82F6'], title:'Volume por Device (Qtd)'}
+                        );
+                        slide.addChart(pptx.ChartType.bar,
+                            [{name:nA,labels:allDevs,values:resA},{name:nB,labels:allDevs,values:resB}],
+                            {...chartOpts, x:6.6,y:0.75,w:6.5,h:3.73, chartColors:['C8C8C8',bColHex||'3B82F6'], title:'Resultado P&L por Device'}
+                        );
+                    }
+
+                    addAI(slide, aiComprehensive(dA,dB,plA,plB,canal,nA,nB));
+                }
+
+                // ---- Cover ----
                 const cover=pptx.addSlide();
-                cover.addShape('rect',{x:0,y:0,w:'100%',h:2,fill:{color:ML_Y}});
-                cover.addShape('rect',{x:0,y:5.5,w:'100%',h:2,fill:{color:ML_D}});
+                cover.addShape('rect',{x:0,y:0,w:'100%',h:2.1,fill:{color:ML_Y}});
+                cover.addShape('rect',{x:0,y:5.45,w:'100%',h:2.05,fill:{color:ML_D}});
                 cover.addText('MPOS Analytics',{x:0.5,y:0.2,w:12.3,h:1.2,fontSize:44,bold:true,color:ML_D,fontFace:'Arial'});
-                cover.addText('Executive Performance Report',{x:0.5,y:1.6,w:12.3,h:0.9,fontSize:26,color:ML_D,fontFace:'Arial'});
-                cover.addText(`Referência: ${PT_MONTHS[refMonth-1]} / ${refYear}`,{x:0.5,y:2.7,w:12.3,h:0.6,fontSize:18,color:'333333',fontFace:'Arial'});
-                cover.addText(`Filtros: Canal = ${filterCanal==='ALL'?'Todos':filterCanal}  |  Device = ${filterDevice==='ALL'?'Todos':filterDevice}`,{x:0.5,y:3.35,w:12.3,h:0.5,fontSize:13,color:'666666',fontFace:'Arial'});
-                cover.addText('Mercado Libre | MPOS Analytics Cross-Data Engine',{x:0.5,y:5.9,w:12.3,h:0.4,fontSize:11,color:'AAAAAA',fontFace:'Arial'});
-                cover.addText(new Date().toLocaleDateString('pt-BR'),{x:0.5,y:6.4,w:12.3,h:0.4,fontSize:10,color:'888888',fontFace:'Arial'});
+                cover.addText('Executive Performance Report',{x:0.5,y:1.5,w:12.3,h:0.9,fontSize:26,color:ML_D,fontFace:'Arial'});
+                cover.addText(`Referência: ${PT_MONTHS[refMonth-1]} / ${refYear}`,{x:0.5,y:2.65,w:12.3,h:0.6,fontSize:18,color:'333333',fontFace:'Arial'});
+                cover.addText(`Canal = ${filterCanal==='ALL'?'Todos':filterCanal}  |  Device = ${filterDevice==='ALL'?'Todos':filterDevice}  |  ${groupDigital?'Canais Digitais agrupados (APP+LP+TO)':'Canais individuais'}`,{x:0.5,y:3.3,w:12.3,h:0.5,fontSize:12,color:'666666',fontFace:'Arial'});
+                cover.addText('Mercado Libre | MPOS Analytics Cross-Data Engine',{x:0.5,y:5.78,w:12.3,h:0.4,fontSize:11,color:'AAAAAA',fontFace:'Arial'});
+                cover.addText(new Date().toLocaleDateString('pt-BR'),{x:0.5,y:6.28,w:12.3,h:0.4,fontSize:10,color:'888888',fontFace:'Arial'});
 
-                // Index
+                // ---- Index ----
                 const idx=pptx.addSlide();
-                idx.addShape('rect',{x:0,y:0,w:'100%',h:0.85,fill:{color:ML_Y}});
-                idx.addText('Índice da Apresentação',{x:0.4,y:0.12,w:12,h:0.65,fontSize:22,bold:true,color:ML_D,fontFace:'Arial'});
-                const secs=[
-                    {n:'01',t:'Quantidade de Dispositivos',s:'YTD · YTG · FY · MxM — Por Canal e Device'},
-                    {n:'02',t:'Resultado P&L',s:'Receita − Sales Taxes − CMV — Por Canal e Device'},
-                    {n:'03',t:'Receita Bruta',s:'Preços unitários por canal e device'},
-                    {n:'04',t:'CMV (Custo de Mercadoria)',s:'Custo em USD convertido a R$5,50'},
-                    {n:'05',t:'Sales Taxes',s:'35% da Receita — dedutor do Resultado'},
-                ];
-                secs.forEach((s,i)=>{
-                    const y=1.1+i*1.15;
+                idx.addShape('rect',{x:0,y:0,w:'100%',h:0.88,fill:{color:ML_Y}});
+                idx.addText('Índice da Apresentação',{x:0.4,y:0.13,w:12,h:0.65,fontSize:22,bold:true,color:ML_D,fontFace:'Arial'});
+                const maxShow=Math.min(sectionCanals.length,8);
+                const rowH=maxShow<=6?1.02:0.82;
+                sectionCanals.slice(0,8).forEach((c,i)=>{
+                    const y=1.0+i*rowH;
                     idx.addShape('rect',{x:0.4,y,w:0.65,h:0.65,fill:{color:ML_Y},line:{color:ML_D,width:1}});
-                    idx.addText(s.n,{x:0.4,y:y+0.1,w:0.65,h:0.45,fontSize:16,bold:true,color:ML_D,align:'center',fontFace:'Arial'});
-                    idx.addText(s.t,{x:1.25,y:y+0.02,w:11,h:0.38,fontSize:14,bold:true,color:ML_D,fontFace:'Arial'});
-                    idx.addText(s.s,{x:1.25,y:y+0.38,w:11,h:0.28,fontSize:10,color:'888888',fontFace:'Arial'});
+                    idx.addText(String(i+1).padStart(2,'0'),{x:0.4,y:y+0.1,w:0.65,h:0.45,fontSize:16,bold:true,color:ML_D,align:'center',fontFace:'Arial'});
+                    idx.addText(c,{x:1.25,y:y+0.04,w:11.1,h:0.36,fontSize:13,bold:true,color:ML_D,fontFace:'Arial'});
+                    idx.addText('YTD · YTG · FY · MxM — Volume por Device + Resultado P&L',{x:1.25,y:y+0.38,w:11.1,h:0.25,fontSize:9,color:'888888',fontFace:'Arial'});
                 });
-
-                // Section 1: Quantidade
-                addSection('01','Quantidade de Dispositivos','Análise de volume por canal e tipo de device');
-                for (const p of periods) {
-                    const dA=aggPeriod(p.typeA,p.months), dB=aggPeriod(p.typeB,p.months);
-                    const devA=qtyByDevice(dA), devB=qtyByDevice(dB);
-                    const byCanalA=Object.fromEntries(Object.entries(dA.byCanal).map(([k,v])=>[k,Math.round(v)]));
-                    const byCanalB=Object.fromEntries(Object.entries(dB.byCanal).map(([k,v])=>[k,Math.round(v)]));
-                    const byDevA=Object.fromEntries(Object.entries(devA).map(([k,v])=>[k,Math.round(v)]));
-                    const byDevB=Object.fromEntries(Object.entries(devB).map(([k,v])=>[k,Math.round(v)]));
-                    addDataSlide(`Quantidade — ${p.key}`,p.label,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,byCanalA,byCanalB,byDevA,byDevB,aiQty(dA,dB,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`),hexColor(p.typeB));
+                if(sectionCanals.length>8){
+                    idx.addText(`... e mais ${sectionCanals.length-8} canal(is)`,{x:1.25,y:1.0+8*rowH,w:11.1,h:0.35,fontSize:10,color:'888888',fontFace:'Arial',italic:true});
                 }
 
-                // Sections 2-5: P&L metrics
-                const plSecs=[
-                    {metric:'resultado',title:'Resultado P&L',sub:'Receita − Sales Taxes − CMV',num:'02'},
-                    {metric:'receita',title:'Receita Bruta',sub:'Receita por canal e tipo de device',num:'03'},
-                    {metric:'cmv',title:'CMV — Custo de Mercadoria',sub:'USD convertido a R$5,50 por unidade',num:'04'},
-                    {metric:'salesTaxes',title:'Sales Taxes',sub:'35% da Receita — dedutor do Resultado',num:'05'},
-                ];
-                for (const sec of plSecs) {
-                    addSection(sec.num, sec.title, sec.sub);
-                    for (const p of periods) {
-                        const dA=aggPeriod(p.typeA,p.months), dB=aggPeriod(p.typeB,p.months);
-                        const savedM=plMetric; plMetric=sec.metric;
-                        const plA=computePL(dA.byCanalDevice), plB=computePL(dB.byCanalDevice);
-                        const allC=Array.from(new Set([...Object.keys(plA.byCanal),...Object.keys(plB.byCanal)]));
-                        const byCanalA=Object.fromEntries(allC.map(c=>[c,Math.round(getMetricVal(plA.byCanal[c]||{}))]));
-                        const byCanalB=Object.fromEntries(allC.map(c=>[c,Math.round(getMetricVal(plB.byCanal[c]||{}))]));
-                        const byDevA=Object.fromEntries(Object.entries(plByDevice(plA,sec.metric)).map(([k,v])=>[k,Math.round(v)]));
-                        const byDevB=Object.fromEntries(Object.entries(plByDevice(plB,sec.metric)).map(([k,v])=>[k,Math.round(v)]));
-                        const ai=aiPL(plA,plB,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,sec.metric);
-                        plMetric=savedM;
-                        addDataSlide(`${PL_METRIC_LABELS[sec.metric]} — ${p.key}`,p.label,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,byCanalA,byCanalB,byDevA,byDevB,ai,hexColor(p.typeB));
+                // ---- One section per canal ----
+                for(let ci=0;ci<sectionCanals.length;ci++) {
+                    const canal=sectionCanals[ci];
+                    addSection(String(ci+1).padStart(2,'0'), canal, 'YTD · YTG · FY · MxM — Comparativo Plano vs Realizado / Forecast');
+                    for(const p of periods) {
+                        const cFilter=(filterCanal==='ALL')?canal:filterCanal;
+                        const dA=aggPeriod(p.typeA,p.months,cFilter);
+                        const dB=aggPeriod(p.typeB,p.months,cFilter);
+                        let plA=computePL(dA.byCanalDevice), plB=computePL(dB.byCanalDevice);
+                        if(groupDigital){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
+                        addCanalSlide(canal,p,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,dA,dB,plA,plB,hexColor(p.typeB));
                     }
                 }
 
