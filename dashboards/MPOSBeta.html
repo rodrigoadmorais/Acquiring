@@ -239,60 +239,90 @@
         <!-- P&L Tab Content -->
         <div id="tab-content-pl" style="display:none;" class="space-y-6">
 
-            <!-- Scenario Selector -->
-            <div class="card p-4 flex flex-wrap gap-4 items-center">
-                <div class="flex items-center gap-2 text-gray-400 border-r pr-4 border-gray-100">
-                    <i data-lucide="calculator" class="w-5 h-5"></i>
-                    <span class="text-[11px] font-black uppercase tracking-widest">Cenário P&amp;L</span>
+            <!-- Comparison Engine A vs B -->
+            <div class="card overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
+                    <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-blue-500"></i> Simulação P&amp;L — Comparação de Cenários
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="pl-comp-type" value="MONTH" checked onchange="handlePLTypeChange()" class="peer sr-only">
+                                <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Mês a Mês</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="pl-comp-type" value="YTD" onchange="handlePLTypeChange()" class="peer sr-only">
+                                <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTD</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="pl-comp-type" value="YTG" onchange="handlePLTypeChange()" class="peer sr-only">
+                                <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTG</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="pl-comp-type" value="YEAR" onchange="handlePLTypeChange()" class="peer sr-only">
+                                <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">FY</div>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                            <i data-lucide="info" class="w-3.5 h-3.5 text-yellow-600"></i>
+                            <span class="text-[10px] text-yellow-700 font-black uppercase tracking-widest">USD/BRL 5,50</span>
+                        </div>
+                    </div>
                 </div>
-                <select id="pl-scenario" onchange="handlePLScenarioChange()" class="w-52 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                <select id="pl-month" onchange="renderPLTab()" class="w-32 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
-                <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="pl-comp-type" value="MONTH" checked onchange="handlePLTypeChange()" class="peer sr-only">
-                        <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Mês</div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="pl-comp-type" value="YTD" onchange="handlePLTypeChange()" class="peer sr-only">
-                        <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTD</div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="pl-comp-type" value="YTG" onchange="handlePLTypeChange()" class="peer sr-only">
-                        <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTG</div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="pl-comp-type" value="YEAR" onchange="handlePLTypeChange()" class="peer sr-only">
-                        <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">FY</div>
-                    </label>
-                </div>
-                <div class="ml-auto flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-                    <i data-lucide="info" class="w-4 h-4 text-yellow-600"></i>
-                    <span class="text-[10px] text-yellow-700 font-black uppercase tracking-widest">Câmbio USD/BRL: 5,50</span>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-white">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
+                        <div class="flex gap-2">
+                            <select id="pl-scenario-a" onchange="handlePLScenarioChange('a')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                            <select id="pl-month-a" onchange="renderPLTab()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
+                        </div>
+                    </div>
+                    <div class="flex justify-center pt-5">
+                        <div class="bg-blue-50 p-3 rounded-full border border-blue-100 shadow-sm">
+                            <i data-lucide="swords" class="w-6 h-6 text-blue-500"></i>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
+                        <div class="flex gap-2">
+                            <select id="pl-scenario-b" onchange="handlePLScenarioChange('b')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                            <select id="pl-month-b" onchange="renderPLTab()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- KPI Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="card p-6 border-l-4 border-l-blue-500">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Receita Total</p>
-                    <h3 id="pl-kpi-receita" class="text-2xl font-black text-blue-600">R$ 0</h3>
-                    <p class="text-[10px] text-gray-400 font-bold mt-1">Preço unitário × Volume</p>
+                <div class="card p-6 border-l-4 border-l-gray-400">
+                    <p id="pl-label-kpi-a" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 truncate">Resultado (A)</p>
+                    <h3 id="pl-kpi-a" class="text-2xl font-black text-gray-800">R$ 0</h3>
                 </div>
-                <div class="card p-6 border-l-4 border-l-red-400">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">CMV Total</p>
-                    <h3 id="pl-kpi-cmv" class="text-2xl font-black text-red-500">R$ 0</h3>
-                    <p class="text-[10px] text-gray-400 font-bold mt-1">Custo USD × FX 5,50</p>
+                <div class="card p-6 border-l-4" id="pl-kpi-b-container">
+                    <p id="pl-label-kpi-b" class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2 truncate">Resultado (B)</p>
+                    <h3 id="pl-kpi-b" class="text-2xl font-black text-gray-800">R$ 0</h3>
                 </div>
-                <div class="card p-6 border-l-4 border-l-green-500">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Resultado</p>
-                    <h3 id="pl-kpi-resultado" class="text-2xl font-black text-green-600">R$ 0</h3>
-                    <p class="text-[10px] text-gray-400 font-bold mt-1">Receita + CMV</p>
+                <div class="card p-6" id="pl-card-delta-pct">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (%) B vs A</p>
+                    <div class="flex items-center gap-2">
+                        <h3 id="pl-val-delta-pct" class="text-2xl font-black text-gray-800">0%</h3>
+                        <i id="pl-icon-delta-pct" data-lucide="minus" class="w-6 h-6 text-gray-400"></i>
+                    </div>
                 </div>
-                <div class="card p-6 border-l-4 border-l-purple-500">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Margem</p>
-                    <h3 id="pl-kpi-margem" class="text-2xl font-black text-purple-600">0%</h3>
-                    <p class="text-[10px] text-gray-400 font-bold mt-1">Resultado / Receita</p>
+                <div class="card p-6">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (Absoluta)</p>
+                    <h3 id="pl-val-delta-abs" class="text-2xl font-black text-gray-800">R$ 0</h3>
+                    <p class="text-[10px] text-gray-400 font-bold mt-1">em resultado</p>
                 </div>
+            </div>
+
+            <!-- AI Summary -->
+            <div class="card bg-gradient-to-r from-blue-50 to-white border-l-4 border-l-blue-500 p-6" id="pl-ai-container">
+                <h4 class="text-sm font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-tight">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo P&amp;L gerado por IA
+                </h4>
+                <div id="pl-ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2"></div>
             </div>
 
             <!-- P&L Table -->
@@ -301,29 +331,32 @@
                     <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
                         <i data-lucide="table" class="w-4 h-4 text-gray-400"></i> P&amp;L por Canal e Modelo
                     </h4>
-                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Clique no canal para expandir</span>
+                    <div class="flex items-center gap-3">
+                        <button id="pl-unit-btn" onclick="togglePLUnitMode()" class="flex items-center gap-2 bg-white border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-gray-50 transition-all">
+                            <i data-lucide="divide" class="w-3.5 h-3.5"></i> Ver Por Unidade
+                        </button>
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Clique no canal para expandir</span>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-white border-b border-gray-200">
                             <tr class="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                                 <th class="p-4 w-1/4">Canal / Modelo</th>
-                                <th class="p-4 text-right">Volume</th>
-                                <th class="p-4 text-right text-blue-600">Receita</th>
-                                <th class="p-4 text-right text-red-500">CMV</th>
-                                <th class="p-4 text-right">Resultado</th>
-                                <th class="p-4 text-right text-purple-600">Margem</th>
+                                <th class="p-4 text-right" id="pl-th-a">Resultado (A)</th>
+                                <th class="p-4 text-right" id="pl-th-b">Resultado (B)</th>
+                                <th class="p-4 text-right">Var (%)</th>
+                                <th class="p-4 text-right">Var (Abs)</th>
                             </tr>
                         </thead>
                         <tbody id="pl-tbody" class="divide-y divide-gray-100 bg-white"></tbody>
                         <tfoot class="bg-gray-50">
                             <tr class="border-t-2 border-gray-300">
                                 <td class="p-4 font-black text-xs text-gray-800 uppercase tracking-widest">Total Geral</td>
-                                <td class="p-4 text-xs font-black text-gray-800 text-right" id="pl-total-qty">0</td>
-                                <td class="p-4 text-xs font-black text-blue-600 text-right" id="pl-total-receita">R$ 0</td>
-                                <td class="p-4 text-xs font-black text-red-500 text-right" id="pl-total-cmv">R$ 0</td>
-                                <td class="p-4 text-xs font-black text-right" id="pl-total-resultado">R$ 0</td>
-                                <td class="p-4 text-xs font-black text-purple-600 text-right" id="pl-total-margem">0%</td>
+                                <td class="p-4 text-xs font-black text-gray-800 text-right" id="pl-total-a">R$ 0</td>
+                                <td class="p-4 text-xs font-black text-right" id="pl-total-b">R$ 0</td>
+                                <td class="p-4 text-xs font-black text-right" id="pl-total-pct">0%</td>
+                                <td class="p-4 text-xs font-black text-right" id="pl-total-abs">R$ 0</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -1360,10 +1393,10 @@
         // ============================================================
 
         const PL_SELL_PRICE = {
-            'SMART': { 'APP': 205.42, 'FDV PROPRIA': 234.00, 'FDV TERCEIRA': 233.00, 'LP': 205.42, 'MGM': 184.83, 'RESELLERS': 176.50, 'TLV': 205.42, 'TO': 194.83, 'ENGAGEMENT': 51.38, 'BIG SELLERS': 204.93 },
-            'PRO':   { 'APP': 125.50, 'FDV PROPRIA':   0.00, 'FDV TERCEIRA':   0.00, 'LP': 125.50, 'MGM': 113.00, 'RESELLERS':  96.75, 'TLV': 127.67, 'TO': 119.00, 'ENGAGEMENT': 94.18, 'BIG SELLERS': 116.38 },
-            'AIR':   { 'APP':  59.17, 'FDV PROPRIA':   0.00, 'FDV TERCEIRA':   0.00, 'LP':  59.17, 'MGM':  53.25, 'RESELLERS':   0.00, 'TLV':   0.00, 'TO':  56.42, 'ENGAGEMENT': 14.77, 'BIG SELLERS':   0.00 },
-            'MINI':  { 'APP':  26.00, 'FDV PROPRIA':   0.00, 'FDV TERCEIRA':   0.00, 'LP':  26.00, 'MGM':  23.00, 'RESELLERS':   0.00, 'TLV':   0.00, 'TO':  25.00, 'ENGAGEMENT':  0.00, 'BIG SELLERS':   0.00 }
+            'SMART': { 'APP': 205.42, 'FDV PROPRIA': 234.00, 'FDV TERCERA': 233.00, 'LP': 205.42, 'MGM': 184.83, 'RESELLERS': 176.50, 'TLV': 205.42, 'TO': 194.83, 'ENGAGEMENT': 51.38, 'BIG SELLERS': 204.93 },
+            'PRO':   { 'APP': 125.50, 'FDV PROPRIA':   0.00, 'FDV TERCERA':   0.00, 'LP': 125.50, 'MGM': 113.00, 'RESELLERS':  96.75, 'TLV': 127.67, 'TO': 119.00, 'ENGAGEMENT': 94.18, 'BIG SELLERS': 116.38 },
+            'AIR':   { 'APP':  59.17, 'FDV PROPRIA':   0.00, 'FDV TERCERA':   0.00, 'LP':  59.17, 'MGM':  53.25, 'RESELLERS':   0.00, 'TLV':   0.00, 'TO':  56.42, 'ENGAGEMENT': 14.77, 'BIG SELLERS':   0.00 },
+            'MINI':  { 'APP':  26.00, 'FDV PROPRIA':   0.00, 'FDV TERCERA':   0.00, 'LP':  26.00, 'MGM':  23.00, 'RESELLERS':   0.00, 'TLV':   0.00, 'TO':  25.00, 'ENGAGEMENT':  0.00, 'BIG SELLERS':   0.00 }
         };
 
         const PL_COST_BRL = {
@@ -1372,6 +1405,8 @@
             'AIR':    -56.00 * 5.50,
             'MINI':   -22.00 * 5.50
         };
+
+        let plUnitMode = false;
 
         function getSellPrice(device, canal) {
             const d = String(device).toUpperCase().trim();
@@ -1389,7 +1424,7 @@
 
             Object.keys(byCanalDevice).forEach(canal => {
                 const devices = byCanalDevice[canal];
-                let cReceita = 0, cCMV = 0;
+                let cReceita = 0, cCMV = 0, cQty = 0;
                 let devPL = {};
 
                 Object.keys(devices).forEach(device => {
@@ -1401,18 +1436,29 @@
                     devPL[device] = { qty, receita, cmv, resultado: receita + cmv };
                     cReceita += receita;
                     cCMV += cmv;
+                    cQty += qty;
                 });
 
-                byCanal[canal] = { receita: cReceita, cmv: cCMV, resultado: cReceita + cCMV, devices: devPL };
+                byCanal[canal] = { receita: cReceita, cmv: cCMV, resultado: cReceita + cCMV, qty: cQty, devices: devPL };
                 totalReceita += cReceita;
                 totalCMV += cCMV;
             });
 
-            return { totalReceita, totalCMV, totalResultado: totalReceita + totalCMV, byCanal };
+            const totalQty = Object.values(byCanal).reduce((s, c) => s + c.qty, 0);
+            return { totalReceita, totalCMV, totalResultado: totalReceita + totalCMV, totalQty, byCanal };
         }
 
         function formatBRL(val) {
             return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+
+        function formatBRLDecimal(val) {
+            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatPLVal(val, qty) {
+            if (plUnitMode && qty > 0) return formatBRLDecimal(val / qty);
+            return formatBRL(val);
         }
 
         function switchTab(tab) {
@@ -1424,30 +1470,53 @@
             lucide.createIcons();
         }
 
-        function populatePLScenarios() {
-            const scSel = document.getElementById('pl-scenario');
-            if (!scSel) return;
-            let html = '';
-            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
-                const group = scenarioList.filter(s => s.type === t);
-                if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
-                    let opts = `<optgroup label="--- ${label} ---">`;
-                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
-                    opts += `</optgroup>`;
-                    html += opts;
-                }
-            });
-            scSel.innerHTML = html;
-            const currentYear = new Date().getFullYear().toString();
-            const actualId = `ACTUAL|${currentYear}`;
-            if (scenarioList.some(s => s.id === actualId)) scSel.value = actualId;
-            handlePLScenarioChange();
+        function togglePLUnitMode() {
+            plUnitMode = !plUnitMode;
+            const btn = document.getElementById('pl-unit-btn');
+            if (plUnitMode) {
+                btn.className = 'flex items-center gap-2 bg-blue-600 border border-blue-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs transition-all';
+                btn.innerHTML = '<i data-lucide="divide" class="w-3.5 h-3.5"></i> Ver Total';
+            } else {
+                btn.className = 'flex items-center gap-2 bg-white border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-gray-50 transition-all';
+                btn.innerHTML = '<i data-lucide="divide" class="w-3.5 h-3.5"></i> Ver Por Unidade';
+            }
+            lucide.createIcons();
+            renderPLTab();
         }
 
-        function handlePLScenarioChange() {
-            const scSel = document.getElementById('pl-scenario');
-            const moSel = document.getElementById('pl-month');
+        function populatePLScenarios() {
+            ['pl-scenario-a', 'pl-scenario-b'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (!sel) return;
+                let html = '';
+                ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                    const group = scenarioList.filter(s => s.type === t);
+                    if (group.length > 0) {
+                        const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                        let opts = `<optgroup label="--- ${label} ---">`;
+                        group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
+                        opts += `</optgroup>`;
+                        html += opts;
+                    }
+                });
+                sel.innerHTML = html;
+            });
+
+            const currentYear = new Date().getFullYear().toString();
+            const aSel = document.getElementById('pl-scenario-a');
+            const bSel = document.getElementById('pl-scenario-b');
+            const planId = `PLAN|${currentYear}`;
+            const actualId = `ACTUAL|${currentYear}`;
+            if (aSel && scenarioList.some(s => s.id === planId)) aSel.value = planId;
+            if (bSel && scenarioList.some(s => s.id === actualId)) bSel.value = actualId;
+            handlePLScenarioChange('a', false);
+            handlePLScenarioChange('b', false);
+            renderPLTab();
+        }
+
+        function handlePLScenarioChange(side, runRender = true) {
+            const scSel = document.getElementById(`pl-scenario-${side}`);
+            const moSel = document.getElementById(`pl-month-${side}`);
             const scenario = scenarioList.find(s => s.id === scSel.value);
             if (scenario) {
                 let prevVal = moSel.value;
@@ -1455,90 +1524,202 @@
                 if (Array.from(moSel.options).some(o => o.value === prevVal)) moSel.value = prevVal;
                 else if (scenario.months.length > 0) moSel.value = scenario.months[scenario.months.length - 1];
             }
-            renderPLTab();
+            if (runRender) renderPLTab();
         }
 
         function handlePLTypeChange() {
             const compType = document.querySelector('input[name="pl-comp-type"]:checked').value;
-            const moSel = document.getElementById('pl-month');
-            moSel.style.display = (compType === 'YEAR') ? 'none' : 'block';
+            const moA = document.getElementById('pl-month-a');
+            const moB = document.getElementById('pl-month-b');
+            if (compType === 'YEAR') {
+                moA.style.display = 'none'; moB.style.display = 'none';
+            } else if (compType === 'YTD' || compType === 'YTG') {
+                moA.style.display = 'block'; moB.style.display = 'none';
+            } else {
+                moA.style.display = 'block'; moB.style.display = 'block';
+            }
             renderPLTab();
         }
 
         function renderPLTab() {
-            const scSel = document.getElementById('pl-scenario');
-            if (!scSel || !scSel.value) return;
+            const scA = document.getElementById('pl-scenario-a');
+            const scB = document.getElementById('pl-scenario-b');
+            if (!scA || !scA.value || !scB || !scB.value) return;
 
             const compType = document.querySelector('input[name="pl-comp-type"]:checked').value;
-            const [type, year] = scSel.value.split('|');
-            const moVal = document.getElementById('pl-month').value;
+            const [typeA, yearA] = scA.value.split('|');
+            const [typeB, yearB] = scB.value.split('|');
+            const moA_val = document.getElementById('pl-month-a').value;
+            const moB_val = (compType === 'YTD' || compType === 'YTG') ? moA_val : document.getElementById('pl-month-b').value;
             const filterCanal = document.getElementById('filter-canal').value;
             const filterDevice = document.getElementById('filter-device').value;
 
-            const periodId = compType === 'YEAR' ? `YEAR|${year}` : `${compType}|${year}${moVal}`;
-            const data = extractValue(type, periodId, filterCanal, filterDevice);
-            const pl = computePL(data.byCanalDevice);
+            const periodA = compType === 'YEAR' ? `YEAR|${yearA}` : `${compType}|${yearA}${moA_val}`;
+            const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `${compType}|${yearB}${moB_val}`;
 
-            // KPIs
-            document.getElementById('pl-kpi-receita').innerText = formatBRL(pl.totalReceita);
-            document.getElementById('pl-kpi-cmv').innerText = formatBRL(pl.totalCMV);
+            let labelPrefix = '';
+            if (compType === 'YTD') labelPrefix = 'YTD até Mês ';
+            if (compType === 'YTG') labelPrefix = 'YTG a partir de ';
+            if (compType === 'MONTH') labelPrefix = 'Mês ';
 
-            const resEl = document.getElementById('pl-kpi-resultado');
-            resEl.innerText = formatBRL(pl.totalResultado);
-            resEl.className = `text-2xl font-black ${pl.totalResultado >= 0 ? 'text-green-600' : 'text-red-600'}`;
+            const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${labelPrefix}${moA_val})`;
+            const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${labelPrefix}${moB_val})`;
 
-            const margem = pl.totalReceita > 0 ? (pl.totalResultado / pl.totalReceita) * 100 : 0;
-            const margemEl = document.getElementById('pl-kpi-margem');
-            margemEl.innerText = formatBRPct(margem);
-            margemEl.className = `text-2xl font-black ${margem >= 0 ? 'text-purple-600' : 'text-red-600'}`;
+            const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
+            const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
+            const plA = computePL(dataA.byCanalDevice);
+            const plB = computePL(dataB.byCanalDevice);
 
-            drawPLTable(pl, data.byCanalDevice);
+            // KPI colors
+            const bColor = getBaseColor(typeB, true);
+            document.getElementById('pl-kpi-b-container').style.borderLeftColor = bColor;
+            document.getElementById('pl-label-kpi-b').style.color = bColor;
+            document.getElementById('pl-th-b').style.color = bColor;
+            document.getElementById('pl-total-b').style.color = bColor;
+            document.getElementById('pl-ai-container').style.borderLeftColor = bColor;
+
+            document.getElementById('pl-label-kpi-a').innerText = nameA;
+            document.getElementById('pl-label-kpi-b').innerText = nameB;
+            document.getElementById('pl-kpi-a').innerText = formatBRL(plA.totalResultado);
+            document.getElementById('pl-kpi-b').innerText = formatBRL(plB.totalResultado);
+
+            const deltaAbs = plB.totalResultado - plA.totalResultado;
+            const deltaPct = plA.totalResultado !== 0 ? (deltaAbs / Math.abs(plA.totalResultado)) * 100 : (plB.totalResultado !== 0 ? 100 : 0);
+
+            document.getElementById('pl-val-delta-abs').innerText = (deltaAbs > 0 ? '+' : '') + formatBRL(deltaAbs);
+            document.getElementById('pl-val-delta-pct').innerText = (deltaAbs > 0 ? '+' : '') + formatBRPct(deltaPct);
+
+            const cardPct = document.getElementById('pl-card-delta-pct');
+            const iconPct = document.getElementById('pl-icon-delta-pct');
+            if (deltaPct > 0) {
+                cardPct.className = 'card p-6 border-b-4 border-b-green-500 bg-green-50/30 fade-in';
+                document.getElementById('pl-val-delta-pct').className = 'text-2xl font-black text-green-600';
+                iconPct.setAttribute('data-lucide', 'trending-up'); iconPct.className = 'w-6 h-6 text-green-500';
+            } else if (deltaPct < 0) {
+                cardPct.className = 'card p-6 border-b-4 border-b-red-500 bg-red-50/30 fade-in';
+                document.getElementById('pl-val-delta-pct').className = 'text-2xl font-black text-red-600';
+                iconPct.setAttribute('data-lucide', 'trending-down'); iconPct.className = 'w-6 h-6 text-red-500';
+            } else {
+                cardPct.className = 'card p-6 border-b-4 border-b-gray-400 fade-in';
+                document.getElementById('pl-val-delta-pct').className = 'text-2xl font-black text-gray-800';
+                iconPct.setAttribute('data-lucide', 'minus'); iconPct.className = 'w-6 h-6 text-gray-400';
+            }
+
+            const unitLabel = plUnitMode ? 'Resultado/Un.' : 'Resultado';
+            document.getElementById('pl-th-a').innerText = `${unitLabel} (A)`;
+            document.getElementById('pl-th-b').innerText = `${unitLabel} (B)`;
+
+            generatePLAI(plA, plB, nameA, nameB, typeB);
+            drawPLTable(plA, plB, typeB);
             lucide.createIcons();
         }
 
-        function drawPLTable(pl, byCanalDevice) {
+        function generatePLAI(plA, plB, nameA, nameB, typeB) {
+            const container = document.getElementById('pl-ai-text');
+            const deltaAbs = plB.totalResultado - plA.totalResultado;
+            const deltaPct = plA.totalResultado !== 0 ? (deltaAbs / Math.abs(plA.totalResultado)) * 100 : 0;
+
+            if (plA.totalResultado === 0 && plB.totalResultado === 0) {
+                container.innerHTML = '<p>Dados insuficientes para gerar insights neste recorte.</p>'; return;
+            }
+
+            const isGrowth = deltaAbs > 0;
+            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
+            let diffs = allCanals.map(c => ({ name: c, diff: (plB.byCanal[c]?.resultado || 0) - (plA.byCanal[c]?.resultado || 0) }));
+            let contributors = diffs.filter(c => isGrowth ? c.diff > 0 : c.diff < 0);
+            contributors.sort((a, b) => isGrowth ? b.diff - a.diff : a.diff - b.diff);
+
+            let explained = 0, driversText = [];
+            const absTotal = Math.abs(deltaAbs);
+
+            for (let i = 0; i < contributors.length; i++) {
+                const c = contributors[i];
+                explained += Math.abs(c.diff);
+                const vA = plA.byCanal[c.name]?.resultado || 0;
+                const cPct = vA !== 0 ? (c.diff / Math.abs(vA)) * 100 : 100;
+                const pctStr = (cPct > 0 ? '+' : '') + formatBRPct(cPct);
+                const absStr = (c.diff > 0 ? '+' : '') + formatBRL(c.diff);
+                driversText.push(`o canal <strong class="text-gray-900">${c.name}</strong> com <strong>${absStr}</strong> (${pctStr} vs base)`);
+                if ((explained / absTotal) >= 0.85) break;
+            }
+
+            let text = `<p>${nameB} frente a ${nameA}, o <strong>Resultado</strong> apresenta `;
+            text += isGrowth
+                ? `<span class="text-green-600 font-bold">melhora de +${formatBRPct(deltaPct)}</span> (+${formatBRL(deltaAbs)}). `
+                : `<span class="text-red-600 font-bold">piora de ${formatBRPct(deltaPct)}</span> (${formatBRL(deltaAbs)}). `;
+
+            if (driversText.length > 0) {
+                text += `O principal impacto veio de ${driversText[0]}`;
+                if (driversText.length > 1) {
+                    const rest = driversText.slice(1), last = rest.pop();
+                    text += rest.length > 0 ? `, seguido por ${rest.join(', ')} e por ${last}` : ` e por ${last}`;
+                }
+                text += `.`;
+            }
+
+            const recDiff = plB.totalReceita - plA.totalReceita;
+            const cmvDiff = plB.totalCMV - plA.totalCMV;
+            text += `</p><p class="text-gray-500 text-xs mt-2">Decomposição: Receita ${recDiff >= 0 ? '+' : ''}${formatBRL(recDiff)} | CMV ${cmvDiff >= 0 ? '+' : ''}${formatBRL(cmvDiff)}</p>`;
+            container.innerHTML = text;
+        }
+
+        function drawPLTable(plA, plB, typeB) {
             const tbody = document.getElementById('pl-tbody');
-            const sortedCanals = Object.keys(pl.byCanal).sort((a, b) => (pl.byCanal[b].receita || 0) - (pl.byCanal[a].receita || 0));
+            const bColor = getBaseColor(typeB, true);
+            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
+            allCanals.sort((a, b) => Math.abs(plB.byCanal[b]?.resultado || 0) - Math.abs(plB.byCanal[a]?.resultado || 0));
 
             let html = '';
-            sortedCanals.forEach((canal, idx) => {
-                const c = pl.byCanal[canal];
-                if (c.receita === 0 && c.cmv === 0) return;
-                const totalQtyCanal = Object.values(byCanalDevice[canal] || {}).reduce((s, v) => s + v, 0);
-                const margemCanal = c.receita > 0 ? (c.resultado / c.receita) * 100 : 0;
-                const resColor = c.resultado >= 0 ? 'text-green-600' : 'text-red-600';
-                const margColor = margemCanal >= 0 ? 'text-green-600' : 'text-red-600';
+            allCanals.forEach((canal, idx) => {
+                const cA = plA.byCanal[canal] || { resultado: 0, receita: 0, cmv: 0, qty: 0, devices: {} };
+                const cB = plB.byCanal[canal] || { resultado: 0, receita: 0, cmv: 0, qty: 0, devices: {} };
+                if (cA.resultado === 0 && cB.resultado === 0) return;
+
+                const deltaAbs = cB.resultado - cA.resultado;
+                const deltaPct = cA.resultado !== 0 ? (deltaAbs / Math.abs(cA.resultado)) * 100 : (cB.resultado !== 0 ? 100 : 0);
+                const pctColor = deltaPct > 0 ? 'text-green-600' : (deltaPct < 0 ? 'text-red-600' : 'text-gray-400');
+                const absDisp = plUnitMode ? '—' : ((deltaAbs > 0 ? '+' : '') + formatBRL(deltaAbs));
 
                 html += `
-                    <tr class="border-b border-gray-100 hover:bg-blue-50/50 cursor-pointer transition-colors" onclick="toggleDrilldown('pl-drill-${idx}')">
+                    <tr class="border-b border-gray-100 hover:bg-blue-50/50 cursor-pointer transition-colors" onclick="toggleDrilldown('pld-${idx}')">
                         <td class="p-4 flex items-center gap-2 font-black text-xs text-gray-800">
-                            <i data-lucide="chevron-right" id="icon-pl-drill-${idx}" class="w-4 h-4 text-blue-500 transition-transform"></i>${canal}
+                            <i data-lucide="chevron-right" id="icon-pld-${idx}" class="w-4 h-4 text-blue-500 transition-transform"></i>${canal}
                         </td>
-                        <td class="p-4 text-xs font-semibold text-gray-600 text-right">${formatBRNum(totalQtyCanal)}</td>
-                        <td class="p-4 text-xs font-black text-blue-600 text-right">${formatBRL(c.receita)}</td>
-                        <td class="p-4 text-xs font-semibold text-red-500 text-right">${formatBRL(c.cmv)}</td>
-                        <td class="p-4 text-xs font-black text-right ${resColor}">${formatBRL(c.resultado)}</td>
-                        <td class="p-4 text-xs font-bold text-right ${margColor}">${formatBRPct(margemCanal)}</td>
+                        <td class="p-4 text-xs font-semibold text-gray-500 text-right">${formatPLVal(cA.resultado, cA.qty)}</td>
+                        <td class="p-4 text-xs font-black text-right" style="color:${bColor};">${formatPLVal(cB.resultado, cB.qty)}</td>
+                        <td class="p-4 text-xs font-bold ${pctColor} bg-gray-50/30 text-right">${(deltaAbs > 0 ? '+' : '') + formatBRPct(deltaPct)}</td>
+                        <td class="p-4 text-xs font-semibold ${pctColor} bg-gray-50/30 text-right">${absDisp}</td>
                     </tr>
                 `;
 
-                const sortedDevices = Object.keys(c.devices).sort((a, b) => (c.devices[b].receita || 0) - (c.devices[a].receita || 0));
-                sortedDevices.forEach(device => {
-                    const d = c.devices[device];
-                    if (d.qty === 0) return;
-                    const margemDev = d.receita > 0 ? (d.resultado / d.receita) * 100 : 0;
-                    const dResColor = d.resultado >= 0 ? 'text-green-600' : 'text-red-600';
-                    const dMargColor = margemDev >= 0 ? 'text-green-600' : 'text-red-600';
+                const allDevices = Array.from(new Set([...Object.keys(cA.devices), ...Object.keys(cB.devices)]));
+                allDevices.sort((a, b) => Math.abs(cB.devices[b]?.resultado || 0) - Math.abs(cB.devices[a]?.resultado || 0));
+
+                allDevices.forEach(device => {
+                    const dA = cA.devices[device] || { qty: 0, receita: 0, cmv: 0, resultado: 0 };
+                    const dB = cB.devices[device] || { qty: 0, receita: 0, cmv: 0, resultado: 0 };
+                    if (dA.qty === 0 && dB.qty === 0) return;
+
+                    const dDelta = dB.resultado - dA.resultado;
+                    const dDeltaPct = dA.resultado !== 0 ? (dDelta / Math.abs(dA.resultado)) * 100 : (dB.resultado !== 0 ? 100 : 0);
+                    const dColor = dDeltaPct > 0 ? 'text-green-600' : (dDeltaPct < 0 ? 'text-red-600' : 'text-gray-400');
+                    const dAbsDisp = plUnitMode ? '—' : ((dDelta > 0 ? '+' : '') + formatBRL(dDelta));
+
                     html += `
-                        <tr class="pl-drill-${idx} hidden bg-gray-50 border-b border-white">
-                            <td class="p-3 pl-12 text-[11px] font-bold text-gray-600 flex items-center gap-2 border-l-2 border-l-blue-200">
+                        <tr class="pld-${idx} hidden bg-gray-50 border-b border-white">
+                            <td class="p-3 pl-10 text-[11px] font-bold text-gray-700 flex items-center gap-2 border-l-2 border-l-blue-200">
                                 <i data-lucide="smartphone" class="w-3 h-3 text-gray-400"></i> ${device}
+                                <span class="text-[10px] text-gray-400 font-normal">Vol: A=${formatBRNum(dA.qty)} / B=${formatBRNum(dB.qty)}</span>
                             </td>
-                            <td class="p-3 text-[11px] text-gray-500 text-right">${formatBRNum(d.qty)}</td>
-                            <td class="p-3 text-[11px] font-semibold text-blue-500 text-right">${formatBRL(d.receita)}</td>
-                            <td class="p-3 text-[11px] font-semibold text-red-400 text-right">${formatBRL(d.cmv)}</td>
-                            <td class="p-3 text-[11px] font-bold text-right ${dResColor}">${formatBRL(d.resultado)}</td>
-                            <td class="p-3 text-[11px] font-bold text-right ${dMargColor}">${formatBRPct(margemDev)}</td>
+                            <td class="p-3 text-[11px] text-gray-500 text-right">${formatPLVal(dA.resultado, dA.qty)}</td>
+                            <td class="p-3 text-[11px] font-bold text-right" style="color:${bColor};">${formatPLVal(dB.resultado, dB.qty)}</td>
+                            <td class="p-3 text-[11px] font-bold ${dColor} text-right">${(dDelta > 0 ? '+' : '') + formatBRPct(dDeltaPct)}</td>
+                            <td class="p-3 text-[11px] ${dColor} text-right">${dAbsDisp}</td>
+                        </tr>
+                        <tr class="pld-${idx} hidden bg-gray-50/60 border-b border-white">
+                            <td class="p-2 pl-14 text-[10px] text-gray-400 font-bold" colspan="5">
+                                ↳ Receita: A=${formatPLVal(dA.receita, dA.qty)} / B=${formatPLVal(dB.receita, dB.qty)} &nbsp;|&nbsp; CMV: A=${formatPLVal(dA.cmv, dA.qty)} / B=${formatPLVal(dB.cmv, dB.qty)}
+                            </td>
                         </tr>
                     `;
                 });
@@ -1546,15 +1727,16 @@
 
             tbody.innerHTML = html;
 
-            const totalQty = Object.values(byCanalDevice).reduce((sum, devs) => sum + Object.values(devs).reduce((s, v) => s + v, 0), 0);
-            const margem = pl.totalReceita > 0 ? (pl.totalResultado / pl.totalReceita) * 100 : 0;
-            document.getElementById('pl-total-qty').innerText = formatBRNum(totalQty);
-            document.getElementById('pl-total-receita').innerText = formatBRL(pl.totalReceita);
-            document.getElementById('pl-total-cmv').innerText = formatBRL(pl.totalCMV);
-            const totRes = document.getElementById('pl-total-resultado');
-            totRes.innerText = formatBRL(pl.totalResultado);
-            totRes.className = `p-4 text-xs font-black text-right ${pl.totalResultado >= 0 ? 'text-green-600' : 'text-red-600'}`;
-            document.getElementById('pl-total-margem').innerText = formatBRPct(margem);
+            const totDelta = plB.totalResultado - plA.totalResultado;
+            const totPct = plA.totalResultado !== 0 ? (totDelta / Math.abs(plA.totalResultado)) * 100 : 0;
+            const totColor = totPct > 0 ? 'text-green-600' : (totPct < 0 ? 'text-red-600' : 'text-gray-500');
+
+            document.getElementById('pl-total-a').innerText = plUnitMode ? formatBRLDecimal(plA.totalResultado / Math.max(plA.totalQty, 1)) : formatBRL(plA.totalResultado);
+            document.getElementById('pl-total-b').innerText = plUnitMode ? formatBRLDecimal(plB.totalResultado / Math.max(plB.totalQty, 1)) : formatBRL(plB.totalResultado);
+            document.getElementById('pl-total-pct').innerText = (totDelta > 0 ? '+' : '') + formatBRPct(totPct);
+            document.getElementById('pl-total-abs').innerText = plUnitMode ? '—' : ((totDelta > 0 ? '+' : '') + formatBRL(totDelta));
+            document.getElementById('pl-total-pct').className = `p-4 text-xs font-black ${totColor} text-right`;
+            document.getElementById('pl-total-abs').className = `p-4 text-xs font-black ${totColor} text-right`;
         }
 
         window.onload = boot;
