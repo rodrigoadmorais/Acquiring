@@ -582,11 +582,11 @@
                 
                 let key = canal + "|" + device;
                 if(!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
-                
+
                 for(let k in row) {
                     if(/^\d{6}$/.test(k)) {
-                        if (k < currentYYYYMM) forecastMap[key][k] = 0; 
-                        else forecastMap[key][k] = row[k];
+                        if (k < currentYYYYMM) forecastMap[key][k] = 0;
+                        else forecastMap[key][k] = (forecastMap[key][k] || 0) + (row[k] || 0);
                     }
                 }
             });
