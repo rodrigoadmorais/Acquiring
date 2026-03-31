@@ -1037,6 +1037,29 @@ const AREA_OVERRIDES = {
       { title: 'Relatório de OPEX por área em PDF', example: 'Job automatizado que gera PDF de gastos por função com ranking de desvios no D+2', tools: ['python', 'bigquery', 'verdi'], prompt: 'Como automatizar relatório de OPEX por área em PDF com Claude Code?' },
       { title: 'Monitor de headcount em tempo real', example: 'Dashboard que puxa HC ativo e admissões/demissões do BQ e atualiza diariamente', tools: ['bigquery', 'python', 'github', 'verdi'], prompt: 'Como criar monitor de headcount em tempo real com BigQuery e Claude Code?' }
     ]
+  },
+  'legal': {
+    chat: [
+      { title: 'Analisar resultado por entidade legal', example: '"Compare o resultado de Ebazar, MP Brasil e FIDCs em março — onde está o desvio vs budget e o que explica a diferença entre entidades?"', tools: ['bigquery', 'excel'], prompt: '' },
+      { title: 'Storytelling de consolidação para o board', example: '"Monte narrativa sobre o resultado consolidado Brasil com breakdown por entidade legal para o board pack"', tools: ['notion', 'slack'], prompt: '' },
+      { title: 'Validar eliminações intercompany', example: '"Essas eliminações intercompany entre Ebazar e MP fazem sentido? Alguma linha parece duplicada ou faltando?"', tools: ['excel', 'sap'], prompt: '' },
+      { title: 'Interpretar reporte contábil do SAP', example: '"Esse trial balance do SAP da entidade FIDC está consistente? O que explica a variação na linha de receita financeira?"', tools: ['sap', 'bigquery'], prompt: '' },
+      { title: 'Revisar reporte regulatório antes de enviar', example: '"Esse reporte para o Banco Central está completo e com os campos obrigatórios preenchidos corretamente?"', tools: ['notion', 'slack'], prompt: '' }
+    ],
+    cowork: [
+      { title: 'Consolidar P&L por entidade legal', example: 'Abre planilhas de Ebazar, MP Brasil e FIDCs e monta visão consolidada de P&L com eliminações intercompany', tools: ['excel', 'sap'], prompt: '' },
+      { title: 'Atualizar deck de Legal Entity mensal', example: 'Preenche slides de resultado por entidade e reconciliação contábil no PowerPoint do Monthly Review automaticamente', tools: ['excel', 'notion'], prompt: '' },
+      { title: 'Extrair trial balance do SAP por entidade', example: 'Navega no SAP, seleciona company code da entidade (Ebazar, MP, FIDC), exporta trial balance do período', tools: ['sap', 'bigquery'], prompt: '' },
+      { title: 'Checklist de fechamento Legal Entity', example: 'Compara resultado contábil vs gerencial por entidade, destaca divergências de eliminação e consolida aba final', tools: ['excel', 'sap', 'bigquery'], prompt: '' },
+      { title: 'Preencher template de reporte regulatório', example: 'Cola dados do SAP no template de reporte do Banco Central sem risco de erro de transposição manual', tools: ['excel', 'sap'], prompt: '' }
+    ],
+    code: [
+      { title: 'Pipeline contábil · SAP/BQ → dashboard', example: 'Extrai trial balance por company code → concilia vs gerencial → JSON → GitHub Pages com breakdown por entidade', tools: ['bigquery', 'github', 'python'], prompt: '' },
+      { title: 'Verdi Flow: alerta de divergência contábil', example: 'Verdi compara resultado gerencial vs contábil por entidade no fechamento e avisa no Slack quando divergência superar threshold', tools: ['verdi', 'bigquery', 'slack'], prompt: '' },
+      { title: 'Modelo de consolidação IFRS em Python', example: 'Script que consolida P&L das entidades (Ebazar, MP, FIDCs), aplica eliminações e gera visão IFRS vs GAAP local', tools: ['python', 'github', 'excel'], prompt: '' },
+      { title: 'Relatório de resultado por entidade em PDF', example: 'Job que gera PDF com P&L de cada entidade legal, reconciliação e variações vs budget, enviado no D+3 do fechamento', tools: ['python', 'bigquery', 'verdi'], prompt: '' },
+      { title: 'Monitor de conciliação intercompany', example: 'Dashboard que cruza transações entre entidades no BQ, destaca saldos não eliminados e atualiza diariamente', tools: ['bigquery', 'python', 'github', 'verdi'], prompt: '' }
+    ]
   }
 };
 
