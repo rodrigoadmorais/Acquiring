@@ -643,6 +643,12 @@
     <span class="header-title">FP&A Intelligence</span>
   </div>
   <div class="header-badge">Beta</div>
+  <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+    <input id="apiKeyInput" type="password" placeholder="sk-ant-..." title="Anthropic API Key"
+      style="font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid #ccc;width:200px;background:#fff;color:#333"
+      oninput="localStorage.setItem('claude_api_key',this.value)">
+    <label style="font-size:11px;color:#333;white-space:nowrap">API Key</label>
+  </div>
 </header>
 
 <!-- AREA BANNER -->
@@ -1100,11 +1106,21 @@ Responda em português, com markdown simples. Forneça:
 Seja direto, prático e específico para o contexto de FP&A do MELI. Máximo 250 palavras.`;
 
   try {
+    const apiKey = document.getElementById('apiKeyInput').value || localStorage.getItem('claude_api_key') || '';
+    if (!apiKey) {
+      document.getElementById('aiResponse').innerHTML = '<p>Insira sua <strong>Anthropic API Key</strong> no campo no topo da página.</p>';
+      return;
+    }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -1165,6 +1181,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDi
 
 // Initial render
 renderCases();
+
+// Restore saved API key
+const savedKey = localStorage.getItem('claude_api_key');
+if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
 </script>
 </body>
 </html>
