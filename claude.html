@@ -946,6 +946,52 @@ const BASE_CASES = {
 };
 
 const AREA_OVERRIDES = {
+  'fpa-meli': {
+    chat: [
+      { title: 'Analisar desvio de GMV vs budget', example: '"Explique queda de GMV no Brasil em março — sazonalidade, perda de sellers ativos ou deterioração de mix de categorias?"', tools: ['bigquery', 'excel'], prompt: '' },
+      { title: 'Storytelling de take rate para o board', example: '"Monte narrativa sobre evolução de take rate com impacto de mix de categorias e verticals para o board pack"', tools: ['notion', 'slack'], prompt: '' },
+      { title: 'Validar premissas de buyers únicos', example: '"Minhas premissas de crescimento de buyers únicos 2026 fazem sentido dado o contexto macro e o histórico de retenção?"', tools: ['excel', 'bigquery'], prompt: '' },
+      { title: 'Interpretar cohort de sellers', example: '"Esse CSV de cohort de sellers faz sentido? O que está causando a queda de retenção no segmento de moda em SP?"', tools: ['bigquery', 'python'], prompt: '' },
+      { title: 'Revisar update de resultado para o GM', example: '"Esse update de resultado marketplace para o GM está claro, completo e com tom executivo adequado?"', tools: ['slack', 'notion'], prompt: '' }
+    ],
+    cowork: [
+      { title: 'Consolidar GMV por categoria', example: 'Abre planilha de GMV (Eletrônicos, Moda, Casa, Esporte) e monta visão consolidada por BU e categoria', tools: ['excel', 'looker'], prompt: '' },
+      { title: 'Atualizar deck de resultado MeLi', example: 'Preenche slides de GMV, take rate e buyers únicos no PowerPoint do Monthly Review automaticamente', tools: ['excel', 'notion'], prompt: '' },
+      { title: 'Baixar relatório de sellers do Looker', example: 'Navega no Looker, aplica filtros de país e período, exporta CSV de sellers ativos e GMV por seller', tools: ['looker', 'bigquery'], prompt: '' },
+      { title: 'Checklist de fechamento marketplace', example: 'Verifica totais de GMV e receita vs contabilidade, sinaliza divergências e consolida aba de fechamento', tools: ['excel', 'sap', 'bigquery'], prompt: '' },
+      { title: 'Preencher modelo de budget marketplace', example: 'Cola premissas de GMV e take rate do Google Sheets no modelo Excel de budget sem erro manual', tools: ['excel', 'sap'], prompt: '' }
+    ],
+    code: [
+      { title: 'Pipeline GMV · BigQuery → dashboard', example: 'Query BQ de GMV diário por categoria e país → transforma → JSON → GitHub Pages atualizado a cada 6h', tools: ['bigquery', 'github', 'python'], prompt: '' },
+      { title: 'Verdi Flow: alerta de queda de GMV', example: 'Verdi monitora GMV por hora, detecta queda >10% vs D-1 e posta alerta no canal Slack MeLi', tools: ['verdi', 'bigquery', 'slack'], prompt: '' },
+      { title: 'Modelo de sensibilidade take rate', example: 'Script que simula impacto de variação de take rate por categoria no revenue e EBITDA do marketplace', tools: ['python', 'github', 'excel'], prompt: '' },
+      { title: 'Relatório mensal marketplace em PDF', example: 'Job que gera PDF de P&L MeLi com gráficos de GMV, take rate e buyers e envia por e-mail no D+1', tools: ['python', 'bigquery', 'verdi'], prompt: '' },
+      { title: 'Monitor de KPIs marketplace', example: 'Dashboard que puxa GMV, buyers ativos e sellers do BQ e atualiza a cada 15min no GitHub Pages', tools: ['bigquery', 'python', 'github', 'verdi'], prompt: '' }
+    ]
+  },
+  'fintech': {
+    chat: [
+      { title: 'Analisar desvio de margem de crédito', example: '"Explique por que a margem de crédito ficou 12% abaixo do plano — risco maior, funding mais caro ou mix de produtos?"', tools: ['bigquery', 'excel'], prompt: '' },
+      { title: 'Storytelling de conta digital para o CFO', example: '"Monte narrativa sobre crescimento de contas ativas, saldo médio e engajamento para a apresentação ao CFO"', tools: ['notion', 'slack'], prompt: '' },
+      { title: 'Validar premissas de inadimplência', example: '"Minhas premissas de NPL 2026 fazem sentido dado o ciclo de crédito atual, a Selic e o perfil histórico do portfólio?"', tools: ['excel', 'bigquery'], prompt: '' },
+      { title: 'Interpretar relatório de portfólio', example: '"Esse relatório de yield da carteira de investimentos está consistente? O que explica a compressão de margem?"', tools: ['bigquery', 'python'], prompt: '' },
+      { title: 'Revisar budget submission Fintech', example: '"Esse budget de receita Fintech para o CFO está bem fundamentado? Falta alguma linha importante de NIM ou fee?"', tools: ['slack', 'notion'], prompt: '' }
+    ],
+    cowork: [
+      { title: 'Consolidar MAU por produto banking', example: 'Abre planilha de MAU (conta digital, cartão, empréstimo, rendimento, seguros) e monta visão consolidada por produto', tools: ['excel', 'looker'], prompt: '' },
+      { title: 'Atualizar deck de resultado Fintech', example: 'Preenche slides de contas ativas, NIM e NPL no PowerPoint do Fintech Monthly Review automaticamente', tools: ['excel', 'notion'], prompt: '' },
+      { title: 'Baixar relatório de portfólio do Looker', example: 'Navega no Looker, aplica filtros de vintage e produto, exporta CSV do portfólio ativo com saldo e inadimplência', tools: ['looker', 'bigquery'], prompt: '' },
+      { title: 'Checklist de fechamento Fintech', example: 'Compara receita de crédito e banking no ERP vs modelo Excel, destaca divergências e consolida aba de fechamento', tools: ['excel', 'sap', 'bigquery'], prompt: '' },
+      { title: 'Preencher template de budget banking', example: 'Cola premissas de NIM, volume de contas e saldo médio no template de budget por produto sem erro manual', tools: ['excel', 'sap'], prompt: '' }
+    ],
+    code: [
+      { title: 'Pipeline crédito · BigQuery → dashboard', example: 'Query BQ de portfólio por vintage e produto → transforma → JSON → GitHub Pages atualizado diariamente', tools: ['bigquery', 'github', 'python'], prompt: '' },
+      { title: 'Verdi Flow: alerta de NPL acima do limite', example: 'Verdi monitora NPL semanal no BQ e avisa no Slack quando superar o threshold definido no budget', tools: ['verdi', 'bigquery', 'slack'], prompt: '' },
+      { title: 'Modelo de projeção de NIM em Python', example: 'Script que simula impacto de variação de Selic e mix de produtos (crédito, rendimento) na margem líquida de juros', tools: ['python', 'github', 'excel'], prompt: '' },
+      { title: 'Relatório de portfólio por vintage em PDF', example: 'Job que gera PDF de performance da carteira com curvas de NPL por safra e envia automaticamente no D+2', tools: ['python', 'bigquery', 'verdi'], prompt: '' },
+      { title: 'Monitor de contas ativas e saldo médio', example: 'Dashboard que puxa MAU, saldo médio e transações do BQ por produto e atualiza diariamente no GitHub Pages', tools: ['bigquery', 'python', 'github', 'verdi'], prompt: '' }
+    ]
+  },
   'acquiring': {
     chat: [
       { title: 'Analisar desvio de TPV vs budget', example: '"Explique queda de TPV em Point QR no Brasil — sazonalidade ou churn de merchants?"', tools: ['bigquery', 'excel'], prompt: 'Como analisar desvios de TPV e MDR Acquiring com Claude Chat?' },
