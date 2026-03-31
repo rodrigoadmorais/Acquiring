@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude para FP&A · Mercado Livre</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --ml-yellow: #FFE600;
+    --ml-yellow-dark: #E6CF00;
+    --ml-blue: #1259C3;
+    --ml-blue-light: #2968D8;
+    --ml-dark: #1A1A1A;
+    --ml-gray: #333333;
+    --ml-light: #F5F5F5;
+    --ml-white: #FFFFFF;
+    --ml-border: #E0E0E0;
+    --ml-text: #2D2D2D;
+    --ml-muted: #666666;
+    --purple: #7C3AED;
+    --purple-light: #EDE9FE;
+    --teal: #0D9488;
+    --teal-light: #CCFBF1;
+    --amber: #D97706;
+    --amber-light: #FEF3C7;
+    --col-chat: #7C3AED;
+    --col-cowork: #0D9488;
+    --col-code: #D97706;
+    --font: 'Inter', 'Helvetica Neue', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--ml-light);
+    color: var(--ml-text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ml-yellow);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ml-logo-svg {
+    height: 28px;
+    width: auto;
+  }
+
+  .header-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ml-dark);
+    border-left: 2px solid rgba(0,0,0,0.2);
+    padding-left: 12px;
+    letter-spacing: 0.01em;
+  }
+
+  .header-badge {
+    background: var(--ml-dark);
+    color: var(--ml-yellow);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--ml-dark);
+    padding: 56px 32px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -60px; right: -60px; bottom: -60px;
+    background:
+      radial-gradient(ellipse 40% 50% at 20% 60%, rgba(255,230,0,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 40% at 80% 30%, rgba(18,89,195,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ml-yellow);
+    margin-bottom: 16px;
+  }
+
+  .hero h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    color: var(--ml-white);
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .hero h1 span {
+    color: var(--ml-yellow);
+  }
+
+  .hero p {
+    font-size: 16px;
+    color: rgba(255,255,255,0.65);
+    max-width: 540px;
+    margin: 0 auto 32px;
+    line-height: 1.6;
+    position: relative;
+  }
+
+  /* ── AREA SELECTOR ── */
+  .area-section {
+    background: var(--ml-white);
+    border-bottom: 1px solid var(--ml-border);
+    padding: 32px;
+    text-align: center;
+  }
+
+  .area-section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--ml-dark);
+  }
+
+  .area-section p {
+    font-size: 14px;
+    color: var(--ml-muted);
+    margin-bottom: 24px;
+  }
+
+  .area-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .area-pill {
+    padding: 10px 20px;
+    border-radius: 100px;
+    border: 1.5px solid var(--ml-border);
+    background: var(--ml-white);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    color: var(--ml-text);
+    white-space: nowrap;
+  }
+
+  .area-pill:hover {
+    border-color: var(--ml-blue);
+    color: var(--ml-blue);
+    background: #EEF4FF;
+    transform: translateY(-1px);
+  }
+
+  .area-pill.active {
+    background: var(--ml-blue);
+    border-color: var(--ml-blue);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(18,89,195,0.25);
+  }
+
+  /* ── MAIN GRID ── */
+  .main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ml-muted);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ml-border);
+  }
+
+  /* ── TOOL COLUMNS ── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 48px;
+  }
+
+  @media (max-width: 768px) {
+    .tools-grid { grid-template-columns: 1fr; }
+    header { padding: 0 16px; }
+    .main { padding: 24px 16px; }
+  }
+
+  .tool-column {
+    background: var(--ml-white);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--ml-border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  .tool-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--ml-border);
+  }
+
+  .tool-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 100px;
+    margin-bottom: 12px;
+  }
+
+  .tag-chat { background: var(--purple-light); color: var(--purple); }
+  .tag-cowork { background: var(--teal-light); color: var(--teal); }
+  .tag-code { background: var(--amber-light); color: var(--amber); }
+
+  .tool-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ml-dark);
+    margin-bottom: 4px;
+  }
+
+  .tool-desc {
+    font-size: 13px;
+    color: var(--ml-muted);
+    line-height: 1.5;
+  }
+
+  /* ── USE CASE CARDS ── */
+  .use-cases {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .uc-card {
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    border: 1px solid transparent;
+    position: relative;
+  }
+
+  .uc-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+
+  .uc-card-chat { background: #F8F5FF; border-color: #E5DBFF; }
+  .uc-card-chat:hover { background: #F0EBFF; border-color: var(--purple); }
+
+  .uc-card-cowork { background: #F0FDFA; border-color: #CCFBF1; }
+  .uc-card-cowork:hover { background: #E0FAF5; border-color: var(--teal); }
+
+  .uc-card-code { background: #FFFBEB; border-color: #FDE68A; }
+  .uc-card-code:hover { background: #FEF3C7; border-color: var(--amber); }
+
+  .uc-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ml-dark);
+    margin-bottom: 3px;
+  }
+
+  .uc-example {
+    font-size: 12px;
+    color: var(--ml-muted);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .uc-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .tool-chip {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+    background: rgba(0,0,0,0.06);
+    color: var(--ml-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .chip-bq { background: #E8F0FE; color: #1a73e8; }
+  .chip-verdi { background: #E8F5E9; color: #2E7D32; }
+  .chip-gh { background: #F3E8FF; color: #6B21A8; }
+  .chip-python { background: #FFF3E0; color: #E65100; }
+  .chip-excel { background: #E3F2FD; color: #0277BD; }
+  .chip-sql { background: #FCE4EC; color: #880E4F; }
+  .chip-slack { background: #EDE7F6; color: #4527A0; }
+  .chip-looker { background: #E0F7FA; color: #006064; }
+  .chip-notion { background: #F5F5F5; color: #333; }
+
+  .uc-arrow {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.3;
+    font-size: 14px;
+    transition: all 0.18s;
+  }
+
+  .uc-card:hover .uc-arrow { opacity: 1; transform: translateY(-50%) translateX(2px); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--ml-white);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.22);
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.22s ease;
+    overflow: hidden;
+  }
+
+  .modal-overlay.open .modal {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--ml-border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .modal-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 100px;
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ml-dark);
+    line-height: 1.3;
+  }
+
+  .modal-close {
+    background: var(--ml-light);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--ml-muted);
+    transition: all 0.15s;
+  }
+
+  .modal-close:hover { background: var(--ml-border); color: var(--ml-dark); }
+
+  .modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  /* ── AI CHAT IN MODAL ── */
+  .ai-prompt-area {
+    margin-bottom: 20px;
+  }
+
+  .ai-context-box {
+    background: var(--ml-light);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-left: 3px solid var(--ml-blue);
+  }
+
+  .ai-context-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ml-blue);
+    margin-bottom: 8px;
+  }
+
+  .ai-context-text {
+    font-size: 13px;
+    color: var(--ml-text);
+    line-height: 1.6;
+  }
+
+  .ai-response {
+    background: #F8F9FF;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #E0E8FF;
+    min-height: 100px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ml-text);
+    position: relative;
+  }
+
+  .ai-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ml-muted);
+    font-size: 13px;
+  }
+
+  .ai-dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ml-blue);
+    animation: dot-bounce 1.4s infinite ease-in-out both;
+    margin: 0 1px;
+  }
+
+  .ai-dots span:nth-child(1) { animation-delay: -0.32s; }
+  .ai-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+  @keyframes dot-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .ai-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .ai-sugg-btn {
+    background: var(--ml-white);
+    border: 1.5px solid var(--ml-border);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--ml-blue);
+    transition: all 0.15s;
+  }
+
+  .ai-sugg-btn:hover {
+    background: var(--ml-blue);
+    border-color: var(--ml-blue);
+    color: white;
+  }
+
+  /* ── TOOLS REFERENCE ── */
+  .tools-ref-section {
+    margin-bottom: 48px;
+  }
+
+  .tools-ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .tool-ref-card {
+    background: var(--ml-white);
+    border: 1px solid var(--ml-border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .tool-ref-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .tool-ref-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ml-dark);
+    margin-bottom: 3px;
+  }
+
+  .tool-ref-desc {
+    font-size: 11px;
+    color: var(--ml-muted);
+    line-height: 1.4;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ml-dark);
+    color: rgba(255,255,255,0.45);
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    margin-top: 40px;
+  }
+
+  footer span { color: var(--ml-yellow); }
+
+  /* ── AREA CONTEXT BANNER ── */
+  .area-banner {
+    display: none;
+    background: var(--ml-blue);
+    color: white;
+    padding: 12px 32px;
+    font-size: 13px;
+    font-weight: 500;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .area-banner.show { display: flex; }
+
+  .area-banner-icon {
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  /* tag colors by tool type */
+  .modal-chat .modal-tag { background: var(--purple-light); color: var(--purple); }
+  .modal-cowork .modal-tag { background: var(--teal-light); color: var(--teal); }
+  .modal-code .modal-tag { background: var(--amber-light); color: var(--amber); }
+
+  .ai-response ul { padding-left: 20px; margin: 8px 0; }
+  .ai-response li { margin-bottom: 6px; }
+  .ai-response strong { font-weight: 600; }
+  .ai-response code {
+    background: rgba(0,0,0,0.07);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-logo">
+    <svg class="ml-logo-svg" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="24" font-family="Inter,sans-serif" font-weight="700" font-size="22" fill="#1A1A1A">mercadolivre</text>
+    </svg>
+    <span class="header-title">FP&A Intelligence</span>
+  </div>
+  <div class="header-badge">Beta</div>
+</header>
+
+<!-- AREA BANNER -->
+<div class="area-banner" id="areaBanner">
+  <div class="area-banner-icon" id="bannerIcon">👤</div>
+  <span id="bannerText">Selecione sua área para ver conteúdo personalizado</span>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Guia prático · Mercado Livre & Mercado Pago</div>
+  <h1>Como usar <span>Claude</span> no seu<br>dia a dia de FP&A</h1>
+  <p>Chat, Cowork e Code — entenda qual ferramenta usar em cada situação, com exemplos reais do contexto MELI.</p>
+</section>
+
+<!-- AREA SELECTOR -->
+<section class="area-section">
+  <h2>Qual é a sua área?</h2>
+  <p>Personalize os exemplos abaixo para o seu contexto</p>
+  <div class="area-pills">
+    <button class="area-pill" data-area="fpa-meli" onclick="selectArea(this)">FP&A Mercado Livre</button>
+    <button class="area-pill" data-area="fintech" onclick="selectArea(this)">Fintech Services · Mercado Pago</button>
+    <button class="area-pill" data-area="acquiring" onclick="selectArea(this)">Acquiring · Mercado Pago</button>
+    <button class="area-pill" data-area="opex" onclick="selectArea(this)">OPEX · MeLi &amp; MePa</button>
+    <button class="area-pill" data-area="legal" onclick="selectArea(this)">Legal Entity · MeLi &amp; MePa</button>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- TOOLS GRID -->
+  <div class="section-label">Os três produtos Claude</div>
+  <div class="tools-grid" id="toolsGrid">
+
+    <!-- CHAT -->
+    <div class="tool-column">
+      <div class="tool-header">
+        <div class="tool-tag tag-chat">💬 Chat</div>
+        <div class="tool-name">Claude Chat</div>
+        <div class="tool-desc">Parceiro de raciocínio — análise, redação e perguntas complexas via conversa.</div>
+      </div>
+      <div class="use-cases" id="chat-cases">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- COWORK -->
+    <div class="tool-column">
+      <div class="tool-header">
+        <div class="tool-tag tag-cowork">🖥 Cowork</div>
+        <div class="tool-name">Claude Cowork</div>
+        <div class="tool-desc">Assistente operacional — executa tarefas no seu computador como se fosse você.</div>
+      </div>
+      <div class="use-cases" id="cowork-cases">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- CODE -->
+    <div class="tool-column">
+      <div class="tool-header">
+        <div class="tool-tag tag-code">⌨ Code</div>
+        <div class="tool-name">Claude Code</div>
+        <div class="tool-desc">Engenheiro de dados — constrói scripts, pipelines e automações reutilizáveis.</div>
+      </div>
+      <div class="use-cases" id="code-cases">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOOLS REFERENCE -->
+  <div class="tools-ref-section">
+    <div class="section-label">Ferramentas que o Claude potencializa</div>
+    <div class="tools-ref-grid">
+      <div class="tool-ref-card">
+        <div class="tool-ref-icon" style="background:#E8F0FE">📊</div>
+        <div>
+          <div class="tool-ref-name">Google BigQuery</div>
+          <div class="tool-ref-desc">Claude escreve queries SQL complexas, explica resultados e detecta anomalias</div>
+        </div>
+      </div>
+      <div class="tool-ref-card">
+        <div class="tool-ref-icon" style="background:#E8F5E9">⚡</div>
+        <div>
+          <div class="tool-ref-name">Verdi Flows</div>
+          <div class="tool-ref-desc">Claude cria e depura flows n8n para automações de FP&A end-to-end</div>
+        </div>
+      </div>
+      <div class="tool-ref-card">
+        <div class="tool-ref-icon" style="background:#F3E8FF">🐙</div>
+        <div>
+          <div class="tool-ref-name">GitHub</div>
+          <div class="tool-ref-desc">Claude Code publica dashboards, scripts e pipelines com CI/CD automático</div>
+        </div>
+      </div>
+      <div class="tool-ref-card">
+        <div class="tool-ref-icon" style="background:#FFF3E0">🐍</div>
+        <div>
+          <div class="tool-ref-name">Python / pandas</div>
+          <div class="tool-ref-desc">Claude escreve e executa scripts de transformação, modelagem e exportação</div>
+        </div>
+      </div>
+      <div class="tool-ref-card">
+        <div class="tool-ref-icon" style="background:#E3F2FD">📗</div>
+        <div>
+          <div class="tool-ref-name">Excel / Google Sheets</div>
+          <div class="tool-ref-desc">Cowork opera planilhas abertas; Code gera e preenche arquivos programaticamente</div>
+        </div>
+      </div>
+      <div class="tool-ref-card">
+        <div class="tool-ref-icon" style="background:#E0F7FA">👁</div>
+        <div>
+          <div class="tool-ref-name">Looker / Metabase</div>
+          <div class="tool-ref-desc">Cowork extrai relatórios; Chat interpreta visualizações e explica métricas</div>
+        </div>
+      </div>
+      <div class="tool-ref-card">
+        <div class="tool-ref-icon" style="background:#EDE7F6">💬</div>
+        <div>
+          <div class="tool-ref-name">Slack</div>
+          <div class="tool-ref-desc">Code posta alertas e KPIs automaticamente via webhook</div>
+        </div>
+      </div>
+      <div class="tool-ref-card">
+        <div class="tool-ref-icon" style="background:#FCE4EC">🗄</div>
+        <div>
+          <div class="tool-ref-name">SAP / ERP</div>
+          <div class="tool-ref-desc">Cowork navega e extrai dados de sistemas legados sem integração técnica</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-tag" id="modalTag">Chat</div>
+        <div class="modal-title" id="modalTitle">Título do caso de uso</div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="ai-context-box" id="modalContext">
+        <div class="ai-context-label">Contexto personalizado</div>
+        <div class="ai-context-text" id="modalContextText">—</div>
+      </div>
+      <div class="ai-response" id="aiResponse">
+        <div class="ai-loading" id="aiLoading">
+          <div class="ai-dots"><span></span><span></span><span></span></div>
+          <span>Gerando orientações para o seu contexto...</span>
+        </div>
+      </div>
+      <div class="ai-suggestions" id="aiSuggestions"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>Desenvolvido pela equipe FP&A Acquiring · <span>Mercado Pago</span> · 2025</p>
+  <p style="margin-top:6px">Powered by Claude · Anthropic</p>
+</footer>
+
+<script>
+const AREAS = {
+  'fpa-meli': {
+    label: 'FP&A Mercado Livre',
+    icon: '🛒',
+    desc: 'Análise financeira de marketplaces, GMV, take rate, buyers, sellers e verticals de MeLi',
+    color: '#1259C3'
+  },
+  'fintech': {
+    label: 'Fintech Services · Mercado Pago',
+    icon: '💳',
+    desc: 'Crédito, seguros, conta digital, rendimento e ecosistema financeiro do Mercado Pago',
+    color: '#00A9CE'
+  },
+  'acquiring': {
+    label: 'Acquiring · Mercado Pago',
+    icon: '📡',
+    desc: 'TPV, MDR, Point, QR, gateway e meios de pagamento fora do marketplace MELI',
+    color: '#009EE3'
+  },
+  'opex': {
+    label: 'OPEX · MeLi & MePa',
+    icon: '💼',
+    desc: 'Headcount, custos operacionais, G&A, contratações e planejamento de despesas',
+    color: '#E65100'
+  },
+  'legal': {
+    label: 'Legal Entity · MeLi & MePa',
+    icon: '🏦',
+    desc: 'Contabilidade societária, imposto, reporte regulatório e consolidação por entidade legal',
+    color: '#4527A0'
+  }
+};
+
+const BASE_CASES = {
+  chat: [
+    {
+      title: 'Interpretar variações vs budget',
+      example: '"Explique este desvio de 23% no EBITDA vs budget e sugira storytelling para o CFO"',
+      tools: ['bigquery', 'excel'],
+      prompt: 'Como usar o Claude Chat para interpretar desvios vs budget e construir storytelling financeiro?'
+    },
+    {
+      title: 'Redigir comentários executivos',
+      example: '"Escreva 3 bullets sobre o desempenho do mês, tom neutro, para o board pack"',
+      tools: ['notion', 'slack'],
+      prompt: 'Como o Claude Chat pode ajudar a redigir comentários executivos para relatórios financeiros?'
+    },
+    {
+      title: 'Pensar a lógica de um modelo',
+      example: '"Quais drivers devo usar para projetar receita 2026? Valida minha premissa de crescimento"',
+      tools: ['excel', 'bigquery'],
+      prompt: 'Como usar o Claude Chat para estruturar a lógica de modelos financeiros e validar premissas?'
+    },
+    {
+      title: 'Entender estrutura de dados',
+      example: '"Esse CSV tem problema? Quais colunas usar para calcular o net revenue?"',
+      tools: ['bigquery', 'python'],
+      prompt: 'Como o Claude Chat ajuda a entender e diagnosticar estrutura de dados financeiros?'
+    },
+    {
+      title: 'Revisar antes de enviar',
+      example: '"Revise este e-mail para o CFO: está claro? Falta algum dado importante?"',
+      tools: ['slack', 'notion'],
+      prompt: 'Como usar o Claude Chat para revisar comunicações financeiras antes de enviar ao C-Level?'
+    }
+  ],
+  cowork: [
+    {
+      title: 'Capturar dados da tela',
+      example: 'Lê planilha aberta no Excel e monta resumo executivo sem copiar e colar manualmente',
+      tools: ['excel', 'looker'],
+      prompt: 'Como o Cowork pode capturar e processar dados financeiros de planilhas abertas?'
+    },
+    {
+      title: 'Montar deck automático',
+      example: 'Abre PowerPoint, atualiza slides de resultado com dados do Excel e salva versão final',
+      tools: ['excel', 'notion'],
+      prompt: 'Como o Cowork automatiza a montagem de apresentações financeiras mensais?'
+    },
+    {
+      title: 'Extrair relatórios de sistemas',
+      example: 'Navega no Looker/SAP, aplica filtros corretos, baixa CSV e salva pasta de fechamento',
+      tools: ['looker', 'sap'],
+      prompt: 'Como o Cowork extrai relatórios de sistemas como SAP e Looker automaticamente?'
+    },
+    {
+      title: 'Sequência de fechamento mensal',
+      example: 'Executa checklist: abre sistemas, consolida abas, verifica totalizadores e envia por e-mail',
+      tools: ['excel', 'sap', 'slack'],
+      prompt: 'Como o Cowork automatiza a sequência de fechamento mensal de FP&A?'
+    },
+    {
+      title: 'Preencher planilha de modelo',
+      example: 'Cola dados do SAP direto no modelo Excel sem risco de erro manual de formatação',
+      tools: ['excel', 'sap'],
+      prompt: 'Como o Cowork preenche planilhas financeiras automaticamente a partir de sistemas fonte?'
+    }
+  ],
+  code: [
+    {
+      title: 'Pipeline BigQuery → dashboard',
+      example: 'Script que roda query no BQ, transforma, exporta JSON e atualiza GitHub Pages',
+      tools: ['bigquery', 'github', 'python'],
+      prompt: 'Como construir um pipeline completo do BigQuery até um dashboard HTML no GitHub com Claude Code?'
+    },
+    {
+      title: 'Automação via Verdi Flows',
+      example: 'Gera JSON do flow n8n: agenda query → transforma → posta KPIs no Slack às 6h',
+      tools: ['verdi', 'bigquery', 'slack'],
+      prompt: 'Como o Claude Code cria flows no Verdi (n8n do MELI) para automatizar rotinas de FP&A?'
+    },
+    {
+      title: 'Modelo financeiro em Python',
+      example: 'DCF, Monte Carlo, cenários de sensibilidade — código reutilizável e versionado no GitHub',
+      tools: ['python', 'github', 'excel'],
+      prompt: 'Como construir modelos financeiros robustos em Python com Claude Code?'
+    },
+    {
+      title: 'Relatório PDF agendado',
+      example: 'Job cron que gera PDF de P&L com gráficos, salva no Drive e envia por e-mail às 8h',
+      tools: ['python', 'bigquery', 'verdi'],
+      prompt: 'Como automatizar geração de relatórios PDF com Claude Code e GitHub Actions?'
+    },
+    {
+      title: 'Alerta de anomalia automático',
+      example: 'Monitora KPIs no BQ, detecta desvio >5% vs média e posta alerta no Slack em tempo real',
+      tools: ['bigquery', 'python', 'slack', 'verdi'],
+      prompt: 'Como criar alertas automáticos de anomalias financeiras com Claude Code e BigQuery?'
+    }
+  ]
+};
+
+const AREA_OVERRIDES = {
+  'acquiring': {
+    chat: [
+      { title: 'Analisar desvio de TPV vs budget', example: '"Explique queda de TPV em Point QR no Brasil — sazonalidade ou churn de merchants?"', tools: ['bigquery', 'excel'], prompt: 'Como analisar desvios de TPV e MDR Acquiring com Claude Chat?' },
+      { title: 'Storytelling de MDR para CFO', example: '"Construa narrativa sobre compressão de MDR no canal e-commerce para board pack"', tools: ['notion', 'slack'], prompt: 'Como construir storytelling de métricas Acquiring (TPV, MDR, Point) para executivos?' },
+      { title: 'Validar premissas de GMV off-marketplace', example: '"Minhas premissas de crescimento QR 2026 fazem sentido dado o contexto macro?"', tools: ['excel', 'bigquery'], prompt: 'Como validar premissas de projeção de TPV e volume Acquiring com Claude Chat?' },
+      { title: 'Interpretar relatório de churn de merchants', example: '"Esse CSV de churn de POS faz sentido? O que está causando a queda em SP?"', tools: ['bigquery', 'python'], prompt: 'Como usar Claude Chat para interpretar dados de churn de merchants Acquiring?' },
+      { title: 'Revisar comunicação para stakeholders', example: '"Esse update de resultado Acquiring para o GM está claro e completo?"', tools: ['slack', 'notion'], prompt: 'Como revisar comunicações de resultado Acquiring para stakeholders com Claude Chat?' }
+    ],
+    cowork: [
+      { title: 'Consolidar dados de TPV por canal', example: 'Abre planilha de TPV (Point, QR, Gateway, eCommerce) e monta visão consolidada por BU', tools: ['excel', 'looker'], prompt: 'Como consolidar dados de TPV por canal Acquiring com Cowork?' },
+      { title: 'Atualizar deck de resultado mensal', example: 'Preenche slides de TPV, MDR e market share no PowerPoint do Fintech Monthly Review', tools: ['excel', 'notion'], prompt: 'Como o Cowork monta o deck de resultado mensal Acquiring automaticamente?' },
+      { title: 'Baixar relatório de transações do Looker', example: 'Navega no Looker, aplica filtros de canal e período, exporta CSV de transações brutas', tools: ['looker', 'bigquery'], prompt: 'Como o Cowork extrai relatórios de transações Acquiring do Looker?' },
+      { title: 'Checklist de fechamento Acquiring', example: 'Executa sequência: verifica totais BQ vs contabilidade, sinaliza divergências, consolida aba', tools: ['excel', 'sap', 'bigquery'], prompt: 'Como automatizar o fechamento mensal Acquiring com Cowork?' },
+      { title: 'Preencher modelo de budget Acquiring', example: 'Cola premissas de TPV/MDR do Google Sheets no modelo Excel de budget sem erro manual', tools: ['excel', 'sap'], prompt: 'Como o Cowork preenche o modelo de budget Acquiring a partir de planilhas fonte?' }
+    ],
+    code: [
+      { title: 'Pipeline TPV · BigQuery → dashboard', example: 'Query BQ de TPV diário por canal → transforma → JSON → GitHub Pages atualizado a cada 6h', tools: ['bigquery', 'github', 'python'], prompt: 'Como construir pipeline de dashboard de TPV Acquiring do BigQuery até GitHub Pages?' },
+      { title: 'Flow Verdi: alerta de queda de TPV', example: 'Verdi monitora TPV por hora, detecta queda >10% vs D-1 e posta alerta no canal Slack Acquiring', tools: ['verdi', 'bigquery', 'slack'], prompt: 'Como criar alerta automático de queda de TPV Acquiring com Verdi Flows?' },
+      { title: 'Modelo de sensibilidade MDR em Python', example: 'Script que simula impacto de variação de MDR em diferentes mix de canais no EBITDA', tools: ['python', 'github', 'excel'], prompt: 'Como construir modelo de sensibilidade de MDR Acquiring em Python com Claude Code?' },
+      { title: 'Relatório mensal PDF automático', example: 'Job que gera PDF de P&L Acquiring com gráficos de TPV e MDR e envia por e-mail no D+1', tools: ['python', 'bigquery', 'verdi'], prompt: 'Como automatizar o relatório mensal Acquiring em PDF com Claude Code?' },
+      { title: 'Monitor de KPIs Acquiring em tempo real', example: 'Dashboard que puxa TPV, aprovação e fraude do BQ e atualiza a cada 15min no GitHub Pages', tools: ['bigquery', 'python', 'github', 'verdi'], prompt: 'Como criar monitor de KPIs Acquiring em tempo real com BigQuery e GitHub Pages?' }
+    ]
+  },
+  'opex': {
+    chat: [
+      { title: 'Analisar desvio de headcount', example: '"Explique porque HC ficou 8% acima do plano em Engineering — ramp up ou backfill?"', tools: ['bigquery', 'excel'], prompt: 'Como usar Claude Chat para analisar desvios de headcount vs plano em OPEX?' },
+      { title: 'Construir narrativa de G&A para board', example: '"Monte storytelling sobre crescimento de custos G&A com eficiência relativa à receita"', tools: ['notion', 'slack'], prompt: 'Como construir storytelling de G&A e OPEX para apresentações executivas com Claude Chat?' },
+      { title: 'Validar premissas de crescimento de custo', example: '"Minhas premissas de salários 2026 fazem sentido dado inflação e turnover histórico?"', tools: ['excel', 'bigquery'], prompt: 'Como validar premissas de custos e despesas OPEX com Claude Chat?' },
+      { title: 'Interpretar reporte de Workday', example: '"Esse relatório de HC do Workday está inconsistente? Qual campo usar para active headcount?"', tools: ['bigquery', 'python'], prompt: 'Como interpretar dados de headcount e HR com Claude Chat?' },
+      { title: 'Revisar budget submission', example: '"Esse budget de OPEX para o CFO está bem fundamentado? Falta alguma linha importante?"', tools: ['slack', 'notion'], prompt: 'Como revisar submissão de budget OPEX antes de apresentar ao CFO?' }
+    ],
+    cowork: [
+      { title: 'Consolidar planilhas de HC por área', example: 'Abre planilhas de cada VP, consolida HC real vs plano e formata visão executiva', tools: ['excel', 'looker'], prompt: 'Como consolidar dados de headcount de múltiplas áreas com Cowork?' },
+      { title: 'Atualizar slide de OPEX no deck mensal', example: 'Preenche gráficos de HC e cost by function no PowerPoint do Monthly Review automaticamente', tools: ['excel', 'notion'], prompt: 'Como automatizar atualização do slide de OPEX no deck mensal com Cowork?' },
+      { title: 'Extrair dados de HC do Workday', example: 'Navega no Workday, aplica filtros de BU e período, exporta reporte de headcount ativo', tools: ['looker', 'bigquery'], prompt: 'Como extrair dados de headcount do Workday com Cowork?' },
+      { title: 'Checar consistência de OPEX no fechamento', example: 'Compara OPEX do ERP vs modelo Excel, destaca divergências e monta sumário', tools: ['excel', 'sap', 'bigquery'], prompt: 'Como verificar consistência de OPEX entre sistemas com Cowork?' },
+      { title: 'Preencher template de budget de despesas', example: 'Cola dados de salários e benefícios do Workday no template de budget por cost center', tools: ['excel', 'sap'], prompt: 'Como o Cowork preenche templates de budget OPEX automaticamente?' }
+    ],
+    code: [
+      { title: 'Dashboard de HC · BQ → GitHub Pages', example: 'Query de HC ativo por área e mês → JSON → dashboard com plano vs realizado atualizado diário', tools: ['bigquery', 'github', 'python'], prompt: 'Como construir dashboard de headcount com BigQuery e GitHub Pages via Claude Code?' },
+      { title: 'Verdi Flow: alerta de desvio de custo', example: 'Verdi monitora OPEX semanal no BQ e avisa no Slack quando desvio vs budget superar 5%', tools: ['verdi', 'bigquery', 'slack'], prompt: 'Como criar alerta automático de desvio de OPEX com Verdi Flows?' },
+      { title: 'Modelo de projeção de salários em Python', example: 'Script que simula impacto de reajuste e turnover no total de pessoal por cenário', tools: ['python', 'github', 'excel'], prompt: 'Como construir modelo de projeção de folha salarial em Python com Claude Code?' },
+      { title: 'Relatório de OPEX por área em PDF', example: 'Job automatizado que gera PDF de gastos por função com ranking de desvios no D+2', tools: ['python', 'bigquery', 'verdi'], prompt: 'Como automatizar relatório de OPEX por área em PDF com Claude Code?' },
+      { title: 'Monitor de headcount em tempo real', example: 'Dashboard que puxa HC ativo e admissões/demissões do BQ e atualiza diariamente', tools: ['bigquery', 'python', 'github', 'verdi'], prompt: 'Como criar monitor de headcount em tempo real com BigQuery e Claude Code?' }
+    ]
+  }
+};
+
+const TOOL_CHIPS = {
+  bigquery: '<span class="tool-chip chip-bq">BigQuery</span>',
+  verdi: '<span class="tool-chip chip-verdi">Verdi Flows</span>',
+  github: '<span class="tool-chip chip-gh">GitHub</span>',
+  python: '<span class="tool-chip chip-python">Python</span>',
+  excel: '<span class="tool-chip chip-excel">Excel/Sheets</span>',
+  sql: '<span class="tool-chip chip-sql">SQL</span>',
+  slack: '<span class="tool-chip chip-slack">Slack</span>',
+  looker: '<span class="tool-chip chip-looker">Looker</span>',
+  notion: '<span class="tool-chip chip-notion">Notion</span>',
+  sap: '<span class="tool-chip chip-bq">SAP</span>'
+};
+
+let currentArea = null;
+let currentModalContext = {};
+
+function selectArea(el) {
+  document.querySelectorAll('.area-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  currentArea = el.dataset.area;
+  const info = AREAS[currentArea];
+  const banner = document.getElementById('areaBanner');
+  banner.classList.add('show');
+  document.getElementById('bannerIcon').textContent = info.icon;
+  document.getElementById('bannerText').innerHTML = `<strong>${info.label}</strong> — ${info.desc}`;
+  banner.style.background = info.color;
+  renderCases();
+}
+
+function renderCases() {
+  const overrides = AREA_OVERRIDES[currentArea] || {};
+  ['chat', 'cowork', 'code'].forEach(tool => {
+    const cases = overrides[tool] || BASE_CASES[tool];
+    const container = document.getElementById(`${tool}-cases`);
+    container.innerHTML = cases.map(c => `
+      <div class="uc-card uc-card-${tool}" onclick='openModal(${JSON.stringify(c)}, "${tool}")'>
+        <div class="uc-title">${c.title}</div>
+        <div class="uc-example">${c.example}</div>
+        <div class="uc-tools">${c.tools.map(t => TOOL_CHIPS[t] || '').join('')}</div>
+        <span class="uc-arrow">→</span>
+      </div>
+    `).join('');
+  });
+}
+
+function openModal(card, toolType) {
+  currentModalContext = { card, toolType };
+  const overlay = document.getElementById('modalOverlay');
+  const modal = document.getElementById('modal');
+  const tagColors = { chat: 'tag-chat', cowork: 'tag-cowork', code: 'tag-code' };
+  const tagLabels = { chat: '💬 Claude Chat', cowork: '🖥 Claude Cowork', code: '⌨ Claude Code' };
+
+  modal.className = `modal modal-${toolType}`;
+  document.getElementById('modalTag').textContent = tagLabels[toolType];
+  document.getElementById('modalTag').className = `modal-tag ${tagColors[toolType]}`;
+  document.getElementById('modalTitle').textContent = card.title;
+
+  const areaInfo = currentArea ? AREAS[currentArea] : null;
+  const contextText = areaInfo
+    ? `Área: <strong>${areaInfo.label}</strong> · ${areaInfo.desc}`
+    : 'Selecione sua área acima para ver exemplos ainda mais personalizados.';
+  document.getElementById('modalContextText').innerHTML = contextText;
+  document.getElementById('aiSuggestions').innerHTML = '';
+  document.getElementById('aiResponse').innerHTML = `<div class="ai-loading"><div class="ai-dots"><span></span><span></span><span></span></div><span>Gerando orientações para o seu contexto...</span></div>`;
+
+  overlay.classList.add('open');
+  fetchAIResponse(card, toolType, areaInfo);
+}
+
+async function fetchAIResponse(card, toolType, areaInfo) {
+  const areaCtx = areaInfo
+    ? `A pessoa é FP&A de ${areaInfo.label} no Mercado Livre/Mercado Pago. Contexto: ${areaInfo.desc}.`
+    : 'A pessoa é analista de FP&A no Mercado Livre ou Mercado Pago.';
+
+  const toolName = { chat: 'Claude Chat (conversa via browser/app)', cowork: 'Claude Cowork (agente que opera o desktop)', code: 'Claude Code (terminal de código agentico)' }[toolType];
+
+  const tools = (card.tools || []).map(t => ({
+    bigquery: 'Google BigQuery (data warehouse do MELI)',
+    verdi: 'Verdi Flows (ferramenta de automação no-code do MELI, baseada em n8n)',
+    github: 'GitHub (hospedagem de código e dashboards via GitHub Pages)',
+    python: 'Python com pandas/numpy',
+    excel: 'Excel / Google Sheets',
+    slack: 'Slack (comunicação interna MELI)',
+    looker: 'Looker / Metabase (BI do MELI)',
+    notion: 'Notion',
+    sap: 'SAP / ERP corporativo',
+    sql: 'SQL'
+  }[t] || t)).join(', ');
+
+  const prompt = `${areaCtx}
+
+Ela quer saber como usar **${toolName}** para: **${card.title}**.
+
+Exemplo de prompt/ação: "${card.example}"
+
+Ferramentas integradas nesse caso: ${tools}
+
+Responda em português, com markdown simples. Forneça:
+1. **Por que usar ${toolType === 'chat' ? 'Chat' : toolType === 'cowork' ? 'Cowork' : 'Code'} aqui** (2 linhas)
+2. **Como fazer na prática** (3-4 passos concretos, adaptados para o contexto MELI)
+3. **Exemplo de prompt/comando real** para executar essa tarefa
+4. **Dica pro** — algo específico para FP&A de ${areaInfo ? areaInfo.label : 'Mercado Livre'}
+
+Seja direto, prático e específico para o contexto de FP&A do MELI. Máximo 250 palavras.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || 'Não foi possível gerar a resposta.';
+    document.getElementById('aiResponse').innerHTML = markdownToHtml(text);
+
+    const suggestions = getSuggestions(toolType, card, areaInfo);
+    document.getElementById('aiSuggestions').innerHTML = suggestions.map(s =>
+      `<button class="ai-sugg-btn" onclick='openModal(${JSON.stringify({...currentModalContext.card, title: s.title, example: s.example, tools: s.tools || currentModalContext.card.tools, prompt: s.prompt || ""})}, "${toolType}")'>${s.label}</button>`
+    ).join('');
+  } catch (e) {
+    document.getElementById('aiResponse').innerHTML = '<p>Erro ao conectar com a API. Verifique a conexão.</p>';
+  }
+}
+
+function getSuggestions(toolType, card, areaInfo) {
+  const base = [
+    { label: 'Ver exemplo com BigQuery', title: 'Pipeline com BigQuery', example: 'Query SQL → transformação → exportação', tools: ['bigquery', 'python'], prompt: '' },
+    { label: 'Como automatizar com Verdi', title: 'Automatizar com Verdi Flows', example: 'Flow agendado para executar rotina automaticamente', tools: ['verdi', 'slack'], prompt: '' },
+    { label: 'Publicar no GitHub Pages', title: 'Dashboard no GitHub Pages', example: 'HTML + JSON publicado no GitHub com atualização automática', tools: ['github', 'python'], prompt: '' }
+  ];
+  if (toolType === 'chat') return [
+    { label: 'Como estruturar o prompt?', title: 'Melhores práticas de prompt FP&A', example: '"Seja o meu analista sênior e avalie..."', tools: card.tools, prompt: '' },
+    { label: 'Exemplos para o CFO', title: 'Comunicação para C-Level', example: 'Tom executivo, foco em decisão e impacto financeiro', tools: ['notion', 'slack'], prompt: '' }
+  ];
+  if (toolType === 'cowork') return [
+    { label: 'Integrar com Excel aberto', title: 'Cowork + Excel ao vivo', example: 'Lê aba ativa e consolida automaticamente', tools: ['excel', 'looker'], prompt: '' },
+    { label: 'Baixar dados do Looker', title: 'Cowork extrai do Looker', example: 'Navega, filtra e exporta relatório sem intervenção', tools: ['looker', 'bigquery'], prompt: '' }
+  ];
+  return base;
+}
+
+function markdownToHtml(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm, '<h4 style="margin:12px 0 4px;font-size:13px;font-weight:600">$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3 style="margin:14px 0 6px;font-size:14px;font-weight:700">$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2 style="margin:16px 0 8px;font-size:15px;font-weight:700">$1</h2>')
+    .replace(/^\d+\. (.+)$/gm, '<li style="margin-bottom:6px">$1</li>')
+    .replace(/^- (.+)$/gm, '<li style="margin-bottom:4px">$1</li>')
+    .replace(/(<li.*<\/li>\n?)+/g, m => `<ul style="padding-left:18px;margin:8px 0">${m}</ul>`)
+    .replace(/\n\n/g, '</p><p style="margin-top:10px">')
+    .replace(/\n/g, '<br>');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModalDirect();
+}
+
+function closeModalDirect() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDirect(); });
+
+// Initial render
+renderCases();
+</script>
+</body>
+</html>
