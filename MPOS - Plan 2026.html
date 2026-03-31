@@ -1954,10 +1954,6 @@
             // Volume paragraph with canal breakdown
             text += `<p class="mt-2">▸ <strong>Efeito Volume</strong>: ${colorSpan(volEffect, `${signFmt(volEffect)}${formatBRL(volEffect)}`)} `;
             text += `(${signFmt(volPct)}${formatBRPct(volPct)} da base) — volume passou de <strong>${formatBRNum(plA.totalQty)}</strong> para <strong>${formatBRNum(plB.totalQty)}</strong> un.`;
-            if (volDrivers.length > 0) {
-                text += ` Principais canais: `;
-                text += volDrivers.map(c => `<strong>${c.name}</strong> ${colorSpan(c.effect, `${signFmt(c.effect)}${formatBRL(c.effect)}`)}`).join(', ') + '.';
-            }
             text += `</p>`;
 
             // Mix paragraph with unit variation
