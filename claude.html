@@ -643,12 +643,6 @@
     <span class="header-title">FP&A Intelligence</span>
   </div>
   <div class="header-badge">Beta</div>
-  <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-    <input id="apiKeyInput" type="password" placeholder="sk-ant-..." title="Anthropic API Key"
-      style="font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid #ccc;width:200px;background:#fff;color:#333"
-      oninput="localStorage.setItem('claude_api_key',this.value)">
-    <label style="font-size:11px;color:#333;white-space:nowrap">API Key</label>
-  </div>
 </header>
 
 <!-- AREA BANNER -->
@@ -1070,72 +1064,76 @@ function openModal(card, toolType) {
 }
 
 async function fetchAIResponse(card, toolType, areaInfo) {
-  const areaCtx = areaInfo
-    ? `A pessoa é FP&A de ${areaInfo.label} no Mercado Livre/Mercado Pago. Contexto: ${areaInfo.desc}.`
-    : 'A pessoa é analista de FP&A no Mercado Livre ou Mercado Pago.';
+  await new Promise(r => setTimeout(r, 600));
+  const text = generateStaticResponse(card, toolType, areaInfo);
+  document.getElementById('aiResponse').innerHTML = markdownToHtml(text);
+  const suggestions = getSuggestions(toolType, card, areaInfo);
+  document.getElementById('aiSuggestions').innerHTML = suggestions.map(s =>
+    `<button class="ai-sugg-btn" onclick='openModal(${JSON.stringify({...currentModalContext.card, title: s.title, example: s.example, tools: s.tools || currentModalContext.card.tools, prompt: s.prompt || ""})}, "${toolType}")'>${s.label}</button>`
+  ).join('');
+}
 
-  const toolName = { chat: 'Claude Chat (conversa via browser/app)', cowork: 'Claude Cowork (agente que opera o desktop)', code: 'Claude Code (terminal de código agentico)' }[toolType];
+function generateStaticResponse(card, toolType, areaInfo) {
+  const areaLabel = areaInfo ? areaInfo.label : 'FP&A MELI';
+  const toolNames = { bigquery:'BigQuery', verdi:'Verdi Flows', github:'GitHub', python:'Python', excel:'Excel/Sheets', slack:'Slack', looker:'Looker', notion:'Notion', sap:'SAP', sql:'SQL' };
+  const toolList = (card.tools || []).map(t => toolNames[t] || t).join(', ');
 
-  const tools = (card.tools || []).map(t => ({
-    bigquery: 'Google BigQuery (data warehouse do MELI)',
-    verdi: 'Verdi Flows (ferramenta de automação no-code do MELI, baseada em n8n)',
-    github: 'GitHub (hospedagem de código e dashboards via GitHub Pages)',
-    python: 'Python com pandas/numpy',
-    excel: 'Excel / Google Sheets',
-    slack: 'Slack (comunicação interna MELI)',
-    looker: 'Looker / Metabase (BI do MELI)',
-    notion: 'Notion',
-    sap: 'SAP / ERP corporativo',
-    sql: 'SQL'
-  }[t] || t)).join(', ');
+  let s1, s2, s3;
 
-  const prompt = `${areaCtx}
-
-Ela quer saber como usar **${toolName}** para: **${card.title}**.
-
-Exemplo de prompt/ação: "${card.example}"
-
-Ferramentas integradas nesse caso: ${tools}
-
-Responda em português, com markdown simples. Forneça:
-1. **Por que usar ${toolType === 'chat' ? 'Chat' : toolType === 'cowork' ? 'Cowork' : 'Code'} aqui** (2 linhas)
-2. **Como fazer na prática** (3-4 passos concretos, adaptados para o contexto MELI)
-3. **Exemplo de prompt/comando real** para executar essa tarefa
-4. **Dica pro** — algo específico para FP&A de ${areaInfo ? areaInfo.label : 'Mercado Livre'}
-
-Seja direto, prático e específico para o contexto de FP&A do MELI. Máximo 250 palavras.`;
-
-  try {
-    const apiKey = document.getElementById('apiKeyInput').value || localStorage.getItem('claude_api_key') || '';
-    if (!apiKey) {
-      document.getElementById('aiResponse').innerHTML = '<p>Insira sua <strong>Anthropic API Key</strong> no campo no topo da página.</p>';
-      return;
-    }
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.find(b => b.type === 'text')?.text || 'Não foi possível gerar a resposta.';
-    document.getElementById('aiResponse').innerHTML = markdownToHtml(text);
-
-    const suggestions = getSuggestions(toolType, card, areaInfo);
-    document.getElementById('aiSuggestions').innerHTML = suggestions.map(s =>
-      `<button class="ai-sugg-btn" onclick='openModal(${JSON.stringify({...currentModalContext.card, title: s.title, example: s.example, tools: s.tools || currentModalContext.card.tools, prompt: s.prompt || ""})}, "${toolType}")'>${s.label}</button>`
-    ).join('');
-  } catch (e) {
-    document.getElementById('aiResponse').innerHTML = '<p>Erro ao conectar com a API. Verifique a conexão.</p>';
+  if (toolType === 'chat') {
+    s1 = `O **Claude Chat** funciona como analista sênior de FP&A disponível para conversa direta no browser ou app. Para **${card.title}**, você descreve o contexto ou cola os dados e recebe análise, narrativa ou validação pronta para usar — sem copiar e colar entre ferramentas.`;
+    s2 = `1. Abra o Claude no browser (claude.ai) ou app desktop e inicie uma nova conversa\n2. Cole os dados relevantes (tabela, trecho de CSV, texto do relatório) ou descreva o cenário com números\n3. Use o prompt abaixo e itere pedindo ajustes de tom, formato ou nível de detalhe\n4. Para outputs recorrentes, salve o prompt como template no seu Notion ou pasta de fechamento`;
+    s3 = `**Prompt sugerido:**\n\`\`\`\n${card.example}\n\`\`\`\n\n**Refinamentos úteis após a resposta:**\n- "Reformate em 3 bullets executivos"\n- "Adicione comparação vs período anterior"\n- "Tom mais direto, máximo 80 palavras para o CFO"`;
+  } else if (toolType === 'cowork') {
+    s1 = `O **Claude Cowork** opera seu desktop como agente autônomo — vê a tela, clica, preenche filtros e exporta arquivos sem intervenção manual. Para **${card.title}**, o agente executa cada passo na interface dos sistemas (${toolList}) exatamente como você faria, mas de forma automática e sem risco de erro de digitação.`;
+    s2 = `1. Abra o Claude Cowork e descreva o objetivo com contexto preciso (período, BU, filtros, nome do arquivo de destino)\n2. O agente abre os sistemas necessários (${toolList}), aplica os filtros e captura os dados\n3. Acompanhe a execução na tela — intervenha apenas se precisar ajustar algum filtro\n4. Valide os totalizadores no sistema fonte antes de usar o output em relatórios`;
+    s3 = `**Instrução para o agente:**\n\`\`\`\n${card.example}\n\`\`\`\n\n**Dicas de instrução eficaz:**\n- Informe período exato (ex: "março 2026, D+0 até D+20")\n- Especifique o nome da BU/área como aparece no sistema\n- Diga o formato de saída: "salva como CSV em /Fechamento/Março"`;
+  } else {
+    s1 = `O **Claude Code** escreve, testa e itera scripts no terminal para construir pipelines e automações robustas. Para **${card.title}**, ele gera código funcional usando ${toolList}, que pode ser agendado, versionado no GitHub e reutilizado pela equipe sem depender de ninguém.`;
+    s2 = `1. No terminal com Claude Code ativo, descreva o pipeline: origem dos dados, transformações necessárias e destino final\n2. O Claude escreve o script, executa no terminal, lê os erros e corrige automaticamente até funcionar\n3. Peça para adicionar tratamento de erro, logs de execução e parâmetros configuráveis\n4. Versione no GitHub e configure agendamento via GitHub Actions ou Verdi Flows`;
+    s3 = `**Instrução inicial:**\n\`\`\`\n${card.example}\n\`\`\`\n\n**Próximos comandos sugeridos:**\n- "Adicione try/except com log de erro em arquivo"\n- "Agende para rodar diariamente às 7h com GitHub Actions"\n- "Exporte resultado como JSON para o dashboard no GitHub Pages"`;
   }
+
+  const s3Label = { chat: 'Prompt sugerido', cowork: 'Instrução para o agente', code: 'Instrução de código' }[toolType];
+  const tip = getAreaTip(toolType, areaInfo);
+
+  return `## 1. Por que usar ${toolType === 'chat' ? 'Chat' : toolType === 'cowork' ? 'Cowork' : 'Code'} aqui\n${s1}\n\n## 2. Como fazer na prática\n${s2}\n\n## 3. ${s3Label}\n${s3}\n\n## 4. Dica pro — ${areaLabel}\n${tip}`;
+}
+
+function getAreaTip(toolType, areaInfo) {
+  const area = areaInfo ? areaInfo.label : '';
+  const tips = {
+    chat: {
+      'Acquiring': 'Sempre informe o canal no prompt (Point, QR, Gateway, eCommerce) — o Claude separa drivers de crescimento por canal e identifica onde está o desvio principal sem você precisar filtrar.',
+      'OPEX': 'Inclua o contexto de HC ativo vs budget no prompt — o Claude consegue separar automaticamente variância de preço (salário médio) de variância de volume (headcount).',
+      'Fintech': 'Especifique o produto no prompt (crédito, conta, rendimento, seguros) — as dinâmicas de margem são muito diferentes entre produtos e o Claude ajusta a análise conforme o contexto.',
+      'Mercado Livre': 'Especifique se quer breakdown por país (Brasil, Argentina, México) ou consolidado — o Claude formata a análise diferente dependendo do escopo geográfico que você informar.',
+      'Legal Entity': 'Sempre informe a entidade legal e o padrão contábil (IFRS vs local GAAP) — as diferenças de reconhecimento entre padrões são relevantes para contextualizar qualquer variação.'
+    },
+    cowork: {
+      'Acquiring': 'Configure o Cowork para salvar CSVs com timestamp no nome do arquivo (ex: `tpv_acquiring_2026-03-31.csv`). No fechamento, isso evita sobrescrever versões e facilita comparar D-1 vs D-7.',
+      'OPEX': 'No Workday, o campo correto para HC ativo é `Employee_Status = "Active"` com `Worker_Type IN ("Employee","Contingent")`. Instrua o Cowork com esses filtros exatos para evitar inconsistência com o report oficial.',
+      'Fintech': 'No Looker da Fintech, os dashboards de crédito e seguros ficam em views separadas. Instrua o Cowork a navegar pelo nome exato do dashboard para não capturar dados do produto errado.',
+      'Mercado Livre': 'Para extrações do Looker de MeLi, instrua o Cowork a usar o filtro `Business_Unit = "Marketplace"` para isolar o core de outras verticais como MELI Delivery ou Ads.',
+      'Legal Entity': 'No SAP, diferentes entidades têm company codes distintos. Instrua o Cowork com o company code exato da entidade — confundir gera dados de CPA errados que levam horas para rastrear.'
+    },
+    code: {
+      'Acquiring': 'Use a tabela `acquiring.transactions_daily` no BigQuery particionada por `dt`. Sempre filtre `status = "approved"` para excluir chargebacks do TPV bruto — erro comum que distorce o resultado.',
+      'OPEX': 'A tabela `hr.headcount_daily` no BigQuery tem HC por cost center com histórico diário — ideal para calcular custo por área no fechamento. Use `pandas` para simular cenários de reajuste em segundos.',
+      'Fintech': 'A tabela `fintech.p_and_l_daily` no BigQuery consolida todos os produtos Fintech — útil para análises cross-product. Para análises por produto use `credit.*` ou `insurance.*` conforme o escopo.',
+      'Mercado Livre': 'Para dashboards de MeLi no GitHub Pages, use o Google Sheets como backend via API pública — mais acessível que BigQuery para updates manuais e funciona bem em reports mensais da equipe.',
+      'Legal Entity': 'Use `accounting.gl_entries` filtrada por `company_code` no BigQuery. Para reconciliações, a tabela `accounting.trial_balance_monthly` já está pré-consolidada por entidade — economiza horas de join.'
+    }
+  };
+  const defaults = {
+    chat: 'Itere na mesma conversa sem abrir uma nova thread — o Claude mantém o contexto financeiro completo. Peça reformatações, novos ângulos e ajustes de tom sem precisar reexplicar o contexto.',
+    cowork: 'Sempre valide os totalizadores no sistema fonte após a execução do Cowork antes de usar o output em relatórios. Para tarefas críticas de fechamento, rode duas vezes e compare os resultados.',
+    code: 'Sempre peça ao Claude Code para adicionar `try/except` com log em arquivo e um parâmetro de data configurável. Scripts sem tratamento de erro silenciam falhas e geram dados incompletos no fechamento.'
+  };
+  for (const key of Object.keys(tips[toolType])) {
+    if (area.includes(key)) return tips[toolType][key];
+  }
+  return defaults[toolType];
 }
 
 function getSuggestions(toolType, card, areaInfo) {
@@ -1182,9 +1180,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDi
 // Initial render
 renderCases();
 
-// Restore saved API key
-const savedKey = localStorage.getItem('claude_api_key');
-if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
 </script>
 </body>
 </html>
