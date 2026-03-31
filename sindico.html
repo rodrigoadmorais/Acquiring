@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rodrigo Antunes de Morais — Candidato a Síndico</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #1a3a5c;
+      --accent:  #2e86c1;
+      --gold:    #d4a017;
+      --light:   #f4f7fb;
+      --text:    #2c3e50;
+      --muted:   #6b7c93;
+      --white:   #ffffff;
+      --card-shadow: 0 4px 24px rgba(26,58,92,0.10);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--light);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    /* ── HERO ──────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #0d2340 100%);
+      color: var(--white);
+      padding: 64px 24px 56px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+    }
+    .avatar-ring {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      border: 4px solid var(--gold);
+      background: linear-gradient(135deg, var(--accent), #5dade2);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 42px;
+      position: relative; z-index: 1;
+    }
+    .hero h1 {
+      font-size: clamp(24px, 4vw, 38px);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      position: relative; z-index: 1;
+    }
+    .hero .tagline {
+      font-size: 16px;
+      color: #a8c8e8;
+      margin-bottom: 6px;
+      position: relative; z-index: 1;
+    }
+    .hero .role-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 18px;
+      border-radius: 20px;
+      margin-top: 16px;
+      position: relative; z-index: 1;
+    }
+
+    /* ── CONTAINER ─────────────────────────────────────── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+    }
+
+    /* ── SECTION TITLES ────────────────────────────────── */
+    .section { margin-top: 44px; }
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+    }
+    .section-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 20px; font-weight: 700;
+      color: var(--primary);
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 2px;
+    }
+
+    /* ── CARDS ──────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 24px 28px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 16px;
+    }
+    .card-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 580px) { .card-row { grid-template-columns: 1fr; } }
+
+    /* ── HIGHLIGHT BOX ─────────────────────────────────── */
+    .highlight {
+      background: linear-gradient(135deg, #eaf4fb, #d6eaf8);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 10px 10px 0;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+    }
+    .highlight p { color: var(--text); font-size: 15px; }
+
+    /* ── PROPOSAL BOX ──────────────────────────────────── */
+    .proposal-box {
+      background: linear-gradient(135deg, #fef9e7, #fdebd0);
+      border: 2px solid var(--gold);
+      border-radius: 12px;
+      padding: 28px 32px;
+      text-align: center;
+    }
+    .proposal-box h3 {
+      color: #8b6914;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .proposal-box p { font-size: 15px; color: #6b5011; }
+    .proposal-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 5px 16px;
+      border-radius: 20px;
+      margin-top: 14px;
+    }
+
+    /* ── EXPERIENCE ITEM ───────────────────────────────── */
+    .exp-item { margin-bottom: 20px; }
+    .exp-item:last-child { margin-bottom: 0; }
+    .exp-header {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .exp-role { font-weight: 700; font-size: 15px; color: var(--primary); }
+    .exp-org  { font-weight: 600; font-size: 14px; color: var(--accent); }
+    .exp-date {
+      font-size: 12px; color: var(--muted);
+      background: #eef2f7; padding: 3px 10px;
+      border-radius: 12px; white-space: nowrap;
+    }
+    .exp-desc { font-size: 14px; color: var(--text); margin-top: 6px; }
+    .exp-divider { border: none; border-top: 1px solid #e8edf3; margin: 20px 0; }
+
+    /* ── PILLS ──────────────────────────────────────────── */
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .pill {
+      background: #eef2f7;
+      color: var(--primary);
+      font-size: 13px; font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+    }
+    .pill.accent {
+      background: var(--accent);
+      color: var(--white);
+    }
+
+    /* ── METRICS ROW ───────────────────────────────────── */
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 500px) { .metrics { grid-template-columns: 1fr; } }
+    .metric-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 22px 16px;
+      text-align: center;
+      box-shadow: var(--card-shadow);
+      border-top: 3px solid var(--accent);
+    }
+    .metric-card.gold { border-top-color: var(--gold); }
+    .metric-num {
+      font-size: 32px; font-weight: 800;
+      color: var(--primary); line-height: 1;
+    }
+    .metric-label { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .footer {
+      background: var(--primary);
+      color: #a8c8e8;
+      text-align: center;
+      padding: 28px 20px;
+      font-size: 13px;
+    }
+    .footer strong { color: var(--white); }
+
+    /* ── CTA ────────────────────────────────────────────── */
+    .cta-section {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 14px;
+      padding: 32px 28px;
+      text-align: center;
+      color: var(--white);
+      margin-top: 44px;
+    }
+    .cta-section h3 { font-size: 20px; margin-bottom: 8px; }
+    .cta-section p  { font-size: 14px; color: #c8dff0; margin-bottom: 18px; }
+    .cta-btn {
+      display: inline-block;
+      background: var(--gold);
+      color: #1a1a1a;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 28px;
+      border-radius: 25px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="avatar-ring">🏢</div>
+  <h1>Rodrigo Antunes de Morais</h1>
+  <p class="tagline">Coordenador Sênior FP&A · MBA USP/Esalq · Mercado Livre</p>
+  <p class="tagline" style="margin-top:4px;">Trilíngue (PT · EN · ES) &nbsp;|&nbsp; PCD</p>
+  <span class="role-badge">Candidato a Síndico</span>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+
+  <!-- MÉTRICAS RÁPIDAS -->
+  <div class="section">
+    <div class="metrics">
+      <div class="metric-card gold">
+        <div class="metric-num">8+</div>
+        <div class="metric-label">Anos em gestão de condomínio anterior</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num">Desde<br><span style="font-size:18px">a inauguração</span></div>
+        <div class="metric-label">Conselheiro no condomínio atual</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num">100%</div>
+        <div class="metric-label">Remuneração atrelada à satisfação dos moradores</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSTA CENTRAL -->
+  <div class="section">
+    <div class="proposal-box">
+      <h3>⭐ Proposta Principal para a 1ª Assembleia</h3>
+      <p>
+        A remuneração do síndico será <strong>variável e diretamente vinculada à pesquisa de satisfação dos moradores</strong>.
+        Quanto melhor a avaliação coletiva, maior a recompensa — alinhando os interesses do síndico
+        aos interesses de <em>todos</em> os condôminos.
+      </p>
+      <span class="proposal-badge">Transparência · Meritocracia · Confiança</span>
+    </div>
+  </div>
+
+  <!-- POR QUE SOU O CANDIDATO IDEAL -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">✅</div>
+      <span class="section-title">Por Que Sou o Candidato Ideal</span>
+    </div>
+
+    <div class="highlight">
+      <p><strong>Condomínio em implantação exige perfil diferenciado.</strong> Nos primeiros anos, as demandas são intensas, os processos precisam ser construídos do zero e a relação com os moradores define o tom de toda a gestão futura. Tenho exatamente esse perfil.</p>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <div style="font-size:24px;margin-bottom:8px">⚡</div>
+        <strong>Agilidade nas Demandas</strong>
+        <p style="font-size:14px;margin-top:6px;color:var(--muted)">
+          Experiência executiva em ambiente de alta demanda (Mercado Livre) me preparou para priorizar, escalar soluções e dar respostas rápidas sem perder a qualidade.
+        </p>
+      </div>
+      <div class="card">
+        <div style="font-size:24px;margin-bottom:8px">👂</div>
+        <strong>Escuta Ativa dos Moradores</strong>
+        <p style="font-size:14px;margin-top:6px;color:var(--muted)">
+          Acredito que um bom síndico é canal, não obstáculo. Cada reclamação é dado, cada sugestão é oportunidade de melhoria para toda a comunidade.
+        </p>
+      </div>
+      <div class="card">
+        <div style="font-size:24px;margin-bottom:8px">🔧</div>
+        <strong>Adaptação e Implantação</strong>
+        <p style="font-size:14px;margin-top:6px;color:var(--muted)">
+          Já vivi a fase de implantação de condomínio como conselheiro. Sei quais armadilhas evitar, quais fornecedores cobrar e como acelerar a normalização dos serviços.
+        </p>
+      </div>
+      <div class="card">
+        <div style="font-size:24px;margin-bottom:8px">📊</div>
+        <strong>Gestão Financeira Rigorosa</strong>
+        <p style="font-size:14px;margin-top:6px;color:var(--muted)">
+          FP&A (Financial Planning & Analysis) é minha especialidade profissional. Orçamento, fluxo de caixa, fundo de reserva e prestação de contas serão sempre claros e auditáveis.
+        </p>
+      </div>
+      <div class="card">
+        <div style="font-size:24px;margin-bottom:8px">🤝</div>
+        <strong>Comunicação Transparente</strong>
+        <p style="font-size:14px;margin-top:6px;color:var(--muted)">
+          Trilíngue (português, inglês e espanhol), comunicativo e treinado para apresentar informações complexas de forma simples e acessível a todos.
+        </p>
+      </div>
+      <div class="card">
+        <div style="font-size:24px;margin-bottom:8px">🏅</div>
+        <strong>Comprometimento Comprovado</strong>
+        <p style="font-size:14px;margin-top:6px;color:var(--muted)">
+          Minha candidatura não é espontânea — é a evolução natural de quem esteve presente desde o início, como conselheiro, acompanhando cada etapa do condomínio.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPERIÊNCIA EM CONDOMÍNIO -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🏢</div>
+      <span class="section-title">Experiência em Gestão Condominial</span>
+    </div>
+
+    <div class="card">
+      <div class="exp-item">
+        <div class="exp-header">
+          <div>
+            <div class="exp-role">Conselheiro de Condomínio</div>
+            <div class="exp-org">Condomínio Atual — desde a inauguração</div>
+          </div>
+          <span class="exp-date">Inauguração → Presente</span>
+        </div>
+        <p class="exp-desc">
+          Atuação como conselheiro desde a abertura do condomínio, acompanhando a fase mais crítica: implantação de sistemas, definição de regras, seleção de fornecedores e construção da identidade da comunidade. Participação ativa nas assembleias, fiscalização das contas e suporte à administração.
+        </p>
+      </div>
+
+      <hr class="exp-divider">
+
+      <div class="exp-item">
+        <div class="exp-header">
+          <div>
+            <div class="exp-role">Membro da Gestão Condominial</div>
+            <div class="exp-org">Condomínio Anterior</div>
+          </div>
+          <span class="exp-date">8 anos</span>
+        </div>
+        <p class="exp-desc">
+          Oito anos de participação direta na administração de outro condomínio — gestão de contratos de manutenção, acompanhamento de obras, controle orçamentário, mediação de conflitos entre moradores e relação com a administradora. Vivência completa do ciclo de gestão condominial.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRAJETÓRIA PROFISSIONAL -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">💼</div>
+      <span class="section-title">Trajetória Profissional</span>
+    </div>
+
+    <div class="card">
+      <div class="exp-item">
+        <div class="exp-header">
+          <div>
+            <div class="exp-role">Coordenador Sênior de FP&A</div>
+            <div class="exp-org">Mercado Livre</div>
+          </div>
+          <span class="exp-date">Atual</span>
+        </div>
+        <p class="exp-desc">
+          Liderança em planejamento financeiro e análise estratégica em uma das maiores empresas de tecnologia da América Latina. Gestão de orçamentos de grande escala, construção de modelos financeiros e comunicação de resultados para stakeholders executivos. Ambiente de alta performance, ritmo acelerado e foco em resultados.
+        </p>
+        <div class="pills">
+          <span class="pill">FP&A</span>
+          <span class="pill">Planejamento Orçamentário</span>
+          <span class="pill">Análise Financeira</span>
+          <span class="pill">Gestão de Indicadores</span>
+          <span class="pill">Relatórios Executivos</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMAÇÃO -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🎓</div>
+      <span class="section-title">Formação Acadêmica</span>
+    </div>
+
+    <div class="card">
+      <div class="exp-header">
+        <div>
+          <div class="exp-role">MBA</div>
+          <div class="exp-org">USP / Esalq — Universidade de São Paulo</div>
+        </div>
+      </div>
+      <p class="exp-desc" style="margin-top:8px">
+        Uma das instituições de maior prestígio do Brasil. Formação em gestão com foco analítico, estratégico e de liderança — habilidades diretamente transferíveis para a administração condominial.
+      </p>
+    </div>
+  </div>
+
+  <!-- COMPETÊNCIAS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🛠</div>
+      <span class="section-title">Competências Aplicadas ao Condomínio</span>
+    </div>
+    <div class="card">
+      <div class="pills">
+        <span class="pill accent">Gestão Financeira</span>
+        <span class="pill accent">Controle Orçamentário</span>
+        <span class="pill accent">Gestão de Fornecedores</span>
+        <span class="pill accent">Mediação de Conflitos</span>
+        <span class="pill">Comunicação Clara</span>
+        <span class="pill">Planejamento de Obras</span>
+        <span class="pill">Fundo de Reserva</span>
+        <span class="pill">Conformidade Legal</span>
+        <span class="pill">Pesquisa de Satisfação</span>
+        <span class="pill">Transparência nas Contas</span>
+        <span class="pill">Gestão de Contratos</span>
+        <span class="pill">Assembleia & Ata</span>
+        <span class="pill">Trilíngue PT/EN/ES</span>
+        <span class="pill">Liderança</span>
+        <span class="pill">Agilidade</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA FINAL -->
+  <div class="cta-section">
+    <h3>Vamos construir juntos o condomínio que todos queremos</h3>
+    <p>Minha candidatura é um compromisso público: gestão transparente, comunicação aberta e remuneração atrelada à sua satisfação.</p>
+    <a class="cta-btn" href="https://www.linkedin.com/in/rodrigo-antunes-de-morais-6b948a12b/" target="_blank">Conecte-se no LinkedIn</a>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p><strong>Rodrigo Antunes de Morais</strong> — Candidato a Síndico</p>
+  <p style="margin-top:6px;">Coordenador Sênior FP&A · MBA USP/Esalq · Mercado Livre · Trilíngue · PCD</p>
+  <p style="margin-top:10px;font-size:11px;opacity:0.6;">Apresentado na Assembleia de Eleição de Síndico</p>
+</footer>
+
+</body>
+</html>
