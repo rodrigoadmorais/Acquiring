@@ -994,25 +994,25 @@ const AREA_OVERRIDES = {
   },
   'acquiring': {
     chat: [
-      { title: 'Analisar desvio de TPV vs budget', example: '"Explique queda de TPV em Point QR no Brasil — sazonalidade ou churn de merchants?"', tools: ['bigquery', 'excel'], prompt: 'Como analisar desvios de TPV e MDR Acquiring com Claude Chat?' },
-      { title: 'Storytelling de MDR para CFO', example: '"Construa narrativa sobre compressão de MDR no canal e-commerce para board pack"', tools: ['notion', 'slack'], prompt: 'Como construir storytelling de métricas Acquiring (TPV, MDR, Point) para executivos?' },
-      { title: 'Validar premissas de GMV off-marketplace', example: '"Minhas premissas de crescimento QR 2026 fazem sentido dado o contexto macro?"', tools: ['excel', 'bigquery'], prompt: 'Como validar premissas de projeção de TPV e volume Acquiring com Claude Chat?' },
-      { title: 'Interpretar relatório de churn de merchants', example: '"Esse CSV de churn de POS faz sentido? O que está causando a queda em SP?"', tools: ['bigquery', 'python'], prompt: 'Como usar Claude Chat para interpretar dados de churn de merchants Acquiring?' },
-      { title: 'Revisar comunicação para stakeholders', example: '"Esse update de resultado Acquiring para o GM está claro e completo?"', tools: ['slack', 'notion'], prompt: 'Como revisar comunicações de resultado Acquiring para stakeholders com Claude Chat?' }
+      { title: 'Analisar desvio de TPV vs budget', example: '"Explique queda de TPV em Point no Brasil — sazonalidade ou churn de sellers? Separe o impacto por negócio (Point, OP, QR)"', tools: ['bigquery', 'excel'], prompt: '' },
+      { title: 'Storytelling de MDR para o CFO', example: '"Construa narrativa sobre compressão de MDR no OP e QR com impacto no revenue total Acquiring para o board pack"', tools: ['notion', 'slack'], prompt: '' },
+      { title: 'Validar premissas de crescimento por negócio', example: '"Minhas premissas de crescimento de TPV 2026 para Point, OP e QR fazem sentido dado o contexto macro e histórico de sellers ativos?"', tools: ['excel', 'bigquery'], prompt: '' },
+      { title: 'Interpretar relatório de churn de sellers', example: '"Esse CSV de churn de sellers Point faz sentido? O que está causando a queda de retenção em SP — preço ou competição?"', tools: ['bigquery', 'python'], prompt: '' },
+      { title: 'Revisar update de resultado para o GM', example: '"Esse update de resultado Acquiring para o GM está claro, com breakdown por Point, OP e QR, e tom executivo adequado?"', tools: ['slack', 'notion'], prompt: '' }
     ],
     cowork: [
-      { title: 'Consolidar dados de TPV por canal', example: 'Abre planilha de TPV (Point, QR, Gateway, eCommerce) e monta visão consolidada por BU', tools: ['excel', 'looker'], prompt: 'Como consolidar dados de TPV por canal Acquiring com Cowork?' },
-      { title: 'Atualizar deck de resultado mensal', example: 'Preenche slides de TPV, MDR e market share no PowerPoint do Fintech Monthly Review', tools: ['excel', 'notion'], prompt: 'Como o Cowork monta o deck de resultado mensal Acquiring automaticamente?' },
-      { title: 'Baixar relatório de transações do Looker', example: 'Navega no Looker, aplica filtros de canal e período, exporta CSV de transações brutas', tools: ['looker', 'bigquery'], prompt: 'Como o Cowork extrai relatórios de transações Acquiring do Looker?' },
-      { title: 'Checklist de fechamento Acquiring', example: 'Executa sequência: verifica totais BQ vs contabilidade, sinaliza divergências, consolida aba', tools: ['excel', 'sap', 'bigquery'], prompt: 'Como automatizar o fechamento mensal Acquiring com Cowork?' },
-      { title: 'Preencher modelo de budget Acquiring', example: 'Cola premissas de TPV/MDR do Google Sheets no modelo Excel de budget sem erro manual', tools: ['excel', 'sap'], prompt: 'Como o Cowork preenche o modelo de budget Acquiring a partir de planilhas fonte?' }
+      { title: 'Consolidar TPV por negócio (Point, OP, QR)', example: 'Abre planilha de TPV e monta visão consolidada por negócio (Point, OP, QR) e por BU, com total Acquiring', tools: ['excel', 'looker'], prompt: '' },
+      { title: 'Atualizar deck de resultado Acquiring', example: 'Preenche slides de TPV por negócio, MDR e market share de sellers no PowerPoint do Monthly Review', tools: ['excel', 'notion'], prompt: '' },
+      { title: 'Baixar relatório de sellers do Looker', example: 'Navega no Looker, aplica filtros de negócio (Point / OP / QR) e período, exporta CSV de sellers ativos e TPV', tools: ['looker', 'bigquery'], prompt: '' },
+      { title: 'Checklist de fechamento Acquiring', example: 'Verifica totais de TPV por negócio vs contabilidade, sinaliza divergências e consolida aba de fechamento', tools: ['excel', 'sap', 'bigquery'], prompt: '' },
+      { title: 'Preencher modelo de budget Acquiring', example: 'Cola premissas de TPV e MDR por negócio (Point, OP, QR) do Google Sheets no modelo Excel de budget sem erro manual', tools: ['excel', 'sap'], prompt: '' }
     ],
     code: [
-      { title: 'Pipeline TPV · BigQuery → dashboard', example: 'Query BQ de TPV diário por canal → transforma → JSON → GitHub Pages atualizado a cada 6h', tools: ['bigquery', 'github', 'python'], prompt: 'Como construir pipeline de dashboard de TPV Acquiring do BigQuery até GitHub Pages?' },
-      { title: 'Flow Verdi: alerta de queda de TPV', example: 'Verdi monitora TPV por hora, detecta queda >10% vs D-1 e posta alerta no canal Slack Acquiring', tools: ['verdi', 'bigquery', 'slack'], prompt: 'Como criar alerta automático de queda de TPV Acquiring com Verdi Flows?' },
-      { title: 'Modelo de sensibilidade MDR em Python', example: 'Script que simula impacto de variação de MDR em diferentes mix de canais no EBITDA', tools: ['python', 'github', 'excel'], prompt: 'Como construir modelo de sensibilidade de MDR Acquiring em Python com Claude Code?' },
-      { title: 'Relatório mensal PDF automático', example: 'Job que gera PDF de P&L Acquiring com gráficos de TPV e MDR e envia por e-mail no D+1', tools: ['python', 'bigquery', 'verdi'], prompt: 'Como automatizar o relatório mensal Acquiring em PDF com Claude Code?' },
-      { title: 'Monitor de KPIs Acquiring em tempo real', example: 'Dashboard que puxa TPV, aprovação e fraude do BQ e atualiza a cada 15min no GitHub Pages', tools: ['bigquery', 'python', 'github', 'verdi'], prompt: 'Como criar monitor de KPIs Acquiring em tempo real com BigQuery e GitHub Pages?' }
+      { title: 'Pipeline TPV · BigQuery → dashboard', example: 'Query BQ de TPV diário por negócio (Point, OP, QR) → transforma → JSON → GitHub Pages atualizado a cada 6h', tools: ['bigquery', 'github', 'python'], prompt: '' },
+      { title: 'Verdi Flow: alerta de queda de TPV', example: 'Verdi monitora TPV por negócio (Point, OP, QR), detecta queda >10% vs D-1 e posta alerta no canal Slack Acquiring', tools: ['verdi', 'bigquery', 'slack'], prompt: '' },
+      { title: 'Modelo de sensibilidade MDR em Python', example: 'Script que simula impacto de variação de MDR e mix entre Point, OP e QR no revenue e EBITDA Acquiring', tools: ['python', 'github', 'excel'], prompt: '' },
+      { title: 'Relatório mensal Acquiring em PDF', example: 'Job que gera PDF de P&L Acquiring com breakdown de TPV por negócio e evolução de sellers ativos, enviado no D+1', tools: ['python', 'bigquery', 'verdi'], prompt: '' },
+      { title: 'Monitor de KPIs Acquiring em tempo real', example: 'Dashboard que puxa TPV por negócio (Point, OP, QR), aprovação e sellers ativos do BQ, atualizado a cada 15min', tools: ['bigquery', 'python', 'github', 'verdi'], prompt: '' }
     ]
   },
   'opex': {
@@ -1173,21 +1173,21 @@ function getAreaTip(toolType, areaInfo) {
   const area = areaInfo ? areaInfo.label : '';
   const tips = {
     chat: {
-      'Acquiring': 'Sempre informe o canal no prompt (Point, QR, Gateway, eCommerce) — o Claude separa drivers de crescimento por canal e identifica onde está o desvio principal sem você precisar filtrar.',
+      'Acquiring': 'Sempre informe o negócio no prompt (Point, OP ou QR) — o Claude separa drivers de crescimento por negócio e identifica onde está o desvio principal. Use também "sellers ativos" como métrica de volume para contextualizar variações de TPV.',
       'OPEX': 'Inclua o contexto de HC ativo vs budget no prompt — o Claude consegue separar automaticamente variância de preço (salário médio) de variância de volume (headcount).',
       'Fintech': 'Especifique o produto no prompt (crédito, conta, rendimento, seguros) — as dinâmicas de margem são muito diferentes entre produtos e o Claude ajusta a análise conforme o contexto.',
       'Mercado Livre': 'Especifique se quer breakdown por país (Brasil, Argentina, México) ou consolidado — o Claude formata a análise diferente dependendo do escopo geográfico que você informar.',
       'Legal Entity': 'Sempre informe a entidade legal e o padrão contábil (IFRS vs local GAAP) — as diferenças de reconhecimento entre padrões são relevantes para contextualizar qualquer variação.'
     },
     cowork: {
-      'Acquiring': 'Configure o Cowork para salvar CSVs com timestamp no nome do arquivo (ex: `tpv_acquiring_2026-03-31.csv`). No fechamento, isso evita sobrescrever versões e facilita comparar D-1 vs D-7.',
+      'Acquiring': 'Configure o Cowork para salvar CSVs com o negócio e timestamp no nome (ex: `tpv_point_2026-03-31.csv`). No fechamento, isso evita sobrescrever versões e facilita comparar Point, OP e QR separadamente.',
       'OPEX': 'No Workday, o campo correto para HC ativo é `Employee_Status = "Active"` com `Worker_Type IN ("Employee","Contingent")`. Instrua o Cowork com esses filtros exatos para evitar inconsistência com o report oficial.',
       'Fintech': 'No Looker da Fintech, os dashboards de crédito e seguros ficam em views separadas. Instrua o Cowork a navegar pelo nome exato do dashboard para não capturar dados do produto errado.',
       'Mercado Livre': 'Para extrações do Looker de MeLi, instrua o Cowork a usar o filtro `Business_Unit = "Marketplace"` para isolar o core de outras verticais como MELI Delivery ou Ads.',
       'Legal Entity': 'No SAP, diferentes entidades têm company codes distintos. Instrua o Cowork com o company code exato da entidade — confundir gera dados de CPA errados que levam horas para rastrear.'
     },
     code: {
-      'Acquiring': 'Use a tabela `acquiring.transactions_daily` no BigQuery particionada por `dt`. Sempre filtre `status = "approved"` para excluir chargebacks do TPV bruto — erro comum que distorce o resultado.',
+      'Acquiring': 'Use a tabela `acquiring.transactions_daily` no BigQuery particionada por `dt`, com coluna `business_line IN ("point","op","qr")` para separar os negócios. Sempre filtre `status = "approved"` para excluir chargebacks do TPV bruto.',
       'OPEX': 'A tabela `hr.headcount_daily` no BigQuery tem HC por cost center com histórico diário — ideal para calcular custo por área no fechamento. Use `pandas` para simular cenários de reajuste em segundos.',
       'Fintech': 'A tabela `fintech.p_and_l_daily` no BigQuery consolida todos os produtos Fintech — útil para análises cross-product. Para análises por produto use `credit.*` ou `insurance.*` conforme o escopo.',
       'Mercado Livre': 'Para dashboards de MeLi no GitHub Pages, use o Google Sheets como backend via API pública — mais acessível que BigQuery para updates manuais e funciona bem em reports mensais da equipe.',
