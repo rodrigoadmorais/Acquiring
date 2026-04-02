@@ -998,7 +998,7 @@
     if (!q) { clearSearch(); return; }
 
     var terms = q.split(/\s+/).filter(function(t) { return t.length >= 2; });
-    var allCards = document.querySelectorAll('.card[data-keywords]');
+    var allCards = document.querySelectorAll('#tab-acquiring .card[data-keywords], #tab-outras-areas .card[data-keywords]');
     var scored = [];
 
     allCards.forEach(function(card) {
