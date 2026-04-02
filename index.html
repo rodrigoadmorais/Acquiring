@@ -204,12 +204,77 @@
       font-weight: 500;
     }
 
+    /* ── Agent Search ── */
+    .agent-bar {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border: 1.5px solid #e5e7eb;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .agent-bar:focus-within {
+      border-color: #3483FA;
+      box-shadow: 0 2px 20px rgba(52,131,250,0.13);
+    }
+    .agent-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #2D3277, #3483FA);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .agent-bar input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 0.97rem;
+      color: #1a1f3c;
+      background: transparent;
+    }
+    .agent-bar input::placeholder { color: #aab0c0; }
+    .agent-clear {
+      background: none; border: none; cursor: pointer;
+      color: #aab0c0; font-size: 1.2rem; padding: 0 4px;
+      display: none;
+    }
+    .agent-clear:hover { color: #6b7280; }
+    .agent-hint {
+      font-size: 0.75rem; color: #aab0c0;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* ── Search results panel ── */
+    #agent-results { display: none; }
+    #agent-results.active { display: block; }
+    #agent-results .section-title { margin-bottom: 20px; }
+    .agent-empty {
+      text-align: center; padding: 48px 0;
+      color: #aab0c0; font-size: 0.95rem;
+    }
+
+    /* ── Relevance badge ── */
+    .relevance-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;
+      padding: 3px 9px; border-radius: 20px; margin-bottom: 10px;
+    }
+    .relevance-high { background: #dcfce7; color: #16a34a; }
+    .relevance-mid  { background: #fef9c3; color: #a16207; }
+    .card.agent-hidden { display: none; }
+    .card.agent-match  { order: 0; }
+
     @media (max-width: 700px) {
       .grid { grid-template-columns: 1fr; }
       .header-inner { flex-wrap: wrap; }
       .header-badge { margin-left: 0; }
       main { padding: 0 16px 48px; }
       .header-inner { padding: 20px 16px; }
+      .agent-hint { display: none; }
     }
 
 
@@ -355,6 +420,23 @@
 </header>
 
 <main>
+  <!-- Agent search bar -->
+  <div class="agent-bar">
+    <div class="agent-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2l1.5 4.5H16l-3.75 2.75 1.5 4.5L10 11l-3.75 2.75 1.5-4.5L4 6.5h4.5L10 2z" fill="#FFF159"/></svg>
+    </div>
+    <input type="text" id="agent-input" placeholder="O que você quer analisar? Ex: evolução do TPV, headcount, estoque de maquininhas…" autocomplete="off" />
+    <span class="agent-hint">Pressione Enter ou continue digitando</span>
+    <button class="agent-clear" id="agent-clear" title="Limpar busca">✕</button>
+  </div>
+
+  <!-- Agent results (shown when searching) -->
+  <div id="agent-results">
+    <div class="section-title" id="agent-results-title">Resultados para sua busca</div>
+    <div class="grid" id="agent-results-grid"></div>
+    <div class="agent-empty" id="agent-empty" style="display:none">Nenhum dashboard encontrado para essa busca. Tente outros termos.</div>
+  </div>
+
   <div class="tabs-nav">
     <button class="tab-btn active" onclick="switchTab('acquiring')">Acquiring</button>
     <button class="tab-btn" onclick="switchTab('outras-areas')">Dashs criados por outras áreas</button>
@@ -366,7 +448,7 @@
   <div class="grid">
 
     <!-- ── Card 1: Acquiring 2.0 ── -->
-    <div class="card">
+    <div class="card" data-label="Acquiring 2.0" data-tab="acquiring" data-keywords="p&l resultado financeiro receita despesa margem lucro prejuizo take rate tpv volume transacionado subbu segmento actual forecast plan plano evolutivo acquiring taxa fee processing financing taxes collection econômico econ simplifica tableau">
       <a class="card-thumb" href="https://us-east-1.online.tableau.com/#/site/melicross/views/Acquiring2_0_ProjetoSimplifica/PLTotal?:iid=1" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#0d1b3e">
           <rect width="560" height="44" fill="#2D3277"/>
@@ -452,7 +534,7 @@
     </div>
 
     <!-- ── Card 2: MPOS Analytics ── -->
-    <div class="card">
+    <div class="card" data-label="MPOS Analytics" data-tab="acquiring" data-keywords="mpos devices dispositivos maquininha point pro smart mini vendas canal modelo volume forecast plano actual vendidos hardware equipamento acquiring comparativo devices sold canal plano por canal analytic analytics">
       <a class="card-thumb" href="https://rodrigoadmorais.github.io/Acquiring/MPOS%20-%20Plan%202026.html" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff">
           <rect width="560" height="48" fill="#2D3277"/>
@@ -538,7 +620,7 @@
     </div>
 
     <!-- ── Card 3: HCs FDVP e BS ── -->
-    <div class="card">
+    <div class="card" data-label="HCs FDVP e Big Sellers" data-tab="acquiring" data-keywords="headcount hc funcionarios pessoas equipe time fdvp big sellers cargo canal ano recursos humanos rh vendedores forca de vendas quadro efetivo squad tribo organograma">
       <a class="card-thumb" href="https://rodrigoadmorais.github.io/Acquiring/dash_headcount_fdvp_bs.html" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff">
           <defs>
@@ -632,7 +714,7 @@
     </div>
 
     <!-- ── Card 4: Performance Canais TPV ── -->
-    <div class="card">
+    <div class="card" data-label="Performance Canais TPV" data-tab="acquiring" data-keywords="tpv canais canal ciclo de vida unidade performance evolucao 2025 2026 volume transacionado transacao pagamento acquiring marketplace pos ecommerce link varejo actual plan plano">
       <a class="card-thumb" href="https://rodrigoadmorais.github.io/Acquiring/TPVm1.html" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#f5f5f5">
           <rect width="560" height="48" fill="#2D3277"/>
@@ -716,7 +798,7 @@
     <div class="grid">
 
       <!-- Card: Visão Ecossistêmica -->
-      <div class="card">
+      <div class="card" data-label="Visão Ecossistêmica" data-tab="outras-areas" data-keywords="ecossistema ecosistemico fintech acquiring credito conta marketplace visao geral overview produto trimestre q1 q2 q3 q4 receita resultado comparativo financeiro negocio fintech mlb brasil">
         <a class="card-thumb" href="https://us-east-1.online.tableau.com/#/site/melifintech/views/FPAFintech-DashboardEcosistemicoMLBExcl_CCard/Overview?:iid=2" target="_blank" rel="noopener">
           <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#f0f4ff">
             <rect width="560" height="48" fill="#1a3a6b"/>
@@ -767,7 +849,7 @@
       </div>
 
       <!-- Card: KPIs de Negócio por Canal -->
-      <div class="card">
+      <div class="card" data-label="KPIs de Negócio por Canal" data-tab="outras-areas" data-keywords="kpi kpis negocio canal sellers gmv ticket medio marketplace point of sale pos link de pagamento ecommerce e-commerce plano indicadores indicador vendas conversao receita canal de venda">
         <a class="card-thumb" href="https://us-east-1.online.tableau.com/#/site/melifintech/views/DashboardSellersMercadoPago_17530037355380/PLANOPORCANAL?:iid=1" target="_blank" rel="noopener">
           <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#f8f9fc">
             <rect width="560" height="48" fill="#2D3277"/>
@@ -819,7 +901,7 @@
       </div>
 
       <!-- Card: Inventário MPOS -->
-      <div class="card">
+      <div class="card" data-label="Inventário MPOS" data-tab="outras-areas" data-keywords="inventario estoque mpos dispositivos point pro smart mini giro cobertura unidades hardware equipamento logistica maquininha quantidade disponivel abastecimento reposicao power bi">
         <a class="card-thumb" href="https://app.powerbi.com/groups/me/reports/f07eb52a-99c3-4371-9b4b-8d2d686c6ea1/ReportSection582630e030485a30822e?ctid=882c0c7c-23db-40e6-9992-5b2c0f064e05&experience=power-bi" target="_blank" rel="noopener">
           <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#f3f2f1">
             <rect width="560" height="48" fill="#217346"/>
@@ -871,12 +953,124 @@
 </main>
 
 <script>
-  function switchTab(name) {
+  /* ── Tab switching ── */
+  function switchTab(name, e) {
     document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
     document.querySelectorAll('.tab-panel').forEach(function(panel) { panel.classList.remove('active'); });
     document.getElementById('tab-' + name).classList.add('active');
-    event.currentTarget.classList.add('active');
+    (e || event).currentTarget.classList.add('active');
   }
+
+  /* ── Agent search ── */
+  var agentInput  = document.getElementById('agent-input');
+  var agentClear  = document.getElementById('agent-clear');
+  var agentResults = document.getElementById('agent-results');
+  var agentGrid   = document.getElementById('agent-results-grid');
+  var agentEmpty  = document.getElementById('agent-empty');
+  var tabsNav     = document.querySelector('.tabs-nav');
+  var tabPanels   = document.querySelectorAll('.tab-panel');
+  var agentTitle  = document.getElementById('agent-results-title');
+
+  function normalize(str) {
+    return str.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ');
+  }
+
+  function scoreCard(card, terms) {
+    var kw = normalize(card.dataset.keywords || '');
+    var label = normalize(card.dataset.label || '');
+    var score = 0;
+    terms.forEach(function(t) {
+      if (!t) return;
+      if (label.indexOf(t) !== -1) score += 3;
+      var kwWords = kw.split(/\s+/);
+      kwWords.forEach(function(w) {
+        if (w === t) score += 2;
+        else if (w.indexOf(t) !== -1 && t.length >= 3) score += 1;
+      });
+    });
+    return score;
+  }
+
+  function runSearch(query) {
+    var q = normalize(query.trim());
+    if (!q) { clearSearch(); return; }
+
+    var terms = q.split(/\s+/).filter(function(t) { return t.length >= 2; });
+    var allCards = document.querySelectorAll('.card[data-keywords]');
+    var scored = [];
+
+    allCards.forEach(function(card) {
+      var s = scoreCard(card, terms);
+      if (s > 0) scored.push({ card: card, score: s });
+    });
+
+    scored.sort(function(a, b) { return b.score - a.score; });
+
+    /* show results panel, hide tabs */
+    tabsNav.style.display = 'none';
+    tabPanels.forEach(function(p) { p.style.display = 'none'; });
+    agentResults.classList.add('active');
+    agentClear.style.display = 'block';
+    agentTitle.textContent = scored.length
+      ? 'Dashboards mais relevantes para "' + query.trim() + '"'
+      : '';
+
+    agentGrid.innerHTML = '';
+
+    if (scored.length === 0) {
+      agentEmpty.style.display = 'block';
+      return;
+    }
+    agentEmpty.style.display = 'none';
+
+    var maxScore = scored[0].score;
+    scored.forEach(function(item) {
+      var clone = item.card.cloneNode(true);
+
+      /* remove old badge if any */
+      var old = clone.querySelector('.relevance-badge');
+      if (old) old.remove();
+
+      /* inject relevance badge into card-body before card-tag */
+      var cardBody = clone.querySelector('.card-body');
+      var cardTag  = clone.querySelector('.card-tag');
+      if (cardBody && cardTag) {
+        var isHigh = item.score >= maxScore * 0.6;
+        var badge = document.createElement('span');
+        badge.className = 'relevance-badge ' + (isHigh ? 'relevance-high' : 'relevance-mid');
+        badge.innerHTML = isHigh
+          ? '★ Alta relevância'
+          : '◆ Relevância média';
+        cardBody.insertBefore(badge, cardTag);
+      }
+
+      /* add tab origin label */
+      var platform = clone.querySelector('.card-platform');
+      if (platform && item.card.dataset.tab === 'outras-areas') {
+        platform.textContent = platform.textContent + ' · Outras áreas';
+      }
+
+      agentGrid.appendChild(clone);
+    });
+  }
+
+  function clearSearch() {
+    agentInput.value = '';
+    agentClear.style.display = 'none';
+    agentResults.classList.remove('active');
+    agentGrid.innerHTML = '';
+    agentEmpty.style.display = 'none';
+    tabsNav.style.display = '';
+    tabPanels.forEach(function(p) { p.style.display = ''; });
+  }
+
+  agentInput.addEventListener('input', function() {
+    runSearch(agentInput.value);
+  });
+
+  agentClear.addEventListener('click', clearSearch);
 </script>
 
 </body>
