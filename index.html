@@ -69,6 +69,32 @@
       white-space: nowrap;
     }
 
+    /* ── Tabs ── */
+    .tabs-nav {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 32px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 12px 20px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #8898aa;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      border-radius: 6px 6px 0 0;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #2D3277; }
+    .tab-btn.active { color: #2D3277; border-bottom-color: #2D3277; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
     /* ── Main grid ── */
     main {
       max-width: 1200px;
@@ -329,6 +355,13 @@
 </header>
 
 <main>
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('acquiring')">Acquiring</button>
+    <button class="tab-btn" onclick="switchTab('outras-areas')">Dashs criados por outras áreas</button>
+  </div>
+
+  <!-- Tab: Acquiring -->
+  <div id="tab-acquiring" class="tab-panel active">
   <div class="section-title">Painéis disponíveis</div>
   <div class="grid">
 
@@ -675,7 +708,176 @@
     </div>
 
   </div>
+  </div><!-- /tab-acquiring -->
+
+  <!-- Tab: Dashs criados por outras áreas -->
+  <div id="tab-outras-areas" class="tab-panel">
+    <div class="section-title">Dashboards de outras áreas</div>
+    <div class="grid">
+
+      <!-- Card: Visão Ecossistêmica -->
+      <div class="card">
+        <a class="card-thumb" href="https://us-east-1.online.tableau.com/#/site/melifintech/views/FPAFintech-DashboardEcosistemicoMLBExcl_CCard/Overview?:iid=2" target="_blank" rel="noopener">
+          <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#f0f4ff">
+            <rect width="560" height="48" fill="#1a3a6b"/>
+            <text x="16" y="21" font-size="10" fill="rgba(255,255,255,0.55)" font-family="Arial">FP&amp;A Fintech · Tableau</text>
+            <text x="16" y="38" font-size="13" font-weight="bold" fill="white" font-family="Arial">Visão Ecossistêmica</text>
+            <!-- Donut chart simulation -->
+            <circle cx="140" cy="175" r="70" fill="none" stroke="#e5e7eb" stroke-width="28"/>
+            <circle cx="140" cy="175" r="70" fill="none" stroke="#2D3277" stroke-width="28" stroke-dasharray="176 264" stroke-dashoffset="88"/>
+            <circle cx="140" cy="175" r="70" fill="none" stroke="#3483FA" stroke-width="28" stroke-dasharray="110 330" stroke-dashoffset="-88"/>
+            <circle cx="140" cy="175" r="70" fill="none" stroke="#FFF159" stroke-width="28" stroke-dasharray="66 374" stroke-dashoffset="-198"/>
+            <text x="140" y="170" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a1f3c" font-family="Arial">Total</text>
+            <text x="140" y="185" text-anchor="middle" font-size="10" fill="#6b7280" font-family="Arial">Ecossistema</text>
+            <!-- Legend -->
+            <rect x="260" y="120" width="12" height="12" rx="2" fill="#2D3277"/>
+            <text x="278" y="131" font-size="9" fill="#374151" font-family="Arial">Acquiring</text>
+            <rect x="260" y="142" width="12" height="12" rx="2" fill="#3483FA"/>
+            <text x="278" y="153" font-size="9" fill="#374151" font-family="Arial">Crédito</text>
+            <rect x="260" y="164" width="12" height="12" rx="2" fill="#FFF159"/>
+            <text x="278" y="175" font-size="9" fill="#374151" font-family="Arial">Conta</text>
+            <rect x="260" y="186" width="12" height="12" rx="2" fill="#e5e7eb"/>
+            <text x="278" y="197" font-size="9" fill="#374151" font-family="Arial">Outros</text>
+            <!-- Bar chart -->
+            <rect x="370" y="100" width="28" height="120" rx="3" fill="#2D3277" opacity="0.8"/>
+            <rect x="406" y="130" width="28" height="90" rx="3" fill="#3483FA" opacity="0.8"/>
+            <rect x="442" y="150" width="28" height="70" rx="3" fill="#00A650" opacity="0.8"/>
+            <rect x="478" y="115" width="28" height="105" rx="3" fill="#FFF159" opacity="0.9"/>
+            <line x1="360" y1="220" x2="520" y2="220" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="370" y="235" font-size="7.5" fill="#9ca3af" font-family="Arial">Q1</text>
+            <text x="406" y="235" font-size="7.5" fill="#9ca3af" font-family="Arial">Q2</text>
+            <text x="442" y="235" font-size="7.5" fill="#9ca3af" font-family="Arial">Q3</text>
+            <text x="478" y="235" font-size="7.5" fill="#9ca3af" font-family="Arial">Q4</text>
+          </svg>
+        </a>
+        <div class="card-body">
+          <span class="card-tag">Tableau</span>
+          <a class="card-title" href="https://us-east-1.online.tableau.com/#/site/melifintech/views/FPAFintech-DashboardEcosistemicoMLBExcl_CCard/Overview?:iid=2" target="_blank" rel="noopener">
+            Visão Ecossistêmica
+          </a>
+          <p class="card-desc">Dashboard ecossistêmico MLB excl. CCard — FP&amp;A Fintech.</p>
+          <div class="card-footer">
+            <a class="card-link" href="https://us-east-1.online.tableau.com/#/site/melifintech/views/FPAFintech-DashboardEcosistemicoMLBExcl_CCard/Overview?:iid=2" target="_blank" rel="noopener">
+              Abrir dashboard
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <span class="card-platform">Tableau</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: KPIs de Negócio por Canal -->
+      <div class="card">
+        <a class="card-thumb" href="https://us-east-1.online.tableau.com/#/site/melifintech/views/DashboardSellersMercadoPago_17530037355380/PLANOPORCANAL?:iid=1" target="_blank" rel="noopener">
+          <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#f8f9fc">
+            <rect width="560" height="48" fill="#2D3277"/>
+            <text x="16" y="21" font-size="10" fill="rgba(255,255,255,0.55)" font-family="Arial">Sellers Mercado Pago · Tableau</text>
+            <text x="16" y="38" font-size="13" font-weight="bold" fill="white" font-family="Arial">KPIs de Negócio por Canal</text>
+            <!-- Channel rows -->
+            <rect x="12" y="60" width="536" height="28" rx="4" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="20" y="78" font-size="9" font-weight="bold" fill="#2D3277" font-family="Arial">Marketplace</text>
+            <rect x="140" y="66" width="200" height="14" rx="3" fill="#3483FA" opacity="0.7"/>
+            <text x="346" y="77" font-size="8" fill="#374151" font-family="Arial">68%</text>
+            <rect x="12" y="96" width="536" height="28" rx="4" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="20" y="114" font-size="9" font-weight="bold" fill="#2D3277" font-family="Arial">Point of Sale</text>
+            <rect x="140" y="102" width="130" height="14" rx="3" fill="#00A650" opacity="0.7"/>
+            <text x="276" y="113" font-size="8" fill="#374151" font-family="Arial">44%</text>
+            <rect x="12" y="132" width="536" height="28" rx="4" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="20" y="150" font-size="9" font-weight="bold" fill="#2D3277" font-family="Arial">Link de Pagamento</text>
+            <rect x="140" y="138" width="90" height="14" rx="3" fill="#F59E0B" opacity="0.7"/>
+            <text x="236" y="149" font-size="8" fill="#374151" font-family="Arial">31%</text>
+            <rect x="12" y="168" width="536" height="28" rx="4" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="20" y="186" font-size="9" font-weight="bold" fill="#2D3277" font-family="Arial">E-commerce</text>
+            <rect x="140" y="174" width="160" height="14" rx="3" fill="#9333ea" opacity="0.6"/>
+            <text x="306" y="185" font-size="8" fill="#374151" font-family="Arial">54%</text>
+            <!-- KPI boxes -->
+            <rect x="12" y="210" width="120" height="52" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="20" y="228" font-size="7.5" fill="#9ca3af" font-family="Arial">GMV Total</text>
+            <text x="20" y="248" font-size="14" font-weight="bold" fill="#2D3277" font-family="Arial">R$ 48B</text>
+            <rect x="140" y="210" width="120" height="52" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="148" y="228" font-size="7.5" fill="#9ca3af" font-family="Arial">Sellers Ativos</text>
+            <text x="148" y="248" font-size="14" font-weight="bold" fill="#00A650" font-family="Arial">2.1M</text>
+            <rect x="268" y="210" width="120" height="52" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="276" y="228" font-size="7.5" fill="#9ca3af" font-family="Arial">Ticket Médio</text>
+            <text x="276" y="248" font-size="14" font-weight="bold" fill="#3483FA" font-family="Arial">R$ 312</text>
+          </svg>
+        </a>
+        <div class="card-body">
+          <span class="card-tag">Tableau</span>
+          <a class="card-title" href="https://us-east-1.online.tableau.com/#/site/melifintech/views/DashboardSellersMercadoPago_17530037355380/PLANOPORCANAL?:iid=1" target="_blank" rel="noopener">
+            KPIs de Negócio por Canal
+          </a>
+          <p class="card-desc">Plano por canal — Sellers Mercado Pago.</p>
+          <div class="card-footer">
+            <a class="card-link" href="https://us-east-1.online.tableau.com/#/site/melifintech/views/DashboardSellersMercadoPago_17530037355380/PLANOPORCANAL?:iid=1" target="_blank" rel="noopener">
+              Abrir dashboard
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <span class="card-platform">Tableau</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Inventário MPOS -->
+      <div class="card">
+        <a class="card-thumb" href="https://app.powerbi.com/groups/me/reports/f07eb52a-99c3-4371-9b4b-8d2d686c6ea1/ReportSection582630e030485a30822e?ctid=882c0c7c-23db-40e6-9992-5b2c0f064e05&experience=power-bi" target="_blank" rel="noopener">
+          <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#f3f2f1">
+            <rect width="560" height="48" fill="#217346"/>
+            <text x="16" y="21" font-size="10" fill="rgba(255,255,255,0.6)" font-family="Arial">Power BI · MPOS</text>
+            <text x="16" y="38" font-size="13" font-weight="bold" fill="white" font-family="Arial">Inventário MPOS</text>
+            <!-- PBI style bars -->
+            <rect x="12" y="60" width="250" height="220" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="22" y="80" font-size="9" font-weight="bold" fill="#374151" font-family="Arial">Estoque por Modelo</text>
+            <rect x="22" y="92" width="160" height="14" rx="2" fill="#217346" opacity="0.8"/>
+            <text x="188" y="103" font-size="8" fill="#6b7280" font-family="Arial">Point Pro</text>
+            <rect x="22" y="114" width="110" height="14" rx="2" fill="#217346" opacity="0.6"/>
+            <text x="138" y="125" font-size="8" fill="#6b7280" font-family="Arial">Point Smart</text>
+            <rect x="22" y="136" width="80" height="14" rx="2" fill="#217346" opacity="0.45"/>
+            <text x="108" y="147" font-size="8" fill="#6b7280" font-family="Arial">Point Mini</text>
+            <rect x="22" y="158" width="50" height="14" rx="2" fill="#217346" opacity="0.3"/>
+            <text x="78" y="169" font-size="8" fill="#6b7280" font-family="Arial">Outros</text>
+            <!-- KPI right -->
+            <rect x="270" y="60" width="278" height="100" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="280" y="80" font-size="9" font-weight="bold" fill="#374151" font-family="Arial">Total Inventário</text>
+            <text x="280" y="115" font-size="28" font-weight="bold" fill="#217346" font-family="Arial">42.8K</text>
+            <text x="280" y="135" font-size="8" fill="#9ca3af" font-family="Arial">unidades em estoque</text>
+            <rect x="270" y="170" width="130" height="70" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="280" y="190" font-size="8" fill="#9ca3af" font-family="Arial">Giro Médio</text>
+            <text x="280" y="218" font-size="18" font-weight="bold" fill="#2D3277" font-family="Arial">18 dias</text>
+            <rect x="408" y="170" width="140" height="70" rx="6" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+            <text x="418" y="190" font-size="8" fill="#9ca3af" font-family="Arial">Cobertura</text>
+            <text x="418" y="218" font-size="18" font-weight="bold" fill="#F59E0B" font-family="Arial">2.4 meses</text>
+          </svg>
+        </a>
+        <div class="card-body">
+          <span class="card-tag">Power BI</span>
+          <a class="card-title" href="https://app.powerbi.com/groups/me/reports/f07eb52a-99c3-4371-9b4b-8d2d686c6ea1/ReportSection582630e030485a30822e?ctid=882c0c7c-23db-40e6-9992-5b2c0f064e05&experience=power-bi" target="_blank" rel="noopener">
+            Inventário MPOS
+          </a>
+          <p class="card-desc">Relatório de inventário de dispositivos MPOS.</p>
+          <div class="card-footer">
+            <a class="card-link" href="https://app.powerbi.com/groups/me/reports/f07eb52a-99c3-4371-9b4b-8d2d686c6ea1/ReportSection582630e030485a30822e?ctid=882c0c7c-23db-40e6-9992-5b2c0f064e05&experience=power-bi" target="_blank" rel="noopener">
+              Abrir dashboard
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <span class="card-platform">Power BI</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /tab-outras-areas -->
+
 </main>
+
+<script>
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(panel) { panel.classList.remove('active'); });
+    document.getElementById('tab-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+</script>
 
 </body>
 </html>
