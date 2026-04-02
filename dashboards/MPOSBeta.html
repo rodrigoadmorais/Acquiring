@@ -117,6 +117,9 @@
             <button onclick="switchTab('pl')" id="tab-btn-pl" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
                 <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Simulação P&amp;L
             </button>
+            <button onclick="switchTab('tpv')" id="tab-btn-tpv" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i> TPV M0 por Device
+            </button>
         </div>
 
         <!-- Comparison Tab Content -->
@@ -398,6 +401,140 @@
             </div>
         </div> <!-- end tab-content-pl -->
 
+        <!-- TPV M0 por Device Tab Content -->
+        <div id="tab-content-tpv" style="display:none;" class="space-y-6">
+
+            <!-- Comparison Engine -->
+            <div class="card overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
+                    <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
+                        <i data-lucide="zap" class="w-4 h-4 text-blue-500"></i> TPV M0 por Device — Comparação de Períodos
+                    </h2>
+                    <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tpv-comp-type" value="MONTH" checked onchange="handleTPVTypeChange()" class="peer sr-only">
+                            <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Mês a Mês</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tpv-comp-type" value="YTD" onchange="handleTPVTypeChange()" class="peer sr-only">
+                            <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTD (Acumulado)</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tpv-comp-type" value="YTG" onchange="handleTPVTypeChange()" class="peer sr-only">
+                            <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTG (A Realizar)</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tpv-comp-type" value="YEAR" onchange="handleTPVTypeChange()" class="peer sr-only">
+                            <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Anos (Fechado)</div>
+                        </label>
+                    </div>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-white">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
+                        <div class="flex gap-2">
+                            <select id="tpv-scenario-a" onchange="handleTPVScenarioChange('a')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                            <select id="tpv-month-a" onchange="renderTPVTab()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
+                        </div>
+                    </div>
+                    <div class="flex justify-center pt-5">
+                        <div class="bg-blue-50 p-3 rounded-full border border-blue-100 shadow-sm">
+                            <i data-lucide="swords" class="w-6 h-6 text-blue-500"></i>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
+                        <div class="flex gap-2">
+                            <select id="tpv-scenario-b" onchange="handleTPVScenarioChange('b')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                            <select id="tpv-month-b" onchange="renderTPVTab()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Banner -->
+            <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-5 py-3">
+                <i data-lucide="info" class="w-4 h-4 text-blue-500 shrink-0"></i>
+                <p class="text-xs text-blue-800 font-semibold">TPV realizado dividido pelas Devices vendidas no período selecionado. <strong>Engagement excluído</strong> (trocas, não vendas). <span class="font-black text-blue-900">Forecast de TPV por Device não disponível no momento.</span></p>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="card p-6 border-l-4 border-l-gray-400">
+                    <p id="tpv-label-kpi-a" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 truncate">TPV M0 (A)</p>
+                    <h3 id="tpv-val-kpi-a" class="text-2xl font-black text-gray-800">R$ 0</h3>
+                    <p class="text-[10px] text-gray-400 font-bold mt-1">por device</p>
+                </div>
+                <div class="card p-6 border-l-4" id="tpv-kpi-b-container">
+                    <p id="tpv-label-kpi-b" class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2 truncate">TPV M0 (B)</p>
+                    <h3 id="tpv-val-kpi-b" class="text-2xl font-black text-gray-800">R$ 0</h3>
+                    <p class="text-[10px] text-gray-400 font-bold mt-1">por device</p>
+                </div>
+                <div class="card p-6" id="tpv-card-delta-pct">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (%) B vs A</p>
+                    <div class="flex items-center gap-2">
+                        <h3 id="tpv-val-delta-pct" class="text-2xl font-black text-gray-800">0%</h3>
+                        <i id="tpv-icon-delta-pct" data-lucide="minus" class="w-6 h-6 text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="card p-6">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (Absoluta)</p>
+                    <h3 id="tpv-val-delta-abs" class="text-2xl font-black text-gray-800">R$ 0</h3>
+                    <p class="text-[10px] text-gray-400 font-bold mt-1">por device</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="card p-6 lg:col-span-2">
+                    <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                        <i data-lucide="line-chart" class="w-4 h-4 text-gray-400"></i> Evolução TPV M0 (A vs B)
+                    </h4>
+                    <div class="h-80"><canvas id="tpvTimelineChart"></canvas></div>
+                </div>
+                <div class="card p-6">
+                    <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-gray-400"></i> TPV M0 por Canal (Top 5)
+                    </h4>
+                    <div class="h-80"><canvas id="tpvBarChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="card overflow-hidden">
+                <div class="bg-gray-50 px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="table" class="w-4 h-4 text-gray-400"></i> Detalhamento TPV M0 por Canal e Modelo
+                    </h4>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Clique no canal para expandir</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-white border-b border-gray-200">
+                            <tr class="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                <th class="p-4 w-1/3">Canal de Origem</th>
+                                <th class="p-4" id="tpv-th-a">TPV M0 (A)</th>
+                                <th class="p-4" id="tpv-th-b">TPV M0 (B)</th>
+                                <th class="p-4">Var (%)</th>
+                                <th class="p-4">Var (Abs)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tpv-tbody" class="divide-y divide-gray-100 bg-white"></tbody>
+                        <tfoot class="bg-gray-50">
+                            <tr class="border-t border-gray-200">
+                                <td class="p-4 font-black text-xs text-gray-800 uppercase tracking-widest">Total Geral</td>
+                                <td class="p-4 text-xs font-black text-gray-800" id="tpv-total-a">R$ 0/device</td>
+                                <td class="p-4 text-xs font-black" id="tpv-total-b">R$ 0/device</td>
+                                <td class="p-4 text-xs font-black" id="tpv-total-pct">0%</td>
+                                <td class="p-4 text-xs font-black" id="tpv-total-abs">R$ 0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+        </div> <!-- end tab-content-tpv -->
+
     </main>
 
     <!-- PPT Modal -->
@@ -449,19 +586,22 @@
     <script>
         Chart.register(ChartDataLabels);
 
-        const URL_PLAN = "../data/dados.json"; 
+        const URL_PLAN = "../data/dados.json";
         const URL_ACTUAL = "../data/realizado.json";
-        const URL_FORECAST = "../data/forecast.json"; 
+        const URL_FORECAST = "../data/forecast.json";
+        const URL_TPV = "../data/tpv_devices.json";
 
         const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
         const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
         const BR_MONTH_MAP = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
 
         let db = { PLAN: [], ACTUAL: [], FORECAST: [] };
-        let scenarioList = []; 
-        let canalRegistry = {}; 
+        let dbTPV = [];
+        let scenarioList = [];
+        let canalRegistry = {};
         let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" } };
         let timelineChart, barChart;
+        let tpvTimelineChart, tpvBarChart;
         window.currentExportData = null;
         let groupDigital = false;
         const DIGITAL_CANALS = ['APP', 'LP', 'TO'];
@@ -614,19 +754,22 @@
         async function boot() {
             lucide.createIcons();
             try {
-                const [resPlan, resActual, resForecast] = await Promise.all([
+                const [resPlan, resActual, resForecast, resTPV] = await Promise.all([
                     fetch(`${URL_PLAN}?_=${Date.now()}`).catch(() => ({ ok: false })),
                     fetch(`${URL_ACTUAL}?_=${Date.now()}`).catch(() => ({ ok: false })),
-                    fetch(`${URL_FORECAST}?_=${Date.now()}`).catch(() => ({ ok: false }))
+                    fetch(`${URL_FORECAST}?_=${Date.now()}`).catch(() => ({ ok: false })),
+                    fetch(`${URL_TPV}?_=${Date.now()}`).catch(() => ({ ok: false }))
                 ]);
-                
+
                 let rawPlan = resPlan.ok ? await resPlan.json() : [];
                 let rawActual = resActual.ok ? await resActual.json() : [];
                 let rawForecast = resForecast.ok ? await resForecast.json() : [];
+                let rawTPV = resTPV.ok ? await resTPV.json() : [];
 
                 db.PLAN = parseStandardJSON(rawPlan);
                 db.ACTUAL = parseStandardJSON(rawActual);
                 db.FORECAST = parseForecastJSON(rawForecast);
+                dbTPV = parseTPVData(rawTPV);
 
                 detectStructure();
 
@@ -637,6 +780,7 @@
                 handleTypeChange();
                 populateGlobalFilters();
                 populatePLScenarios();
+                populateTPVScenarios();
 
             } catch (err) {
                 console.log(err);
@@ -956,6 +1100,9 @@
 
             if (document.getElementById('tab-content-pl') && document.getElementById('tab-content-pl').style.display !== 'none') {
                 renderPLTab();
+            }
+            if (document.getElementById('tab-content-tpv') && document.getElementById('tab-content-tpv').style.display !== 'none') {
+                renderTPVTab();
             }
         }
 
@@ -1723,9 +1870,12 @@
         function switchTab(tab) {
             document.getElementById('tab-content-comparison').style.display = tab === 'comparison' ? '' : 'none';
             document.getElementById('tab-content-pl').style.display = tab === 'pl' ? '' : 'none';
+            document.getElementById('tab-content-tpv').style.display = tab === 'tpv' ? '' : 'none';
             document.getElementById('tab-btn-comparison').classList.toggle('active', tab === 'comparison');
             document.getElementById('tab-btn-pl').classList.toggle('active', tab === 'pl');
+            document.getElementById('tab-btn-tpv').classList.toggle('active', tab === 'tpv');
             if (tab === 'pl') renderPLTab();
+            if (tab === 'tpv') renderTPVTab();
             lucide.createIcons();
         }
 
@@ -2580,6 +2730,428 @@
 
             btn.disabled = false;
             btn.innerHTML = '<i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT';
+            lucide.createIcons();
+        }
+
+        // =====================================================================
+        // TPV M0 POR DEVICE — Functions
+        // =====================================================================
+
+        function parseTPVData(rawData) {
+            if (!rawData || rawData.length === 0) return [];
+            const first = rawData[0];
+            const firstVals = Object.values(first).map(v => String(v || '').trim());
+            const isHeader = firstVals.some(v => v.toUpperCase().includes('CANAL'));
+
+            if (isHeader) {
+                let canalKey = null, deviceKey = null;
+                for (let k of Object.keys(first)) {
+                    const v = String(first[k] || '').toUpperCase();
+                    if (!canalKey && v.includes('CANAL')) canalKey = k;
+                    if (!deviceKey && (v.includes('DEVICE') || v.includes('POINT'))) deviceKey = k;
+                }
+                const colMonths = {};
+                for (let k of Object.keys(first)) {
+                    const mKey = extractMonthFromKey(String(first[k] || ''));
+                    if (mKey) colMonths[k] = mKey;
+                }
+                return rawData.slice(1).map(row => {
+                    const canal = canalKey ? String(row[canalKey] || '').trim() : '';
+                    const device = deviceKey ? (classifyDevice(String(row[deviceKey] || '')) || String(row[deviceKey] || '').toUpperCase()) : '';
+                    if (!canal || !device) return null;
+                    const obj = { Canal: canal, Device: device };
+                    for (const [origKey, mKey] of Object.entries(colMonths)) obj[mKey] = parseNum(row[origKey]);
+                    return obj;
+                }).filter(Boolean);
+            } else {
+                return rawData.map(row => {
+                    const canal = String(row['CANAL_DEVICE'] || row['Canal'] || row['CANAL'] || '').trim();
+                    const device = classifyDevice(row['POINT_DEVICE'] || row['Device'] || row['DEVICE'] || '') || '';
+                    if (!canal || !device) return null;
+                    const obj = { Canal: canal, Device: device };
+                    for (let k of Object.keys(row)) {
+                        const mKey = extractMonthFromKey(k);
+                        if (mKey) obj[mKey] = parseNum(row[k]);
+                    }
+                    return obj;
+                }).filter(Boolean);
+            }
+        }
+
+        function extractTPVByPeriod(periodId, filterCanal, filterDevice) {
+            const [periodType, periodValue] = periodId.split('|');
+            let total = 0, byCanal = {}, byCanalDevice = {};
+            (dbTPV || []).forEach(row => {
+                let canal = String(row.Canal || '').trim().toUpperCase();
+                canal = (canalRegistry[canal] || canal).toUpperCase();
+                if (canal === 'ENGAGEMENT') return;
+                let device = classifyDevice(row.Device) || String(row.Device || '').toUpperCase();
+                if (filterCanal !== 'ALL') {
+                    if (filterCanal === DIGITAL_GROUP_NAME) { if (!DIGITAL_CANALS.includes(canal)) return; }
+                    else { if (canal !== filterCanal) return; }
+                }
+                if (filterDevice !== 'ALL' && device !== filterDevice) return;
+                let rowSum = 0;
+                if (periodType === 'MONTH') { rowSum = parseNum(row[periodValue]); }
+                else if (periodType === 'YEAR') { Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k) && k.startsWith(periodValue)) rowSum += parseNum(row[k]); }); }
+                else if (periodType === 'YTD') {
+                    const y = periodValue.substring(0, 4), tM = parseInt(periodValue.substring(4, 6), 10);
+                    Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k) && k.startsWith(y) && parseInt(k.substring(4, 6), 10) <= tM) rowSum += parseNum(row[k]); });
+                } else if (periodType === 'YTG') {
+                    const y = periodValue.substring(0, 4), tM = parseInt(periodValue.substring(4, 6), 10);
+                    Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k) && k.startsWith(y) && parseInt(k.substring(4, 6), 10) >= tM) rowSum += parseNum(row[k]); });
+                }
+                total += rowSum;
+                byCanal[canal] = (byCanal[canal] || 0) + rowSum;
+                if (!byCanalDevice[canal]) byCanalDevice[canal] = {};
+                byCanalDevice[canal][device] = (byCanalDevice[canal][device] || 0) + rowSum;
+            });
+            if (groupDigital && (filterCanal === 'ALL' || filterCanal === DIGITAL_GROUP_NAME)) {
+                const grouped = {};
+                Object.entries(byCanal).forEach(([c, v]) => { const k = DIGITAL_CANALS.includes(c) ? DIGITAL_GROUP_NAME : c; grouped[k] = (grouped[k] || 0) + v; });
+                return { total, byCanal: grouped, byCanalDevice };
+            }
+            return { total, byCanal, byCanalDevice };
+        }
+
+        function extractDevicesNoEngagement(type, periodId, filterCanal, filterDevice) {
+            const [periodType, periodValue] = periodId.split('|');
+            const data = db[type] || [];
+            const colC = type === 'FORECAST' ? 'Canal' : cols[type].canal;
+            const colD = type === 'FORECAST' ? 'Device' : cols[type].device;
+            let total = 0, byCanal = {}, byCanalDevice = {};
+            data.forEach(row => {
+                let rawC = String(row[colC] || '').trim().toUpperCase();
+                let canal = (canalRegistry[rawC] || String(row[colC] || '').trim()).toUpperCase();
+                if (canal === 'ENGAGEMENT') return;
+                let rawD = String(row[colD] || '');
+                let device = type === 'FORECAST' ? rawD : (classifyDevice(rawD) || rawD);
+                if (filterCanal !== 'ALL') {
+                    if (filterCanal === DIGITAL_GROUP_NAME) { if (!DIGITAL_CANALS.includes(canal)) return; }
+                    else { if (canal !== filterCanal) return; }
+                }
+                if (filterDevice !== 'ALL' && device !== filterDevice) return;
+                let rowSum = 0;
+                if (periodType === 'MONTH') { rowSum = parseNum(row[periodValue]); }
+                else if (periodType === 'YEAR') { Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k) && k.startsWith(periodValue)) rowSum += parseNum(row[k]); }); }
+                else if (periodType === 'YTD') {
+                    const y = periodValue.substring(0, 4), tM = parseInt(periodValue.substring(4, 6), 10);
+                    Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k) && k.startsWith(y) && parseInt(k.substring(4, 6), 10) <= tM) rowSum += parseNum(row[k]); });
+                } else if (periodType === 'YTG') {
+                    const y = periodValue.substring(0, 4), tM = parseInt(periodValue.substring(4, 6), 10);
+                    Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k) && k.startsWith(y) && parseInt(k.substring(4, 6), 10) >= tM) rowSum += parseNum(row[k]); });
+                }
+                total += rowSum;
+                byCanal[canal] = (byCanal[canal] || 0) + rowSum;
+                if (!byCanalDevice[canal]) byCanalDevice[canal] = {};
+                byCanalDevice[canal][device] = (byCanalDevice[canal][device] || 0) + rowSum;
+            });
+            if (groupDigital && (filterCanal === 'ALL' || filterCanal === DIGITAL_GROUP_NAME)) {
+                const grouped = {};
+                Object.entries(byCanal).forEach(([c, v]) => { const k = DIGITAL_CANALS.includes(c) ? DIGITAL_GROUP_NAME : c; grouped[k] = (grouped[k] || 0) + v; });
+                return { total, byCanal: grouped, byCanalDevice };
+            }
+            return { total, byCanal, byCanalDevice };
+        }
+
+        function calcM0Ratios(tpvObj, devObj) {
+            const byCanal = {};
+            const allC = new Set([...Object.keys(tpvObj.byCanal), ...Object.keys(devObj.byCanal)]);
+            allC.forEach(c => {
+                const tpv = tpvObj.byCanal[c] || 0, dev = devObj.byCanal[c] || 0;
+                byCanal[c] = dev > 0 ? tpv / dev : 0;
+            });
+            const byCanalDevice = {};
+            const allCC = new Set([...Object.keys(tpvObj.byCanalDevice), ...Object.keys(devObj.byCanalDevice)]);
+            allCC.forEach(c => {
+                byCanalDevice[c] = {};
+                const tpvDevs = tpvObj.byCanalDevice[c] || {}, devDevs = devObj.byCanalDevice[c] || {};
+                const allD = new Set([...Object.keys(tpvDevs), ...Object.keys(devDevs)]);
+                allD.forEach(d => { byCanalDevice[c][d] = (devDevs[d] || 0) > 0 ? (tpvDevs[d] || 0) / devDevs[d] : 0; });
+            });
+            return { total: devObj.total > 0 ? tpvObj.total / devObj.total : 0, byCanal, byCanalDevice };
+        }
+
+        function populateTPVScenarios() {
+            ['tpv-scenario-a', 'tpv-scenario-b'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (!sel) return;
+                let html = '';
+                ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                    const group = scenarioList.filter(s => s.type === t);
+                    if (group.length > 0) {
+                        const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                        html += `<optgroup label="--- ${label} ---">`;
+                        group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
+                        html += `</optgroup>`;
+                    }
+                });
+                sel.innerHTML = html;
+            });
+            const y = new Date().getFullYear().toString();
+            const scA = document.getElementById('tpv-scenario-a');
+            const scB = document.getElementById('tpv-scenario-b');
+            if (scA && scenarioList.some(s => s.id === `PLAN|${y}`)) scA.value = `PLAN|${y}`;
+            if (scB && scenarioList.some(s => s.id === `ACTUAL|${y}`)) scB.value = `ACTUAL|${y}`;
+            handleTPVScenarioChange('a', false);
+            handleTPVScenarioChange('b', false);
+        }
+
+        function handleTPVScenarioChange(side, runProcess = true) {
+            const scSel = document.getElementById(`tpv-scenario-${side}`);
+            const moSel = document.getElementById(`tpv-month-${side}`);
+            const scenario = scenarioList.find(s => s.id === scSel?.value);
+            if (scenario) {
+                const prev = moSel.value;
+                moSel.innerHTML = scenario.months.map(m => `<option value="${m}">${m} - ${PT_MONTHS[parseInt(m) - 1].substring(0, 3)}</option>`).join('');
+                if (Array.from(moSel.options).some(o => o.value === prev)) moSel.value = prev;
+                else if (scenario.months.length > 0) moSel.value = scenario.months[scenario.months.length - 1];
+            }
+            if (runProcess) renderTPVTab();
+        }
+
+        function handleTPVTypeChange() {
+            const compType = document.querySelector('input[name="tpv-comp-type"]:checked')?.value || 'MONTH';
+            const monthA = document.getElementById('tpv-month-a');
+            const monthB = document.getElementById('tpv-month-b');
+            if (compType === 'YEAR') { monthA.style.display = 'none'; monthB.style.display = 'none'; }
+            else if (compType === 'YTD' || compType === 'YTG') { monthA.style.display = 'block'; monthB.style.display = 'none'; }
+            else { monthA.style.display = 'block'; monthB.style.display = 'block'; }
+            const scA = document.getElementById('tpv-scenario-a');
+            const scB = document.getElementById('tpv-scenario-b');
+            if (!scA || !scB) return;
+            let htmlA = '', htmlB = '';
+            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                const group = scenarioList.filter(s => s.type === t);
+                if (group.length > 0) {
+                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                    let opts = `<optgroup label="--- ${label} ---">`;
+                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
+                    opts += `</optgroup>`;
+                    htmlA += opts; htmlB += opts;
+                }
+            });
+            scA.innerHTML = htmlA; scB.innerHTML = htmlB;
+            handleTPVScenarioChange('a', false);
+            handleTPVScenarioChange('b', false);
+            if (compType !== 'YEAR') {
+                if (Array.from(monthA.options || []).some(o => o.value === '01')) monthA.value = '01';
+                if (Array.from(monthB.options || []).some(o => o.value === '01')) monthB.value = '01';
+            }
+            renderTPVTab();
+        }
+
+        function renderTPVTab() {
+            const scA = document.getElementById('tpv-scenario-a');
+            const scB = document.getElementById('tpv-scenario-b');
+            if (!scA?.value || !scB?.value) return;
+            const compType = document.querySelector('input[name="tpv-comp-type"]:checked')?.value || 'MONTH';
+            const [typeA, yearA] = scA.value.split('|');
+            const [typeB, yearB] = scB.value.split('|');
+            const moA = document.getElementById('tpv-month-a').value;
+            const moB = (compType === 'YTD' || compType === 'YTG') ? moA : document.getElementById('tpv-month-b').value;
+            const filterCanal = document.getElementById('filter-canal').value;
+            const filterDevice = document.getElementById('filter-device').value;
+
+            const periodA = compType === 'YEAR' ? `YEAR|${yearA}` : `${compType}|${yearA}${moA}`;
+            const periodB = compType === 'YEAR' ? `YEAR|${yearB}` : `${compType}|${yearB}${moB}`;
+
+            const devA = extractDevicesNoEngagement(typeA, periodA, filterCanal, filterDevice);
+            const devB = extractDevicesNoEngagement(typeB, periodB, filterCanal, filterDevice);
+            const tpvA = extractTPVByPeriod(periodA, filterCanal, filterDevice);
+            const tpvB = extractTPVByPeriod(periodB, filterCanal, filterDevice);
+            const m0A = calcM0Ratios(tpvA, devA);
+            const m0B = calcM0Ratios(tpvB, devB);
+
+            let lp = '';
+            if (compType === 'YTD') lp = 'YTD até Mês ';
+            if (compType === 'YTG') lp = 'YTG a partir de ';
+            if (compType === 'MONTH') lp = 'Mês ';
+            const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${lp}${moA})`;
+            const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${lp}${moB})`;
+
+            const bColor = getBaseColor(typeB, true);
+            document.getElementById('tpv-kpi-b-container').style.borderLeftColor = bColor;
+            document.getElementById('tpv-label-kpi-b').style.color = bColor;
+            document.getElementById('tpv-th-b').style.color = bColor;
+            document.getElementById('tpv-total-b').style.color = bColor;
+
+            document.getElementById('tpv-label-kpi-a').innerText = nameA;
+            document.getElementById('tpv-label-kpi-b').innerText = nameB;
+            document.getElementById('tpv-val-kpi-a').innerText = formatBRL(m0A.total);
+            document.getElementById('tpv-val-kpi-b').innerText = formatBRL(m0B.total);
+
+            const deltaAbs = m0B.total - m0A.total;
+            const deltaPct = m0A.total !== 0 ? (deltaAbs / Math.abs(m0A.total)) * 100 : (m0B.total > 0 ? 100 : 0);
+            document.getElementById('tpv-val-delta-abs').innerText = (deltaAbs >= 0 ? '+' : '') + formatBRL(deltaAbs);
+            document.getElementById('tpv-val-delta-pct').innerText = (deltaAbs >= 0 ? '+' : '') + formatBRPct(deltaPct);
+
+            const cardPct = document.getElementById('tpv-card-delta-pct');
+            const iconPct = document.getElementById('tpv-icon-delta-pct');
+            if (deltaPct > 0) {
+                cardPct.className = 'card p-6 border-b-4 border-b-green-500 bg-green-50/30 fade-in';
+                document.getElementById('tpv-val-delta-pct').className = 'text-2xl font-black text-green-600';
+                iconPct.setAttribute('data-lucide', 'trending-up'); iconPct.className = 'w-6 h-6 text-green-500';
+            } else if (deltaPct < 0) {
+                cardPct.className = 'card p-6 border-b-4 border-b-red-500 bg-red-50/30 fade-in';
+                document.getElementById('tpv-val-delta-pct').className = 'text-2xl font-black text-red-600';
+                iconPct.setAttribute('data-lucide', 'trending-down'); iconPct.className = 'w-6 h-6 text-red-500';
+            } else {
+                cardPct.className = 'card p-6 border-b-4 border-b-gray-400 fade-in';
+                document.getElementById('tpv-val-delta-pct').className = 'text-2xl font-black text-gray-800';
+                iconPct.setAttribute('data-lucide', 'minus'); iconPct.className = 'w-6 h-6 text-gray-400';
+            }
+
+            drawTPVBarChart(m0A.byCanal, m0B.byCanal, nameA, nameB, typeB);
+            drawTPVTimelineChart(typeA, yearA, moA, typeB, yearB, moB, nameA, nameB, filterCanal, filterDevice, compType);
+            drawTPVTable(m0A, m0B, nameA, nameB, typeB);
+            lucide.createIcons();
+        }
+
+        function drawTPVBarChart(byCanalA, byCanalB, nameA, nameB, typeB) {
+            const allC = Array.from(new Set([...Object.keys(byCanalA), ...Object.keys(byCanalB)]));
+            const top = allC.sort((a, b) => (byCanalB[b] || 0) - (byCanalB[a] || 0)).slice(0, 5);
+            const dA = top.map(c => byCanalA[c] || 0);
+            const dB = top.map(c => byCanalB[c] || 0);
+            if (tpvBarChart) tpvBarChart.destroy();
+            tpvBarChart = new Chart(document.getElementById('tpvBarChart'), {
+                type: 'bar',
+                data: { labels: top, datasets: [
+                    { label: nameA, data: dA, backgroundColor: '#D1D5DB', borderRadius: 4 },
+                    { label: nameB, data: dB, backgroundColor: getBaseColor(typeB, true), borderRadius: 4 }
+                ]},
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' } } },
+                        datalabels: {
+                            display: ctx => ctx.datasetIndex === 1, align: 'top', anchor: 'end', offset: 2,
+                            formatter: (v, ctx) => {
+                                const vA = ctx.chart.data.datasets[0].data[ctx.dataIndex];
+                                if (vA === 0 && v === 0) return '';
+                                if (vA === 0) return '+100%';
+                                const d = ((v - vA) / vA) * 100;
+                                return (d > 0 ? '+' : '') + formatBRPct(d);
+                            },
+                            color: ctx => { const vA = ctx.chart.data.datasets[0].data[ctx.dataIndex]; return (ctx.dataset.data[ctx.dataIndex] - vA) > 0 ? '#16a34a' : ((ctx.dataset.data[ctx.dataIndex] - vA) < 0 ? '#dc2626' : '#6b7280'); },
+                            font: { weight: 'bold', size: 10 }
+                        },
+                        tooltip: { callbacks: { label: ctx => (ctx.dataset.label || '') + ': ' + (ctx.parsed.y !== null ? formatBRL(ctx.parsed.y) + '/device' : '') } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 }, callback: v => 'R$' + (v >= 1000 ? (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + 'k' : v) } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
+                    },
+                    layout: { padding: { top: 20 } }
+                }
+            });
+        }
+
+        function drawTPVTimelineChart(typeA, yearA, moA, typeB, yearB, moB, nameA, nameB, filterCanal, filterDevice, compType) {
+            function getM0(type, year, m) {
+                const period = `MONTH|${year}${m}`;
+                const dev = extractDevicesNoEngagement(type, period, filterCanal, filterDevice);
+                const tpv = extractTPVByPeriod(period, filterCanal, filterDevice);
+                return dev.total > 0 ? tpv.total / dev.total : null;
+            }
+            let labels = [], datasets = [];
+            if (compType === 'YEAR') {
+                labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                datasets = [
+                    { label: nameA, data: labels.map((_, i) => getM0(typeA, yearA, String(i + 1).padStart(2, '0'))), borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
+                    { label: nameB, data: labels.map((_, i) => getM0(typeB, yearB, String(i + 1).padStart(2, '0'))), borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
+                ];
+            } else if (compType === 'YTD') {
+                const maxM = parseInt(moA);
+                labels = Array.from({ length: maxM }, (_, i) => PT_MONTHS[i].substring(0, 3));
+                datasets = [
+                    { label: nameA, data: labels.map((_, i) => getM0(typeA, yearA, String(i + 1).padStart(2, '0'))), borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
+                    { label: nameB, data: labels.map((_, i) => getM0(typeB, yearB, String(i + 1).padStart(2, '0'))), borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
+                ];
+            } else if (compType === 'YTG') {
+                const startM = parseInt(moA);
+                labels = Array.from({ length: 12 - startM + 1 }, (_, i) => PT_MONTHS[startM - 1 + i].substring(0, 3));
+                datasets = [
+                    { label: nameA, data: labels.map((_, i) => getM0(typeA, yearA, String(startM + i).padStart(2, '0'))), borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
+                    { label: nameB, data: labels.map((_, i) => getM0(typeB, yearB, String(startM + i).padStart(2, '0'))), borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
+                ];
+            } else {
+                labels = [nameA, nameB];
+                datasets = [{ label: 'TPV M0', data: [getM0(typeA, yearA, moA), getM0(typeB, yearB, moB)], borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0, borderWidth: 3, pointRadius: 6, pointBackgroundColor: '#fff' }];
+            }
+            if (tpvTimelineChart) tpvTimelineChart.destroy();
+            tpvTimelineChart = new Chart(document.getElementById('tpvTimelineChart'), {
+                type: 'line', data: { labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', align: 'end', labels: { boxWidth: 12, usePointStyle: true, font: { weight: 'bold', size: 10 } } },
+                        datalabels: {
+                            display: true, align: 'top', offset: 6,
+                            formatter: v => {
+                                if (v === null || v === 0) return '';
+                                if (v >= 1000000) return 'R$' + (v / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'M';
+                                if (v >= 1000) return 'R$' + (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + 'k';
+                                return formatBRL(v);
+                            },
+                            font: { size: 10, weight: 'bold' }, color: ctx => ctx.dataset.borderColor
+                        },
+                        tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 10, callbacks: { label: ctx => (ctx.dataset.label || '') + ': ' + (ctx.parsed.y !== null ? formatBRL(ctx.parsed.y) + '/device' : '') } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { display: false } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
+                    },
+                    layout: { padding: { top: 25 } }
+                }
+            });
+        }
+
+        function drawTPVTable(m0A, m0B, nameA, nameB, typeB) {
+            const tbody = document.getElementById('tpv-tbody');
+            let html = '';
+            const allC = new Set([...Object.keys(m0A.byCanal), ...Object.keys(m0B.byCanal)]);
+            const sorted = Array.from(allC).sort((a, b) => (m0B.byCanal[b] || 0) - (m0B.byCanal[a] || 0));
+            document.getElementById('tpv-th-a').innerText = nameA;
+            document.getElementById('tpv-th-b').innerText = nameB;
+            sorted.forEach((canal, idx) => {
+                const vA = m0A.byCanal[canal] || 0, vB = m0B.byCanal[canal] || 0;
+                const dAbs = vB - vA, dPct = vA !== 0 ? (dAbs / Math.abs(vA)) * 100 : (vB > 0 ? 100 : 0);
+                const pc = dPct > 0 ? 'text-green-600' : (dPct < 0 ? 'text-red-600' : 'text-gray-400');
+                const sg = dAbs >= 0 ? '+' : '';
+                html += `<tr class="border-b border-gray-100 hover:bg-blue-50/50 cursor-pointer transition-colors" onclick="toggleDrilldown('tpv-drill-${idx}')">
+                    <td class="p-4 flex items-center gap-2 font-black text-xs text-gray-800"><i data-lucide="chevron-right" id="icon-tpv-drill-${idx}" class="w-4 h-4 text-blue-500 transition-transform"></i>${canal}</td>
+                    <td class="p-4 text-xs font-semibold text-gray-500">${formatBRL(vA)}/dev</td>
+                    <td class="p-4 text-xs font-black" style="color:${getBaseColor(typeB, true)};">${formatBRL(vB)}/dev</td>
+                    <td class="p-4 text-xs font-bold ${pc} bg-gray-50/30">${sg}${formatBRPct(dPct)}</td>
+                    <td class="p-4 text-xs font-semibold ${pc} bg-gray-50/30">${sg}${formatBRL(dAbs)}</td>
+                </tr>`;
+                const devsA = m0A.byCanalDevice[canal] || {}, devsB = m0B.byCanalDevice[canal] || {};
+                Array.from(new Set([...Object.keys(devsA), ...Object.keys(devsB)])).sort((a, b) => (devsB[b] || 0) - (devsB[a] || 0)).forEach(dev => {
+                    const dvA = devsA[dev] || 0, dvB = devsB[dev] || 0;
+                    const ddAbs = dvB - dvA, ddPct = dvA !== 0 ? (ddAbs / Math.abs(dvA)) * 100 : (dvB > 0 ? 100 : 0);
+                    const dc = ddPct > 0 ? 'text-green-600' : (ddPct < 0 ? 'text-red-600' : 'text-gray-400');
+                    const ds = ddAbs >= 0 ? '+' : '';
+                    html += `<tr class="tpv-drill-${idx} hidden bg-gray-50 border-b border-white">
+                        <td class="p-3 pl-12 text-[11px] font-bold text-gray-600 flex items-center gap-2 border-l-2 border-l-blue-200"><i data-lucide="smartphone" class="w-3 h-3 text-gray-400"></i> ${dev}</td>
+                        <td class="p-3 text-[11px] text-gray-500">${formatBRL(dvA)}/dev</td>
+                        <td class="p-3 text-[11px] font-bold text-gray-700">${formatBRL(dvB)}/dev</td>
+                        <td class="p-3 text-[11px] font-bold ${dc}">${ds}${formatBRPct(ddPct)}</td>
+                        <td class="p-3 text-[11px] text-gray-500">${ds}${formatBRL(ddAbs)}</td>
+                    </tr>`;
+                });
+            });
+            tbody.innerHTML = html;
+            const totDA = m0B.total - m0A.total;
+            const totDP = m0A.total !== 0 ? (totDA / Math.abs(m0A.total)) * 100 : (m0B.total > 0 ? 100 : 0);
+            const totPC = totDA >= 0 ? 'text-green-600' : 'text-red-600';
+            document.getElementById('tpv-total-a').innerText = formatBRL(m0A.total) + '/dev';
+            document.getElementById('tpv-total-b').innerText = formatBRL(m0B.total) + '/dev';
+            document.getElementById('tpv-total-abs').innerText = (totDA >= 0 ? '+' : '') + formatBRL(totDA);
+            document.getElementById('tpv-total-abs').className = `p-4 text-xs font-black ${totPC}`;
+            document.getElementById('tpv-total-pct').innerText = (totDA >= 0 ? '+' : '') + formatBRPct(totDP);
+            document.getElementById('tpv-total-pct').className = `p-4 text-xs font-black ${totPC}`;
             lucide.createIcons();
         }
 

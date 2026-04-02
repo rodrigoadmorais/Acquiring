@@ -1,0 +1,107 @@
+{
+  "name": "TPV por Device - Live Data",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 1
+            }
+          ]
+        }
+      },
+      "id": "b2c3d4e5-0001-4000-8000-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [0, 0],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1R-p6kZIavad6Y_R8LDUYTezvZ48AaQ8HTOocJN5msYc/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "TPV para Devices"
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-0002-4000-8000-000000000002",
+      "name": "Read TPV por Device",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [224, 0],
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data/tpv_devices.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "Atualizando TPV por Device via Verdi",
+        "additionalParameters": {
+          "branch": "master"
+        }
+      },
+      "id": "b2c3d4e5-0003-4000-8000-000000000003",
+      "name": "Write TPV to GitHub",
+      "type": "n8n-nodes-base.github",
+      "position": [448, 0],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          { "node": "Read TPV por Device", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Read TPV por Device": {
+      "main": [
+        [{ "node": "Write TPV to GitHub", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "85260b6a32af0aede929fef314a09f9eb905ee8ed00741f8ad438b405f1b84a4"
+  },
+  "tags": []
+}
