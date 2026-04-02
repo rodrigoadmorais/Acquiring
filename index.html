@@ -185,9 +185,130 @@
       main { padding: 0 16px 48px; }
       .header-inner { padding: 20px 16px; }
     }
+
+
+    /* ── Password Gate ── */
+    #password-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: linear-gradient(135deg, #2D3277 0%, #1a1f5e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #password-gate .gate-box {
+      background: #fff;
+      border-radius: 20px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    #password-gate .gate-logo {
+      width: 64px;
+      height: 64px;
+      background: #FFF159;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    #password-gate h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1a1f3c;
+      margin-bottom: 6px;
+    }
+    #password-gate p {
+      font-size: 0.9rem;
+      color: #6b7280;
+      margin-bottom: 28px;
+    }
+    #password-gate input {
+      width: 100%;
+      padding: 14px 18px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      text-align: center;
+      letter-spacing: 4px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 16px;
+    }
+    #password-gate input:focus { border-color: #3483FA; }
+    #password-gate input.error { border-color: #ef4444; animation: shake 0.3s; }
+    #password-gate button {
+      width: 100%;
+      padding: 14px;
+      background: #2D3277;
+      color: #FFF159;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #password-gate button:hover { background: #1a1f5e; }
+    #password-gate .error-msg {
+      color: #ef4444;
+      font-size: 0.82rem;
+      margin-top: 10px;
+      min-height: 18px;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
   </style>
 </head>
 <body>
+
+<!-- Password Gate -->
+<div id="password-gate">
+  <div class="gate-box">
+    <div class="gate-logo">
+      <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="18" width="18" height="13" rx="3" fill="#2D3277"/>
+        <path d="M13 18v-4a6 6 0 0 1 12 0v4" stroke="#2D3277" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="19" cy="24.5" r="2" fill="#FFF159"/>
+      </svg>
+    </div>
+    <h2>Acquiring Data Center</h2>
+    <p>Digite a senha para acessar o dashboard</p>
+    <input type="password" id="gate-input" placeholder="••••" maxlength="20" />
+    <button onclick="checkPassword()">Entrar</button>
+    <div class="error-msg" id="gate-error"></div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var input = document.getElementById('gate-input');
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkPassword();
+    });
+    input.focus();
+  })();
+
+  function checkPassword() {
+    var input = document.getElementById('gate-input');
+    var error = document.getElementById('gate-error');
+    if (input.value === '123') {
+      document.getElementById('password-gate').style.display = 'none';
+    } else {
+      error.textContent = 'Senha incorreta. Tente novamente.';
+      input.classList.add('error');
+      input.value = '';
+      setTimeout(function() { input.classList.remove('error'); input.focus(); }, 400);
+    }
+  }
+</script>
 
 <header>
   <div class="header-inner">
