@@ -64,7 +64,7 @@
         "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
         "commitMessage": "Atualizando TPV por Device via Verdi",
         "additionalParameters": {
-          "branch": "master"
+          "branch": "main"
         }
       },
       "id": "b2c3d4e5-0003-4000-8000-000000000003",
