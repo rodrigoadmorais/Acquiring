@@ -165,6 +165,10 @@
       <div class="card"><div class="card-t">Top Canais — Custo Plano</div><div id="r1p"></div></div>
       <div class="card"><div class="card-t">Top Canais — Gap FCST−Plano</div><div id="r1g"></div></div>
     </div>
+    <div class="ai">
+      <div class="ai-h" onclick="tAI(1)"><h3>Resumo Executivo por IA</h3><span class="arr" id="aiArr1">▼</span></div>
+      <div class="ai-b" id="aiB1" style="display:none"></div>
+    </div>
   </div>
 
   <!-- ══ TAB 2: FCST vs FCST ══ -->
@@ -198,7 +202,7 @@
       <div id="tWrap"><div class="empty">Carregando…</div></div>
     </div>
     <div class="ai">
-      <div class="ai-h" onclick="tAI()"><h3>Resumo Executivo por IA</h3><span class="arr" id="aiArr">▼</span></div>
+      <div class="ai-h" onclick="tAI(3)"><h3>Resumo Executivo por IA</h3><span class="arr" id="aiArr">▼</span></div>
       <div class="ai-b" id="aiB" style="display:none"></div>
     </div>
   </div>
@@ -216,7 +220,7 @@ const ML=['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26',
 // Keyed by scenario name
 let DATA = {};        // { 'Plano': [...rows], 'FCST 3+9': [...rows], ... }
 let FCST_KEYS = [];   // sorted FCST version names
-let showY=true, showL=false, aiOpen=false;
+let showY=true, showL=false, aiOpen1=false, aiOpen2=false, aiOpen3=false;
 let ch1e=null, ch1g=null, ch2e=null, ch2g=null;
 
 /* ── Parse ── */
@@ -360,7 +364,7 @@ function render(){
   renderTab1(f);
   renderTab2(f);
   renderTable();
-  if(aiOpen) genAI(f);
+  if(aiOpen3) genAI3(f);
 }
 
 /* ══ Tab 1: Plano vs FCST ══ */
@@ -397,6 +401,7 @@ function renderTab1(f){
 
   drawRankSimple('r1p',planRows,f,'#1565C0');
   drawRankGap('r1g',planRows,fcstRows,f);
+  if(aiOpen1) genAI1(f);
 }
 
 /* ══ Tab 2: FCST vs FCST ══ */
@@ -452,6 +457,10 @@ function renderTab2(f){
     <div class="ranks">
       <div class="card"><div class="card-t">Top Canais — Delta Absoluto</div><div id="r2d"></div></div>
       <div class="card"><div class="card-t">Top Canais — Variação %</div><div id="r2p"></div></div>
+    </div>
+    <div class="ai">
+      <div class="ai-h" onclick="tAI(2)"><h3>Resumo Executivo por IA</h3><span class="arr" id="aiArr2">▼</span></div>
+      <div class="ai-b" id="aiB2" style="display:none"></div>
     </div>`;
 
   // Draw after DOM is ready
@@ -463,6 +472,7 @@ function renderTab2(f){
 
     // Rankings for delta
     drawRankDelta('r2d','r2p',rA,rB,f);
+    if(aiOpen2) genAI2(f);
   });
 }
 
@@ -617,27 +627,90 @@ function drawRankDelta(idAbs,idPct,rA,rB,f){
   }).join('');
 }
 
-/* ── AI Summary ── */
-function genAI(f){
+/* ── Pareto 90% helper ── */
+function pareto90(rowsA, rowsB, f){
+  const mA=groupByCanal(rowsA,f);
+  const mB=groupByCanal(rowsB,f);
+  const keys=[...new Set([...Object.keys(mA),...Object.keys(mB)])];
+  const gaps=keys.map(k=>({
+    canal:k, a:mA[k]||0, b:mB[k]||0, gap:(mB[k]||0)-(mA[k]||0)
+  })).filter(x=>Math.abs(x.gap)>100).sort((a,b)=>Math.abs(b.gap)-Math.abs(a.gap));
+
+  const totalAbs=gaps.reduce((s,x)=>s+Math.abs(x.gap),0);
+  if(!totalAbs) return null;
+
+  let cum=0;
+  const drivers=[];
+  for(const g of gaps){
+    cum+=Math.abs(g.gap);
+    drivers.push({...g, pct:Math.abs(g.gap)/totalAbs*100, cumPct:cum/totalAbs*100});
+    if(cum/totalAbs>=0.90) break;
+  }
+  return { drivers, totalAbs, netGap:gaps.reduce((s,x)=>s+x.gap,0) };
+}
+
+function buildAIHTML(rowsA, rowsB, f, labelA, labelB, extraNote){
+  const months=ML.slice(f.de,f.ate+1);
+  const tA=sumP(rowsA,f.de,f.ate), tB=sumP(rowsB,f.de,f.ate);
+  const netGap=tB-tA, pctNet=tA>0?netGap/tA*100:null;
+
+  let html=`<p>No período <strong>${months[0]}–${months[months.length-1]}</strong>: `;
+  html+=`<strong>${labelA}</strong> ${brl(tA)} · <strong>${labelB}</strong> ${brl(tB)}.`;
+  if(pctNet!==null){
+    const col=netGap>0?'var(--red)':'var(--green)';
+    html+=` Gap líquido: <strong style="color:${col}">${netGap>=0?'+':''}${brl(netGap)} (${netGap>=0?'+':''}${pctNet.toFixed(1)}%)</strong>.`;
+  }
+  html+='</p>';
+
+  const par=pareto90(rowsA,rowsB,f);
+  if(!par||!par.drivers.length){
+    html+='<p>Sem variações significativas no período selecionado.</p>';
+  } else {
+    const last=par.drivers[par.drivers.length-1];
+    html+=`<p>Os <strong>${par.drivers.length} ${par.drivers.length===1?'canal':'canais'}</strong> a seguir explicam <strong>${last.cumPct.toFixed(0)}% da variação total</strong>:</p>`;
+    html+='<ul style="margin:8px 0 10px 16px;line-height:1.9">';
+    par.drivers.forEach(d=>{
+      const col=d.gap>0?'var(--red)':'var(--green)';
+      const dir=d.gap>0?'▲':'▼';
+      html+=`<li><strong>${d.canal}</strong>: `;
+      html+=`<span style="color:${col}">${dir} ${brl(d.gap)}</span> `;
+      html+=`<span style="color:var(--muted)">(${d.pct.toFixed(1)}% da variação · de ${brl(d.a)} para ${brl(d.b)})</span></li>`;
+    });
+    html+='</ul>';
+    const rest=par.totalAbs-par.drivers.reduce((s,d)=>s+Math.abs(d.gap),0);
+    if(rest>0) html+=`<p style="color:var(--muted);font-size:12px">Os demais canais respondem pelos ${(100-last.cumPct).toFixed(0)}% restantes da variação (${brl(rest)} no total).</p>`;
+  }
+  if(extraNote) html+=`<p>${extraNote}</p>`;
+  html+=`<p style="color:var(--muted);font-size:11px;margin-top:6px"><em>Análise gerada automaticamente.</em></p>`;
+  return html;
+}
+
+/* ── AI per tab ── */
+function genAI1(f){
   const fcstKey=document.getElementById('sFcst1').value;
   const pR=applyF(DATA['Plano'],f);
   const fR=applyF(DATA[fcstKey],f);
-  const tP=sumP(pR,f.de,f.ate), tF=sumP(fR,f.de,f.ate);
-  const gap=tF-tP, pctG=tP>0?gap/tP*100:null;
-  const months=ML.slice(f.de,f.ate+1);
+  const extra=FCST_KEYS.length>=2
+    ?`Há ${FCST_KEYS.length} versões de FCST disponíveis (${FCST_KEYS.join(', ')}). Use a aba <strong>FCST vs FCST</strong> para ver a evolução das revisões.`
+    :'';
+  document.getElementById('aiB1').innerHTML=buildAIHTML(pR,fR,f,'Plano',fcstKey,extra);
+}
 
-  let html=`<p>No período <strong>${months[0]}–${months[months.length-1]}</strong>, o custo <strong>Plano</strong> totaliza <strong>${brl(tP)}</strong>`;
-  html+=` e o <strong>${fcstKey}</strong> totaliza <strong>${brl(tF)}</strong>.`;
-  if(pctG!==null){
-    html+=` O FCST representa <strong>${pct(pctG)}</strong> do Plano, com gap de <strong>${gap>0?'+':''}${brl(gap)}</strong>.`;
-    if(Math.abs(pctG)>10) html+=gap>0?' Variação expressiva para cima — recomenda-se análise dos principais canais impulsionadores.' :' Variação expressiva para baixo — verificar se reflete eficiência real ou subregistro.';
-    else html+=' Variação dentro de uma faixa controlada.';
-  }
-  if(FCST_KEYS.length>=2){
-    html+=`</p><p>Há ${FCST_KEYS.length} versões de FCST disponíveis (${FCST_KEYS.join(', ')}). Use a aba <strong>FCST vs FCST</strong> para analisar a evolução das revisões.`;
-  }
-  html+=`</p><p><em>Resumo gerado automaticamente.</em></p>`;
-  document.getElementById('aiB').innerHTML=html;
+function genAI2(f){
+  const ka=document.getElementById('sFcst2a').value;
+  const kb=document.getElementById('sFcst2b').value;
+  const el=document.getElementById('aiB2');
+  if(!el||ka===kb) return;
+  const rA=applyF(DATA[ka],f);
+  const rB=applyF(DATA[kb],f);
+  el.innerHTML=buildAIHTML(rA,rB,f,ka,kb,'');
+}
+
+function genAI3(f){
+  const fcstKey=document.getElementById('sFcst1').value;
+  const pR=applyF(DATA['Plano'],f);
+  const fR=applyF(DATA[fcstKey],f);
+  document.getElementById('aiB').innerHTML=buildAIHTML(pR,fR,f,'Plano',fcstKey,'');
 }
 
 /* ── Controls ── */
@@ -650,11 +723,25 @@ function tTh(){
   document.getElementById('btnTh').textContent=dk?'🌙':'☀️';
   render();
 }
-function tAI(){
-  aiOpen=!aiOpen;
-  document.getElementById('aiB').style.display=aiOpen?'block':'none';
-  document.getElementById('aiArr').textContent=aiOpen?'▲':'▼';
-  if(aiOpen) genAI(getF());
+function tAI(n){
+  if(n===1){
+    aiOpen1=!aiOpen1;
+    document.getElementById('aiB1').style.display=aiOpen1?'block':'none';
+    document.getElementById('aiArr1').textContent=aiOpen1?'▲':'▼';
+    if(aiOpen1) genAI1(getF());
+  } else if(n===2){
+    aiOpen2=!aiOpen2;
+    const el=document.getElementById('aiB2');
+    const arr=document.getElementById('aiArr2');
+    if(el){ el.style.display=aiOpen2?'block':'none'; }
+    if(arr){ arr.textContent=aiOpen2?'▲':'▼'; }
+    if(aiOpen2) genAI2(getF());
+  } else {
+    aiOpen3=!aiOpen3;
+    document.getElementById('aiB').style.display=aiOpen3?'block':'none';
+    document.getElementById('aiArr').textContent=aiOpen3?'▲':'▼';
+    if(aiOpen3) genAI3(getF());
+  }
 }
 
 function goTab(id,btn){
