@@ -743,7 +743,7 @@
                 for(let k in row) {
                     if(/^\d{6}$/.test(k) && k < currentYYYYMM) {
                         if(!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
-                        forecastMap[key][k] = parseNum(row[k]); 
+                        forecastMap[key][k] = (forecastMap[key][k] || 0) + parseNum(row[k]);
                     }
                 }
             });
