@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dash CPA</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --ml-yellow: #FFE600;
+      --ml-dark: #333333;
+      --ml-bg: #F5F5F5;
+      --ml-card: #FFFFFF;
+      --ml-border: #E0E0E0;
+      --ml-text: #333333;
+      --ml-muted: #666666;
+      --ml-green: #00A650;
+      --ml-red: #E53935;
+      --ml-blue: #1565C0;
+      --ml-orange: #F57C00;
+    }
+    [data-theme="dark"] {
+      --ml-bg: #1A1A1A;
+      --ml-card: #242424;
+      --ml-border: #3A3A3A;
+      --ml-text: #F0F0F0;
+      --ml-muted: #AAAAAA;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--ml-bg); color: var(--ml-text); min-height: 100vh; }
+
+    /* Header */
+    .header {
+      background: var(--ml-yellow);
+      padding: 0 24px;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    .header h1 { font-size: 18px; font-weight: 700; color: #333; letter-spacing: -0.3px; }
+    .header-right { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.18);
+      background: rgba(255,255,255,0.7);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: rgba(255,255,255,0.95); }
+    .btn.on { background: #333; color: #FFE600; border-color: #333; }
+
+    /* Filters */
+    .filters {
+      background: var(--ml-card);
+      border-bottom: 1px solid var(--ml-border);
+      padding: 10px 24px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .fg { display: flex; flex-direction: column; gap: 3px; }
+    .fg label { font-size: 10px; font-weight: 700; color: var(--ml-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+    .fg select {
+      padding: 5px 10px;
+      border: 1px solid var(--ml-border);
+      border-radius: 6px;
+      background: var(--ml-card);
+      color: var(--ml-text);
+      font-size: 13px;
+      min-width: 130px;
+      cursor: pointer;
+    }
+    .ml-auto { margin-left: auto; }
+    .last-update { font-size: 11px; color: var(--ml-muted); }
+
+    /* Main */
+    .main { padding: 18px 24px; }
+
+    /* KPI Grid */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+    .kpi-card {
+      background: var(--ml-card);
+      border: 1px solid var(--ml-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before { content:''; position:absolute; top:0;left:0;right:0;height:3px; }
+    .kpi-card.c-plano::before { background: var(--ml-blue); }
+    .kpi-card.c-fcst::before  { background: var(--ml-orange); }
+    .kpi-card.c-real::before  { background: var(--ml-green); }
+    .kpi-card.c-ating::before { background: var(--ml-yellow); }
+    .kpi-label { font-size: 10px; font-weight: 700; color: var(--ml-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .kpi-value { font-size: 20px; font-weight: 700; color: var(--ml-text); line-height: 1.2; }
+    .kpi-sub   { font-size: 11px; color: var(--ml-muted); margin-top: 3px; }
+
+    /* Charts */
+    .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .card { background: var(--ml-card); border: 1px solid var(--ml-border); border-radius: 10px; padding: 14px 16px; }
+    .card-title { font-size: 13px; font-weight: 700; color: var(--ml-text); margin-bottom: 12px; }
+    .chart-wrap { position: relative; height: 260px; }
+
+    /* Rankings */
+    .rank-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .rank-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--ml-border); }
+    .rank-item:last-child { border-bottom: none; }
+    .rank-num { width: 22px; height: 22px; border-radius: 50%; background: var(--ml-yellow); color: #333; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rank-info { flex: 1; }
+    .rank-name { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+    .rank-bar { height: 5px; background: var(--ml-border); border-radius: 3px; overflow: hidden; }
+    .rank-bar-fill { height: 100%; border-radius: 3px; }
+    .rank-val { font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+    /* Table */
+    .table-card { background: var(--ml-card); border: 1px solid var(--ml-border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; overflow-x: auto; }
+    .table-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { background: var(--ml-bg); padding: 7px 10px; text-align: left; font-size: 10px; font-weight: 700; color: var(--ml-muted); text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 2px solid var(--ml-border); white-space: nowrap; }
+    td { padding: 7px 10px; border-bottom: 1px solid var(--ml-border); white-space: nowrap; }
+    tr:hover td { background: var(--ml-bg); }
+    .td-r { text-align: right; }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .b-plano { background: #E3F2FD; color: #1565C0; }
+    .b-fcst  { background: #FFF3E0; color: #E65100; }
+    .b-real  { background: #E8F5E9; color: #2E7D32; }
+
+    /* AI Panel */
+    .ai-panel { background: var(--ml-card); border: 1px solid var(--ml-border); border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+    .ai-toggle { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; cursor: pointer; user-select: none; }
+    .ai-toggle h3 { font-size: 13px; font-weight: 700; }
+    .ai-toggle .arr { font-size: 16px; color: var(--ml-muted); }
+    .ai-body { padding: 0 16px 16px; font-size: 13px; line-height: 1.65; color: var(--ml-text); }
+    .ai-body p + p { margin-top: 8px; }
+
+    .empty { text-align: center; padding: 32px; color: var(--ml-muted); font-size: 13px; }
+
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2,1fr); }
+      .charts-row, .rank-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Dash CPA</h1>
+  <div class="header-right">
+    <button class="btn" id="btnY" onclick="toggleY()">Eixo Y</button>
+    <button class="btn" id="btnLbl" onclick="toggleLbl()">Labels</button>
+    <button class="btn" onclick="doExport()">↓ Excel</button>
+    <button class="btn" id="btnTheme" onclick="toggleTheme()">🌙</button>
+  </div>
+</div>
+
+<div class="filters">
+  <div class="fg">
+    <label>Canal Resumido</label>
+    <select id="fCanalRes" onchange="render()"><option value="">Todos</option></select>
+  </div>
+  <div class="fg">
+    <label>Canal</label>
+    <select id="fCanal" onchange="render()"><option value="">Todos</option></select>
+  </div>
+  <div class="fg">
+    <label>De</label>
+    <select id="fDe" onchange="render()"></select>
+  </div>
+  <div class="fg">
+    <label>Até</label>
+    <select id="fAte" onchange="render()"></select>
+  </div>
+  <div class="fg ml-auto">
+    <label>&nbsp;</label>
+    <span class="last-update" id="upd">Carregando…</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="kpi-grid">
+    <div class="kpi-card c-plano">
+      <div class="kpi-label">Total Plano</div>
+      <div class="kpi-value" id="kP">—</div>
+      <div class="kpi-sub"  id="kPsub">&nbsp;</div>
+    </div>
+    <div class="kpi-card c-fcst">
+      <div class="kpi-label">Total Forecast</div>
+      <div class="kpi-value" id="kF">—</div>
+      <div class="kpi-sub"  id="kFsub">&nbsp;</div>
+    </div>
+    <div class="kpi-card c-real">
+      <div class="kpi-label">Total Realizado</div>
+      <div class="kpi-value" id="kR">—</div>
+      <div class="kpi-sub"  id="kRsub">&nbsp;</div>
+    </div>
+    <div class="kpi-card c-ating">
+      <div class="kpi-label">Atingimento Real/Plano</div>
+      <div class="kpi-value" id="kA">—</div>
+      <div class="kpi-sub"  id="kAsub">&nbsp;</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-title">Evolução Mensal de Custos</div>
+      <div class="chart-wrap"><canvas id="cEvol"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Gap Real − Plano (R$)</div>
+      <div class="chart-wrap"><canvas id="cGap"></canvas></div>
+    </div>
+  </div>
+
+  <div class="rank-row">
+    <div class="card">
+      <div class="card-title">Top Canais — Custo Plano</div>
+      <div id="rPlano"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Canais — Custo Realizado</div>
+      <div id="rReal"></div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-head">
+      <span class="card-title">Tabela Detalhada</span>
+      <span class="last-update" id="tCount"></span>
+    </div>
+    <div id="tWrap"><div class="empty">Carregando dados…</div></div>
+  </div>
+
+  <div class="ai-panel">
+    <div class="ai-toggle" onclick="toggleAI()">
+      <h3>Resumo Executivo por IA</h3>
+      <span class="arr" id="aiArr">▼</span>
+    </div>
+    <div class="ai-body" id="aiBody" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+
+const MK = [
+  'janeiro 26','fevereiro 26','março 26','abril 26','maio 26','junho 26',
+  'julho 26','agosto 26','setembro 26','outubro 26','novembro 26','dezembro 26'
+];
+const ML = ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26',
+            'Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'];
+
+let PL = [], FC = [], RL = [];
+let showY = true, showLbl = false, aiOpen = false;
+let chEvol = null, chGap = null;
+
+/* ── Parse ── */
+function parseNum(v) {
+  if (v === undefined || v === null || v === '') return 0;
+  const s = String(v).trim().replace(/\s/g,'');
+  // Handle BR format: 1.234.567 or 1.234.567,89
+  const n = parseFloat(s.replace(/\./g,'').replace(',','.'));
+  return isNaN(n) ? 0 : n;
+}
+
+function transform(rows) {
+  const pl = [], fc = [], rl = [];
+  rows.forEach(row => {
+    const scen = (row['Cenário'] || row['Cenario'] || row['CENÁRIO'] || row['CENARIO'] || '').toString().trim().toLowerCase();
+    const cr = (row['Canal Resumido'] || '').toString().trim();
+    const cn = (row['CANAL'] || '').toString().trim();
+    if (!cr && !cn) return;
+    const obj = { cr, cn, m: MK.map(k => parseNum(row[k])) };
+    if (scen.startsWith('plano') || scen === 'plan') pl.push(obj);
+    else if (scen.startsWith('forecast') || scen === 'fcst') fc.push(obj);
+    else if (scen.startsWith('realizado') || scen === 'real') rl.push(obj);
+  });
+  return { pl, fc, rl };
+}
+
+/* ── Load ── */
+async function loadData() {
+  try {
+    const r = await fetch('cpa_2026.json?t=' + Date.now());
+    if (r.ok) {
+      const rows = await r.json();
+      const res = transform(rows);
+      PL = res.pl; FC = res.fc; RL = res.rl;
+      document.getElementById('upd').textContent = 'Atualizado: ' + new Date().toLocaleDateString('pt-BR');
+    } else {
+      document.getElementById('upd').textContent = 'Sem dados';
+    }
+  } catch(e) {
+    document.getElementById('upd').textContent = 'Erro ao carregar';
+  }
+  buildFilters();
+  render();
+}
+
+/* ── Filters ── */
+function isXX(r) { return r.cr.toLowerCase() === 'xx'; }
+
+function buildFilters() {
+  const all = [...PL, ...FC, ...RL];
+  const crSet = [...new Set(all.map(r => r.cr))].filter(v => v && v.toLowerCase() !== 'xx').sort();
+  const cnSet = [...new Set(all.map(r => r.cn))].filter(v => v).sort();
+
+  const selCR = document.getElementById('fCanalRes');
+  selCR.innerHTML = '<option value="">Todos</option>';
+  crSet.forEach(v => { const o = new Option(v,v); selCR.add(o); });
+
+  const selCN = document.getElementById('fCanal');
+  selCN.innerHTML = '<option value="">Todos</option>';
+  cnSet.forEach(v => { const o = new Option(v,v); selCN.add(o); });
+
+  const sDe = document.getElementById('fDe');
+  const sAte = document.getElementById('fAte');
+  sDe.innerHTML = sAte.innerHTML = '';
+  ML.forEach((l,i) => {
+    sDe.add(new Option(l, i));
+    sAte.add(new Option(l, i));
+  });
+  sAte.value = ML.length - 1;
+}
+
+function getF() {
+  return {
+    cr:  document.getElementById('fCanalRes').value,
+    cn:  document.getElementById('fCanal').value,
+    de:  parseInt(document.getElementById('fDe').value)  || 0,
+    ate: parseInt(document.getElementById('fAte').value) || (MK.length - 1),
+  };
+}
+
+function applyF(rows, f) {
+  return rows.filter(r => {
+    if (isXX(r) && !f.cn) return false;          // hide sub-rows unless canal filter active
+    if (f.cr && r.cr !== f.cr) return false;
+    if (f.cn && r.cn !== f.cn) return false;
+    return true;
+  });
+}
+
+function sumP(rows, de, ate) {
+  return rows.reduce((s, r) => { for (let i = de; i <= ate; i++) s += r.m[i]||0; return s; }, 0);
+}
+
+function series(rows, de, ate) {
+  const s = new Array(ate - de + 1).fill(0);
+  rows.forEach(r => { for (let i = de; i <= ate; i++) s[i-de] += r.m[i]||0; });
+  return s;
+}
+
+/* ── Format ── */
+function brl(n) {
+  if (!n && n !== 0) return '—';
+  return 'R$ ' + Math.round(n).toLocaleString('pt-BR');
+}
+function pct(n) { return isFinite(n) ? n.toFixed(1) + '%' : '—'; }
+function abbr(n) {
+  if (Math.abs(n) >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (Math.abs(n) >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1e3) return (n/1e3).toFixed(0) + 'k';
+  return String(Math.round(n));
+}
+
+/* ── Render ── */
+function render() {
+  const f = getF();
+  const plR = applyF(PL, f), fcR = applyF(FC, f), rlR = applyF(RL, f);
+  const tP = sumP(plR, f.de, f.ate);
+  const tF = sumP(fcR, f.de, f.ate);
+  const tR = sumP(rlR, f.de, f.ate);
+  const ating = tP > 0 ? tR / tP * 100 : null;
+  const fcVsP = tP > 0 ? tF / tP * 100 : null;
+
+  // KPIs
+  document.getElementById('kP').textContent = brl(tP);
+  document.getElementById('kPsub').textContent = (f.ate - f.de + 1) + ' meses selecionados';
+  document.getElementById('kF').textContent = brl(tF);
+  document.getElementById('kFsub').textContent = fcVsP !== null ? 'vs Plano: ' + pct(fcVsP) : 'sem dados';
+  document.getElementById('kR').textContent = brl(tR);
+  document.getElementById('kRsub').textContent = tP > 0 ? 'Gap: ' + brl(tR - tP) : 'sem dados';
+  document.getElementById('kA').textContent = ating !== null ? pct(ating) : '—';
+  document.getElementById('kAsub').textContent = ating !== null
+    ? (ating <= 100 ? '✓ Dentro do orçamento' : '⚠ Acima do plano')
+    : (RL.length === 0 ? 'sem dados Realizado' : '—');
+
+  const months = ML.slice(f.de, f.ate + 1);
+  const sP = series(plR, f.de, f.ate);
+  const sF = series(fcR, f.de, f.ate);
+  const sR = series(rlR, f.de, f.ate);
+  const gap = sP.map((p, i) => (sR[i] || 0) - p);
+
+  drawEvol(months, sP, sF, sR);
+  drawGap(months, gap);
+  drawRank('rPlano', plR, f, '#1565C0');
+  drawRank('rReal',  rlR, f, '#00A650');
+  drawTable(plR, fcR, rlR, f, months);
+
+  if (aiOpen) genAI(tP, tF, tR, ating, months, sP, sF, sR);
+}
+
+/* ── Charts ── */
+function theme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    text: dark ? '#BBBBBB' : '#666666',
+    grid: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+  };
+}
+
+function drawEvol(months, sP, sF, sR) {
+  const t = theme();
+  const datasets = [
+    { label:'Plano',     data: sP, borderColor:'#1565C0', backgroundColor:'rgba(21,101,192,0.07)',
+      borderDash:[6,3], borderWidth:2, tension:0.3, pointRadius:4, fill:false },
+    { label:'Forecast',  data: sF, borderColor:'#F57C00', backgroundColor:'rgba(245,124,0,0.07)',
+      borderDash:[3,3], borderWidth:2, tension:0.3, pointRadius:4, fill:false },
+    { label:'Realizado', data: sR, borderColor:'#00A650', backgroundColor:'rgba(0,166,80,0.09)',
+      borderWidth:2.5, tension:0.3, pointRadius:5, fill:false },
+  ].filter(d => d.data.some(v => v > 0));
+
+  if (chEvol) chEvol.destroy();
+  chEvol = new Chart(document.getElementById('cEvol'), {
+    type: 'line',
+    data: { labels: months, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: t.text, boxWidth: 18, font: { size: 11 } } },
+        datalabels: {
+          display: showLbl,
+          color: t.text, font: { size: 9 },
+          formatter: v => v > 0 ? abbr(v) : '',
+          anchor:'end', align:'top',
+        },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + brl(ctx.raw) } }
+      },
+      scales: {
+        x: { ticks: { color: t.text, font:{size:10} }, grid: { color: t.grid } },
+        y: {
+          display: showY,
+          ticks: { color: t.text, font:{size:10}, callback: v => 'R$ ' + abbr(v) },
+          grid:  { color: t.grid }
+        }
+      }
+    }
+  });
+}
+
+function drawGap(months, gap) {
+  const t = theme();
+  const colors = gap.map(v => v > 0 ? 'rgba(229,57,53,0.8)' : 'rgba(0,166,80,0.8)');
+  if (chGap) chGap.destroy();
+  chGap = new Chart(document.getElementById('cGap'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{
+        label: 'Gap Real−Plano',
+        data: gap,
+        backgroundColor: colors,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          display: showLbl,
+          color: t.text, font: { size: 9 },
+          formatter: v => v !== 0 ? abbr(v) : '',
+          anchor: 'end',
+          align: ctx => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
+        },
+        tooltip: { callbacks: { label: ctx => ' Gap: ' + brl(ctx.raw) } }
+      },
+      scales: {
+        x: { ticks: { color: t.text, font:{size:10} }, grid:{ color: t.grid } },
+        y: {
+          display: showY,
+          ticks: { color: t.text, font:{size:10}, callback: v => abbr(v) },
+          grid: { color: t.grid }
+        }
+      }
+    }
+  });
+}
+
+/* ── Rankings ── */
+function drawRank(id, rows, f, color) {
+  const byCanal = {};
+  rows.forEach(r => {
+    const key = (!isXX(r) && r.cr) ? r.cr : r.cn;
+    if (!key) return;
+    if (!byCanal[key]) byCanal[key] = 0;
+    for (let i = f.de; i <= f.ate; i++) byCanal[key] += r.m[i]||0;
+  });
+  const sorted = Object.entries(byCanal).sort((a,b) => b[1]-a[1]).slice(0,6);
+  const max = sorted[0]?.[1] || 1;
+  const el = document.getElementById(id);
+  if (!sorted.length) { el.innerHTML = '<div class="empty">Sem dados</div>'; return; }
+  el.innerHTML = sorted.map(([name,val],i) => `
+    <div class="rank-item">
+      <div class="rank-num">${i+1}</div>
+      <div class="rank-info">
+        <div class="rank-name">${name}</div>
+        <div class="rank-bar"><div class="rank-bar-fill" style="width:${(val/max*100).toFixed(1)}%;background:${color}"></div></div>
+      </div>
+      <div class="rank-val">${brl(val)}</div>
+    </div>`).join('');
+}
+
+/* ── Table ── */
+function drawTable(plR, fcR, rlR, f, months) {
+  const rows = [
+    ...plR.map(r => ({...r, sl:'Plano',     sc:'b-plano'})),
+    ...fcR.map(r => ({...r, sl:'Forecast',  sc:'b-fcst'})),
+    ...rlR.map(r => ({...r, sl:'Realizado', sc:'b-real'})),
+  ];
+  document.getElementById('tCount').textContent = rows.length + ' linhas';
+  if (!rows.length) {
+    document.getElementById('tWrap').innerHTML = '<div class="empty">Sem dados para os filtros selecionados</div>';
+    return;
+  }
+  const ths = `<tr><th>Cenário</th><th>Canal Res.</th><th>Canal</th><th>Total</th>${months.map(m=>`<th>${m}</th>`).join('')}</tr>`;
+  const trs = rows.map(r => {
+    const tot = r.m.slice(f.de, f.ate+1).reduce((s,v)=>s+v, 0);
+    const cells = [];
+    for (let i = f.de; i <= f.ate; i++) cells.push(`<td class="td-r">${r.m[i]>0 ? Math.round(r.m[i]).toLocaleString('pt-BR') : '—'}</td>`);
+    return `<tr>
+      <td><span class="badge ${r.sc}">${r.sl}</span></td>
+      <td>${r.cr}</td><td>${r.cn}</td>
+      <td class="td-r"><strong>${Math.round(tot).toLocaleString('pt-BR')}</strong></td>
+      ${cells.join('')}
+    </tr>`;
+  }).join('');
+  document.getElementById('tWrap').innerHTML = `<table><thead>${ths}</thead><tbody>${trs}</tbody></table>`;
+}
+
+/* ── AI Summary ── */
+function genAI(tP, tF, tR, ating, months, sP, sF, sR) {
+  const hasR = tR > 0, hasF = tF > 0;
+  const gap = tR - tP;
+  const peakP = sP.indexOf(Math.max(...sP));
+
+  let html = `<p>No período <strong>${months[0]}–${months[months.length-1]}</strong>, o custo total planejado foi de <strong>${brl(tP)}</strong>`;
+  if (hasF) html += `, com Forecast de <strong>${brl(tF)}</strong> (${pct(tP > 0 ? tF/tP*100 : NaN)} do Plano)`;
+  html += '.';
+
+  if (hasR) {
+    html += ` O custo <strong>Realizado</strong> foi de <strong>${brl(tR)}</strong>, representando <strong>${pct(ating)}</strong> do Plano`;
+    html += ` (gap de ${gap > 0 ? '+' : ''}${brl(gap)}).`;
+    if (ating <= 95) html += ' O custo está significativamente abaixo do orçado — possível eficiência ou atraso em execução.';
+    else if (ating > 105) html += ' O custo está acima do planejado, indicando necessidade de revisão orçamentária.';
+    else html += ' O custo está alinhado com o orçamento.';
+  } else {
+    html += ' Ainda não há dados de Realizado para este período.';
+  }
+
+  if (sP.length > 0 && sP.some(v=>v>0)) {
+    html += `</p><p>O pico de custo planejado ocorre em <strong>${months[peakP]||'—'}</strong> (${brl(sP[peakP])}).`;
+  }
+
+  html += `</p><p><em>Resumo gerado automaticamente com base nos filtros aplicados.</em></p>`;
+  document.getElementById('aiBody').innerHTML = html;
+}
+
+/* ── Controls ── */
+function toggleY()     { showY = !showY;   document.getElementById('btnY').classList.toggle('on', !showY); render(); }
+function toggleLbl()   { showLbl = !showLbl; document.getElementById('btnLbl').classList.toggle('on', showLbl); render(); }
+function toggleTheme() {
+  const d = document.documentElement;
+  const dark = d.getAttribute('data-theme') === 'dark';
+  d.setAttribute('data-theme', dark ? 'light' : 'dark');
+  document.getElementById('btnTheme').textContent = dark ? '🌙' : '☀️';
+  render();
+}
+function toggleAI() {
+  aiOpen = !aiOpen;
+  document.getElementById('aiBody').style.display = aiOpen ? 'block' : 'none';
+  document.getElementById('aiArr').textContent = aiOpen ? '▲' : '▼';
+  if (aiOpen) {
+    const f = getF();
+    const plR = applyF(PL,f), fcR = applyF(FC,f), rlR = applyF(RL,f);
+    const tP = sumP(plR,f.de,f.ate), tF = sumP(fcR,f.de,f.ate), tR = sumP(rlR,f.de,f.ate);
+    const ating = tP > 0 ? tR/tP*100 : null;
+    genAI(tP, tF, tR, ating, ML.slice(f.de,f.ate+1), series(plR,f.de,f.ate), series(fcR,f.de,f.ate), series(rlR,f.de,f.ate));
+  }
+}
+
+function doExport() {
+  const f = getF();
+  const plR = applyF(PL,f), fcR = applyF(FC,f), rlR = applyF(RL,f);
+  const months = ML.slice(f.de, f.ate+1);
+  const all = [
+    ...plR.map(r=>({c:'Plano',...r})),
+    ...fcR.map(r=>({c:'Forecast',...r})),
+    ...rlR.map(r=>({c:'Realizado',...r})),
+  ];
+  const data = all.map(r => {
+    const row = { Cenário: r.c, 'Canal Resumido': r.cr, Canal: r.cn };
+    months.forEach((m,i) => row[m] = r.m[f.de+i]||0);
+    row['Total'] = r.m.slice(f.de, f.ate+1).reduce((s,v)=>s+v,0);
+    return row;
+  });
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'CPA');
+  XLSX.writeFile(wb, 'dash_cpa.xlsx');
+}
+
+loadData();
+</script>
+</body>
+</html>
