@@ -1,5 +1,5 @@
 {
-  "name": "Forecast Old - Sync",
+  "name": "Forecast - Sync",
   "nodes": [
     {
       "parameters": {
@@ -13,7 +13,7 @@
           ]
         }
       },
-      "id": "fo-0001-0000-0000-0000-000000000001",
+      "id": "fc-0001-0000-0000-0000-000000000001",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "position": [0, 0],
@@ -29,12 +29,12 @@
         "sheetName": {
           "__rl": true,
           "mode": "name",
-          "value": "Forecast Old"
+          "value": "Forecast"
         },
         "options": {}
       },
-      "id": "fo-0002-0000-0000-0000-000000000002",
-      "name": "Read Forecast Old",
+      "id": "fc-0002-0000-0000-0000-000000000002",
+      "name": "Read Forecast",
       "type": "n8n-nodes-base.googleSheets",
       "position": [240, 0],
       "executeOnce": true,
@@ -48,9 +48,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// The first cell of the sheet (A1) is used by n8n as a column header.\n// It contains the forecast version name, e.g. 'forecast ABR v2'.\n// We extract that, convert to N+M notation, and tag every row.\n\nconst items = $input.all();\nif (items.length === 0) return [{ json: { content: '[]' } }];\n\nconst monthMap = {\n  'jan': '0+12', 'fev': '1+11', 'mar': '2+10', 'abr': '3+9',\n  'mai': '4+8', 'jun': '5+7', 'jul': '6+6', 'ago': '7+5',\n  'set': '8+4', 'out': '9+3', 'nov': '10+2', 'dez': '11+1'\n};\n\n// Find the column whose name starts with 'forecast ' — that's the version cell\nconst allKeys = Object.keys(items[0].json);\nconst versionKey = allKeys.find(k => String(k).toLowerCase().trim().startsWith('forecast '));\n\nlet versionLabel = 'Forecast Old';\nif (versionKey) {\n  const rest = versionKey.substring(9).trim(); // remove 'forecast ' prefix\n  const parts = rest.split(/\\s+/);\n  const monthKey = parts[0].toLowerCase(); // e.g. 'abr'\n  const suffix = parts.slice(1).join(' ');  // e.g. 'v2' or ''\n  const nm = monthMap[monthKey];\n  if (nm) {\n    versionLabel = suffix ? `Forecast ${nm} ${suffix}` : `Forecast ${nm}`;\n  }\n}\n\n// Tag every row with _version\nconst tagged = items.map(item => ({ ...item.json, _version: versionLabel }));\nreturn [{ json: { content: JSON.stringify(tagged) } }];"
+        "jsCode": "// The first cell of the sheet (A1) is used by n8n as a column header.\n// It contains the forecast version name, e.g. 'forecast ABR'.\n// We extract that, convert to N+M notation, and tag every row.\n\nconst items = $input.all();\nif (items.length === 0) return [{ json: { content: '[]' } }];\n\nconst monthMap = {\n  'jan': '0+12', 'fev': '1+11', 'mar': '2+10', 'abr': '3+9',\n  'mai': '4+8', 'jun': '5+7', 'jul': '6+6', 'ago': '7+5',\n  'set': '8+4', 'out': '9+3', 'nov': '10+2', 'dez': '11+1'\n};\n\n// Find the column whose name starts with 'forecast ' — that's the version cell\nconst allKeys = Object.keys(items[0].json);\nconst versionKey = allKeys.find(k => String(k).toLowerCase().trim().startsWith('forecast '));\n\nlet versionLabel = null; // null = fall back to 'Forecast YYYY' in dashboard\nif (versionKey) {\n  const rest = versionKey.substring(9).trim(); // remove 'forecast ' prefix\n  const parts = rest.split(/\\s+/);\n  const monthKey = parts[0].toLowerCase(); // e.g. 'abr'\n  const suffix = parts.slice(1).join(' ');  // e.g. 'v2' or ''\n  const nm = monthMap[monthKey];\n  if (nm) {\n    versionLabel = suffix ? `Forecast ${nm} ${suffix}` : `Forecast ${nm}`;\n  }\n}\n\n// Tag every row with _version (only if resolved)\nconst tagged = items.map(item => {\n  const row = { ...item.json };\n  if (versionLabel) row._version = versionLabel;\n  return row;\n});\nreturn [{ json: { content: JSON.stringify(tagged) } }];"
       },
-      "id": "fo-0003-0000-0000-0000-000000000003",
+      "id": "fc-0003-0000-0000-0000-000000000003",
       "name": "Extract Version and Tag",
       "type": "n8n-nodes-base.code",
       "position": [480, 0],
@@ -70,15 +70,15 @@
           "mode": "name",
           "value": "Acquiring"
         },
-        "filePath": "data/forecast_old.json",
+        "filePath": "data/forecast.json",
         "fileContent": "={{ $json.content }}",
-        "commitMessage": "Atualizando Forecast Old via Verdi",
+        "commitMessage": "Atualizando Forecast via Verdi",
         "additionalParameters": {
           "branch": "main"
         }
       },
-      "id": "fo-0004-0000-0000-0000-000000000004",
-      "name": "Write Forecast Old to GitHub",
+      "id": "fc-0004-0000-0000-0000-000000000004",
+      "name": "Write Forecast to GitHub",
       "type": "n8n-nodes-base.github",
       "position": [720, 0],
       "typeVersion": 1.1,
@@ -94,17 +94,17 @@
   "connections": {
     "Schedule Trigger": {
       "main": [
-        [{ "node": "Read Forecast Old", "type": "main", "index": 0 }]
+        [{ "node": "Read Forecast", "type": "main", "index": 0 }]
       ]
     },
-    "Read Forecast Old": {
+    "Read Forecast": {
       "main": [
         [{ "node": "Extract Version and Tag", "type": "main", "index": 0 }]
       ]
     },
     "Extract Version and Tag": {
       "main": [
-        [{ "node": "Write Forecast Old to GitHub", "type": "main", "index": 0 }]
+        [{ "node": "Write Forecast to GitHub", "type": "main", "index": 0 }]
       ]
     }
   },

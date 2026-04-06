@@ -620,6 +620,7 @@
         let dbTPV = [];
         let scenarioList = [];
         let forecastOldVersions = []; // [{key: 'FORECAST_OLD_0', label: 'Forecast 3+9'}, ...]
+        let forecastDisplayVersion = null; // N+M label from _version in forecast.json, e.g. 'Forecast 3+9'
         let canalRegistry = {};
         let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" } };
         let timelineChart, barChart;
@@ -705,14 +706,21 @@
             return mappedData;
         }
 
-        function parseForecastJSON(dataArray) {
+        function parseForecastJSON(dataArray, trackVersion = false) {
             if (!dataArray || dataArray.length === 0) return [];
+
+            // Extract version label from _version field of the first row
+            if (trackVersion) {
+                const firstWithVersion = dataArray.find(r => r._version);
+                forecastDisplayVersion = firstWithVersion ? String(firstWithVersion._version).trim() : null;
+            }
+
             let cleanData = [];
             for (let i = 0; i < dataArray.length; i++) {
                 let row = dataArray[i];
                 let canal = row['Canal'];
                 let device = classifyDevice(row['DEVICE_TYPE']) || classifyDevice(row['TOTAL']);
-                
+
                 if (!canal || canal === 0 || String(canal).trim() === '0' || !device) continue;
 
                 let obj = { 'Canal': String(canal).trim(), 'Device': device };
@@ -825,7 +833,7 @@
 
                 db.PLAN = parseStandardJSON(rawPlan);
                 db.ACTUAL = parseStandardJSON(rawActual);
-                db.FORECAST = parseForecastJSON(rawForecast);
+                db.FORECAST = parseForecastJSON(rawForecast, true);
                 dbTPV = parseTPVData(rawTPV);
                 parseForecastOldJSON(rawForecastOld);
 
@@ -926,8 +934,12 @@
                 
                 years.forEach(y => {
                     const yMonths = sortedMonths.filter(m => m.startsWith(y)).map(m => m.substring(4));
-                    let labelType = type === 'PLAN' ? 'Plano' : (type === 'ACTUAL' ? 'Realizado' : 'Forecast');
-                    scenarioList.push({ id: `${type}|${y}`, label: `${labelType} ${y}`, type: type, months: yMonths });
+                    let label;
+                    if (type === 'PLAN') label = `Plano ${y}`;
+                    else if (type === 'ACTUAL') label = `Realizado ${y}`;
+                    else if (type === 'FORECAST') label = forecastDisplayVersion || `Forecast ${y}`;
+                    else label = `Forecast ${y}`;
+                    scenarioList.push({ id: `${type}|${y}`, label, type: type, months: yMonths });
                 });
             });
         }
