@@ -1,0 +1,320 @@
+{
+  "name": "Devices",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "8bf84a81-678a-4db1-af35-918f35b9b63f",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [-304, 0],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1JXp2qU-Tl2VmFcmNlrqqVtXZMNzA6VUilhpmBMVurKo/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Plan"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "headerRow": 2,
+              "firstDataRow": 3
+            }
+          }
+        }
+      },
+      "id": "75afad97-a8dd-46b0-ae1c-a9bb78ca3e61",
+      "name": "Get Plan",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [-80, -320],
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data/dados.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "Atualizando dados do dash via Verdi"
+      },
+      "id": "90cc7808-a5f9-484a-8b3c-71e72ae1d0a5",
+      "name": "Write Plan",
+      "type": "n8n-nodes-base.github",
+      "position": [128, -320],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1JXp2qU-Tl2VmFcmNlrqqVtXZMNzA6VUilhpmBMVurKo/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Actual"
+        },
+        "options": {}
+      },
+      "id": "d8a21b36-9a34-4774-a1d8-3b0d1ff997e7",
+      "name": "Get Actual",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [-80, -160],
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data/realizado.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "Atualizando dados do dash via Verdi"
+      },
+      "id": "3a12ec19-68ec-40ab-b966-c430c727fd8a",
+      "name": "Write Actual",
+      "type": "n8n-nodes-base.github",
+      "position": [128, -160],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1JXp2qU-Tl2VmFcmNlrqqVtXZMNzA6VUilhpmBMVurKo/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Forecast"
+        },
+        "options": {}
+      },
+      "id": "f87c6dd4-3d17-4040-9a96-57f4b1f123e9",
+      "name": "Get Forecast",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [-80, 0],
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// A primeira célula da aba (A1) é usada pelo n8n como nome da coluna.\n// Ela contém o nome da versão do forecast, ex: 'forecast ABR'.\n// Extraímos, convertemos para notação N+M e taggeamos cada linha.\n\nconst items = $input.all();\nif (items.length === 0) return [];\n\nconst monthMap = {\n  'jan': '0+12', 'fev': '1+11', 'mar': '2+10', 'abr': '3+9',\n  'mai': '4+8', 'jun': '5+7', 'jul': '6+6', 'ago': '7+5',\n  'set': '8+4', 'out': '9+3', 'nov': '10+2', 'dez': '11+1'\n};\n\nconst allKeys = Object.keys(items[0].json);\nconst versionKey = allKeys.find(k => String(k).toLowerCase().trim().startsWith('forecast '));\n\nlet versionLabel = null;\nif (versionKey) {\n  const rest = versionKey.substring(9).trim();\n  const parts = rest.split(/\\s+/);\n  const monthKey = parts[0].toLowerCase();\n  const suffix = parts.slice(1).join(' ');\n  const nm = monthMap[monthKey];\n  if (nm) versionLabel = suffix ? `Forecast ${nm} ${suffix}` : `Forecast ${nm}`;\n}\n\nreturn items.map(item => ({\n  json: versionLabel ? { ...item.json, _version: versionLabel } : item.json\n}));"
+      },
+      "id": "fc-code-0000-0000-0000-000000000001",
+      "name": "Tag Forecast Version",
+      "type": "n8n-nodes-base.code",
+      "position": [128, 0],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data/forecast.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "Atualizando dados do dash via Verdi"
+      },
+      "id": "b310ba22-27fb-470e-b7ac-6055343cd88c",
+      "name": "Write Forecast",
+      "type": "n8n-nodes-base.github",
+      "position": [360, 0],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1JXp2qU-Tl2VmFcmNlrqqVtXZMNzA6VUilhpmBMVurKo/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Forecast Old"
+        },
+        "options": {}
+      },
+      "id": "fo-read-0000-0000-0000-000000000001",
+      "name": "Get Forecast Old",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [-80, 160],
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mesma lógica do Forecast, mas para a aba 'Forecast Old'.\n// A primeira célula contém ex: 'forecast ABR v2' → 'Forecast 3+9 v2'.\n\nconst items = $input.all();\nif (items.length === 0) return [];\n\nconst monthMap = {\n  'jan': '0+12', 'fev': '1+11', 'mar': '2+10', 'abr': '3+9',\n  'mai': '4+8', 'jun': '5+7', 'jul': '6+6', 'ago': '7+5',\n  'set': '8+4', 'out': '9+3', 'nov': '10+2', 'dez': '11+1'\n};\n\nconst allKeys = Object.keys(items[0].json);\nconst versionKey = allKeys.find(k => String(k).toLowerCase().trim().startsWith('forecast '));\n\nlet versionLabel = 'Forecast Old';\nif (versionKey) {\n  const rest = versionKey.substring(9).trim();\n  const parts = rest.split(/\\s+/);\n  const monthKey = parts[0].toLowerCase();\n  const suffix = parts.slice(1).join(' ');\n  const nm = monthMap[monthKey];\n  if (nm) versionLabel = suffix ? `Forecast ${nm} ${suffix}` : `Forecast ${nm}`;\n}\n\nreturn items.map(item => ({\n  json: { ...item.json, _version: versionLabel }\n}));"
+      },
+      "id": "fo-code-0000-0000-0000-000000000001",
+      "name": "Tag Forecast Old Version",
+      "type": "n8n-nodes-base.code",
+      "position": [128, 160],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data/forecast_old.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "Atualizando Forecast Old via Verdi"
+      },
+      "id": "fo-github-0000-0000-0000-000000000001",
+      "name": "Write Forecast Old",
+      "type": "n8n-nodes-base.github",
+      "position": [360, 160],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          { "node": "Get Plan",          "type": "main", "index": 0 },
+          { "node": "Get Actual",        "type": "main", "index": 0 },
+          { "node": "Get Forecast",      "type": "main", "index": 0 },
+          { "node": "Get Forecast Old",  "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get Plan": {
+      "main": [[{ "node": "Write Plan", "type": "main", "index": 0 }]]
+    },
+    "Get Actual": {
+      "main": [[{ "node": "Write Actual", "type": "main", "index": 0 }]]
+    },
+    "Get Forecast": {
+      "main": [[{ "node": "Tag Forecast Version", "type": "main", "index": 0 }]]
+    },
+    "Tag Forecast Version": {
+      "main": [[{ "node": "Write Forecast", "type": "main", "index": 0 }]]
+    },
+    "Get Forecast Old": {
+      "main": [[{ "node": "Tag Forecast Old Version", "type": "main", "index": 0 }]]
+    },
+    "Tag Forecast Old Version": {
+      "main": [[{ "node": "Write Forecast Old", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "7fa8c733db20fb5e95cb08b0c1fbcd66d08a3226e222f28c9efd2fcd19ffd10a"
+  },
+  "tags": []
+}
