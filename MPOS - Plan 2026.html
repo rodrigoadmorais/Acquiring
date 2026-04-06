@@ -403,7 +403,9 @@
                     db.FORECAST = fuseActualIntoForecast(db.ACTUAL, db.FORECAST);
                 }
 
-                handleTypeChange(); 
+                buildForecastAdj();
+
+                handleTypeChange();
                 populateGlobalFilters();
 
             } catch (err) {
@@ -413,6 +415,49 @@
                 lucide.createIcons();
             } finally {
                 document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function buildForecastAdj() {
+            const ADJ_PLAN_CANALS = ['APP', 'TO', 'LP'];
+            db.FORECAST_ADJ = [];
+
+            // Copy FORECAST rows that are NOT in APP / TO / LP
+            if (db.FORECAST && db.FORECAST.length > 0) {
+                db.FORECAST.forEach(row => {
+                    const canal = String(row['Canal'] || '').trim().toUpperCase();
+                    if (!ADJ_PLAN_CANALS.includes(canal)) {
+                        db.FORECAST_ADJ.push(Object.assign({}, row));
+                    }
+                });
+            }
+
+            // Add PLAN rows for APP / TO / LP converted to FORECAST column format
+            if (db.PLAN && db.PLAN.length > 0 && cols.PLAN && cols.PLAN.canal) {
+                db.PLAN.forEach(row => {
+                    const rawCanal = String(row[cols.PLAN.canal] || '').trim();
+                    const canalUpper = rawCanal.toUpperCase();
+                    if (ADJ_PLAN_CANALS.includes(canalUpper)) {
+                        const newRow = {
+                            Canal: rawCanal,
+                            Device: String(row[cols.PLAN.device] || '')
+                        };
+                        Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) newRow[k] = row[k]; });
+                        db.FORECAST_ADJ.push(newRow);
+                    }
+                });
+            }
+
+            // Append Forecast Adj entry to scenarioList (reuse FORECAST months)
+            const forecastSc = scenarioList.find(s => s.type === 'FORECAST');
+            if (db.FORECAST_ADJ.length > 0 && forecastSc) {
+                const year = forecastSc.id.split('|')[1];
+                scenarioList.push({
+                    id: `FORECAST_ADJ|${year}`,
+                    label: `Forecast Adj ${year}`,
+                    type: 'FORECAST_ADJ',
+                    months: forecastSc.months
+                });
             }
         }
 
@@ -471,10 +516,10 @@
             }
 
             let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'FORECAST_ADJ'].forEach(t => {
                 const group = scenarioList.filter(s => s.type === t);
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : (t === 'FORECAST' ? '🟠 FORECAST' : '🟣 FORECAST ADJ'));
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
@@ -538,16 +583,16 @@
 
         function populateGlobalFilters() {
             let allCanals = new Set(); let allDevices = new Set();
-            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'FORECAST_ADJ'].forEach(type => {
                 if(!db[type]) return;
-                let colC = type === 'FORECAST' ? 'Canal' : cols[type].canal;
-                let colD = type === 'FORECAST' ? 'Device' : cols[type].device;
+                let colC = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? 'Canal' : cols[type].canal;
+                let colD = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? 'Device' : cols[type].device;
 
                 db[type].forEach(row => {
                     let rawC = String(row[colC]||'').trim().toUpperCase();
                     let canal = canalRegistry[rawC] || String(row[colC]||'').trim();
                     let rawD = String(row[colD]||'');
-                    let device = type === 'FORECAST' ? rawD : (classifyDevice(rawD) || rawD);
+                    let device = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? rawD : (classifyDevice(rawD) || rawD);
 
                     if(canal && canal !== '0') allCanals.add(canal.toUpperCase());
                     if(device) allDevices.add(device);
@@ -560,9 +605,9 @@
         function extractValue(type, periodId, filterCanal, filterDevice) {
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type] || [];
-            
-            let colC = type === 'FORECAST' ? 'Canal' : cols[type].canal;
-            let colD = type === 'FORECAST' ? 'Device' : cols[type].device;
+
+            let colC = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? 'Canal' : cols[type].canal;
+            let colD = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? 'Device' : cols[type].device;
 
             let total = 0; let byCanal = {}; let byDevice = {}; let byCanalDevice = {};
 
@@ -572,7 +617,7 @@
                 canal = canal.toUpperCase(); // Force uppercase to absolutely prevent duplicates
 
                 let rawD = String(row[colD]||'');
-                let device = type === 'FORECAST' ? rawD : (classifyDevice(rawD) || rawD);
+                let device = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? rawD : (classifyDevice(rawD) || rawD);
 
                 if (filterCanal !== 'ALL' && canal !== filterCanal) return;
                 if (filterDevice !== 'ALL' && device !== filterDevice) return;
@@ -612,14 +657,16 @@
         }
 
         function getBaseColor(type, isBorder = false) {
-            if (type === 'PLAN') return isBorder ? '#10B981' : '#10B981'; 
-            if (type === 'FORECAST') return isBorder ? '#F59E0B' : '#F59E0B'; 
-            return isBorder ? '#3B82F6' : '#3B82F6'; 
+            if (type === 'PLAN') return '#10B981';
+            if (type === 'FORECAST') return '#F59E0B';
+            if (type === 'FORECAST_ADJ') return '#8B5CF6';
+            return '#3B82F6';
         }
         function getBaseBgColor(type) {
             if (type === 'PLAN') return 'rgba(16, 185, 129, 0.1)';
             if (type === 'FORECAST') return 'rgba(245, 158, 11, 0.1)';
-            return 'rgba(59, 130, 246, 0.1)'; 
+            if (type === 'FORECAST_ADJ') return 'rgba(139, 92, 246, 0.1)';
+            return 'rgba(59, 130, 246, 0.1)';
         }
 
         function processDashboard() {
@@ -656,8 +703,8 @@
 
             updateKPIs(dataA.total, dataB.total, nameA, nameB, typeB);
             
-            const pA = typeA === 'PLAN' ? 'ao Plano' : (typeA === 'FORECAST' ? 'ao Forecast' : 'ao Realizado');
-            const pB = typeB === 'PLAN' ? 'O Plano' : (typeB === 'FORECAST' ? 'O Forecast' : 'O Realizado');
+            const pA = typeA === 'PLAN' ? 'ao Plano' : (typeA === 'FORECAST' ? 'ao Forecast' : (typeA === 'FORECAST_ADJ' ? 'ao Forecast Adj' : 'ao Realizado'));
+            const pB = typeB === 'PLAN' ? 'O Plano' : (typeB === 'FORECAST' ? 'O Forecast' : (typeB === 'FORECAST_ADJ' ? 'O Forecast Adj' : 'O Realizado'));
             
             let aiStrB, aiStrA;
             if(compType === 'YEAR') {
