@@ -931,19 +931,13 @@
 
             let htmlA = '', htmlB = '';
             ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
-                const group = scenarioList.filter(s => s.type === t);
+                let group = scenarioList.filter(s => s.type === t);
+                if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
+                    group = group.concat(scenarioList.filter(s => s.type === key));
+                });
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                     let opts = `<optgroup label="--- ${label} ---">`;
-                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
-                    opts += `</optgroup>`;
-                    htmlA += opts; htmlB += opts;
-                }
-            });
-            forecastOldVersions.forEach(({ key, label }) => {
-                const group = scenarioList.filter(s => s.type === key);
-                if (group.length > 0) {
-                    let opts = `<optgroup label="--- 🟡 ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
                     htmlA += opts; htmlB += opts;
@@ -1996,19 +1990,13 @@
                 if (!sel) return;
                 let html = '';
                 ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
-                    const group = scenarioList.filter(s => s.type === t);
+                    let group = scenarioList.filter(s => s.type === t);
+                    if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
+                        group = group.concat(scenarioList.filter(s => s.type === key));
+                    });
                     if (group.length > 0) {
                         const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                         let opts = `<optgroup label="--- ${label} ---">`;
-                        group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
-                        opts += `</optgroup>`;
-                        html += opts;
-                    }
-                });
-                forecastOldVersions.forEach(({ key, label }) => {
-                    const group = scenarioList.filter(s => s.type === key);
-                    if (group.length > 0) {
-                        let opts = `<optgroup label="--- 🟡 ${label} ---">`;
                         group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                         opts += `</optgroup>`;
                         html += opts;
@@ -3013,18 +3001,13 @@
                 if (!sel) return;
                 let html = '';
                 ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
-                    const group = scenarioList.filter(s => s.type === t);
+                    let group = scenarioList.filter(s => s.type === t);
+                    if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
+                        group = group.concat(scenarioList.filter(s => s.type === key));
+                    });
                     if (group.length > 0) {
                         const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                         html += `<optgroup label="--- ${label} ---">`;
-                        group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
-                        html += `</optgroup>`;
-                    }
-                });
-                forecastOldVersions.forEach(({ key, label }) => {
-                    const group = scenarioList.filter(s => s.type === key);
-                    if (group.length > 0) {
-                        html += `<optgroup label="--- 🟡 ${label} ---">`;
                         group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
                         html += `</optgroup>`;
                     }
@@ -3065,19 +3048,13 @@
             if (!scA || !scB) return;
             let htmlA = '', htmlB = '';
             ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
-                const group = scenarioList.filter(s => s.type === t);
+                let group = scenarioList.filter(s => s.type === t);
+                if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
+                    group = group.concat(scenarioList.filter(s => s.type === key));
+                });
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                     let opts = `<optgroup label="--- ${label} ---">`;
-                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
-                    opts += `</optgroup>`;
-                    htmlA += opts; htmlB += opts;
-                }
-            });
-            forecastOldVersions.forEach(({ key, label }) => {
-                const group = scenarioList.filter(s => s.type === key);
-                if (group.length > 0) {
-                    let opts = `<optgroup label="--- 🟡 ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
                     htmlA += opts; htmlB += opts;
