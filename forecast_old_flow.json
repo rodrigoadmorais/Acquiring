@@ -1,0 +1,190 @@
+{
+  "name": "Forecast Old - Multi-Tab Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 1
+            }
+          ]
+        }
+      },
+      "id": "fo-0001-0000-0000-0000-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [0, 0],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/1f5x5tlXHoag_uYv-Ucsp7WBnk4WFqn-u6JwlVvedBVc?fields=sheets.properties.title",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "googleOAuth2Api",
+        "options": {}
+      },
+      "id": "fo-0002-0000-0000-0000-000000000002",
+      "name": "Get Sheet Names",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [240, 0],
+      "typeVersion": 4.2,
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Month abbreviation → N+M mapping (months passed + months remaining until Dec)\nconst monthMap = {\n  'jan': '0+12', 'fev': '1+11', 'mar': '2+10', 'abr': '3+9',\n  'mai': '4+8', 'jun': '5+7', 'jul': '6+6', 'ago': '7+5',\n  'set': '8+4', 'out': '9+3', 'nov': '10+2', 'dez': '11+1'\n};\n\nconst sheets = $input.first().json.sheets || [];\nconst result = [];\n\nfor (const sheet of sheets) {\n  const title = (sheet.properties && sheet.properties.title) ? sheet.properties.title : '';\n  // Match tabs that start with 'forecast ' (case-insensitive)\n  if (!title.toLowerCase().startsWith('forecast ')) continue;\n\n  // Remove 'forecast ' prefix and parse month + optional suffix\n  const rest = title.substring(9).trim(); // e.g. 'ABR' or 'ABR v2'\n  const parts = rest.split(/\\s+/);\n  const monthKey = parts[0].toLowerCase(); // e.g. 'abr'\n  const suffix = parts.slice(1).join(' '); // e.g. 'v2' or ''\n\n  const nm = monthMap[monthKey];\n  if (!nm) continue; // skip if not a recognized month\n\n  const versionLabel = suffix ? `Forecast ${nm} ${suffix}` : `Forecast ${nm}`;\n  result.push({ json: { sheetName: title, versionLabel } });\n}\n\n// Sort by month order (0+12 first)\nresult.sort((a, b) => {\n  const na = parseInt(a.json.versionLabel.split('+')[0].replace('Forecast ', ''));\n  const nb = parseInt(b.json.versionLabel.split('+')[0].replace('Forecast ', ''));\n  return na - nb;\n});\n\nreturn result;"
+      },
+      "id": "fo-0003-0000-0000-0000-000000000003",
+      "name": "Filter Forecast Tabs",
+      "type": "n8n-nodes-base.code",
+      "position": [480, 0],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "fo-0004-0000-0000-0000-000000000004",
+      "name": "Loop Over Sheets",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [720, 0],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1f5x5tlXHoag_uYv-Ucsp7WBnk4WFqn-u6JwlVvedBVc/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.sheetName }}"
+        },
+        "options": {}
+      },
+      "id": "fo-0005-0000-0000-0000-000000000005",
+      "name": "Read Forecast Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [960, 0],
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Accumulate all rows across loop iterations using staticData\nif (!$workflow.staticData.accumulatedRows) {\n  $workflow.staticData.accumulatedRows = [];\n}\n\n// Get the versionLabel from the current batch item in the loop\nconst versionLabel = $('Loop Over Sheets').first().json.versionLabel;\n\n// Tag each sheet row with _version and accumulate\nconst taggedRows = $input.all().map(item => ({\n  ...item.json,\n  _version: versionLabel\n}));\n$workflow.staticData.accumulatedRows.push(...taggedRows);\n\n// Return the original batch item to feed the loopback\nreturn $('Loop Over Sheets').all();"
+      },
+      "id": "fo-0006-0000-0000-0000-000000000006",
+      "name": "Tag With Version",
+      "type": "n8n-nodes-base.code",
+      "position": [1200, 0],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all accumulated rows and reset for next run\nconst rows = $workflow.staticData.accumulatedRows || [];\n$workflow.staticData.accumulatedRows = [];\nreturn [{ json: { content: JSON.stringify(rows) } }];"
+      },
+      "id": "fo-0007-0000-0000-0000-000000000007",
+      "name": "Build JSON",
+      "type": "n8n-nodes-base.code",
+      "position": [720, 220],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data/forecast_old.json",
+        "fileContent": "={{ $json.content }}",
+        "commitMessage": "Atualizando Forecast Old via Verdi",
+        "additionalParameters": {
+          "branch": "main"
+        }
+      },
+      "id": "fo-0008-0000-0000-0000-000000000008",
+      "name": "Write Forecast Old to GitHub",
+      "type": "n8n-nodes-base.github",
+      "position": [960, 220],
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [{ "node": "Get Sheet Names", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Sheet Names": {
+      "main": [
+        [{ "node": "Filter Forecast Tabs", "type": "main", "index": 0 }]
+      ]
+    },
+    "Filter Forecast Tabs": {
+      "main": [
+        [{ "node": "Loop Over Sheets", "type": "main", "index": 0 }]
+      ]
+    },
+    "Loop Over Sheets": {
+      "main": [
+        [{ "node": "Read Forecast Sheet", "type": "main", "index": 0 }],
+        [{ "node": "Build JSON", "type": "main", "index": 0 }]
+      ]
+    },
+    "Read Forecast Sheet": {
+      "main": [
+        [{ "node": "Tag With Version", "type": "main", "index": 0 }]
+      ]
+    },
+    "Tag With Version": {
+      "main": [
+        [{ "node": "Loop Over Sheets", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build JSON": {
+      "main": [
+        [{ "node": "Write Forecast Old to GitHub", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "85260b6a32af0aede929fef314a09f9eb905ee8ed00741f8ad438b405f1b84a4"
+  },
+  "tags": []
+}

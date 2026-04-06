@@ -609,6 +609,7 @@
         const URL_PLAN = "data/dados.json";
         const URL_ACTUAL = "data/realizado.json";
         const URL_FORECAST = "data/forecast.json";
+        const URL_FORECAST_OLD = "data/forecast_old.json";
         const URL_TPV = "data/tpv_devices.json";
 
         const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -618,6 +619,7 @@
         let db = { PLAN: [], ACTUAL: [], FORECAST: [] };
         let dbTPV = [];
         let scenarioList = [];
+        let forecastOldVersions = []; // [{key: 'FORECAST_OLD_0', label: 'Forecast 3+9'}, ...]
         let canalRegistry = {};
         let cols = { PLAN: { canal: "", device: "" }, ACTUAL: { canal: "", device: "" } };
         let timelineChart, barChart;
@@ -729,6 +731,39 @@
             return cleanData;
         }
 
+        function parseForecastOldJSON(data) {
+            if (!data || data.length === 0) return;
+            forecastOldVersions = [];
+            const versionGroups = {};
+            data.forEach(row => {
+                const v = String(row._version || 'Forecast Old').trim();
+                if (!versionGroups[v]) versionGroups[v] = [];
+                versionGroups[v].push(row);
+            });
+            let idx = 0;
+            Object.entries(versionGroups).forEach(([label, rows]) => {
+                const key = `FORECAST_OLD_${idx}`;
+                db[key] = parseForecastJSON(rows);
+                forecastOldVersions.push({ key, label });
+                idx++;
+            });
+        }
+
+        function buildForecastOldScenarios() {
+            forecastOldVersions.forEach(({ key, label }) => {
+                const rows = db[key] || [];
+                if (!rows.length) return;
+                let months = new Set();
+                rows.forEach(row => { Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) months.add(k); }); });
+                const sortedMonths = Array.from(months).sort();
+                const years = [...new Set(sortedMonths.map(m => m.substring(0, 4)))];
+                years.forEach(y => {
+                    const yMonths = sortedMonths.filter(m => m.startsWith(y)).map(m => m.substring(4));
+                    scenarioList.push({ id: `${key}|${y}`, label, type: key, months: yMonths });
+                });
+            });
+        }
+
         function fuseActualIntoForecast(actualDb, forecastDb) {
             const today = new Date();
             const currentYYYYMM = String(today.getFullYear()) + String(today.getMonth() + 1).padStart(2, '0');
@@ -774,22 +809,25 @@
         async function boot() {
             lucide.createIcons();
             try {
-                const [resPlan, resActual, resForecast, resTPV] = await Promise.all([
+                const [resPlan, resActual, resForecast, resTPV, resForecastOld] = await Promise.all([
                     fetch(`${URL_PLAN}?_=${Date.now()}`).catch(() => ({ ok: false })),
                     fetch(`${URL_ACTUAL}?_=${Date.now()}`).catch(() => ({ ok: false })),
                     fetch(`${URL_FORECAST}?_=${Date.now()}`).catch(() => ({ ok: false })),
-                    fetch(`${URL_TPV}?_=${Date.now()}`).catch(() => ({ ok: false }))
+                    fetch(`${URL_TPV}?_=${Date.now()}`).catch(() => ({ ok: false })),
+                    fetch(`${URL_FORECAST_OLD}?_=${Date.now()}`).catch(() => ({ ok: false }))
                 ]);
 
                 let rawPlan = resPlan.ok ? await resPlan.json() : [];
                 let rawActual = resActual.ok ? await resActual.json() : [];
                 let rawForecast = resForecast.ok ? await resForecast.json() : [];
                 let rawTPV = resTPV.ok ? await resTPV.json() : [];
+                let rawForecastOld = resForecastOld.ok ? await resForecastOld.json() : [];
 
                 db.PLAN = parseStandardJSON(rawPlan);
                 db.ACTUAL = parseStandardJSON(rawActual);
                 db.FORECAST = parseForecastJSON(rawForecast);
                 dbTPV = parseTPVData(rawTPV);
+                parseForecastOldJSON(rawForecastOld);
 
                 detectStructure();
 
@@ -798,6 +836,7 @@
                 }
 
                 buildForecastAdj();
+                buildForecastOldScenarios();
 
                 handleTypeChange();
                 populateGlobalFilters();
@@ -922,6 +961,15 @@
                     htmlA += opts; htmlB += opts;
                 }
             });
+            forecastOldVersions.forEach(({ key, label }) => {
+                const group = scenarioList.filter(s => s.type === key);
+                if (group.length > 0) {
+                    let opts = `<optgroup label="--- 🟡 ${label} ---">`;
+                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
+                    opts += `</optgroup>`;
+                    htmlA += opts; htmlB += opts;
+                }
+            });
 
             selectScA.innerHTML = htmlA; selectScB.innerHTML = htmlB;
 
@@ -979,16 +1027,18 @@
 
         function populateGlobalFilters() {
             let allCanals = new Set(); let allDevices = new Set();
-            ['PLAN', 'ACTUAL', 'FORECAST', 'FORECAST_ADJ'].forEach(type => {
+            const allFilterTypes = ['PLAN', 'ACTUAL', 'FORECAST', 'FORECAST_ADJ', ...forecastOldVersions.map(v => v.key)];
+            allFilterTypes.forEach(type => {
                 if(!db[type]) return;
-                let colC = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? 'Canal' : cols[type].canal;
-                let colD = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? 'Device' : cols[type].device;
+                const isFCSTT = type === 'FORECAST' || type === 'FORECAST_ADJ' || type.startsWith('FORECAST_OLD_');
+                let colC = isFCSTT ? 'Canal' : cols[type].canal;
+                let colD = isFCSTT ? 'Device' : cols[type].device;
 
                 db[type].forEach(row => {
                     let rawC = String(row[colC]||'').trim().toUpperCase();
                     let canal = canalRegistry[rawC] || String(row[colC]||'').trim();
                     let rawD = String(row[colD]||'');
-                    let device = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? rawD : (classifyDevice(rawD) || rawD);
+                    let device = isFCSTT ? rawD : (classifyDevice(rawD) || rawD);
 
                     if(canal && canal !== '0') allCanals.add(canal.toUpperCase());
                     if(device) allDevices.add(device);
@@ -1008,8 +1058,9 @@
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type] || [];
 
-            let colC = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? 'Canal' : cols[type].canal;
-            let colD = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? 'Device' : cols[type].device;
+            const isFCSTType = type === 'FORECAST' || type === 'FORECAST_ADJ' || type.startsWith('FORECAST_OLD_');
+            let colC = isFCSTType ? 'Canal' : cols[type].canal;
+            let colD = isFCSTType ? 'Device' : cols[type].device;
 
             let total = 0; let byCanal = {}; let byDevice = {}; let byCanalDevice = {};
 
@@ -1019,7 +1070,7 @@
                 canal = canal.toUpperCase(); // Force uppercase to absolutely prevent duplicates
 
                 let rawD = String(row[colD]||'');
-                let device = (type === 'FORECAST' || type === 'FORECAST_ADJ') ? rawD : (classifyDevice(rawD) || rawD);
+                let device = isFCSTType ? rawD : (classifyDevice(rawD) || rawD);
 
                 if (filterCanal !== 'ALL') {
                     if (filterCanal === DIGITAL_GROUP_NAME) {
@@ -1098,12 +1149,14 @@
             if (type === 'PLAN') return '#10B981';
             if (type === 'FORECAST') return '#F59E0B';
             if (type === 'FORECAST_ADJ') return '#8B5CF6';
+            if (type.startsWith('FORECAST_OLD_')) return '#EC4899';
             return '#3B82F6';
         }
         function getBaseBgColor(type) {
             if (type === 'PLAN') return 'rgba(16, 185, 129, 0.1)';
             if (type === 'FORECAST') return 'rgba(245, 158, 11, 0.1)';
             if (type === 'FORECAST_ADJ') return 'rgba(139, 92, 246, 0.1)';
+            if (type.startsWith('FORECAST_OLD_')) return 'rgba(236, 72, 153, 0.1)';
             return 'rgba(59, 130, 246, 0.1)';
         }
 
@@ -1141,8 +1194,8 @@
 
             updateKPIs(dataA.total, dataB.total, nameA, nameB, typeB);
             
-            const pA = typeA === 'PLAN' ? 'ao Plano' : (typeA === 'FORECAST' ? 'ao Forecast' : (typeA === 'FORECAST_ADJ' ? 'ao Forecast Adj' : 'ao Realizado'));
-            const pB = typeB === 'PLAN' ? 'O Plano' : (typeB === 'FORECAST' ? 'O Forecast' : (typeB === 'FORECAST_ADJ' ? 'O Forecast Adj' : 'O Realizado'));
+            const pA = typeA === 'PLAN' ? 'ao Plano' : typeA === 'FORECAST' ? 'ao Forecast' : typeA === 'FORECAST_ADJ' ? 'ao Forecast Adj' : typeA.startsWith('FORECAST_OLD_') ? 'ao Forecast Old' : 'ao Realizado';
+            const pB = typeB === 'PLAN' ? 'O Plano' : typeB === 'FORECAST' ? 'O Forecast' : typeB === 'FORECAST_ADJ' ? 'O Forecast Adj' : typeB.startsWith('FORECAST_OLD_') ? 'O Forecast Old' : 'O Realizado';
             
             let aiStrB, aiStrA;
             if(compType === 'YEAR') {
@@ -1970,6 +2023,15 @@
                     if (group.length > 0) {
                         const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : (t === 'FORECAST' ? '🟠 FORECAST' : '🟣 FORECAST ADJ'));
                         let opts = `<optgroup label="--- ${label} ---">`;
+                        group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
+                        opts += `</optgroup>`;
+                        html += opts;
+                    }
+                });
+                forecastOldVersions.forEach(({ key, label }) => {
+                    const group = scenarioList.filter(s => s.type === key);
+                    if (group.length > 0) {
+                        let opts = `<optgroup label="--- 🟡 ${label} ---">`;
                         group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                         opts += `</optgroup>`;
                         html += opts;
@@ -2982,6 +3044,14 @@
                         html += `</optgroup>`;
                     }
                 });
+                forecastOldVersions.forEach(({ key, label }) => {
+                    const group = scenarioList.filter(s => s.type === key);
+                    if (group.length > 0) {
+                        html += `<optgroup label="--- 🟡 ${label} ---">`;
+                        group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
+                        html += `</optgroup>`;
+                    }
+                });
                 sel.innerHTML = html;
             });
             const y = new Date().getFullYear().toString();
@@ -3022,6 +3092,15 @@
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : (t === 'FORECAST' ? '🟠 FORECAST' : '🟣 FORECAST ADJ'));
                     let opts = `<optgroup label="--- ${label} ---">`;
+                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
+                    opts += `</optgroup>`;
+                    htmlA += opts; htmlB += opts;
+                }
+            });
+            forecastOldVersions.forEach(({ key, label }) => {
+                const group = scenarioList.filter(s => s.type === key);
+                if (group.length > 0) {
+                    let opts = `<optgroup label="--- 🟡 ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
                     htmlA += opts; htmlB += opts;
