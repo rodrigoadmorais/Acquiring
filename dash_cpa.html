@@ -222,7 +222,9 @@ let ch1e=null, ch1g=null, ch2e=null, ch2g=null;
 /* ── Parse ── */
 function parseN(v){
   if(v===undefined||v===null||v===''||v==='-') return 0;
+  if(typeof v==='number') return v;  // já é número — não mexer
   const s=String(v).trim().replace(/\s/g,'');
+  // Formato BR com pontos como milhar: "1.234.567,89"
   const n=parseFloat(s.replace(/\./g,'').replace(',','.'));
   return isNaN(n)?0:n;
 }
