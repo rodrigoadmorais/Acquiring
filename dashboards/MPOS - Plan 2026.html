@@ -92,6 +92,9 @@
                 <button onclick="toggleDigitalGroup()" id="btn-digital-group" title="Agrupar APP, LP e TO como Canais Digitais" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all whitespace-nowrap">
                     <i data-lucide="layers" class="w-4 h-4"></i> Canais Digitais
                 </button>
+                <button onclick="toggleAcquisicaoGroup()" id="btn-acquisicao-group" title="Agrupar todos os canais (exceto Engagement) como Acquisição" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600 transition-all whitespace-nowrap">
+                    <i data-lucide="target" class="w-4 h-4"></i> Acquisição
+                </button>
             </div>
             <div class="flex gap-2">
                 <button onclick="generateExecutiveReport()" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-indigo-700 transition-all active:scale-95">
@@ -665,8 +668,11 @@
         let tpvTimelineChart, tpvBarChart;
         window.currentExportData = null;
         let groupDigital = false;
+        let groupAcquisicao = false;
         const DIGITAL_CANALS = ['APP', 'LP', 'TO'];
         const DIGITAL_GROUP_NAME = 'CANAIS DIGITAIS';
+        const ACQUISICAO_GROUP_NAME = 'ACQUISIÇÃO';
+        const ACQUISICAO_EXCLUDE = 'ENGAGEMENT';
 
         function formatBRPct(num) { return num.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '%'; }
         function formatBRNum(num) { return Math.round(num).toLocaleString('pt-BR'); }
@@ -1056,7 +1062,13 @@
                 });
             });
             let canalList = [...allCanals].sort();
-            if (groupDigital) {
+            if (groupAcquisicao) {
+                const hasAcq = [...allCanals].some(c => c !== ACQUISICAO_EXCLUDE);
+                const hasEng = allCanals.has(ACQUISICAO_EXCLUDE);
+                canalList = [];
+                if (hasAcq) canalList.push(ACQUISICAO_GROUP_NAME);
+                if (hasEng) canalList.push(ACQUISICAO_EXCLUDE);
+            } else if (groupDigital) {
                 const hasDigital = DIGITAL_CANALS.some(d => allCanals.has(d));
                 canalList = canalList.filter(c => !DIGITAL_CANALS.includes(c));
                 if (hasDigital) canalList.unshift(DIGITAL_GROUP_NAME);
@@ -1086,6 +1098,8 @@
                 if (filterCanal !== 'ALL') {
                     if (filterCanal === DIGITAL_GROUP_NAME) {
                         if (!DIGITAL_CANALS.includes(canal)) return;
+                    } else if (filterCanal === ACQUISICAO_GROUP_NAME) {
+                        if (canal === ACQUISICAO_EXCLUDE) return;
                     } else {
                         if (canal !== filterCanal) return;
                     }
@@ -1131,29 +1145,54 @@
                 });
                 return { total, byCanal: groupedByCanal, byDevice, byCanalDevice };
             }
+            if (groupAcquisicao && (filterCanal === 'ALL' || filterCanal === ACQUISICAO_GROUP_NAME)) {
+                const groupedByCanal = {};
+                Object.entries(byCanal).forEach(([c,v]) => {
+                    const k = c === ACQUISICAO_EXCLUDE ? ACQUISICAO_EXCLUDE : ACQUISICAO_GROUP_NAME;
+                    groupedByCanal[k] = (groupedByCanal[k]||0) + v;
+                });
+                return { total, byCanal: groupedByCanal, byDevice, byCanalDevice };
+            }
             return { total, byCanal, byDevice, byCanalDevice };
         }
 
         function applyGroupingPL(pl) {
-            if (!groupDigital) return pl;
-            const newByCanal = {};
-            Object.entries(pl.byCanal).forEach(([canal, cd]) => {
-                const key = DIGITAL_CANALS.includes(canal) ? DIGITAL_GROUP_NAME : canal;
-                if (!newByCanal[key]) newByCanal[key] = { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0, devices:{} };
-                const tgt = newByCanal[key];
-                tgt.receita += cd.receita||0;
-                tgt.cmv += cd.cmv||0;
-                tgt.salesTaxes += cd.salesTaxes||0;
-                tgt.resultado += cd.resultado||0;
-                tgt.qty += cd.qty||0;
-                Object.entries(cd.devices||{}).forEach(([dev,dd]) => {
-                    if (!tgt.devices[dev]) tgt.devices[dev] = {qty:0,receita:0,cmv:0,salesTaxes:0,resultado:0};
-                    const td = tgt.devices[dev];
-                    td.qty += dd.qty||0; td.receita += dd.receita||0; td.cmv += dd.cmv||0;
-                    td.salesTaxes += dd.salesTaxes||0; td.resultado += dd.resultado||0;
+            let result = pl;
+            if (groupDigital) {
+                const newByCanal = {};
+                Object.entries(result.byCanal).forEach(([canal, cd]) => {
+                    const key = DIGITAL_CANALS.includes(canal) ? DIGITAL_GROUP_NAME : canal;
+                    if (!newByCanal[key]) newByCanal[key] = { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0, devices:{} };
+                    const tgt = newByCanal[key];
+                    tgt.receita += cd.receita||0; tgt.cmv += cd.cmv||0;
+                    tgt.salesTaxes += cd.salesTaxes||0; tgt.resultado += cd.resultado||0; tgt.qty += cd.qty||0;
+                    Object.entries(cd.devices||{}).forEach(([dev,dd]) => {
+                        if (!tgt.devices[dev]) tgt.devices[dev] = {qty:0,receita:0,cmv:0,salesTaxes:0,resultado:0};
+                        const td = tgt.devices[dev];
+                        td.qty += dd.qty||0; td.receita += dd.receita||0; td.cmv += dd.cmv||0;
+                        td.salesTaxes += dd.salesTaxes||0; td.resultado += dd.resultado||0;
+                    });
                 });
-            });
-            return { ...pl, byCanal: newByCanal };
+                result = { ...result, byCanal: newByCanal };
+            }
+            if (groupAcquisicao) {
+                const newByCanal = {};
+                Object.entries(result.byCanal).forEach(([canal, cd]) => {
+                    const key = canal === ACQUISICAO_EXCLUDE ? ACQUISICAO_EXCLUDE : ACQUISICAO_GROUP_NAME;
+                    if (!newByCanal[key]) newByCanal[key] = { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0, devices:{} };
+                    const tgt = newByCanal[key];
+                    tgt.receita += cd.receita||0; tgt.cmv += cd.cmv||0;
+                    tgt.salesTaxes += cd.salesTaxes||0; tgt.resultado += cd.resultado||0; tgt.qty += cd.qty||0;
+                    Object.entries(cd.devices||{}).forEach(([dev,dd]) => {
+                        if (!tgt.devices[dev]) tgt.devices[dev] = {qty:0,receita:0,cmv:0,salesTaxes:0,resultado:0};
+                        const td = tgt.devices[dev];
+                        td.qty += dd.qty||0; td.receita += dd.receita||0; td.cmv += dd.cmv||0;
+                        td.salesTaxes += dd.salesTaxes||0; td.resultado += dd.resultado||0;
+                    });
+                });
+                result = { ...result, byCanal: newByCanal };
+            }
+            return result;
         }
 
         function getBaseColor(type, isBorder = false) {
@@ -2110,7 +2149,7 @@
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
             let plA = computePL(dataA.byCanalDevice);
             let plB = computePL(dataB.byCanalDevice);
-            if (groupDigital) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
+            if (groupDigital || groupAcquisicao) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
 
             // KPI colors
             const bColor = getBaseColor(typeB, true);
@@ -2356,7 +2395,7 @@
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
             let plA = computePL(dataA.byCanalDevice);
             let plB = computePL(dataB.byCanalDevice);
-            if (groupDigital) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
+            if (groupDigital || groupAcquisicao) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
             const bColor = getBaseColor(typeB, true);
             const fmtC = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0});
             const sgn = v => v >= 0 ? '+' : '';
@@ -2555,12 +2594,40 @@
 
         function toggleDigitalGroup() {
             groupDigital = !groupDigital;
+            if (groupDigital && groupAcquisicao) {
+                groupAcquisicao = false;
+                const ab = document.getElementById('btn-acquisicao-group');
+                ab.classList.remove('bg-orange-500','text-white','border-orange-600');
+                ab.classList.add('bg-white','text-gray-600','border-gray-300');
+            }
             const btn = document.getElementById('btn-digital-group');
             if (groupDigital) {
                 btn.classList.add('bg-blue-600','text-white','border-blue-700');
                 btn.classList.remove('bg-white','text-gray-600','border-gray-300');
             } else {
                 btn.classList.remove('bg-blue-600','text-white','border-blue-700');
+                btn.classList.add('bg-white','text-gray-600','border-gray-300');
+            }
+            document.getElementById('filter-canal').value = 'ALL';
+            populateGlobalFilters();
+            processDashboard();
+            if (document.getElementById('tab-content-pl').style.display !== 'none') renderPLTab();
+        }
+
+        function toggleAcquisicaoGroup() {
+            groupAcquisicao = !groupAcquisicao;
+            if (groupAcquisicao && groupDigital) {
+                groupDigital = false;
+                const db = document.getElementById('btn-digital-group');
+                db.classList.remove('bg-blue-600','text-white','border-blue-700');
+                db.classList.add('bg-white','text-gray-600','border-gray-300');
+            }
+            const btn = document.getElementById('btn-acquisicao-group');
+            if (groupAcquisicao) {
+                btn.classList.add('bg-orange-500','text-white','border-orange-600');
+                btn.classList.remove('bg-white','text-gray-600','border-gray-300');
+            } else {
+                btn.classList.remove('bg-orange-500','text-white','border-orange-600');
                 btn.classList.add('bg-white','text-gray-600','border-gray-300');
             }
             document.getElementById('filter-canal').value = 'ALL';
@@ -3019,6 +3086,7 @@
                 if (canal === 'ENGAGEMENT') return;
                 if (filterCanal !== 'ALL') {
                     if (filterCanal === DIGITAL_GROUP_NAME) { if (!DIGITAL_CANALS.includes(canal)) return; }
+                    else if (filterCanal === ACQUISICAO_GROUP_NAME) { /* ENGAGEMENT already excluded above */ }
                     else { if (canal !== filterCanal) return; }
                 }
                 let rowSum = 0;
@@ -3039,6 +3107,11 @@
                 Object.entries(byCanal).forEach(([c, v]) => { const k = DIGITAL_CANALS.includes(c) ? DIGITAL_GROUP_NAME : c; grouped[k] = (grouped[k] || 0) + v; });
                 return { total, byCanal: grouped, byCanalDevice: {} };
             }
+            if (groupAcquisicao && (filterCanal === 'ALL' || filterCanal === ACQUISICAO_GROUP_NAME)) {
+                const grouped = {};
+                Object.entries(byCanal).forEach(([c, v]) => { grouped[ACQUISICAO_GROUP_NAME] = (grouped[ACQUISICAO_GROUP_NAME] || 0) + v; });
+                return { total, byCanal: grouped, byCanalDevice: {} };
+            }
             return { total, byCanal, byCanalDevice: {} };
         }
 
@@ -3056,6 +3129,7 @@
                 let device = type === 'FORECAST' ? rawD : (classifyDevice(rawD) || rawD);
                 if (filterCanal !== 'ALL') {
                     if (filterCanal === DIGITAL_GROUP_NAME) { if (!DIGITAL_CANALS.includes(canal)) return; }
+                    else if (filterCanal === ACQUISICAO_GROUP_NAME) { /* ENGAGEMENT already excluded above */ }
                     else { if (canal !== filterCanal) return; }
                 }
                 if (filterDevice !== 'ALL' && device !== filterDevice) return;
@@ -3078,6 +3152,15 @@
                 const grouped = {};
                 Object.entries(byCanal).forEach(([c, v]) => { const k = DIGITAL_CANALS.includes(c) ? DIGITAL_GROUP_NAME : c; grouped[k] = (grouped[k] || 0) + v; });
                 return { total, byCanal: grouped, byCanalDevice };
+            }
+            if (groupAcquisicao && (filterCanal === 'ALL' || filterCanal === ACQUISICAO_GROUP_NAME)) {
+                const grouped = {}, groupedBCD = {};
+                Object.entries(byCanal).forEach(([c, v]) => { grouped[ACQUISICAO_GROUP_NAME] = (grouped[ACQUISICAO_GROUP_NAME] || 0) + v; });
+                Object.entries(byCanalDevice).forEach(([c, devs]) => {
+                    if (!groupedBCD[ACQUISICAO_GROUP_NAME]) groupedBCD[ACQUISICAO_GROUP_NAME] = {};
+                    Object.entries(devs).forEach(([dev, qty]) => { groupedBCD[ACQUISICAO_GROUP_NAME][dev] = (groupedBCD[ACQUISICAO_GROUP_NAME][dev] || 0) + qty; });
+                });
+                return { total, byCanal: grouped, byCanalDevice: groupedBCD };
             }
             return { total, byCanal, byCanalDevice };
         }
