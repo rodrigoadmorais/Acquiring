@@ -157,6 +157,10 @@
       <div class="kpi c3"><div class="kpi-lbl">Gap (FCST − Plano)</div><div class="kpi-val" id="k1g">—</div><div class="kpi-sub" id="k1gs">&nbsp;</div></div>
       <div class="kpi c4"><div class="kpi-lbl">% FCST vs Plano</div><div class="kpi-val" id="k1a">—</div><div class="kpi-sub" id="k1as">&nbsp;</div></div>
     </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-t">Resumo Executivo por IA</div>
+      <div class="ai-b" id="aiB1" style="display:block;padding:0"></div>
+    </div>
     <div class="charts">
       <div class="card"><div class="card-t">Evolução Mensal — Plano vs FCST</div><div class="ch"><canvas id="c1e"></canvas></div></div>
       <div class="card"><div class="card-t">Gap Mensal FCST − Plano (R$)</div><div class="ch"><canvas id="c1g"></canvas></div></div>
@@ -164,10 +168,6 @@
     <div class="ranks">
       <div class="card"><div class="card-t">Top Canais — Custo Plano</div><div id="r1p"></div></div>
       <div class="card"><div class="card-t">Top Canais — Gap FCST−Plano</div><div id="r1g"></div></div>
-    </div>
-    <div class="ai">
-      <div class="ai-h" onclick="tAI(1)"><h3>Resumo Executivo por IA</h3><span class="arr" id="aiArr1">▼</span></div>
-      <div class="ai-b" id="aiB1" style="display:none"></div>
     </div>
   </div>
 
@@ -202,8 +202,8 @@
       <div id="tWrap"><div class="empty">Carregando…</div></div>
     </div>
     <div class="ai">
-      <div class="ai-h" onclick="tAI(3)"><h3>Resumo Executivo por IA</h3><span class="arr" id="aiArr">▼</span></div>
-      <div class="ai-b" id="aiB" style="display:none"></div>
+      <div class="card-t" style="padding:14px 15px 0">Resumo Executivo por IA</div>
+      <div class="ai-b" id="aiB" style="display:block"></div>
     </div>
   </div>
 
@@ -364,7 +364,7 @@ function render(){
   renderTab1(f);
   renderTab2(f);
   renderTable();
-  if(aiOpen3) genAI3(f);
+  genAI3(f);
 }
 
 /* ══ Tab 1: Plano vs FCST ══ */
@@ -401,7 +401,7 @@ function renderTab1(f){
 
   drawRankSimple('r1p',planRows,f,'#1565C0');
   drawRankGap('r1g',planRows,fcstRows,f);
-  if(aiOpen1) genAI1(f);
+  genAI1(f);
 }
 
 /* ══ Tab 2: FCST vs FCST ══ */
@@ -458,9 +458,9 @@ function renderTab2(f){
       <div class="card"><div class="card-t">Top Canais — Delta Absoluto</div><div id="r2d"></div></div>
       <div class="card"><div class="card-t">Top Canais — Variação %</div><div id="r2p"></div></div>
     </div>
-    <div class="ai">
-      <div class="ai-h" onclick="tAI(2)"><h3>Resumo Executivo por IA</h3><span class="arr" id="aiArr2">▼</span></div>
-      <div class="ai-b" id="aiB2" style="display:none"></div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-t">Resumo Executivo por IA</div>
+      <div class="ai-b" id="aiB2" style="display:block;padding:0"></div>
     </div>`;
 
   // Draw after DOM is ready
@@ -472,7 +472,7 @@ function renderTab2(f){
 
     // Rankings for delta
     drawRankDelta('r2d','r2p',rA,rB,f);
-    if(aiOpen2) genAI2(f);
+    genAI2(f);
   });
 }
 
