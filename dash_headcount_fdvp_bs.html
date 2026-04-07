@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Headcount — FDVP & Big Sellers</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg-primary:#F0F4F8;--bg-secondary:#FFFFFF;--bg-card:#FFFFFF;
+  --text-primary:#1A2332;--text-secondary:#546E7A;--text-muted:#90A4AE;
+  --border:#E0E7EF;--blue:#009EE3;--blue-dark:#003087;--yellow:#FFE600;
+  --green:#00A650;--red:#E03131;--orange:#F76707;
+  --shadow:0 2px 12px rgba(0,0,0,.08);--shadow-h:0 4px 24px rgba(0,0,0,.14);--r:12px;
+}
+[data-theme="dark"]{
+  --bg-primary:#0D1B2A;--bg-secondary:#1A2B3C;--bg-card:#1E3148;
+  --text-primary:#E8F4FD;--text-secondary:#90CAF9;--text-muted:#546E7A;
+  --border:#2A3F5A;--shadow:0 2px 12px rgba(0,0,0,.3);--shadow-h:0 4px 24px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Proxima Nova','Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);transition:background .3s,color .3s;min-height:100vh}
+.hdr{background:linear-gradient(135deg,var(--blue-dark) 0%,#005A9C 100%);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+.hdr-l{display:flex;align-items:center;gap:14px}
+.logo{background:var(--blue);color:#fff;padding:7px 14px;border-radius:8px;font-weight:800;font-size:14px;letter-spacing:.5px}
+.hdr-title h1{font-size:17px;font-weight:700;color:#fff}
+.hdr-title p{font-size:11px;color:rgba(255,255,255,.65);margin-top:2px}
+.hdr-ctrl{display:flex;align-items:center;gap:8px}
+.btn-theme{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 13px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:5px;font-family:inherit}
+.btn-theme:hover{background:rgba(255,255,255,.25)}
+.fbar{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:57px;z-index:99;box-shadow:var(--shadow)}
+.fl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.fsel{background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:5px 10px;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer;outline:none;transition:border-color .2s;min-width:110px}
+.fsel:focus{border-color:var(--blue)}
+.fdiv{width:1px;height:26px;background:var(--border)}
+.btn-tgl{background:var(--bg-primary);border:1px solid var(--border);color:var(--text-secondary);padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+.btn-tgl.on,.btn-tgl:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+.unit-wrap{display:flex;gap:2px;background:var(--bg-primary);border:1px solid var(--border);border-radius:7px;padding:2px}
+.unit-btn{padding:4px 9px;border-radius:5px;border:none;background:transparent;color:var(--text-secondary);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.unit-btn.on{background:var(--blue);color:#fff}
+.btn-exp{background:var(--green);color:#fff;border:none;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn-exp:hover{opacity:.88;transform:translateY(-1px)}
+.main{padding:22px 28px;max-width:1600px;margin:0 auto}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.kpi.c-blue::before{background:var(--blue)}.kpi.c-green::before{background:var(--green)}
+.kpi.c-orange::before{background:var(--orange)}.kpi.c-dark::before{background:var(--blue-dark)}
+.kpi.c-yellow::before{background:#F59F00}.kpi.c-red::before{background:var(--red)}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-h)}
+.kpi-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.kpi-val{font-size:26px;font-weight:800;color:var(--text-primary);margin-bottom:5px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text-secondary);margin-bottom:7px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.badge.pos{background:rgba(0,166,80,.12);color:var(--green)}
+.badge.neg{background:rgba(224,49,49,.12);color:var(--red)}
+.badge.neu{background:rgba(0,158,227,.12);color:var(--blue)}
+.badge.warn{background:rgba(247,103,7,.12);color:var(--orange)}
+.charts-r1{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+.charts-r2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.c-card{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.c-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.c-title{font-size:13px;font-weight:700;color:var(--text-primary)}
+.c-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
+.insights{background:linear-gradient(135deg,var(--blue-dark),#005A9C);border-radius:var(--r);padding:18px 22px;margin-bottom:22px;color:#fff;position:relative;overflow:hidden}
+.insights::after{content:'✦';position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:72px;color:rgba(255,255,255,.04)}
+.ins-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ins-badge{background:var(--blue);color:#fff;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.ins-title{font-size:14px;font-weight:700}
+.ins-text{font-size:12px;line-height:1.75;color:rgba(255,255,255,.9);max-width:960px}
+.tbl-card{background:var(--bg-card);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:22px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--bg-primary);color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:2px solid var(--border)}
+thead th:first-child{text-align:left}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:hover{background:rgba(0,158,227,.04)}
+tbody tr.g-row{background:rgba(0,48,135,.05);font-weight:700;cursor:pointer}
+[data-theme="dark"] tbody tr.g-row{background:rgba(0,158,227,.08)}
+tbody td{padding:9px 10px;color:var(--text-primary);text-align:right;white-space:nowrap}
+tbody td:first-child{text-align:left}
+.ach{display:inline-block;padding:2px 7px;border-radius:11px;font-size:10px;font-weight:700}
+.ach.g{background:rgba(0,166,80,.12);color:var(--green)}
+.ach.w{background:rgba(247,103,7,.12);color:var(--orange)}
+.ach.b{background:rgba(224,49,49,.12);color:var(--red)}
+.exp-ico{display:inline-flex;align-items:center;justify-content:center;margin-right:7px;width:16px;height:16px;background:var(--blue);color:#fff;border-radius:3px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0}
+.ch-row{display:none}
+.ch-row.vis{display:table-row}
+.ch-row td:first-child{padding-left:32px;color:var(--text-secondary)}
+.rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.rank-item:last-child{border-bottom:none}
+.rank-n{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+.rn1{background:#FFD700;color:#7A5C00}.rn2{background:#C0C0C0;color:#4A4A4A}
+.rn3{background:#CD7F32;color:#fff}.rn4,.rn5{background:var(--bg-primary);color:var(--text-muted)}
+.rank-name{flex:1;font-size:12px;font-weight:600;color:var(--text-primary)}
+.rank-val{font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap}
+.rank-bar-w{width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
+.rank-bar{height:100%;background:var(--blue);border-radius:3px}
+@media(max-width:1024px){.charts-r1,.charts-r2{grid-template-columns:1fr}}
+@media(max-width:768px){.fbar,.main,.hdr{padding-left:14px;padding-right:14px}}
+</style>
+</head>
+<body data-theme="light">
+
+<header class="hdr">
+  <div class="hdr-l">
+    <div class="logo">MP</div>
+    <div class="hdr-title">
+      <h1>Dashboard Headcount — FDVP & Big Sellers</h1>
+      <p>Plano vs Realizado · Budget 2025 & 2026 · Atualizado em março/2026</p>
+    </div>
+  </div>
+  <div class="hdr-ctrl">
+    <div class="unit-wrap">
+      <button class="unit-btn on" onclick="setUnit(1,'',event)">1</button>
+      <button class="unit-btn" onclick="setUnit(1000,'k',event)">k</button>
+    </div>
+    <button class="btn-tgl on" id="btnY" onclick="toggleYAxis()">Eixo Y</button>
+    <button class="btn-tgl on" id="btnL" onclick="toggleLabels()">Rótulos</button>
+    <button class="btn-theme" onclick="toggleTheme()">
+      <span id="tIcon">🌙</span><span id="tTxt">Dark</span>
+    </button>
+  </div>
+</header>
+
+<div class="fbar">
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">Ano</span>
+    <select class="fsel" id="fAno" onchange="applyFilters()">
+      <option value="2025">2025</option>
+      <option value="2026">2026</option>
+      <option value="all">2025 + 2026</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">Canal</span>
+    <select class="fsel" id="fCanal" onchange="applyFilters()">
+      <option value="all">Todos</option>
+      <option value="BIG SELLERS">Big Sellers</option>
+      <option value="FDVP">FDVP</option>
+      <option value="FARMING ASSESSORADO">Farming Assessorado</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">Sub-BU</span>
+    <select class="fsel" id="fSubBu" onchange="applyFilters()">
+      <option value="all">Todas</option>
+      <option value="Cross">Cross (E&amp;G)</option>
+      <option value="Instore">Instore</option>
+      <option value="OP">OP</option>
+      <option value="Onboarding">Onboarding</option>
+      <option value="Point">FDVP / Point</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">Role</span>
+    <select class="fsel" id="fRole" onchange="applyFilters()">
+      <option value="all">Todos</option>
+      <option value="Analistas">Analistas</option>
+      <option value="Lideres">Líderes</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="fl">RV</span>
+    <select class="fsel" id="fRV" onchange="applyFilters()">
+      <option value="all">Todos</option>
+      <option value="Sim">Com RV</option>
+      <option value="Não">Sem RV</option>
+    </select>
+  </div>
+  <div class="fdiv"></div>
+  <div id="fPer26Wrap" style="display:none;align-items:center;gap:6px">
+    <span class="fl">Período 2026</span>
+    <span style="font-size:11px;color:var(--text-secondary)">De</span>
+    <select class="fsel" id="fMesIni" onchange="applyFilters()" style="min-width:80px">
+      <option value="0" selected>Jan</option>
+      <option value="1">Fev</option>
+      <option value="2">Mar</option>
+      <option value="3">Abr</option>
+      <option value="4">Mai</option>
+      <option value="5">Jun</option>
+      <option value="6">Jul</option>
+      <option value="7">Ago</option>
+      <option value="8">Set</option>
+      <option value="9">Out</option>
+      <option value="10">Nov</option>
+      <option value="11">Dez</option>
+    </select>
+    <span style="font-size:13px;color:var(--text-secondary)">→</span>
+    <select class="fsel" id="fMesFim" onchange="applyFilters()" style="min-width:80px">
+      <option value="0">Jan</option>
+      <option value="1">Fev</option>
+      <option value="2">Mar</option>
+      <option value="3">Abr</option>
+      <option value="4">Mai</option>
+      <option value="5">Jun</option>
+      <option value="6">Jul</option>
+      <option value="7">Ago</option>
+      <option value="8">Set</option>
+      <option value="9">Out</option>
+      <option value="10">Nov</option>
+      <option value="11" selected>Dez</option>
+    </select>
+    <div class="fdiv"></div>
+  </div>
+  <button class="btn-exp" onclick="exportExcel()">&#11015; Exportar Excel</button>
+</div>
+
+<div class="main">
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="insights">
+    <div class="ins-hdr">
+      <span class="ins-badge">✦ Insight IA</span>
+      <span class="ins-title">Resumo Executivo por IA</span>
+    </div>
+    <p class="ins-text" id="insText">Carregando análise...</p>
+  </div>
+
+  <!-- Row 1: Evolution line + Rankings -->
+  <div class="charts-r1">
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Evolução Mensal — Headcount Total</div><div class="c-sub">Plano vs Realizado/FCST por mês</div></div>
+      </div>
+      <div style="position:relative;height:270px"><canvas id="cEvol"></canvas></div>
+    </div>
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Top 5 Cargos</div><div class="c-sub" id="rankSub">Por headcount realizado no último período</div></div>
+      </div>
+      <div id="rankList"></div>
+    </div>
+  </div>
+
+  <!-- Row 2: Gap Mensal full width -->
+  <div class="c-card" style="margin-bottom:14px">
+    <div class="c-hdr">
+      <div><div class="c-title">Gap Mensal (Real - Plano)</div><div class="c-sub">Diferença absoluta por mês — positivo acima do plano, negativo abaixo</div></div>
+    </div>
+    <div style="position:relative;height:220px"><canvas id="cGap"></canvas></div>
+  </div>
+
+  <!-- Row 3: Canal + Sub-BU -->
+  <div class="charts-r2">
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Headcount por Canal</div><div class="c-sub">Média mensal por canal — Plano vs Realizado</div></div>
+      </div>
+      <div style="position:relative;height:250px"><canvas id="cCanal"></canvas></div>
+    </div>
+    <div class="c-card">
+      <div class="c-hdr">
+        <div><div class="c-title">Atingimento por Sub-BU</div><div class="c-sub">% Realizado / Plano — média mensal</div></div>
+      </div>
+      <div style="position:relative;height:250px"><canvas id="cSubBu"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tbl-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div><div class="c-title">Tabela Detalhada — Drill-down por Canal</div><div class="c-sub">Clique no canal para expandir os cargos</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead id="tHead"></thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA (fallback — sobrescrito pelo fetch de headcount_data.json) ────────
+let P25=[
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,8,10,10,11,14,14,15,15,15,15,15]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,5,5,5,5,5,5,5,5,5,5]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[31,33,36,36,40,42,42,42,42,42,42,42]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[12,13,14,15,16,18,18,18,18,18,18,18]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[3,4,4,4,4,5,5,5,5,5,5,5]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[21,23,26,26,26,26,26,26,26,26,26,26]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[9,9,10,10,10,10,10,10,10,10,10,10]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente Sr",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[4,4,4,4,5,5,6,6,7,7,7,7]},
+  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[4,4,6,6,7,7,8,8,9,9,9,9]},
+  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[70,70,90,90,110,110,130,130,150,150,150,150]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[140,140,180,270,330,330,390,390,450,450,450,450]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[505,505,650,570,697,690,815,830,958,950,950,950]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[55,55,70,60,73,80,94,80,92,100,100,100]},
+];
+let R25=[
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,6,7,8,11,12,12,11,11,12,11,11]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[5,5,4,4,3,5,5,6,6,7,5,4]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,1,2,2,2,3,2,2,1,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,2,1,1,1,1,1,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[29,33,33,30,37,43,42,38,48,57,63,67]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[5,6,6,6,6,5,5,5,5,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[2,3,4,4,4,5,5,5,5,5,5,5]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,0]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[20,18,23,34,28,27,28,27,29,31,33,34]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[4,4,4,3,3,3,3,3,3,3,2,2]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[3,3,3,4,4,4,4,4,4,4,4,4]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,0,0]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,2,2,2,3,3,3,3,3,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente Sr",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,0,0]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,1,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,5,6,6,6,6,6,6]},
+  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[2,5,5,5,5,5,4,4,4,4,4,4]},
+  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[67,66,70,82,86,101,100,105,114,116,126,131]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[134,107,129,137,152,211,218,277,305,405,519,579]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[511,516,581,596,648,774,727,779,823,761,746,744]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[29,38,40,43,46,44,44,63,62,61,61,61]},
+];
+let P26=[
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[15,15,15,15,15,15,15,15,15,15,15,15]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[65,65,65,65,65,65,65,65,65,65,65,65]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[10,10,10,10,10,10,10,10,10,10,10,10]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[30,30,30,30,30,30,30,29,29,29,29,29]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,4,4,4,4,4,4,4]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Instore",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[7,7,7,7,7,7,7,7,7,7,7,7]},
+  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[6,6,6,7,7,7,8,8,8,8,8,8]},
+  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[150,150,162,162,162,173,173,173,173,173,173,173]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[622,622,670,737,737,789,852,852,852,852,852,852]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[799,799,860,772,772,827,730,730,730,730,730,730]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[79,79,85,106,106,114,148,148,148,148,148,148]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. de Ventas Campo Assess.",role:"Analistas",rv:"Sim",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Assess.",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Semi Sr Assess.",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,5,5,5,5,5]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Senior Assess.",role:"Analistas",rv:"Sim",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Gerente Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Supervisor Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+];
+let R26=[
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[11,12,15,15,15,15,15,15,15,15,15,15]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[64,64,65,74,83,83,83,83,83,83,83,83]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[1,1,10,10,10,10,10,10,10,10,10,10]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[5,5,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[0,0,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[34,33,30,30,30,30,30,29,29,29,29,29]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[2,2,5,5,5,5,5,6,6,6,6,6]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,4,4,4,4,4,4,4]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Instore",role:"Analistas",rv:"Sim",m:[0,1,0,0,0,0,0,0,0,0,0,0]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
+  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente",role:"Lideres",rv:"Não",m:[0,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
+  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[6,6,7,7,7,7,7,7,7,7,7,7]},
+  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[4,4,6,7,7,7,8,8,8,8,8,8]},
+  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[131,132,162,162,162,173,173,173,173,173,173,173]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[624,661,670,737,737,789,852,852,852,852,852,852]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[743,681,860,772,772,827,730,730,730,730,730,730]},
+  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[72,76,85,106,106,114,148,148,148,148,148,148]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. de Ventas Campo Assess.",role:"Analistas",rv:"Sim",m:[3,2,6,6,6,6,6,6,6,6,6,6]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Assess.",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Semi Sr Assess.",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,5,5,5,5,5]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Senior Assess.",role:"Analistas",rv:"Sim",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Gerente Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Supervisor Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
+];
+const M25=["Jan/25","Fev/25","Mar/25","Abr/25","Mai/25","Jun/25","Jul/25","Ago/25","Set/25","Out/25","Nov/25","Dez/25"];
+const M26=["Jan/26","Fev/26","Mar/26","Abr/26","Mai/26","Jun/26","Jul/26","Ago/26","Set/26","Out/26","Nov/26","Dez/26"];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+const ST={ano:"2025",canal:"all",subbu:"all",role:"all",rv:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{},mes26ini:0,mes26fim:11};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function avg(arr){if(!arr||!arr.length)return 0;return arr.reduce((a,b)=>a+b,0)/arr.length;}
+function fmt(v){
+  if(ST.unit===1000) return (v/1000).toFixed(1)+ST.unitLbl;
+  return Math.round(v).toLocaleString('pt-BR');
+}
+function pct(r,p){if(!p)return 0;return Math.round(r/p*100);}
+function achCls(p){return p>=95?'g':p>=80?'w':'b';}
+function badgeCls(p){return p>=95?'pos':p>=80?'warn':'neg';}
+
+// ── FILTER ────────────────────────────────────────────────────────────────
+function filterRows(rows){
+  return rows.filter(r=>{
+    if(ST.canal!=='all'&&r.canal!==ST.canal)return false;
+    if(ST.subbu!=='all'&&r.subbu!==ST.subbu)return false;
+    if(ST.role!=='all'&&r.role!==ST.role)return false;
+    if(ST.rv!=='all'&&r.rv!==ST.rv)return false;
+    return true;
+  });
+}
+
+// ── DATASET ───────────────────────────────────────────────────────────────
+function ds(){
+  const a=ST.ano;
+  const ini=ST.mes26ini;
+  const fim=Math.max(ST.mes26ini,ST.mes26fim);
+  if(a==='2026'){
+    const plan=filterRows(P26).map(r=>({...r,m:r.m.slice(ini,fim+1)}));
+    const real=filterRows(R26).map(r=>({...r,m:r.m.slice(ini,fim+1)}));
+    return{plan,real,months:M26.slice(ini,fim+1),lbl:"Real+FCST"};
+  }
+  if(a==='2025') return{plan:filterRows(P25),real:filterRows(R25),months:M25,lbl:"Realizado"};
+  const plan26=filterRows(P26).map(r=>({...r,m:r.m.slice(ini,fim+1)}));
+  const real26=filterRows(R26).map(r=>({...r,m:r.m.slice(ini,fim+1)}));
+  return{
+    plan:[...filterRows(P25),...plan26],
+    real:[...filterRows(R25),...real26],
+    months:[...M25,...M26.slice(ini,fim+1)],
+    lbl:"Real/FCST"
+  };
+}
+
+// ── MONTHLY TOTALS ────────────────────────────────────────────────────────
+function monthlyTotals(rows, n){
+  const totals=new Array(n).fill(0);
+  rows.forEach(r=>{for(let i=0;i<n;i++) totals[i]+=(r.m[i]||0);});
+  return totals;
+}
+
+// ── APPLY FILTERS ─────────────────────────────────────────────────────────
+function applyFilters(){
+  ST.ano=document.getElementById('fAno').value;
+  ST.canal=document.getElementById('fCanal').value;
+  ST.subbu=document.getElementById('fSubBu').value;
+  ST.role=document.getElementById('fRole').value;
+  ST.rv=document.getElementById('fRV').value;
+  ST.mes26ini=parseInt(document.getElementById('fMesIni').value);
+  ST.mes26fim=parseInt(document.getElementById('fMesFim').value);
+  if(ST.mes26fim<ST.mes26ini) ST.mes26fim=ST.mes26ini;
+  const show26=ST.ano==='2026'||ST.ano==='all';
+  document.getElementById('fPer26Wrap').style.display=show26?'flex':'none';
+  render();
+}
+
+// ── RENDER KPIs ───────────────────────────────────────────────────────────
+function renderKPIs(pm, rm, d){
+  const n=d.months.length;
+  const avgP=avg(pm);
+  const avgR=avg(rm);
+  const achPct=pct(avgR,avgP);
+  const lastP=pm[n-1]||0;
+  const lastR=rm[n-1]||0;
+  const lastAch=pct(lastR,lastP);
+  const gaps=pm.map((p,i)=>(rm[i]||0)-p);
+  const avgGap=avg(gaps);
+  const periodLabel=d.months.length>1?d.months[0]+' – '+d.months[d.months.length-1]:d.months[0];
+
+  const cards=[
+    {
+      cls:'c-blue',
+      lbl:'Headcount Médio — Plano',
+      val:fmt(avgP),
+      sub:'Período: '+periodLabel,
+      badge:'Plano Mensal Médio',
+      bCls:'neu'
+    },
+    {
+      cls:'c-green',
+      lbl:'Headcount Médio — Realizado',
+      val:fmt(avgR),
+      sub:'Atingimento médio: '+achPct+'%',
+      badge:achPct+'%',
+      bCls:badgeCls(achPct)
+    },
+    {
+      cls:lastAch>=95?'c-green':lastAch>=80?'c-yellow':'c-red',
+      lbl:'Atingimento — Último Mês',
+      val:lastAch+'%',
+      sub:'Real: '+fmt(lastR)+' · Plano: '+fmt(lastP)+' ('+d.months[n-1]+')',
+      badge:lastAch+'%',
+      bCls:badgeCls(lastAch)
+    },
+    {
+      cls:avgGap>=0?'c-green':'c-orange',
+      lbl:'Gap Médio vs Plano',
+      val:(avgGap>=0?'+':'')+fmt(avgGap),
+      sub:'Média mensal Real - Plano',
+      badge:avgGap>=0?'Acima do plano':'Abaixo do plano',
+      bCls:avgGap>=0?'pos':'neg'
+    }
+  ];
+
+  document.getElementById('kpiGrid').innerHTML=cards.map(c=>`
+    <div class="kpi ${c.cls}">
+      <div class="kpi-lbl">${c.lbl}</div>
+      <div class="kpi-val">${c.val}</div>
+      <div class="kpi-sub">${c.sub}</div>
+      <span class="badge ${c.bCls}">${c.badge}</span>
+    </div>`).join('');
+}
+
+// ── RENDER INSIGHTS ───────────────────────────────────────────────────────
+function renderInsights(pm, rm, d){
+  const n=d.months.length;
+  const avgP=Math.round(avg(pm));
+  const avgR=Math.round(avg(rm));
+  const achPct=pct(avgR,avgP);
+  const lastR=rm[n-1]||0;
+  const lastP=pm[n-1]||0;
+  const lastAch=pct(lastR,lastP);
+  const avgGap=Math.round(avg(pm.map((p,i)=>(rm[i]||0)-p)));
+  const periodLabel=d.months.length>1?d.months[0]+' a '+d.months[d.months.length-1]:d.months[0];
+
+  let trend='';
+  if(n>=4){
+    const half=Math.floor(n/2);
+    const firstHalfAvg=avg(rm.slice(0,half));
+    const secondHalfAvg=avg(rm.slice(half));
+    if(secondHalfAvg>firstHalfAvg*1.03) trend=' A tendência ao longo do período é de crescimento, com a segunda metade apresentando média superior à primeira.';
+    else if(secondHalfAvg<firstHalfAvg*0.97) trend=' A tendência ao longo do período é de queda, com a segunda metade apresentando média inferior à primeira.';
+    else trend=' O headcount permaneceu relativamente estável ao longo do período analisado.';
+  }
+
+  const gapTxt=avgGap>=0
+    ?'O gap médio mensal foi de +'+Math.abs(avgGap)+' posições acima do plano.'
+    :'O gap médio mensal foi de -'+Math.abs(avgGap)+' posições abaixo do plano.';
+
+  const lastTxt='No último mês do período ('+d.months[n-1]+'), o headcount realizado foi de '+Math.round(lastR)+' posições frente a um plano de '+Math.round(lastP)+', com atingimento de '+lastAch+'%.';
+
+  document.getElementById('insText').textContent=
+    'No período de '+periodLabel+', o headcount médio mensal realizado foi de '+avgR+' posições frente a um plano médio de '+avgP+' — atingimento de '+achPct+'%. '+gapTxt+' '+lastTxt+trend;
+}
+
+// ── RENDER EVOL (LINE) ────────────────────────────────────────────────────
+function renderEvol(pm, rm, d){
+  const ctx=document.getElementById('cEvol').getContext('2d');
+  if(ST.charts.evol){ST.charts.evol.destroy();}
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  const gc=dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+
+  ST.charts.evol=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:d.months,
+      datasets:[
+        {
+          label:'Plano',
+          data:pm,
+          borderColor:'#003087',
+          backgroundColor:'rgba(0,48,135,0.05)',
+          borderWidth:2,
+          borderDash:[6,4],
+          pointRadius:3,
+          pointBackgroundColor:'#003087',
+          tension:0.3,
+          fill:false,
+          order:2,
+          datalabels:{display:false}
+        },
+        {
+          label:d.lbl,
+          data:rm,
+          borderColor:'#009EE3',
+          backgroundColor:'rgba(0,158,227,0.08)',
+          borderWidth:2.5,
+          pointRadius:4,
+          pointBackgroundColor:'#009EE3',
+          tension:0.3,
+          fill:false,
+          order:1,
+          datalabels:{
+            display:ST.showL,
+            anchor:'end',
+            align:'top',
+            color:tc,
+            font:{size:9,weight:'700'},
+            formatter:v=>fmt(v)
+          }
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:14,padding:14}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:tc,font:{size:9}},border:{display:false}},
+        y:{
+          display:ST.showY,
+          grid:{color:gc},
+          ticks:{color:tc,font:{size:9},callback:v=>fmt(v)},
+          border:{display:false}
+        }
+      }
+    },
+    plugins:[ChartDataLabels]
+  });
+}
+
+// ── RENDER GAP ────────────────────────────────────────────────────────────
+function renderGap(pm, rm, d){
+  const ctx=document.getElementById('cGap').getContext('2d');
+  if(ST.charts.gap){ST.charts.gap.destroy();}
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  const gc=dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+  const gaps=pm.map((p,i)=>(rm[i]||0)-p);
+  const colors=gaps.map(g=>g>=0?'rgba(0,166,80,0.75)':'rgba(224,49,49,0.75)');
+  const borderColors=gaps.map(g=>g>=0?'#00A650':'#E03131');
+
+  ST.charts.gap=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:d.months,
+      datasets:[{
+        label:'Gap (Real − Plano)',
+        data:gaps,
+        backgroundColor:colors,
+        borderColor:borderColors,
+        borderWidth:1,
+        borderRadius:4,
+        borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:11,padding:14}},
+        datalabels:{
+          display:ST.showL,
+          anchor:function(ctx2){return ctx2.dataset.data[ctx2.dataIndex]>=0?'end':'end';},
+          align:function(ctx2){return ctx2.dataset.data[ctx2.dataIndex]>=0?'top':'bottom';},
+          color:tc,
+          font:{size:9,weight:'700'},
+          formatter:function(v){return v>0?'+'+Math.round(v):Math.round(v);}
+        },
+        tooltip:{callbacks:{label:function(c){return ' Gap: '+(c.raw>0?'+':'')+Math.round(c.raw);}}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:tc,font:{size:9}},border:{display:false}},
+        y:{
+          display:ST.showY,
+          grid:{color:gc},
+          ticks:{color:tc,font:{size:9},callback:function(v){return v>0?'+'+v:v;}},
+          border:{display:false}
+        }
+      }
+    },
+    plugins:[ChartDataLabels]
+  });
+}
+
+// ── RENDER CANAL ──────────────────────────────────────────────────────────
+function renderCanal(d){
+  const ctx=document.getElementById('cCanal').getContext('2d');
+  if(ST.charts.canal){ST.charts.canal.destroy();}
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  const gc=dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+  const n=d.months.length;
+
+  const allCanals=[...new Set([...d.plan,...d.real].map(r=>r.canal))].sort();
+  const avgPlanByCanal=allCanals.map(c=>{
+    const rows=d.plan.filter(r=>r.canal===c);
+    if(!rows.length) return 0;
+    return avg(monthlyTotals(rows,n));
+  });
+  const avgRealByCanal=allCanals.map(c=>{
+    const rows=d.real.filter(r=>r.canal===c);
+    if(!rows.length) return 0;
+    return avg(monthlyTotals(rows,n));
+  });
+  const canalLabels=allCanals.map(c=>c==='BIG SELLERS'?'Big Sellers':c==='FARMING ASSESSORADO'?'Farming Assess.':c);
+
+  ST.charts.canal=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:canalLabels,
+      datasets:[
+        {
+          label:'Plano',
+          data:avgPlanByCanal,
+          backgroundColor:'rgba(0,48,135,0.7)',
+          borderColor:'#003087',
+          borderWidth:1,
+          borderRadius:4,
+          datalabels:{display:ST.showL,anchor:'end',align:'top',color:tc,font:{size:9,weight:'700'},formatter:v=>fmt(v)}
+        },
+        {
+          label:d.lbl,
+          data:avgRealByCanal,
+          backgroundColor:'rgba(0,158,227,0.75)',
+          borderColor:'#009EE3',
+          borderWidth:1,
+          borderRadius:4,
+          datalabels:{display:ST.showL,anchor:'end',align:'top',color:tc,font:{size:9,weight:'700'},formatter:v=>fmt(v)}
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{color:tc,font:{size:11,weight:'600'},boxWidth:11,padding:14}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:tc,font:{size:9}},border:{display:false}},
+        y:{display:ST.showY,grid:{color:gc},ticks:{color:tc,font:{size:9},callback:v=>fmt(v)},border:{display:false}}
+      }
+    },
+    plugins:[ChartDataLabels]
+  });
+}
+
+// ── RENDER SUB-BU ─────────────────────────────────────────────────────────
+function renderSubBu(d){
+  const ctx=document.getElementById('cSubBu').getContext('2d');
+  if(ST.charts.subbu){ST.charts.subbu.destroy();}
+  const dark=document.body.getAttribute('data-theme')==='dark';
+  const tc=dark?'#90CAF9':'#546E7A';
+  const gc=dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+  const n=d.months.length;
+
+  const subbusSet=new Set([...d.plan,...d.real].map(r=>r.subbu));
+  const subbus=[...subbusSet].sort();
+  const achBySubBu=subbus.map(s=>{
+    const pRows=d.plan.filter(r=>r.subbu===s);
+    const rRows=d.real.filter(r=>r.subbu===s);
+    const avgP=avg(monthlyTotals(pRows,n));
+    const avgR=avg(monthlyTotals(rRows,n));
+    return avgP>0?Math.round(avgR/avgP*100):0;
+  });
+  const barColors=achBySubBu.map(v=>v>=95?'rgba(0,166,80,0.75)':v>=80?'rgba(247,103,7,0.75)':'rgba(224,49,49,0.75)');
+  const borderCol=achBySubBu.map(v=>v>=95?'#00A650':v>=80?'#F76707':'#E03131');
+
+  ST.charts.subbu=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:subbus,
+      datasets:[{
+        label:'Atingimento %',
+        data:achBySubBu,
+        backgroundColor:barColors,
+        borderColor:borderCol,
+        borderWidth:1,
+        borderRadius:4,
+        datalabels:{display:ST.showL,anchor:'end',align:'top',color:tc,font:{size:9,weight:'700'},formatter:v=>v+'%'}
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>` Atingimento: ${c.raw}%`}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:tc,font:{size:9}},border:{display:false}},
+        y:{
+          display:ST.showY,
+          grid:{color:gc},
+          min:0,max:120,
+          ticks:{color:tc,font:{size:9},callback:v=>v+'%'},
+          border:{display:false}
+        }
+      }
+    },
+    plugins:[ChartDataLabels]
+  });
+}
+
+// ── RENDER RANKINGS ───────────────────────────────────────────────────────
+function renderRankings(real, d){
+  const lastIdx=d.months.length-1;
+  const m={};
+  real.forEach(r=>{
+    const v=r.m[lastIdx]||0;
+    m[r.cargo]=(m[r.cargo]||0)+v;
+  });
+  const sorted=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxVal=sorted.length>0?sorted[0][1]:1;
+  document.getElementById('rankSub').textContent='Por headcount realizado em '+d.months[lastIdx];
+  const rnCls=['rn1','rn2','rn3','rn4','rn5'];
+  document.getElementById('rankList').innerHTML=sorted.map(([name,val],i)=>`
+    <div class="rank-item">
+      <div class="rank-n ${rnCls[i]}">${i+1}</div>
+      <div class="rank-name">${name}</div>
+      <div class="rank-bar-w"><div class="rank-bar" style="width:${Math.round(val/maxVal*100)}%"></div></div>
+      <div class="rank-val">${fmt(val)}</div>
+    </div>`).join('');
+}
+
+// ── RENDER TABLE ──────────────────────────────────────────────────────────
+function renderTable(plan, real, d){
+  const n=d.months.length;
+
+  // Dynamic header
+  const thead=document.getElementById('tHead');
+  thead.innerHTML='<tr><th style="text-align:left;min-width:210px">Canal / Cargo</th>'+
+    d.months.map(m=>'<th>'+m+'</th>').join('')+
+    '<th>Média Plano</th><th>Média Real</th><th>Ating. %</th></tr>';
+
+  const canais=[...new Set([...plan,...real].map(r=>r.canal))].sort();
+  let html='';
+
+  canais.forEach((canal,ci)=>{
+    const cPlan=plan.filter(r=>r.canal===canal);
+    const cReal=real.filter(r=>r.canal===canal);
+    const pm=monthlyTotals(cPlan,n);
+    const rm=monthlyTotals(cReal,n);
+    const avgP=avg(pm);
+    const avgR=avg(rm);
+    const ach=pct(avgR,avgP);
+
+    html+='<tr class="g-row" onclick="toggleGroup('+ci+')">'
+      +'<td><span class="exp-ico" id="ico'+ci+'">+</span>'+canal+'</td>'
+      +pm.map(v=>'<td>'+fmt(v)+'</td>').join('')
+      +'<td>'+fmt(avgP)+'</td>'
+      +'<td>'+fmt(avgR)+'</td>'
+      +'<td><span class="ach '+achCls(ach)+'">'+ach+'%</span></td>'
+      +'</tr>';
+
+    const cargos=[...new Set([...cPlan,...cReal].map(r=>r.cargo))].sort();
+    cargos.forEach(cargo=>{
+      const cpRows=cPlan.filter(r=>r.cargo===cargo);
+      const crRows=cReal.filter(r=>r.cargo===cargo);
+      const cpm=monthlyTotals(cpRows,n);
+      const crm=monthlyTotals(crRows,n);
+      const cAvgP=avg(cpm);
+      const cAvgR=avg(crm);
+      const cAch=pct(cAvgR,cAvgP);
+      html+='<tr class="ch-row" data-grp="'+ci+'">'
+        +'<td>'+cargo+'</td>'
+        +cpm.map((v,i)=>'<td style="color:var(--text-secondary)">'+fmt(v)+' / '+fmt(crm[i])+'</td>').join('')
+        +'<td>'+fmt(cAvgP)+'</td>'
+        +'<td>'+fmt(cAvgR)+'</td>'
+        +'<td><span class="ach '+achCls(cAch)+'">'+cAch+'%</span></td>'
+        +'</tr>';
+    });
+  });
+
+  document.getElementById('tBody').innerHTML=html;
+}
+
+function toggleGroup(ci){
+  const rows=document.querySelectorAll('[data-grp="'+ci+'"]');
+  const ico=document.getElementById('ico'+ci);
+  const open=ico.textContent==='+';
+  rows.forEach(r=>r.classList.toggle('vis',open));
+  ico.textContent=open?'−':'+';
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────
+function render(){
+  const d=ds();
+  const n=d.months.length;
+  const pm=monthlyTotals(d.plan,n);
+  const rm=monthlyTotals(d.real,n);
+  renderKPIs(pm,rm,d);
+  renderInsights(pm,rm,d);
+  renderEvol(pm,rm,d);
+  renderGap(pm,rm,d);
+  renderCanal(d);
+  renderSubBu(d);
+  renderRankings(d.real,d);
+  renderTable(d.plan,d.real,d);
+}
+
+// ── TOGGLES ───────────────────────────────────────────────────────────────
+function toggleTheme(){
+  const body=document.body;
+  const isDark=body.getAttribute('data-theme')==='dark';
+  body.setAttribute('data-theme',isDark?'light':'dark');
+  document.getElementById('tIcon').textContent=isDark?'🌙':'☀️';
+  document.getElementById('tTxt').textContent=isDark?'Dark':'Light';
+  render();
+}
+function toggleYAxis(){
+  ST.showY=!ST.showY;
+  document.getElementById('btnY').classList.toggle('on',ST.showY);
+  render();
+}
+function toggleLabels(){
+  ST.showL=!ST.showL;
+  document.getElementById('btnL').classList.toggle('on',ST.showL);
+  render();
+}
+function setUnit(u,l,evt){
+  ST.unit=u; ST.unitLbl=l;
+  document.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('on'));
+  if(evt&&evt.target) evt.target.classList.add('on');
+  render();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function exportExcel(){
+  const d=ds();
+  const n=d.months.length;
+  const rows=[['Canal','Sub-BU','Cargo','Role','RV',...d.months,'Média Plano','Média Real','Ating. %']];
+  d.plan.forEach(pr=>{
+    const rr=d.real.find(r=>r.canal===pr.canal&&r.cargo===pr.cargo);
+    if(!rr) return;
+    const avgP=avg(pr.m);
+    const avgR=avg(rr.m);
+    rows.push([pr.canal,pr.subbu,pr.cargo,pr.role,pr.rv,...pr.m.map((v,i)=>v+' / '+(rr.m[i]||0)),avgP.toFixed(1),avgR.toFixed(1),pct(avgR,avgP)+'%']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Headcount');
+  XLSX.writeFile(wb,'Headcount_FDVP_BigSellers.xlsx');
+}
+
+// ── INIT (carrega dados vivos do JSON; fallback = arrays embutidos) ────────
+// O Verdi Flow salva headcount_2025.json e headcount_2026.json com linhas brutas.
+function transformRows(rows, year){
+  const mk={
+    '2025':['jan./25','fev./25','mar./25','abr./25','mai./25','jun./25','jul./25','ago./25','set./25','out./25','nov./25','dez./25'],
+    '2026':['jan./26','fev./26','mar./26','abr./26','mai./26','jun./26','jul./26','ago./26','set./26','out./26','nov./26','dez./26']
+  };
+  const keys=mk[year];
+  if(!keys)return{plan:[],real:[]};
+  const plan=[],real=[];
+  rows.forEach(row=>{
+    const cenario=(row['CENÁRIO']||row['CENARIO']||'').trim().toUpperCase();
+    const obj={
+      canal:(row['Canal']||'').trim(),
+      subbu:(row['Sub-bu']||row['Sub-BU']||'').trim(),
+      cargo:(row['Cargo']||'').trim(),
+      role:(row['Role']||'').trim(),
+      rv:(row['RV']||'').trim(),
+      m:keys.map(k=>{const n=parseFloat(String(row[k]||'0').replace(',','.'));return isNaN(n)?0:n;})
+    };
+    if(!obj.canal)return;
+    if(cenario==='PLANO') plan.push(obj);
+    else real.push(obj);
+  });
+  return{plan,real};
+}
+async function loadData(){
+  try{
+    const t=Date.now();
+    const [r25,r26]=await Promise.all([
+      fetch('../data/headcount_2025.json?t='+t).catch(()=>null),
+      fetch('../data/headcount_2026.json?t='+t).catch(()=>null)
+    ]);
+    if(r25&&r25.ok){
+      const rows=await r25.json();
+      const res=transformRows(rows,'2025');
+      if(res.plan.length)P25=res.plan;
+      if(res.real.length)R25=res.real;
+    }
+    if(r26&&r26.ok){
+      const rows=await r26.json();
+      const res=transformRows(rows,'2026');
+      if(res.plan.length)P26=res.plan;
+      if(res.real.length)R26=res.real;
+    }
+  }catch(e){/* usa fallback embutido */}
+  render();
+}
+loadData();
+</script>
+</body>
+</html>
