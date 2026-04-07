@@ -2010,21 +2010,21 @@
                     const cost = getCostBRL(device);
                     const receita = qty * price;
                     const cmv = qty * cost;
-                    const salesTaxes = -0.35 * receita;
+                    const salesTaxes = -0.44 * receita;
                     devPL[device] = { qty, receita, cmv, salesTaxes, resultado: receita + salesTaxes + cmv };
                     cReceita += receita;
                     cCMV += cmv;
                     cQty += qty;
                 });
 
-                const cSalesTaxes = -0.35 * cReceita;
+                const cSalesTaxes = -0.44 * cReceita;
                 byCanal[canal] = { receita: cReceita, cmv: cCMV, salesTaxes: cSalesTaxes, resultado: cReceita + cSalesTaxes + cCMV, qty: cQty, devices: devPL };
                 totalReceita += cReceita;
                 totalCMV += cCMV;
             });
 
             const totalQty = Object.values(byCanal).reduce((s, c) => s + c.qty, 0);
-            const totalSalesTaxes = -0.35 * totalReceita;
+            const totalSalesTaxes = -0.44 * totalReceita;
             return { totalReceita, totalCMV, totalSalesTaxes, totalResultado: totalReceita + totalSalesTaxes + totalCMV, totalQty, byCanal };
         }
 
