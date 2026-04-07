@@ -106,6 +106,9 @@
                 <button onclick="generatePPT()" id="ppt-gen-btn" class="flex items-center gap-2 bg-yellow-400 text-gray-900 px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-yellow-500 transition-all active:scale-95 border border-yellow-500">
                     <i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT
                 </button>
+                <button onclick="showCorpPLModal()" class="flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-violet-700 transition-all active:scale-95">
+                    <i data-lucide="building-2" class="w-4 h-4"></i> P&amp;L Corp
+                </button>
             </div>
         </div>
 
@@ -598,6 +601,41 @@
                 </button>
                 <button onclick="executePPTGeneration()" id="ppt-exec-btn" class="flex-1 bg-yellow-400 text-gray-900 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 shadow-md active:scale-95">
                     <i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Corp P&L Modal -->
+    <div id="corp-pl-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/50 backdrop-blur-sm" style="display:none;">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-violet-600 p-2.5 rounded-xl shadow-sm">
+                    <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-gray-900">P&amp;L Corp</h3>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5">Exportar Receita e CMV mensais para GSheets</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-black text-gray-500 uppercase tracking-widest block mb-2">Cenário</label>
+                    <select id="corp-pl-scenario" class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm font-bold rounded-lg p-3 focus:ring-2 focus:ring-violet-500 focus:outline-none cursor-pointer"></select>
+                </div>
+                <div class="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-1">
+                    <p class="text-xs text-violet-900 font-black uppercase tracking-wider mb-2">📋 Estrutura do Export</p>
+                    <p class="text-xs text-violet-800"><strong>Linha 1:</strong> Receita — Jan a Dez (positiva)</p>
+                    <p class="text-xs text-violet-800"><strong>Linhas 2–3:</strong> Vazias (espaço para o modelo Corp)</p>
+                    <p class="text-xs text-violet-800"><strong>Linha 4:</strong> CMV — Jan a Dez (negativo)</p>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="hideCorpPLModal()" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-all">
+                    Cancelar
+                </button>
+                <button onclick="exportCorpPL()" class="flex-1 bg-violet-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-violet-700 transition-all flex items-center justify-center gap-2 shadow-md active:scale-95">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar GSheets
                 </button>
             </div>
         </div>
@@ -2546,6 +2584,74 @@
 
         function hidePPTModal() {
             document.getElementById('ppt-modal').style.display = 'none';
+        }
+
+        function showCorpPLModal() {
+            const sel = document.getElementById('corp-pl-scenario');
+            sel.innerHTML = '';
+            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                let group = scenarioList.filter(s => s.type === t);
+                if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
+                    group = group.concat(scenarioList.filter(s => s.type === key));
+                });
+                if (group.length > 0) {
+                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                    let opts = `<optgroup label="--- ${label} ---">`;
+                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
+                    opts += '</optgroup>';
+                    sel.innerHTML += opts;
+                }
+            });
+            document.getElementById('corp-pl-modal').style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function hideCorpPLModal() {
+            document.getElementById('corp-pl-modal').style.display = 'none';
+        }
+
+        function exportCorpPL() {
+            const selVal = document.getElementById('corp-pl-scenario').value;
+            if (!selVal) return;
+            const [type, year] = selVal.split('|');
+            const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+            const receitaRow = ['Receita'];
+            const cmvRow = ['CMV'];
+
+            for (let m = 1; m <= 12; m++) {
+                const periodId = `MONTH|${year}${String(m).padStart(2, '0')}`;
+                const d = extractValue(type, periodId, 'ALL', 'ALL');
+                const pl = computePL(d.byCanalDevice);
+                receitaRow.push(pl.totalReceita !== 0 ? Math.round(pl.totalReceita) : '');
+                cmvRow.push(pl.totalCMV !== 0 ? Math.round(pl.totalCMV) : '');
+            }
+
+            const header = ['', ...monthLabels];
+            const emptyRow = new Array(13).fill('');
+
+            const wsData = [header, receitaRow, emptyRow, emptyRow, cmvRow];
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // Style header row bold
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const hCell = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (!ws[hCell]) continue;
+                ws[hCell].s = { font: { bold: true } };
+            }
+
+            // Column widths
+            ws['!cols'] = [{ wch: 12 }, ...monthLabels.map(() => ({ wch: 14 }))];
+
+            const scenario = scenarioList.find(s => s.id === selVal);
+            const sheetName = (scenario ? scenario.label : selVal).substring(0, 31);
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+            hideCorpPLModal();
+            XLSX.writeFile(wb, `PL_Corp_${(scenario ? scenario.label : selVal).replace(/\s/g, '_')}_${new Date().getTime()}.xlsx`);
         }
 
         async function executePPTGeneration() {
