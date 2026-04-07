@@ -1147,11 +1147,17 @@
             }
             if (groupAcquisicao && (filterCanal === 'ALL' || filterCanal === ACQUISICAO_GROUP_NAME)) {
                 const groupedByCanal = {};
+                const groupedBCD = {};
                 Object.entries(byCanal).forEach(([c,v]) => {
                     const k = c === ACQUISICAO_EXCLUDE ? ACQUISICAO_EXCLUDE : ACQUISICAO_GROUP_NAME;
                     groupedByCanal[k] = (groupedByCanal[k]||0) + v;
                 });
-                return { total, byCanal: groupedByCanal, byDevice, byCanalDevice };
+                Object.entries(byCanalDevice).forEach(([c, devs]) => {
+                    const k = c === ACQUISICAO_EXCLUDE ? ACQUISICAO_EXCLUDE : ACQUISICAO_GROUP_NAME;
+                    if (!groupedBCD[k]) groupedBCD[k] = {};
+                    Object.entries(devs).forEach(([dev, qty]) => { groupedBCD[k][dev] = (groupedBCD[k][dev]||0) + qty; });
+                });
+                return { total, byCanal: groupedByCanal, byDevice, byCanalDevice: groupedBCD, byCanalDeviceRaw: byCanalDevice };
             }
             return { total, byCanal, byDevice, byCanalDevice };
         }
@@ -2147,8 +2153,8 @@
 
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
-            let plA = computePL(dataA.byCanalDevice);
-            let plB = computePL(dataB.byCanalDevice);
+            let plA = computePL(dataA.byCanalDeviceRaw || dataA.byCanalDevice);
+            let plB = computePL(dataB.byCanalDeviceRaw || dataB.byCanalDevice);
             if (groupDigital || groupAcquisicao) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
 
             // KPI colors
@@ -2393,8 +2399,8 @@
             const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${prefix}${moB})`;
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
-            let plA = computePL(dataA.byCanalDevice);
-            let plB = computePL(dataB.byCanalDevice);
+            let plA = computePL(dataA.byCanalDeviceRaw || dataA.byCanalDevice);
+            let plB = computePL(dataB.byCanalDeviceRaw || dataB.byCanalDevice);
             if (groupDigital || groupAcquisicao) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
             const bColor = getBaseColor(typeB, true);
             const fmtC = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0});
@@ -2531,7 +2537,7 @@
             // Timeline chart
             function getPLMonthVal(type, yr, mo) {
                 const d = extractValue(type, `MONTH|${yr}${String(mo).padStart(2,'0')}`, filterCanal, filterDevice);
-                const pl = computePL(d.byCanalDevice);
+                const pl = computePL(d.byCanalDeviceRaw || d.byCanalDevice);
                 const total = getMetricTotal(pl);
                 if (total === 0) return null;
                 return plUnitMode && pl.totalQty > 0 ? total/pl.totalQty : total;
@@ -2689,7 +2695,7 @@
             for (let m = 1; m <= 12; m++) {
                 const periodId = `MONTH|${year}${String(m).padStart(2, '0')}`;
                 const d = extractValue(type, periodId, 'ALL', 'ALL');
-                const pl = computePL(d.byCanalDevice);
+                const pl = computePL(d.byCanalDeviceRaw || d.byCanalDevice);
                 receitaRow.push(pl.totalReceita !== 0 ? Math.round(pl.totalReceita) : '');
                 cmvRow.push(pl.totalCMV !== 0 ? Math.round(pl.totalCMV) : '');
             }
@@ -2744,7 +2750,7 @@
                 // --- Data helpers ---
                 function aggPeriod(type, months, cFilter) {
                     const cf = cFilter !== undefined ? cFilter : filterCanal;
-                    let total=0, byCanal={}, byDevice={}, byCanalDevice={};
+                    let total=0, byCanal={}, byDevice={}, byCanalDevice={}, byCanalDeviceRaw={};
                     months.forEach(m => {
                         const d=extractValue(type,`MONTH|${refYear}${String(m).padStart(2,'0')}`,cf,filterDevice);
                         total+=d.total;
@@ -2754,8 +2760,13 @@
                             if(!byCanalDevice[c])byCanalDevice[c]={};
                             Object.entries(devs).forEach(([dv,v])=>{ byCanalDevice[c][dv]=(byCanalDevice[c][dv]||0)+v; });
                         });
+                        const raw = d.byCanalDeviceRaw || d.byCanalDevice;
+                        Object.entries(raw).forEach(([c,devs])=>{
+                            if(!byCanalDeviceRaw[c])byCanalDeviceRaw[c]={};
+                            Object.entries(devs).forEach(([dv,v])=>{ byCanalDeviceRaw[c][dv]=(byCanalDeviceRaw[c][dv]||0)+v; });
+                        });
                     });
-                    return {total, byCanal, byDevice, byCanalDevice};
+                    return {total, byCanal, byDevice, byCanalDevice, byCanalDeviceRaw};
                 }
 
                 // Merge device qty for a canal (handles CANAIS DIGITAIS grouping)
@@ -2970,8 +2981,8 @@
                 for(const p of periods) {
                     const dA=aggPeriod(p.typeA,p.months,filterCanal);
                     const dB=aggPeriod(p.typeB,p.months,filterCanal);
-                    let plA=computePL(dA.byCanalDevice), plB=computePL(dB.byCanalDevice);
-                    if(groupDigital){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
+                    let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice);
+                    if(groupDigital||groupAcquisicao){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
                     addGeneralSlide(p,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,dA,dB,plA,plB,hexColor(p.typeB));
                 }
 
@@ -2983,8 +2994,8 @@
                         const cFilter=(filterCanal==='ALL')?canal:filterCanal;
                         const dA=aggPeriod(p.typeA,p.months,cFilter);
                         const dB=aggPeriod(p.typeB,p.months,cFilter);
-                        let plA=computePL(dA.byCanalDevice), plB=computePL(dB.byCanalDevice);
-                        if(groupDigital){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
+                        let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice);
+                        if(groupDigital||groupAcquisicao){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
                         addCanalSlide(canal,p,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,dA,dB,plA,plB,hexColor(p.typeB));
                     }
                 }
