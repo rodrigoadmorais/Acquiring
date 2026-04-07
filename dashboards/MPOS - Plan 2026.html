@@ -633,7 +633,8 @@
                 <div class="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-1">
                     <p class="text-xs text-violet-900 font-black uppercase tracking-wider mb-2">📋 Estrutura do Export</p>
                     <p class="text-xs text-violet-800"><strong>Linha 1:</strong> Receita — Jan a Dez (positiva)</p>
-                    <p class="text-xs text-violet-800"><strong>Linhas 2–3:</strong> Vazias (espaço para o modelo Corp)</p>
+                    <p class="text-xs text-violet-800"><strong>Linha 2:</strong> Vazia</p>
+                    <p class="text-xs text-violet-800"><strong>Linha 3:</strong> Sales Taxes — Jan a Dez (negativo)</p>
                     <p class="text-xs text-violet-800"><strong>Linha 4:</strong> CMV — Jan a Dez (negativo)</p>
                 </div>
             </div>
@@ -2694,6 +2695,7 @@
             const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
             const receitaRow = ['Receita'];
+            const salesTaxesRow = ['Sales Taxes'];
             const cmvRow = ['CMV'];
 
             for (let m = 1; m <= 12; m++) {
@@ -2701,13 +2703,14 @@
                 const d = extractValue(type, periodId, 'ALL', 'ALL');
                 const pl = computePL(d.byCanalDeviceRaw || d.byCanalDevice);
                 receitaRow.push(pl.totalReceita !== 0 ? Math.round(pl.totalReceita) : '');
+                salesTaxesRow.push(pl.totalSalesTaxes !== 0 ? Math.round(pl.totalSalesTaxes) : '');
                 cmvRow.push(pl.totalCMV !== 0 ? Math.round(pl.totalCMV) : '');
             }
 
             const header = ['', ...monthLabels];
             const emptyRow = new Array(13).fill('');
 
-            const wsData = [header, receitaRow, emptyRow, emptyRow, cmvRow];
+            const wsData = [header, receitaRow, emptyRow, salesTaxesRow, cmvRow];
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(wsData);
