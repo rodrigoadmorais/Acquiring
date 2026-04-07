@@ -289,9 +289,19 @@
                             <i data-lucide="info" class="w-3.5 h-3.5 text-yellow-600"></i>
                             <span class="text-[10px] text-yellow-700 font-black uppercase tracking-widest">USD/BRL 4,5687</span>
                         </div>
-                        <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                            <i data-lucide="percent" class="w-3.5 h-3.5 text-gray-500"></i>
-                            <span class="text-[10px] text-gray-600 font-black uppercase tracking-widest">Sales Taxes 44%</span>
+                        <div class="flex items-center gap-1.5">
+                            <div id="st-badge" onclick="toggleSTInput()" title="Clique para simular alíquota" class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100 transition-all select-none">
+                                <i data-lucide="percent" class="w-3.5 h-3.5 text-gray-500"></i>
+                                <span id="st-badge-label" class="text-[10px] text-gray-600 font-black uppercase tracking-widest">Sales Taxes 44%</span>
+                                <i data-lucide="pencil" class="w-3 h-3 text-gray-400"></i>
+                            </div>
+                            <div id="st-input-area" class="hidden items-center gap-1.5">
+                                <input type="number" id="st-input" value="44" min="0" max="100" step="0.1"
+                                    class="w-16 text-xs font-bold border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-400 text-center">
+                                <span class="text-[10px] font-bold text-gray-500">%</span>
+                                <button onclick="applySalesTaxesRate()" class="bg-orange-500 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg hover:bg-orange-600 transition-all">OK</button>
+                                <button onclick="resetSalesTaxesRate()" class="bg-gray-200 text-gray-600 text-[10px] font-black px-2.5 py-1.5 rounded-lg hover:bg-gray-300 transition-all">Reset</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -674,6 +684,8 @@
         window.currentExportData = null;
         let groupDigital = false;
         let groupAcquisicao = false;
+        const SALES_TAXES_DEFAULT = 0.44;
+        let salesTaxesRate = SALES_TAXES_DEFAULT;
         const DIGITAL_CANALS = ['APP', 'LP', 'TO'];
         const DIGITAL_GROUP_NAME = 'CANAIS DIGITAIS';
         const ACQUISICAO_GROUP_NAME = 'ACQUISIÇÃO';
@@ -2015,21 +2027,21 @@
                     const cost = getCostBRL(device);
                     const receita = qty * price;
                     const cmv = qty * cost;
-                    const salesTaxes = -0.44 * receita;
+                    const salesTaxes = -salesTaxesRate * receita;
                     devPL[device] = { qty, receita, cmv, salesTaxes, resultado: receita + salesTaxes + cmv };
                     cReceita += receita;
                     cCMV += cmv;
                     cQty += qty;
                 });
 
-                const cSalesTaxes = -0.44 * cReceita;
+                const cSalesTaxes = -salesTaxesRate * cReceita;
                 byCanal[canal] = { receita: cReceita, cmv: cCMV, salesTaxes: cSalesTaxes, resultado: cReceita + cSalesTaxes + cCMV, qty: cQty, devices: devPL };
                 totalReceita += cReceita;
                 totalCMV += cCMV;
             });
 
             const totalQty = Object.values(byCanal).reduce((s, c) => s + c.qty, 0);
-            const totalSalesTaxes = -0.44 * totalReceita;
+            const totalSalesTaxes = -salesTaxesRate * totalReceita;
             return { totalReceita, totalCMV, totalSalesTaxes, totalResultado: totalReceita + totalSalesTaxes + totalCMV, totalQty, byCanal };
         }
 
@@ -2625,6 +2637,49 @@
             if (document.getElementById('tab-content-pl').style.display !== 'none') renderPLTab();
         }
 
+        function toggleSTInput() {
+            const area = document.getElementById('st-input-area');
+            const isHidden = area.classList.contains('hidden');
+            if (isHidden) {
+                area.classList.remove('hidden');
+                area.classList.add('flex');
+                document.getElementById('st-input').value = parseFloat((salesTaxesRate * 100).toFixed(4));
+                document.getElementById('st-input').focus();
+            } else {
+                area.classList.add('hidden');
+                area.classList.remove('flex');
+            }
+        }
+
+        function applySalesTaxesRate() {
+            const val = parseFloat(document.getElementById('st-input').value);
+            if (isNaN(val) || val < 0 || val > 100) return;
+            salesTaxesRate = val / 100;
+            const isCustom = Math.abs(salesTaxesRate - SALES_TAXES_DEFAULT) > 0.00001;
+            const badge = document.getElementById('st-badge');
+            const label = document.getElementById('st-badge-label');
+            label.textContent = `Sales Taxes ${val.toLocaleString('pt-BR', {maximumFractionDigits:2})}%${isCustom ? ' ★' : ''}`;
+            if (isCustom) {
+                badge.classList.remove('bg-gray-50','border-gray-200');
+                badge.classList.add('bg-orange-50','border-orange-300');
+                label.classList.remove('text-gray-600');
+                label.classList.add('text-orange-700');
+            } else {
+                badge.classList.add('bg-gray-50','border-gray-200');
+                badge.classList.remove('bg-orange-50','border-orange-300');
+                label.classList.add('text-gray-600');
+                label.classList.remove('text-orange-700');
+            }
+            document.getElementById('st-input-area').classList.add('hidden');
+            document.getElementById('st-input-area').classList.remove('flex');
+            if (document.getElementById('tab-content-pl').style.display !== 'none') renderPLTab();
+        }
+
+        function resetSalesTaxesRate() {
+            document.getElementById('st-input').value = parseFloat((SALES_TAXES_DEFAULT * 100).toFixed(4));
+            applySalesTaxesRate();
+        }
+
         function toggleAcquisicaoGroup() {
             groupAcquisicao = !groupAcquisicao;
             if (groupAcquisicao && groupDigital) {
@@ -2709,8 +2764,11 @@
 
             const header = ['', ...monthLabels];
             const emptyRow = new Array(13).fill('');
+            const stPct = parseFloat((salesTaxesRate * 100).toFixed(4)).toLocaleString('pt-BR', {maximumFractionDigits:4});
+            const isCustom = Math.abs(salesTaxesRate - SALES_TAXES_DEFAULT) > 0.00001;
+            const noteRow = [`Alíquota Sales Taxes: ${stPct}%${isCustom ? ' (simulada)' : ' (padrão)'}`];
 
-            const wsData = [header, receitaRow, emptyRow, salesTaxesRow, cmvRow];
+            const wsData = [noteRow, header, receitaRow, emptyRow, salesTaxesRow, cmvRow];
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(wsData);
