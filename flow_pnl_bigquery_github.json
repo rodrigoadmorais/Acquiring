@@ -41,92 +41,50 @@
       "typeVersion": 2,
       "credentials": {
         "googleApi": {
-          "id": "SUBSTITUIR_PELO_ID_DA_CREDENTIAL_BIGQUERY",
-          "name": "BigQuery MELI"
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
         }
       }
     },
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// Agrega todas as linhas do BigQuery em um único objeto JSON\nconst rows = $input.all().map(item => ({\n  BU:                       item.json.BU                       ?? null,\n  Product:                  item.json.Product                  ?? null,\n  Macro_BU:                 item.json.Macro_BU                 ?? null,\n  MES:                      item.json.MES                      ?? null,\n  ANO:                      item.json.ANO                      ?? null,\n  QUARTER:                  item.json.QUARTER                  ?? null,\n  MNG_1:                    item.json.MNG_1                    ?? null,\n  MNG_2:                    item.json.MNG_2                    ?? null,\n  MNG_3:                    item.json.MNG_3                    ?? null,\n  MNG_4:                    item.json.MNG_4                    ?? null,\n  Cenario:                  item.json.Cenario                  ?? null,\n  DICCIONARIO_LOCAL_EBIT:   item.json.DICCIONARIO_LOCAL_EBIT   ?? null,\n  Value:                    typeof item.json.Value === 'string'\n                              ? parseFloat(item.json.Value)\n                              : (item.json.Value ?? 0)\n}));\n\n// Data/hora no fuso de São Paulo\nconst now = new Date();\nconst lastUpdated = now.toLocaleString('pt-BR', {\n  timeZone: 'America/Sao_Paulo',\n  year: 'numeric', month: '2-digit', day: '2-digit',\n  hour: '2-digit', minute: '2-digit'\n});\n\nconst jsonPayload = {\n  last_updated: lastUpdated,\n  row_count: rows.length,\n  data: rows\n};\n\n// Converte para string JSON e depois para Base64 (UTF-8 safe)\nconst jsonString = JSON.stringify(jsonPayload);\nconst contentBase64 = Buffer.from(jsonString, 'utf-8').toString('base64');\n\nreturn [{ json: { content_base64: contentBase64, row_count: rows.length, last_updated: lastUpdated } }];"
+        "jsCode": "// Agrega todas as linhas do BigQuery em um único objeto JSON\nconst rows = $input.all().map(item => ({\n  BU:                      item.json.BU                     ?? null,\n  Product:                 item.json.Product                 ?? null,\n  Macro_BU:                item.json.Macro_BU                ?? null,\n  MES:                     item.json.MES                     ?? null,\n  ANO:                     item.json.ANO                     ?? null,\n  QUARTER:                 item.json.QUARTER                 ?? null,\n  MNG_1:                   item.json.MNG_1                   ?? null,\n  MNG_2:                   item.json.MNG_2                   ?? null,\n  MNG_3:                   item.json.MNG_3                   ?? null,\n  MNG_4:                   item.json.MNG_4                   ?? null,\n  Cenario:                 item.json.Cenario                 ?? null,\n  DICCIONARIO_LOCAL_EBIT:  item.json.DICCIONARIO_LOCAL_EBIT  ?? null,\n  Value: typeof item.json.Value === 'string'\n           ? parseFloat(item.json.Value)\n           : (item.json.Value ?? 0)\n}));\n\nconst now = new Date();\nconst lastUpdated = now.toLocaleString('pt-BR', {\n  timeZone: 'America/Sao_Paulo',\n  year: 'numeric', month: '2-digit', day: '2-digit',\n  hour: '2-digit', minute: '2-digit'\n});\n\nreturn [{ json: {\n  last_updated: lastUpdated,\n  row_count: rows.length,\n  data: rows\n} }];"
       },
       "id": "pnl-0001-0000-0000-000000000004",
-      "name": "Montar JSON (agregar linhas)",
+      "name": "Montar JSON",
       "type": "n8n-nodes-base.code",
       "position": [560, 80],
       "typeVersion": 2
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "https://api.github.com/repos/rodrigoadmorais/Acquiring/contents/data_pnl.json?ref=main",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": false,
-              "responseFormat": "json"
-            }
-          },
-          "ignore404": true
-        }
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data_pnl.json",
+        "fileContent": "={{ JSON.stringify($json) }}",
+        "commitMessage": "update: P&L data via Verdi"
       },
       "id": "pnl-0001-0000-0000-000000000005",
-      "name": "Buscar SHA atual (GitHub)",
-      "type": "n8n-nodes-base.httpRequest",
+      "name": "Push data_pnl.json → GitHub",
+      "type": "n8n-nodes-base.github",
       "position": [840, 80],
-      "typeVersion": 4.2,
+      "executeOnce": true,
+      "typeVersion": 1.1,
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "SUBSTITUIR_PELO_ID_DA_CREDENTIAL_GITHUB",
-          "name": "GitHub PAT"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "// Combina o conteúdo Base64 (node anterior = Montar JSON)\n// com o SHA atual do arquivo no GitHub\n\nconst jsonNode   = $('Montar JSON (agregar linhas)').first().json;\nconst githubNode = $('Buscar SHA atual (GitHub)').first().json;\n\n// SHA é necessário para atualizar arquivo existente.\n// Se o arquivo não existe ainda (primeiro deploy), sha fica undefined e o GitHub cria o arquivo.\nconst sha = githubNode?.sha ?? undefined;\n\nconst commitDate = new Date().toISOString().slice(0, 10);\n\nconst payload = {\n  message: `update: P&L data (${commitDate}) - ${jsonNode.row_count} linhas`,\n  content: jsonNode.content_base64,\n  branch: 'main'\n};\n\n// Só inclui sha se o arquivo já existir\nif (sha) payload.sha = sha;\n\nreturn [{ json: payload }];"
-      },
-      "id": "pnl-0001-0000-0000-000000000006",
-      "name": "Montar payload do commit",
-      "type": "n8n-nodes-base.code",
-      "position": [1120, 80],
-      "typeVersion": 2
-    },
-    {
-      "parameters": {
-        "method": "PUT",
-        "url": "https://api.github.com/repos/rodrigoadmorais/Acquiring/contents/data_pnl.json",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "contentType": "json",
-        "body": {
-          "values": {
-            "string": [
-              {
-                "name": "=",
-                "value": "={{ JSON.stringify($json) }}"
-              }
-            ]
-          }
-        },
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {}
-      },
-      "id": "pnl-0001-0000-0000-000000000007",
-      "name": "Push data_pnl.json → main",
-      "type": "n8n-nodes-base.httpRequest",
-      "position": [1400, 80],
-      "typeVersion": 4.2,
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "SUBSTITUIR_PELO_ID_DA_CREDENTIAL_GITHUB",
-          "name": "GitHub PAT"
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
         }
       }
     }
@@ -145,22 +103,12 @@
     },
     "BigQuery - P&L Brasil": {
       "main": [
-        [{ "node": "Montar JSON (agregar linhas)", "type": "main", "index": 0 }]
+        [{ "node": "Montar JSON", "type": "main", "index": 0 }]
       ]
     },
-    "Montar JSON (agregar linhas)": {
+    "Montar JSON": {
       "main": [
-        [{ "node": "Buscar SHA atual (GitHub)", "type": "main", "index": 0 }]
-      ]
-    },
-    "Buscar SHA atual (GitHub)": {
-      "main": [
-        [{ "node": "Montar payload do commit", "type": "main", "index": 0 }]
-      ]
-    },
-    "Montar payload do commit": {
-      "main": [
-        [{ "node": "Push data_pnl.json → main", "type": "main", "index": 0 }]
+        [{ "node": "Push data_pnl.json → GitHub", "type": "main", "index": 0 }]
       ]
     }
   },
@@ -169,7 +117,7 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "instanceId": "85260b6a32af0aede929fef314a09f9eb905ee8ed00741f8ad438b405f1b84a4"
+    "instanceId": "7fa8c733db20fb5e95cb08b0c1fbcd66d08a3226e222f28c9efd2fcd19ffd10a"
   },
   "tags": []
 }
