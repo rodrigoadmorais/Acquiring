@@ -311,12 +311,63 @@ function shortCen(c){ return CEN_LABEL[c] || c.slice(0,8); }
 // ═══════════════════════════════════════════════════════════
 //  LOAD DATA
 // ═══════════════════════════════════════════════════════════
-fetch('data_pnl.json')
+// ═══════════════════════════════════════════════════════════
+//  UNPIVOT — Google Sheets pivot format → normalized rows
+//  Each sheet row: {Macro_BU, BU, Cenario, MNG_1..4, 202301..202612}
+// ═══════════════════════════════════════════════════════════
+function unpivot(rows) {
+  if(!rows || !rows.length) return [];
+  const sample = rows[0];
+  const monthCols = Object.keys(sample).filter(k => /^\d{6}$/.test(k)).sort();
+  const result = [];
+  for(const row of rows) {
+    // Skip header-like or empty rows
+    if(!row.Cenario && !row.MNG_1) continue;
+    for(const col of monthCols) {
+      const raw = row[col];
+      if(raw === null || raw === undefined || raw === '' || raw === 0) continue;
+      const v = parseFloat(String(raw).replace(',','.'));
+      if(isNaN(v) || v === 0) continue;
+      const mes = parseInt(col);
+      const ano = Math.floor(mes / 100);
+      const mm  = mes % 100;
+      const q   = mm <= 3 ? 'Q1' : mm <= 6 ? 'Q2' : mm <= 9 ? 'Q3' : 'Q4';
+      result.push({
+        Macro_BU : row.Macro_BU || '',
+        Product  : row.BU       || '',
+        Cenario  : row.Cenario  || '',
+        MNG_1    : row.MNG_1    || '',
+        MNG_2    : row.MNG_2    || '',
+        MNG_3    : row.MNG_3    || '',
+        MNG_4    : row.MNG_4    || '',
+        MES      : mes,
+        ANO      : ano,
+        QUARTER  : q,
+        Value    : v
+      });
+    }
+  }
+  return result;
+}
+
+fetch('data_pnl.json?t=' + Date.now())
   .then(r => { if(!r.ok) throw new Error('data_pnl.json não encontrado'); return r.json(); })
-  .then(({data, last_updated, row_count}) => {
+  .then(raw => {
+    let data, lastUpdated, rowCount;
+    if(Array.isArray(raw)) {
+      // Pivot format from Google Sheets via Verdi Flows
+      data        = unpivot(raw);
+      lastUpdated = 'Google Sheets (Verdi)';
+      rowCount    = data.length;
+    } else {
+      // Normalized format from BigQuery / Python script
+      data        = raw.data || [];
+      lastUpdated = raw.last_updated || '—';
+      rowCount    = raw.row_count || data.length;
+    }
     allData = data;
     document.getElementById('lastUpd').textContent =
-      'Atualizado: ' + last_updated + ' · ' + (row_count||data.length).toLocaleString('pt-BR') + ' linhas';
+      'Atualizado: ' + lastUpdated + ' · ' + rowCount.toLocaleString('pt-BR') + ' linhas';
     initFilters();
     render();
   })
@@ -324,7 +375,7 @@ fetch('data_pnl.json')
     document.getElementById('pnlBody').innerHTML =
       `<tr><td colspan="50" class="empty">
         ⚠️ ${err.message}<br>
-        <small>Execute <code>python run_query_pnl.py</code> para gerar <code>data_pnl.json</code></small>
+        <small>Importe o flow <code>flow_pnl_sheets_github.json</code> no Verdi e execute-o para gerar <code>data_pnl.json</code></small>
        </td></tr>`;
   });
 

@@ -1,0 +1,113 @@
+{
+  "name": "P&L Brasil - Google Sheets → GitHub",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 1
+            }
+          ]
+        }
+      },
+      "id": "pnl-gs-0000-0000-0000-000000000001",
+      "name": "Agendamento Diário (01h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [0, 0],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {},
+      "id": "pnl-gs-0000-0000-0000-000000000002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [0, 180],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1HyGBd3c7hgyIWHUYg9HRxU46EQWeuVOckAxYqOWPFKk/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "MNG"
+        },
+        "options": {}
+      },
+      "id": "pnl-gs-0000-0000-0000-000000000003",
+      "name": "Ler Aba MNG",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [280, 80],
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data_pnl.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "update: P&L data via Verdi (Google Sheets)"
+      },
+      "id": "pnl-gs-0000-0000-0000-000000000004",
+      "name": "Push data_pnl.json → GitHub",
+      "type": "n8n-nodes-base.github",
+      "position": [560, 80],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Agendamento Diário (01h)": {
+      "main": [
+        [{ "node": "Ler Aba MNG", "type": "main", "index": 0 }]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Ler Aba MNG", "type": "main", "index": 0 }]
+      ]
+    },
+    "Ler Aba MNG": {
+      "main": [
+        [{ "node": "Push data_pnl.json → GitHub", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "7fa8c733db20fb5e95cb08b0c1fbcd66d08a3226e222f28c9efd2fcd19ffd10a"
+  },
+  "tags": []
+}
