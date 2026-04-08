@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P&L Brasil</title>
+<style>
+:root {
+  --yellow:#FFE600; --bg:#F0F2F5; --card:#fff; --border:#E0E0E0;
+  --text:#222; --muted:#777; --blue:#1565C0; --blue-lt:#E3F0FF;
+  --red:#C62828; --red-lt:#FFEBEE; --green:#2E7D32; --green-lt:#E8F5E9;
+  --l1bg:#FFF9E0; --l2bg:#F7F7F7; --l3bg:#fff;
+  --sticky:#fff; --hdr-text:#333;
+  --total-col:#1A237E; --var-col:#1B5E20;
+}
+[data-theme=dark] {
+  --bg:#161b22; --card:#1f2937; --border:#374151; --text:#e5e7eb;
+  --muted:#9ca3af; --blue:#60a5fa; --blue-lt:#1e3a5f;
+  --red:#fca5a5; --red-lt:#3b1212; --green:#86efac; --green-lt:#14291a;
+  --l1bg:#2a2416; --l2bg:#242a34; --l3bg:#1f2937;
+  --sticky:#1f2937; --hdr-text:#f9fafb;
+  --total-col:#1e3a8a; --var-col:#14532d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+     background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+
+/* ── Header ── */
+.hdr{background:var(--yellow);height:50px;padding:0 20px;
+     display:flex;align-items:center;justify-content:space-between;
+     position:sticky;top:0;z-index:400;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.hdr h1{font-size:16px;font-weight:800;color:#1a1a1a;letter-spacing:-.3px}
+.hdr-r{display:flex;gap:8px;align-items:center}
+.upd{font-size:11px;color:#555;font-weight:500}
+.btn-hdr{padding:4px 12px;border-radius:6px;border:1.5px solid rgba(0,0,0,.22);
+         background:rgba(255,255,255,.6);cursor:pointer;font-size:11px;
+         font-weight:700;color:#333;transition:.15s}
+.btn-hdr:hover{background:rgba(255,255,255,.95)}
+.btn-hdr.on{background:#333;color:var(--yellow);border-color:#333}
+
+/* ── Filters ── */
+.filters{background:var(--card);border-bottom:2px solid var(--border);
+         padding:10px 20px;display:flex;gap:12px;flex-wrap:wrap;
+         align-items:flex-end;position:sticky;top:50px;z-index:300}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;font-weight:700;color:var(--muted);
+          text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.ml-a{margin-left:auto}
+.sep{width:1px;background:var(--border);margin:2px 2px;align-self:stretch}
+
+/* ── Pills ── */
+.pills{display:flex;gap:5px;flex-wrap:wrap;max-width:700px}
+.pill{padding:3px 11px;border-radius:20px;border:1.5px solid var(--border);
+      background:var(--card);color:var(--muted);cursor:pointer;
+      font-size:11px;font-weight:600;transition:.15s;white-space:nowrap;
+      user-select:none}
+.pill:hover{border-color:var(--blue);color:var(--blue)}
+.pill.on{border-color:var(--blue);background:var(--blue);color:#fff}
+
+/* ── Btn group ── */
+.bg{display:flex;border:1.5px solid var(--border);border-radius:7px;overflow:hidden}
+.bg button{padding:4px 11px;border:none;border-right:1px solid var(--border);
+           background:var(--card);color:var(--muted);cursor:pointer;
+           font-size:11px;font-weight:600;transition:.15s;white-space:nowrap}
+.bg button:last-child{border-right:none}
+.bg button.on{background:var(--blue);color:#fff}
+.bg button:hover:not(.on){background:var(--bg);color:var(--text)}
+
+/* ── Multi-select dropdown ── */
+.ms-wrap{position:relative}
+.ms-trig{padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;
+         background:var(--card);color:var(--text);cursor:pointer;font-size:12px;
+         min-width:120px;display:flex;justify-content:space-between;
+         align-items:center;gap:6px;white-space:nowrap;transition:.15s}
+.ms-trig:hover{border-color:var(--blue)}
+.ms-trig .caret{font-size:8px;color:var(--muted)}
+.ms-panel{position:absolute;top:calc(100% + 5px);left:0;background:var(--card);
+          border:1.5px solid var(--border);border-radius:8px;
+          box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:190px;
+          max-height:260px;overflow-y:auto;z-index:600;display:none;padding:5px 0}
+.ms-panel.open{display:block}
+.ms-item{display:flex;align-items:center;gap:8px;padding:5px 12px;
+         cursor:pointer;font-size:12px;transition:.1s}
+.ms-item:hover{background:var(--bg)}
+.ms-item input{accent-color:var(--blue);cursor:pointer;flex-shrink:0}
+.ms-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-actions{display:flex;gap:8px;padding:6px 12px 4px;
+            border-top:1px solid var(--border);margin-top:3px}
+.ms-actions button{font-size:10px;font-weight:700;color:var(--blue);
+                   background:none;border:none;cursor:pointer;padding:0}
+
+/* ── Table wrapper ── */
+.tbl-wrap{padding:16px 20px}
+.tbl-outer{overflow-x:auto;border-radius:10px;
+           box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.tbl-outer::-webkit-scrollbar{height:6px}
+.tbl-outer::-webkit-scrollbar-track{background:var(--bg)}
+.tbl-outer::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── P&L Table ── */
+#pnlTable{border-collapse:collapse;width:100%;font-size:12px;
+          border-radius:10px;overflow:hidden}
+#pnlTable th{background:#1a1a2e;color:#e5e7eb;padding:8px 12px;
+             text-align:right;white-space:nowrap;font-size:11px;font-weight:600;
+             position:sticky;top:0;z-index:100;border-bottom:2px solid #333}
+#pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
+                        background:#1a1a2e;min-width:260px;max-width:340px}
+#pnlTable th.grp-hdr{background:#252540;letter-spacing:.3px;
+                     border-left:2px solid #333}
+#pnlTable th.col-total-hdr{background:#1a2e5e}
+#pnlTable th.col-var-hdr{background:#1a3620}
+
+#pnlTable td{padding:5px 12px;border-bottom:1px solid var(--border);
+             white-space:nowrap;text-align:right}
+#pnlTable td.sticky-col{text-align:left;position:sticky;left:0;
+                        background:var(--sticky);z-index:50;
+                        min-width:260px;max-width:340px}
+#pnlTable tr:hover td{filter:brightness(.97)}
+
+/* Row levels */
+.row-l1 td{background:var(--l1bg);font-weight:700;font-size:12.5px;
+           border-bottom:2px solid var(--border)}
+.row-l1 td.sticky-col{background:var(--l1bg)}
+.row-l2 td{background:var(--l2bg);font-weight:600}
+.row-l2 td.sticky-col{background:var(--l2bg)}
+.row-l3 td{background:var(--l3bg);font-weight:400}
+.row-l3 td.sticky-col{background:var(--l3bg)}
+
+/* Expand toggle */
+.xbtn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+      user-select:none;width:100%}
+.xarr{font-size:8px;transition:transform .18s;display:inline-block;
+      color:var(--muted);flex-shrink:0}
+.xarr.open{transform:rotate(90deg)}
+.i2{padding-left:20px!important}
+.i3{padding-left:38px!important}
+
+/* Value classes */
+.neg{color:var(--red)}
+.vpos{color:var(--green);font-weight:600}
+.vneg{color:var(--red);font-weight:600}
+.bold{font-weight:700}
+td.col-total-cell{background:rgba(26,46,94,.07);font-weight:700}
+td.col-var-cell{background:rgba(26,54,32,.07)}
+[data-theme=dark] td.col-total-cell{background:rgba(26,46,94,.35)}
+[data-theme=dark] td.col-var-cell{background:rgba(26,54,32,.35)}
+
+/* Empty / error */
+.empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;
+       line-height:1.8}
+
+/* Tooltip badge */
+.badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;
+       font-weight:700;background:var(--blue-lt);color:var(--blue);margin-left:4px}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="hdr">
+  <h1>P&amp;L Brasil</h1>
+  <div class="hdr-r">
+    <span class="upd" id="lastUpd"></span>
+    <button class="btn-hdr" id="btnTheme" onclick="toggleTheme()">Dark</button>
+  </div>
+</header>
+
+<!-- ── Filters ── -->
+<div class="filters" id="filterBar">
+
+  <!-- Cenários -->
+  <div class="fg">
+    <label>Cenário</label>
+    <div id="cenarioPills" class="pills"></div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- Visualização -->
+  <div class="fg">
+    <label>Visualização</label>
+    <div class="bg" id="viewGrp">
+      <button class="on" data-v="evolutivo" onclick="setView(this)">Evolutivo</button>
+      <button data-v="total" onclick="setView(this)">Período Total</button>
+    </div>
+  </div>
+
+  <!-- Granularidade (só no evolutivo) -->
+  <div class="fg" id="granWrap">
+    <label>Granularidade</label>
+    <div class="bg" id="granGrp">
+      <button class="on" data-g="mensal" onclick="setGran(this)">Mensal</button>
+      <button data-g="trimestral" onclick="setGran(this)">Trimestral</button>
+      <button data-g="anual" onclick="setGran(this)">Anual</button>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- Ano -->
+  <div class="fg">
+    <label>Ano</label>
+    <div class="ms-wrap">
+      <div class="ms-trig" onclick="toggleMs(event,'ano')">
+        <span id="anoLabel">Todos</span><span class="caret">▼</span>
+      </div>
+      <div class="ms-panel" id="anoPanel"></div>
+    </div>
+  </div>
+
+  <!-- Mês de / até -->
+  <div class="fg" id="mesGroup">
+    <label>Mês (de → até)</label>
+    <div style="display:flex;gap:5px;align-items:center">
+      <select id="mesFrom" onchange="render()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;min-width:82px;cursor:pointer"></select>
+      <span style="color:var(--muted);font-size:12px">→</span>
+      <select id="mesTo" onchange="render()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;min-width:82px;cursor:pointer"></select>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- Macro BU -->
+  <div class="fg">
+    <label>Macro BU</label>
+    <div class="ms-wrap">
+      <div class="ms-trig" onclick="toggleMs(event,'macro')">
+        <span id="macroLabel">Todos</span><span class="caret">▼</span>
+      </div>
+      <div class="ms-panel" id="macroPanel"></div>
+    </div>
+  </div>
+
+  <!-- Produto -->
+  <div class="fg">
+    <label>Produto</label>
+    <div class="ms-wrap">
+      <div class="ms-trig" onclick="toggleMs(event,'prod')">
+        <span id="prodLabel">Todos</span><span class="caret">▼</span>
+      </div>
+      <div class="ms-panel" id="prodPanel"></div>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- Unidade -->
+  <div class="fg ml-a">
+    <label>Unidade</label>
+    <div class="bg" id="unitGrp">
+      <button data-u="1" onclick="setUnit(this)">R$</button>
+      <button data-u="1000" onclick="setUnit(this)">R$ mil</button>
+      <button class="on" data-u="1000000" onclick="setUnit(this)">R$ M</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Table ── -->
+<div class="tbl-wrap">
+  <div class="tbl-outer">
+    <table id="pnlTable">
+      <thead id="pnlHead"></thead>
+      <tbody id="pnlBody">
+        <tr><td colspan="50" class="empty">⏳ Carregando dados...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let allData = [];
+let selCen   = [];   // selected cenarios
+let selAnos  = [];   // selected anos (strings)
+let selMacro = [];
+let selProd  = [];
+
+let viewMode = 'evolutivo';   // 'evolutivo' | 'total'
+let granMode = 'mensal';      // 'mensal' | 'trimestral' | 'anual'
+let unitDiv  = 1_000_000;
+
+// expand state (Set of keys)
+let expL1 = new Set();
+let expL2 = new Set();
+
+// option lists
+let optCen = [], optAnos = [], optMeses = [], optMacro = [], optProd = [];
+
+const MN = {
+  '01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun',
+  '07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'
+};
+
+// short labels for scenarios
+const CEN_LABEL = {
+  'Actual Sin Distribuir':                         'Act SD',
+  'Realizado':                                     'Real',
+  'Plan':                                          'Plan',
+  'Forecast':                                      'Fcst',
+  'Real Distribuido Liminar 2023 sin Indirect to S4':'RD Lim',
+};
+function shortCen(c){ return CEN_LABEL[c] || c.slice(0,8); }
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD DATA
+// ═══════════════════════════════════════════════════════════
+fetch('data_pnl.json')
+  .then(r => { if(!r.ok) throw new Error('data_pnl.json não encontrado'); return r.json(); })
+  .then(({data, last_updated, row_count}) => {
+    allData = data;
+    document.getElementById('lastUpd').textContent =
+      'Atualizado: ' + last_updated + ' · ' + (row_count||data.length).toLocaleString('pt-BR') + ' linhas';
+    initFilters();
+    render();
+  })
+  .catch(err => {
+    document.getElementById('pnlBody').innerHTML =
+      `<tr><td colspan="50" class="empty">
+        ⚠️ ${err.message}<br>
+        <small>Execute <code>python run_query_pnl.py</code> para gerar <code>data_pnl.json</code></small>
+       </td></tr>`;
+  });
+
+// ═══════════════════════════════════════════════════════════
+//  INIT FILTERS
+// ═══════════════════════════════════════════════════════════
+function initFilters() {
+  optCen   = uniq(allData.map(d => d.Cenario)).sort();
+  optAnos  = uniq(allData.map(d => String(d.ANO))).sort();
+  optMeses = uniq(allData.map(d => d.MES)).sort((a,b) => a-b);
+  optMacro = uniq(allData.map(d => d.Macro_BU)).sort();
+  optProd  = uniq(allData.map(d => d.Product)).sort();
+
+  selCen   = [...optCen];
+  selAnos  = [...optAnos];
+  selMacro = [...optMacro];
+  selProd  = [...optProd];
+
+  // Cenário pills
+  const pillsDiv = document.getElementById('cenarioPills');
+  optCen.forEach(c => {
+    const el = document.createElement('span');
+    el.className = 'pill on';
+    el.textContent = c;
+    el.dataset.c = c;
+    el.onclick = () => {
+      const on = el.classList.toggle('on');
+      selCen = on ? [...selCen, c] : selCen.filter(x => x !== c);
+      render();
+    };
+    pillsDiv.appendChild(el);
+  });
+
+  buildMsPanel('ano',   optAnos,  selAnos,  v => selAnos  = v);
+  buildMsPanel('macro', optMacro, selMacro, v => selMacro = v);
+  buildMsPanel('prod',  optProd,  selProd,  v => selProd  = v);
+  buildMesSelects();
+}
+
+function uniq(arr){ return [...new Set(arr.filter(v => v != null && v !== ''))]; }
+
+// ── Mes from/to ────────────────────────────────────────────
+function buildMesSelects() {
+  ['mesFrom','mesTo'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '';
+    optMeses.forEach(m => {
+      const mm = String(m).slice(4,6);
+      const yy = String(m).slice(2,4);
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = (MN[mm]||mm) + '/' + yy;
+      sel.appendChild(opt);
+    });
+  });
+  if(optMeses.length){
+    document.getElementById('mesFrom').value = optMeses[0];
+    document.getElementById('mesTo').value   = optMeses[optMeses.length-1];
+  }
+}
+
+function getMesRange(){
+  const f = parseInt(document.getElementById('mesFrom').value||0);
+  const t = parseInt(document.getElementById('mesTo').value||999999);
+  return [Math.min(f,t), Math.max(f,t)];
+}
+
+// ── Multi-select panel ─────────────────────────────────────
+function buildMsPanel(id, options, selected, setter) {
+  const panel = document.getElementById(id+'Panel');
+  panel.innerHTML = '';
+
+  const acts = document.createElement('div');
+  acts.className = 'ms-actions';
+  acts.innerHTML =
+    `<button onclick="msAll('${id}',true)">Todos</button>
+     <button onclick="msAll('${id}',false)">Nenhum</button>`;
+  panel.appendChild(acts);
+
+  options.forEach(opt => {
+    const lbl = document.createElement('label');
+    lbl.className = 'ms-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = selected.includes(opt);
+    cb.dataset.opt = opt;
+    cb.onchange = () => {
+      const vals = [...panel.querySelectorAll('input')]
+                     .filter(c => c.checked).map(c => c.dataset.opt);
+      setter(vals);
+      updateMsLabel(id, vals, options);
+      render();
+    };
+    const sp = document.createElement('span');
+    sp.textContent = opt;
+    lbl.appendChild(cb); lbl.appendChild(sp);
+    panel.appendChild(lbl);
+  });
+
+  updateMsLabel(id, selected, options);
+}
+
+function updateMsLabel(id, sel, opts) {
+  const el = document.getElementById(id+'Label');
+  if(!el) return;
+  if(!sel.length)           el.textContent = 'Nenhum';
+  else if(sel.length===opts.length) el.textContent = 'Todos';
+  else if(sel.length===1)   el.textContent = sel[0];
+  else                      el.textContent = sel.length + ' selecionados';
+}
+
+function msAll(id, all) {
+  const panel = document.getElementById(id+'Panel');
+  const cbs = [...panel.querySelectorAll('input')];
+  cbs.forEach(c => c.checked = all);
+  const vals = all ? cbs.map(c => c.dataset.opt) : [];
+  if(id==='ano')  { selAnos  = vals; updateMsLabel('ano',  vals, optAnos); }
+  if(id==='macro'){ selMacro = vals; updateMsLabel('macro',vals, optMacro); }
+  if(id==='prod') { selProd  = vals; updateMsLabel('prod', vals, optProd); }
+  render();
+}
+
+function toggleMs(e, id) {
+  e.stopPropagation();
+  ['ano','macro','prod'].forEach(x => {
+    if(x!==id) document.getElementById(x+'Panel').classList.remove('open');
+  });
+  document.getElementById(id+'Panel').classList.toggle('open');
+}
+document.addEventListener('click', () => {
+  document.querySelectorAll('.ms-panel').forEach(p => p.classList.remove('open'));
+});
+
+// ═══════════════════════════════════════════════════════════
+//  MODE TOGGLES
+// ═══════════════════════════════════════════════════════════
+function setView(btn) {
+  viewMode = btn.dataset.v;
+  document.querySelectorAll('#viewGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  const ev = viewMode === 'evolutivo';
+  document.getElementById('granWrap').style.display  = ev ? '' : 'none';
+  document.getElementById('mesGroup').style.display  = (ev && granMode==='mensal') ? '' : (ev ? 'none' : '');
+  render();
+}
+
+function setGran(btn) {
+  granMode = btn.dataset.g;
+  document.querySelectorAll('#granGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  document.getElementById('mesGroup').style.display = granMode==='mensal' ? '' : 'none';
+  render();
+}
+
+function setUnit(btn) {
+  unitDiv = parseFloat(btn.dataset.u);
+  document.querySelectorAll('#unitGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  render();
+}
+
+function toggleTheme() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+  document.getElementById('btnTheme').textContent = dark ? 'Dark' : 'Light';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FILTERING
+// ═══════════════════════════════════════════════════════════
+function getFiltered() {
+  const [mf, mt] = getMesRange();
+  return allData.filter(d =>
+    selCen.includes(d.Cenario) &&
+    (selAnos.length===0  || selAnos.includes(String(d.ANO))) &&
+    (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
+    (selProd.length===0  || selProd.includes(d.Product)) &&
+    d.MES >= mf && d.MES <= mt
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COLUMN KEY
+// ═══════════════════════════════════════════════════════════
+function colKey(row) {
+  if(viewMode==='total') return '__total__';
+  if(granMode==='mensal')     return String(row.MES);
+  if(granMode==='trimestral') return (row.QUARTER||'Q?') + '/' + String(row.ANO).slice(2);
+  if(granMode==='anual')      return String(row.ANO);
+  return '__total__';
+}
+
+function colLabel(k) {
+  if(k==='__total__') return 'Total';
+  if(/^\d{6}$/.test(k)) return (MN[k.slice(4,6)]||k.slice(4,6)) + '/' + k.slice(2,4);
+  return k;
+}
+
+function sortColKeys(arr) {
+  function rank(k) {
+    if(k==='__total__') return 99999999;
+    if(/^\d{6}$/.test(k)) return parseInt(k);
+    if(/^Q\d\/\d{2}$/.test(k)){
+      const [q,y] = k.split('/');
+      return parseInt(y)*10 + parseInt(q[1]);
+    }
+    if(/^\d{4}$/.test(k)) return parseInt(k)*100;
+    return 0;
+  }
+  return [...arr].sort((a,b) => rank(a)-rank(b));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AGGREGATION
+// ═══════════════════════════════════════════════════════════
+function aggregate(data) {
+  // result: Map<"l1|||l2|||l3", Map<cenario, Map<colKey, number>>>
+  const rows = new Map();
+  const colSet = new Set();
+
+  for(const d of data) {
+    const k1 = d.MNG_1 || '(s/ MNG_1)';
+    const k2 = d.MNG_2 || '(s/ MNG_2)';
+    const k3 = d.MNG_3 || '(s/ MNG_3)';
+    const ck  = colKey(d);
+    const cen = d.Cenario;
+    colSet.add(ck);
+    const rowKey = k1+'|||'+k2+'|||'+k3;
+    if(!rows.has(rowKey)) rows.set(rowKey, {k1,k2,k3, byCen:new Map()});
+    const byCen = rows.get(rowKey).byCen;
+    if(!byCen.has(cen)) byCen.set(cen, new Map());
+    const byCol = byCen.get(cen);
+    byCol.set(ck, (byCol.get(ck)||0) + (d.Value||0));
+  }
+
+  // Build hierarchy: l1 -> l2 -> l3
+  const l1 = new Map();  // k1 -> {byCen, children: Map<k2, {byCen, children: Map<k3, {byCen}>}>}
+
+  for(const [, row] of rows) {
+    const {k1,k2,k3,byCen} = row;
+    if(!l1.has(k1)) l1.set(k1, {byCen:new Map(), children:new Map()});
+    const n1 = l1.get(k1);
+    addByCen(n1.byCen, byCen);
+
+    if(!n1.children.has(k2)) n1.children.set(k2, {byCen:new Map(), children:new Map()});
+    const n2 = n1.children.get(k2);
+    addByCen(n2.byCen, byCen);
+
+    if(!n2.children.has(k3)) n2.children.set(k3, {byCen:new Map()});
+    const n3 = n2.children.get(k3);
+    addByCen(n3.byCen, byCen);
+  }
+
+  return { l1, cols: sortColKeys([...colSet]) };
+}
+
+function addByCen(target, src) {
+  for(const [cen, colMap] of src) {
+    if(!target.has(cen)) target.set(cen, new Map());
+    const tgt = target.get(cen);
+    for(const [col, val] of colMap) {
+      tgt.set(col, (tgt.get(col)||0) + val);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════
+function render() {
+  const data = getFiltered();
+  const {l1, cols} = aggregate(data);
+  const cens = selCen.filter(c => optCen.includes(c));
+
+  renderHead(cols, cens);
+  renderBody(l1,   cols, cens);
+}
+
+// ── Head ───────────────────────────────────────────────────
+function renderHead(cols, cens) {
+  const head = document.getElementById('pnlHead');
+  const isTotal = viewMode === 'total';
+  const multi   = cens.length >= 2;
+
+  if(isTotal) {
+    // Columns = one per cenario + var (if 2 scenarios)
+    let h = '<tr>';
+    h += '<th class="sticky-col">Conta</th>';
+    cens.forEach(c => h += `<th>${shortCen(c)}</th>`);
+    if(cens.length===2){
+      h += '<th class="col-var-hdr">Var</th>';
+      h += '<th class="col-var-hdr">Var %</th>';
+    }
+    h += '</tr>';
+    head.innerHTML = h;
+  } else if(!multi) {
+    // Simple evolutivo: one col per period
+    let h = '<tr>';
+    h += '<th class="sticky-col">Conta</th>';
+    cols.forEach(k => {
+      const total = k==='__total__';
+      h += `<th${total?' class="col-total-hdr"':''}>${colLabel(k)}</th>`;
+    });
+    if(!cols.includes('__total__'))
+      h += '<th class="col-total-hdr">Total</th>';
+    h += '</tr>';
+    head.innerHTML = h;
+  } else {
+    // Multi-cenario evolutivo: grouped per period
+    const hasTotal = cols.includes('__total__');
+    let h1 = '<tr><th class="sticky-col" rowspan="2">Conta</th>';
+    let h2 = '<tr>';
+    cols.forEach(k => {
+      const total = k==='__total__';
+      h1 += `<th colspan="${cens.length}"${total?' class="col-total-hdr grp-hdr"':' class="grp-hdr"'}>${colLabel(k)}</th>`;
+      cens.forEach(c => h2 += `<th style="font-size:10px;background:#252540">${shortCen(c)}</th>`);
+    });
+    if(!hasTotal){
+      const extra = cens.length + (cens.length===2 ? 2 : 0);
+      h1 += `<th colspan="${extra}" class="col-total-hdr grp-hdr">Total</th>`;
+      cens.forEach(c => h2 += `<th class="col-total-hdr" style="font-size:10px">${shortCen(c)}</th>`);
+      if(cens.length===2){
+        h2 += '<th class="col-var-hdr" style="font-size:10px">Var</th>';
+        h2 += '<th class="col-var-hdr" style="font-size:10px">Var%</th>';
+      }
+    }
+    head.innerHTML = h1+'</tr>'+h2+'</tr>';
+  }
+}
+
+// ── Body ───────────────────────────────────────────────────
+function renderBody(l1map, cols, cens) {
+  const body = document.getElementById('pnlBody');
+  const isTotal = viewMode === 'total';
+  const multi   = cens.length >= 2;
+  const addGrand = !cols.includes('__total__') && !isTotal;
+
+  let html = '';
+
+  // Get value from byCen map for one cenario+col
+  function val(byCen, cen, col) {
+    return (byCen.get(cen)?.get(col)) || 0;
+  }
+  function totalVal(byCen, cen) {
+    const m = byCen.get(cen);
+    if(!m) return 0;
+    return cols.reduce((s,k) => s + (m.get(k)||0), 0);
+  }
+
+  function cells(byCen) {
+    let c = '';
+    if(isTotal) {
+      // one cell per cenario, sum all cols
+      const totals = cens.map(cen => totalVal(byCen, cen));
+      totals.forEach(v => c += `<td class="${v<0?'neg':''}">${fmt(v)}</td>`);
+      if(cens.length===2){
+        const vv = totals[1]-totals[0];
+        const vp = totals[0] ? (vv/Math.abs(totals[0])*100) : null;
+        c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${fmt(vv)}</td>`;
+        c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${vp!=null?vp.toFixed(1)+'%':'—'}</td>`;
+      }
+    } else if(!multi) {
+      // simple: one col per period
+      const cen = cens[0];
+      cols.forEach(k => {
+        const v = val(byCen, cen, k);
+        c += `<td class="${k==='__total__'?'col-total-cell ':''} ${v<0?'neg':''}">${fmt(v)}</td>`;
+      });
+      if(addGrand){
+        const t = totalVal(byCen, cen);
+        c += `<td class="col-total-cell bold ${t<0?'neg':''}">${fmt(t)}</td>`;
+      }
+    } else {
+      // multi-cen evolutivo
+      cols.forEach(k => {
+        cens.forEach(cen => {
+          const v = val(byCen, cen, k);
+          c += `<td class="${k==='__total__'?'col-total-cell ':''} ${v<0?'neg':''}">${fmt(v)}</td>`;
+        });
+      });
+      if(addGrand){
+        const tots = cens.map(cen => totalVal(byCen, cen));
+        tots.forEach(v => c += `<td class="col-total-cell bold ${v<0?'neg':''}">${fmt(v)}</td>`);
+        if(cens.length===2){
+          const vv = tots[1]-tots[0];
+          const vp = tots[0] ? (vv/Math.abs(tots[0])*100) : null;
+          c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${fmt(vv)}</td>`;
+          c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${vp!=null?vp.toFixed(1)+'%':'—'}</td>`;
+        }
+      }
+    }
+    return c;
+  }
+
+  for(const [k1, n1] of l1map) {
+    const open1 = expL1.has(k1);
+    html += `<tr class="row-l1">
+      <td class="sticky-col">
+        <span class="xbtn" onclick="toggleL1(event,${JSON.stringify(k1)})">
+          <span class="xarr${open1?' open':''}">▶</span>${k1}
+        </span>
+      </td>${cells(n1.byCen)}</tr>`;
+
+    if(!open1) continue;
+
+    for(const [k2, n2] of n1.children) {
+      const l2k = k1+'|||'+k2;
+      const open2 = expL2.has(l2k);
+      html += `<tr class="row-l2">
+        <td class="sticky-col i2">
+          <span class="xbtn" onclick="toggleL2(event,${JSON.stringify(l2k)})">
+            <span class="xarr${open2?' open':''}">▶</span>${k2}
+          </span>
+        </td>${cells(n2.byCen)}</tr>`;
+
+      if(!open2) continue;
+
+      for(const [k3, n3] of n2.children) {
+        html += `<tr class="row-l3">
+          <td class="sticky-col i3">${k3}</td>
+          ${cells(n3.byCen)}
+        </tr>`;
+      }
+    }
+  }
+
+  if(!html) html = '<tr><td colspan="99" class="empty">Nenhum dado para os filtros selecionados.</td></tr>';
+  body.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXPAND / COLLAPSE
+// ═══════════════════════════════════════════════════════════
+function toggleL1(e, k1) {
+  e.stopPropagation();
+  expL1.has(k1) ? expL1.delete(k1) : expL1.add(k1);
+  render();
+}
+function toggleL2(e, l2k) {
+  e.stopPropagation();
+  expL2.has(l2k) ? expL2.delete(l2k) : expL2.add(l2k);
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FORMAT NUMBER
+// ═══════════════════════════════════════════════════════════
+function fmt(v) {
+  if(v===0 || v==null) return '—';
+  const neg = v < 0;
+  const abs = Math.abs(v) / unitDiv;
+  const dec = unitDiv >= 1_000_000 ? 1 : 0;
+  const str = abs.toLocaleString('pt-BR',
+    {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  return neg ? `(${str})` : str;
+}
+</script>
+</body>
+</html>
