@@ -245,6 +245,7 @@
                 });
 
                 let currentSection = null;
+                let actual2026ColCount = 0; // detectado dinamicamente a partir do header
 
                 data.forEach(row => {
                     const canal = row["Plano 2026"]; // Usa-se esta coluna como nome do canal
@@ -264,6 +265,17 @@
                         return;
                     }
 
+                    // Capturar header do actual para detectar quantos meses de 2026 existem
+                    if (currentSection === "actual" && canal === "CANAL") {
+                        actual2026ColCount = 0;
+                        let colIdx = 15;
+                        while (row[`col_${colIdx}`] && String(row[`col_${colIdx}`]).startsWith("2026")) {
+                            actual2026ColCount++;
+                            colIdx++;
+                        }
+                        return;
+                    }
+
                     // Filtrar apenas os canais solicitados e ciclos válidos
                     if (!channels.includes(canal)) return;
                     let ciclo = row["col_2"];
@@ -278,15 +290,15 @@
                     // Preencher os arrays correspondentes conforme a secção
                     if (currentSection === "plano2026") {
                         for(let i = 0; i < 12; i++) rawData[canal][ciclo].plano2026[i] = parseVal(row[`col_${i+3}`]);
-                    } 
+                    }
                     else if (currentSection === "plano2025") {
                         for(let i = 0; i < 12; i++) rawData[canal][ciclo].plano2025[i] = parseVal(row[`col_${i+3}`]);
-                    } 
+                    }
                     else if (currentSection === "actual") {
                         // Meses de 2025
                         for(let i = 0; i < 12; i++) rawData[canal][ciclo].actual2025[i] = parseVal(row[`col_${i+3}`]);
-                        // Meses de 2026 (Janeiro, Fevereiro, Março -> colunas 15, 16, 17)
-                        for(let i = 0; i < 3; i++) rawData[canal][ciclo].actual2026[i] = parseVal(row[`col_${i+15}`]);
+                        // Meses de 2026: lidos dinamicamente conforme colunas disponíveis no JSON
+                        for(let i = 0; i < actual2026ColCount; i++) rawData[canal][ciclo].actual2026[i] = parseVal(row[`col_${i+15}`]);
                     }
                 });
 
