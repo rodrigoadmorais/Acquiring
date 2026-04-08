@@ -1,0 +1,175 @@
+{
+  "name": "P&L Brasil - BigQuery → GitHub",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 1 * *"
+            }
+          ]
+        }
+      },
+      "id": "pnl-0001-0000-0000-000000000001",
+      "name": "Agendamento Mensal (dia 1, 08h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [0, 0],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {},
+      "id": "pnl-0001-0000-0000-000000000002",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [0, 180],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "projectId": "meli-bi-data",
+        "sqlQuery": "SELECT\n    view_check_versiones_S4.DICCIONARIO_SUBBU        AS BU,\n    view_check_versiones_S4.TARGET2_PRODUCT          AS Product,\n    view_check_versiones_S4.DICCIONARIO_MACRO_BU     AS Macro_BU,\n    MES_ID AS MES,\n    view_check_versiones_S4.ANIO                     AS ANO,\n    CASE\n        WHEN CAST(SUBSTR(CAST(MES_ID AS STRING), 5, 2) AS INT64) BETWEEN 1  AND 3  THEN 'Q1'\n        WHEN CAST(SUBSTR(CAST(MES_ID AS STRING), 5, 2) AS INT64) BETWEEN 4  AND 6  THEN 'Q2'\n        WHEN CAST(SUBSTR(CAST(MES_ID AS STRING), 5, 2) AS INT64) BETWEEN 7  AND 9  THEN 'Q3'\n        WHEN CAST(SUBSTR(CAST(MES_ID AS STRING), 5, 2) AS INT64) BETWEEN 10 AND 12 THEN 'Q4'\n    END AS QUARTER,\n    view_check_versiones_S4.M_L1_DESC  AS MNG_1,\n    view_check_versiones_S4.M_L2_DESC  AS MNG_2,\n    view_check_versiones_S4.M_L3_DESC  AS MNG_3,\n    view_check_versiones_S4.M_L4_DESC  AS MNG_4,\n    view_check_versiones_S4.ESCENARIO  AS Cenario,\n    view_check_versiones_S4.DICCIONARIO_LOCAL_EBIT,\n    view_check_versiones_S4.IMPORTE    AS Value\nFROM\n    `meli-bi-data.WHOWNER.BT_PLG_CHECK_VERSIONES_S4` AS view_check_versiones_S4\nWHERE\n    view_check_versiones_S4.ESCENARIO IN (\n        'Actual Sin Distribuir',\n        'Realizado',\n        'Plan',\n        'Forecast',\n        'Real Distribuido Liminar 2023 sin Indirect to S4'\n    )\n    AND view_check_versiones_S4.MONEDA = 'Local'\n    AND view_check_versiones_S4.DICCIONARIO_COUNTRY = 'Brasil'\n    AND MES_ID >= 202201\nGROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13\nORDER BY 1,2,3,4,5,6,7,8,9,10,11,12,13",
+        "options": {
+          "location": "US"
+        }
+      },
+      "id": "pnl-0001-0000-0000-000000000003",
+      "name": "BigQuery - P&L Brasil",
+      "type": "n8n-nodes-base.bigQuery",
+      "position": [280, 80],
+      "typeVersion": 2,
+      "credentials": {
+        "googleApi": {
+          "id": "SUBSTITUIR_PELO_ID_DA_CREDENTIAL_BIGQUERY",
+          "name": "BigQuery MELI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Agrega todas as linhas do BigQuery em um único objeto JSON\nconst rows = $input.all().map(item => ({\n  BU:                       item.json.BU                       ?? null,\n  Product:                  item.json.Product                  ?? null,\n  Macro_BU:                 item.json.Macro_BU                 ?? null,\n  MES:                      item.json.MES                      ?? null,\n  ANO:                      item.json.ANO                      ?? null,\n  QUARTER:                  item.json.QUARTER                  ?? null,\n  MNG_1:                    item.json.MNG_1                    ?? null,\n  MNG_2:                    item.json.MNG_2                    ?? null,\n  MNG_3:                    item.json.MNG_3                    ?? null,\n  MNG_4:                    item.json.MNG_4                    ?? null,\n  Cenario:                  item.json.Cenario                  ?? null,\n  DICCIONARIO_LOCAL_EBIT:   item.json.DICCIONARIO_LOCAL_EBIT   ?? null,\n  Value:                    typeof item.json.Value === 'string'\n                              ? parseFloat(item.json.Value)\n                              : (item.json.Value ?? 0)\n}));\n\n// Data/hora no fuso de São Paulo\nconst now = new Date();\nconst lastUpdated = now.toLocaleString('pt-BR', {\n  timeZone: 'America/Sao_Paulo',\n  year: 'numeric', month: '2-digit', day: '2-digit',\n  hour: '2-digit', minute: '2-digit'\n});\n\nconst jsonPayload = {\n  last_updated: lastUpdated,\n  row_count: rows.length,\n  data: rows\n};\n\n// Converte para string JSON e depois para Base64 (UTF-8 safe)\nconst jsonString = JSON.stringify(jsonPayload);\nconst contentBase64 = Buffer.from(jsonString, 'utf-8').toString('base64');\n\nreturn [{ json: { content_base64: contentBase64, row_count: rows.length, last_updated: lastUpdated } }];"
+      },
+      "id": "pnl-0001-0000-0000-000000000004",
+      "name": "Montar JSON (agregar linhas)",
+      "type": "n8n-nodes-base.code",
+      "position": [560, 80],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/rodrigoadmorais/Acquiring/contents/data_pnl.json?ref=main",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false,
+              "responseFormat": "json"
+            }
+          },
+          "ignore404": true
+        }
+      },
+      "id": "pnl-0001-0000-0000-000000000005",
+      "name": "Buscar SHA atual (GitHub)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [840, 80],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUBSTITUIR_PELO_ID_DA_CREDENTIAL_GITHUB",
+          "name": "GitHub PAT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Combina o conteúdo Base64 (node anterior = Montar JSON)\n// com o SHA atual do arquivo no GitHub\n\nconst jsonNode   = $('Montar JSON (agregar linhas)').first().json;\nconst githubNode = $('Buscar SHA atual (GitHub)').first().json;\n\n// SHA é necessário para atualizar arquivo existente.\n// Se o arquivo não existe ainda (primeiro deploy), sha fica undefined e o GitHub cria o arquivo.\nconst sha = githubNode?.sha ?? undefined;\n\nconst commitDate = new Date().toISOString().slice(0, 10);\n\nconst payload = {\n  message: `update: P&L data (${commitDate}) - ${jsonNode.row_count} linhas`,\n  content: jsonNode.content_base64,\n  branch: 'main'\n};\n\n// Só inclui sha se o arquivo já existir\nif (sha) payload.sha = sha;\n\nreturn [{ json: payload }];"
+      },
+      "id": "pnl-0001-0000-0000-000000000006",
+      "name": "Montar payload do commit",
+      "type": "n8n-nodes-base.code",
+      "position": [1120, 80],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.github.com/repos/rodrigoadmorais/Acquiring/contents/data_pnl.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "values": {
+            "string": [
+              {
+                "name": "=",
+                "value": "={{ JSON.stringify($json) }}"
+              }
+            ]
+          }
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "pnl-0001-0000-0000-000000000007",
+      "name": "Push data_pnl.json → main",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1400, 80],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SUBSTITUIR_PELO_ID_DA_CREDENTIAL_GITHUB",
+          "name": "GitHub PAT"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Agendamento Mensal (dia 1, 08h)": {
+      "main": [
+        [{ "node": "BigQuery - P&L Brasil", "type": "main", "index": 0 }]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "BigQuery - P&L Brasil", "type": "main", "index": 0 }]
+      ]
+    },
+    "BigQuery - P&L Brasil": {
+      "main": [
+        [{ "node": "Montar JSON (agregar linhas)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Montar JSON (agregar linhas)": {
+      "main": [
+        [{ "node": "Buscar SHA atual (GitHub)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar SHA atual (GitHub)": {
+      "main": [
+        [{ "node": "Montar payload do commit", "type": "main", "index": 0 }]
+      ]
+    },
+    "Montar payload do commit": {
+      "main": [
+        [{ "node": "Push data_pnl.json → main", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "85260b6a32af0aede929fef314a09f9eb905ee8ed00741f8ad438b405f1b84a4"
+  },
+  "tags": []
+}
