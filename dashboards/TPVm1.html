@@ -285,8 +285,8 @@
                     else if (currentSection === "actual") {
                         // Meses de 2025
                         for(let i = 0; i < 12; i++) rawData[canal][ciclo].actual2025[i] = parseVal(row[`col_${i+3}`]);
-                        // Meses de 2026 (Janeiro, Fevereiro, Março -> colunas 15, 16, 17)
-                        for(let i = 0; i < 3; i++) rawData[canal][ciclo].actual2026[i] = parseVal(row[`col_${i+15}`]);
+                        // Meses de 2026 (Janeiro, Fevereiro, Março, Abril -> colunas 15, 16, 17, 18)
+                        for(let i = 0; i < 4; i++) rawData[canal][ciclo].actual2026[i] = parseVal(row[`col_${i+15}`]);
                     }
                 });
 
