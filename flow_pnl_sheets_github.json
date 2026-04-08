@@ -37,7 +37,9 @@
           "mode": "name",
           "value": "MNG"
         },
-        "options": {}
+        "options": {
+          "range": "A2"
+        }
       },
       "id": "pnl-gs-0000-0000-0000-000000000003",
       "name": "Ler Aba MNG",
