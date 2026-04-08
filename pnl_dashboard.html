@@ -100,15 +100,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 /* ── P&L Table ── */
 #pnlTable{border-collapse:collapse;width:100%;font-size:12px;
           border-radius:10px;overflow:hidden}
-#pnlTable th{background:#1a1a2e;color:#e5e7eb;padding:8px 12px;
+#pnlTable th{background:#111d36;color:#c8d4e8;padding:9px 12px;
              text-align:right;white-space:nowrap;font-size:11px;font-weight:600;
-             position:sticky;top:0;z-index:100;border-bottom:2px solid #333}
+             position:sticky;top:0;z-index:100;
+             border-bottom:2px solid #0a1220;letter-spacing:.3px}
 #pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
-                        background:#1a1a2e;min-width:260px;max-width:340px}
-#pnlTable th.grp-hdr{background:#252540;letter-spacing:.3px;
-                     border-left:2px solid #333}
-#pnlTable th.col-total-hdr{background:#1a2e5e}
-#pnlTable th.col-var-hdr{background:#1a3620}
+                        background:#111d36;min-width:260px;max-width:340px;
+                        font-size:12px;letter-spacing:.4px}
+#pnlTable th.grp-hdr{background:#0e1a30;border-left:2px solid #0a1220}
+#pnlTable th.col-total-hdr{background:#162444;border-left:2px solid #0a1220}
+#pnlTable th.col-var-hdr{background:#0f2218;border-left:1px solid #0a1220}
 
 #pnlTable td{padding:5px 12px;border-bottom:1px solid var(--border);
              white-space:nowrap;text-align:right}
@@ -117,33 +118,63 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
                         min-width:260px;max-width:340px}
 #pnlTable tr:hover td{filter:brightness(.97)}
 
-/* Row levels */
-.row-l1 td{background:var(--l1bg);font-weight:700;font-size:12.5px;
-           border-bottom:2px solid var(--border)}
-.row-l1 td.sticky-col{background:var(--l1bg)}
-.row-l2 td{background:var(--l2bg);font-weight:600}
-.row-l2 td.sticky-col{background:var(--l2bg)}
-.row-l3 td{background:var(--l3bg);font-weight:400}
-.row-l3 td.sticky-col{background:var(--l3bg)}
+/* ── Row levels  (Tableau-inspired) ── */
+
+/* L1 = section header: dark navy, white text, uppercase */
+.row-l1 td{
+  background:#1e2d4e;color:#e8ecf5;
+  font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;
+  border-top:3px solid #111d36;border-bottom:1px solid #111d36;
+  padding-top:7px;padding-bottom:7px}
+.row-l1 td.sticky-col{background:#1e2d4e;color:#e8ecf5}
+[data-theme=dark] .row-l1 td{background:#0d1a30;color:#c5cfe0;border-color:#0a1220}
+[data-theme=dark] .row-l1 td.sticky-col{background:#0d1a30}
+
+/* L1 arrow: lighter so it's visible on dark bg */
+.row-l1 .xarr{color:#7a9cc0}
+
+/* L2 = sub-total: white bg, bold, with left accent bar */
+.row-l2 td{
+  background:#f0f4fb;font-weight:700;font-size:12px;color:#1a2a4a;
+  border-bottom:1px solid #d8e2f0}
+.row-l2 td.sticky-col{background:#f0f4fb;border-left:3px solid #4a7fc1}
+[data-theme=dark] .row-l2 td{background:#1a2540;color:#b8c9e0;border-color:#243050}
+[data-theme=dark] .row-l2 td.sticky-col{background:#1a2540;border-left-color:#3a6ba0}
+
+/* L3 = line item: clean white */
+.row-l3 td{
+  background:#fff;font-weight:400;font-size:12px;color:#333;
+  border-bottom:1px solid #eaeef5}
+.row-l3 td.sticky-col{background:#fff}
+[data-theme=dark] .row-l3 td{background:#1f2937;color:#d1d9e0;border-color:#2a3545}
+[data-theme=dark] .row-l3 td.sticky-col{background:#1f2937}
+
+/* Hover — subtle highlight */
+.row-l2 tr:hover td,.row-l3:hover td{filter:brightness(.97)}
 
 /* Expand toggle */
-.xbtn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+.xbtn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;
       user-select:none;width:100%}
-.xarr{font-size:8px;transition:transform .18s;display:inline-block;
-      color:var(--muted);flex-shrink:0}
+.xarr{font-size:9px;transition:transform .2s ease;display:inline-block;
+      color:var(--muted);flex-shrink:0;line-height:1}
 .xarr.open{transform:rotate(90deg)}
-.i2{padding-left:20px!important}
-.i3{padding-left:38px!important}
+.i2{padding-left:22px!important}
+.i3{padding-left:42px!important}
 
 /* Value classes */
 .neg{color:var(--red)}
 .vpos{color:var(--green);font-weight:600}
 .vneg{color:var(--red);font-weight:600}
 .bold{font-weight:700}
-td.col-total-cell{background:rgba(26,46,94,.07);font-weight:700}
-td.col-var-cell{background:rgba(26,54,32,.07)}
+td.col-total-cell{background:rgba(26,46,94,.06);font-weight:700;
+                  border-left:2px solid rgba(26,46,94,.15)}
+td.col-var-cell{background:rgba(46,125,50,.05)}
+td.col-var-cell.vpos{background:rgba(46,125,50,.08)}
+td.col-var-cell.vneg{background:rgba(198,40,40,.06)}
 [data-theme=dark] td.col-total-cell{background:rgba(26,46,94,.35)}
-[data-theme=dark] td.col-var-cell{background:rgba(26,54,32,.35)}
+[data-theme=dark] td.col-var-cell{background:rgba(26,54,32,.25)}
+
+.invisible{visibility:hidden}
 
 /* Empty / error */
 .empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;
@@ -811,10 +842,11 @@ function renderBody(l1map, cols, cens) {
 
   for(const [k1, n1] of l1map) {
     const open1 = expL1.has(k1);
-    html += `<tr class="row-l1">
+    const hasChildren1 = n1.children.size > 0;
+    html += `<tr class="row-l1" data-k1="${escAttr(k1)}">
       <td class="sticky-col">
-        <span class="xbtn" onclick="toggleL1(event,${JSON.stringify(k1)})">
-          <span class="xarr${open1?' open':''}">▶</span>${k1}
+        <span class="xbtn" onclick="toggleL1(event,this)">
+          <span class="xarr${open1?' open':''}${hasChildren1?'':' invisible'}">▶</span>${k1}
         </span>
       </td>${cells(n1.byCen)}</tr>`;
 
@@ -823,10 +855,11 @@ function renderBody(l1map, cols, cens) {
     for(const [k2, n2] of n1.children) {
       const l2k = k1+'|||'+k2;
       const open2 = expL2.has(l2k);
-      html += `<tr class="row-l2">
+      const hasChildren2 = n2.children.size > 0;
+      html += `<tr class="row-l2" data-l2k="${escAttr(l2k)}">
         <td class="sticky-col i2">
-          <span class="xbtn" onclick="toggleL2(event,${JSON.stringify(l2k)})">
-            <span class="xarr${open2?' open':''}">▶</span>${k2}
+          <span class="xbtn" onclick="toggleL2(event,this)">
+            <span class="xarr${open2?' open':''}${hasChildren2?'':' invisible'}">▶</span>${k2}
           </span>
         </td>${cells(n2.byCen)}</tr>`;
 
@@ -846,15 +879,29 @@ function renderBody(l1map, cols, cens) {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  HTML ATTRIBUTE ESCAPING  (fixes drill-down onclick bug)
+// ═══════════════════════════════════════════════════════════
+function escAttr(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════════════
 //  EXPAND / COLLAPSE
 // ═══════════════════════════════════════════════════════════
-function toggleL1(e, k1) {
+function toggleL1(e, el) {
   e.stopPropagation();
+  const k1 = el.closest('tr').dataset.k1;
   expL1.has(k1) ? expL1.delete(k1) : expL1.add(k1);
   render();
 }
-function toggleL2(e, l2k) {
+function toggleL2(e, el) {
   e.stopPropagation();
+  const l2k = el.closest('tr').dataset.l2k;
   expL2.has(l2k) ? expL2.delete(l2k) : expL2.add(l2k);
   render();
 }
