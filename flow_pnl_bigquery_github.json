@@ -48,7 +48,6 @@
     },
     {
       "parameters": {
-        "mode": "runOnceForAllItems",
         "jsCode": "// Agrega todas as linhas do BigQuery em um único objeto JSON\nconst rows = $input.all().map(item => ({\n  BU:                      item.json.BU                     ?? null,\n  Product:                 item.json.Product                 ?? null,\n  Macro_BU:                item.json.Macro_BU                ?? null,\n  MES:                     item.json.MES                     ?? null,\n  ANO:                     item.json.ANO                     ?? null,\n  QUARTER:                 item.json.QUARTER                 ?? null,\n  MNG_1:                   item.json.MNG_1                   ?? null,\n  MNG_2:                   item.json.MNG_2                   ?? null,\n  MNG_3:                   item.json.MNG_3                   ?? null,\n  MNG_4:                   item.json.MNG_4                   ?? null,\n  Cenario:                 item.json.Cenario                 ?? null,\n  DICCIONARIO_LOCAL_EBIT:  item.json.DICCIONARIO_LOCAL_EBIT  ?? null,\n  Value: typeof item.json.Value === 'string'\n           ? parseFloat(item.json.Value)\n           : (item.json.Value ?? 0)\n}));\n\nconst now = new Date();\nconst lastUpdated = now.toLocaleString('pt-BR', {\n  timeZone: 'America/Sao_Paulo',\n  year: 'numeric', month: '2-digit', day: '2-digit',\n  hour: '2-digit', minute: '2-digit'\n});\n\nreturn [{ json: {\n  last_updated: lastUpdated,\n  row_count: rows.length,\n  data: rows\n} }];"
       },
       "id": "pnl-0001-0000-0000-000000000004",
