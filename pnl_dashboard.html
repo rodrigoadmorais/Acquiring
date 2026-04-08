@@ -313,36 +313,78 @@ function shortCen(c){ return CEN_LABEL[c] || c.slice(0,8); }
 // ═══════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════
 //  UNPIVOT — Google Sheets pivot format → normalized rows
-//  Each sheet row: {Macro_BU, BU, Cenario, MNG_1..4, 202301..202612}
+//
+//  Handles two sub-formats automatically:
+//
+//  A) CLEAN (headerRow:2 works in Verdi):
+//     Each row: { Macro_BU, BU, Cenario, MNG_1..4, "202301": val, ... }
+//
+//  B) DUAL-HEADER (Verdi reads row-1 as keys, row-2 as first data row):
+//     rows[0]: { "SUM de Value":"Macro_BU", "col_2":"BU", ..., "MES":202301, "col_9":202302 }
+//     rows[1+]: actual data with those weird keys
 // ═══════════════════════════════════════════════════════════
 function unpivot(rows) {
   if(!rows || !rows.length) return [];
-  const sample = rows[0];
-  const monthCols = Object.keys(sample).filter(k => /^\d{6}$/.test(k)).sort();
+  const first = rows[0];
+
+  // ── Detect dual-header format ──────────────────────────
+  // Signature: first row's VALUES contain known dimension names as strings
+  const vals0 = Object.values(first).map(v => String(v||'').trim());
+  const isDual = ['Macro_BU','Cenario','MNG_1'].every(d => vals0.includes(d));
+
+  let colMap   = null;  // weird_key  → dim name  (e.g. "SUM de Value" → "Macro_BU")
+  let monthMap = null;  // weird_key  → YYYYMM int (e.g. "MES" → 202301, "col_9" → 202302)
+  let dataRows = rows;
+
+  if(isDual) {
+    colMap   = {};
+    monthMap = {};
+    for(const [k, v] of Object.entries(first)) {
+      const s = String(v).trim();
+      if(/^\d{6}$/.test(s)) monthMap[k] = parseInt(s);
+      else colMap[k] = s;
+    }
+    dataRows = rows.slice(1);
+  }
+
+  // ── Dimension getter ───────────────────────────────────
+  const getDim = (row, name) => {
+    if(!colMap) return String(row[name]||'').trim();
+    const key = Object.keys(colMap).find(k => colMap[k] === name);
+    return key ? String(row[key]||'').trim() : '';
+  };
+
+  // ── Month columns ──────────────────────────────────────
+  // dual: monthMap entries sorted by value; clean: keys matching /^\d{6}$/
+  const months = monthMap
+    ? Object.entries(monthMap).sort((a,b) => a[1]-b[1])
+    : Object.keys(dataRows[0]||{}).filter(k => /^\d{6}$/.test(k)).sort().map(k => [k, parseInt(k)]);
+
   const result = [];
-  for(const row of rows) {
-    // Skip header-like or empty rows
-    if(!row.Cenario && !row.MNG_1) continue;
-    for(const col of monthCols) {
-      const raw = row[col];
-      if(raw === null || raw === undefined || raw === '' || raw === 0) continue;
+  for(const row of dataRows) {
+    if(!row) continue;
+    const cenario = getDim(row, 'Cenario');
+    const mng1    = getDim(row, 'MNG_1');
+    if(!cenario && !mng1) continue;
+
+    for(const [key, month] of months) {
+      const raw = row[key];
+      if(raw === null || raw === undefined || raw === '') continue;
       const v = parseFloat(String(raw).replace(',','.'));
       if(isNaN(v) || v === 0) continue;
-      const mes = parseInt(col);
-      const ano = Math.floor(mes / 100);
-      const mm  = mes % 100;
-      const q   = mm <= 3 ? 'Q1' : mm <= 6 ? 'Q2' : mm <= 9 ? 'Q3' : 'Q4';
+      const ano = Math.floor(month / 100);
+      const mm  = month % 100;
       result.push({
-        Macro_BU : row.Macro_BU || '',
-        Product  : row.BU       || '',
-        Cenario  : row.Cenario  || '',
-        MNG_1    : row.MNG_1    || '',
-        MNG_2    : row.MNG_2    || '',
-        MNG_3    : row.MNG_3    || '',
-        MNG_4    : row.MNG_4    || '',
-        MES      : mes,
+        Macro_BU : getDim(row, 'Macro_BU'),
+        Product  : getDim(row, 'BU'),
+        Cenario  : cenario,
+        MNG_1    : mng1,
+        MNG_2    : getDim(row, 'MNG_2'),
+        MNG_3    : getDim(row, 'MNG_3'),
+        MNG_4    : getDim(row, 'MNG_4'),
+        MES      : month,
         ANO      : ano,
-        QUARTER  : q,
+        QUARTER  : mm <= 3 ? 'Q1' : mm <= 6 ? 'Q2' : mm <= 9 ? 'Q3' : 'Q4',
         Value    : v
       });
     }

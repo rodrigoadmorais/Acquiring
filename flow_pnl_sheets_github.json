@@ -38,7 +38,7 @@
           "value": "MNG"
         },
         "options": {
-          "range": "A2"
+          "headerRow": 2
         }
       },
       "id": "pnl-gs-0000-0000-0000-000000000003",
