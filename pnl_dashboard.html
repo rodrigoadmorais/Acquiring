@@ -176,6 +176,20 @@ td.col-var-cell.vneg{background:rgba(198,40,40,.06)}
 
 .invisible{visibility:hidden}
 
+/* ── Subtotal row (MNG_1 at bottom of each P&L section) ── */
+.row-subtotal td{
+  background:#dce7f5;color:#0f1e3a;
+  font-weight:700;font-size:12.5px;
+  border-top:2px solid #4a7fc1;border-bottom:3px solid #1e2d4e;
+  padding-top:6px;padding-bottom:6px}
+.row-subtotal td.sticky-col{
+  background:#dce7f5;border-left:4px solid #1e2d4e}
+[data-theme=dark] .row-subtotal td{background:#142340;color:#c0d4f0;border-color:#2a4a80}
+[data-theme=dark] .row-subtotal td.sticky-col{background:#142340;border-left-color:#4a7fc1}
+
+/* Section gap before each MNG_1 block */
+tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
+
 /* Empty / error */
 .empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;
        line-height:1.8}
@@ -776,6 +790,82 @@ function renderHead(cols, cens) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+//  P&L SORT ORDERS
+// ═══════════════════════════════════════════════════════════
+const MNG1_ORDER = [
+  'Metrics',
+  'Product Monetization',
+  'Net Monetization',
+  'Variable Contribution',
+  'Direct Contribution',
+  'Business Contribution',
+  'Business Margin',
+  'EBIT',
+  'Below EBIT',
+  'Bundle'
+];
+
+const MNG2_ORDER = {
+  'Metrics': [
+    'NMV','GMV','TPV','TPV On','TPV Off','TGMV','GPV',
+    'Outstanding','Outstanding EOP','Originaciones',
+    'Money In Volume','Money Out Volume',
+    'AUM Saldo EOP','Available Balance Saldo AVG',
+    'Cuenta Remunerada Saldo AVG','Cuenta Remunerada Saldo EOP',
+    'Volumen Transferencias MP-MP TC','Volumen Transferencias Out',
+    'Volumen Transferencias Out TC','TPV Fintech Services',
+    'Volumen Crypto Buy-Sell'
+  ],
+  'Product Monetization': [
+    'Net Variable Fees','Net Fixed Fees','Promotions',
+    'Vendor Margin','Cost of Returns & Liquidations','Other Product Cogs'
+  ],
+  'Net Monetization': [
+    'Financing Net','Shipping Revenues','Advertising',
+    'Meli Pro Net','Other Revenues','Sales Taxes'
+  ],
+  'Variable Contribution': [
+    'Shipping Ops Variable','Shipping Distribution Variable',
+    'Collection Fees','Chargebacks','Bad Debt',
+    'Funding','Funding Cost','BPP','Marketing Performance','Coupons',
+    'CX Variable','Hosting Variable','Direct Variable Costs',
+    'Fraud Prevention Variable'
+  ],
+  'Direct Contribution': [
+    'Shipping Ops Fixed','Marketing Fixed','Loyalty Content',
+    'S&M Local DC','Other Fixed Costs','Sales Expenses',
+    'Customer Acquisition Cost','Sales MPOS','Point COGS',
+    'CX Fixed','Hosting Fixed','Fraud Prevention Fixed','Fraud Prevention'
+  ],
+  'Business Contribution': [
+    'Marketing Branding','PD BC','G&A BC','S&M BC'
+  ],
+  'Business Margin': [
+    'PD BM','G&A BM','S&M BM'
+  ],
+  'EBIT': [
+    'FTP Adjustments','Interest Income Treasury',
+    'PD by Site Adjustment','CBT by Site Adjustment',
+    'Meli Play by Site Adjustment','Interco adjustments','Other EBIT adjustments'
+  ],
+  'Below EBIT': [
+    'Financial Expenses','Foreign Exchange',
+    'Interest Income','Non-Operating Results','Tax'
+  ]
+};
+
+// Sort map entries by a predefined order array
+function sortedBy(map, orderArr) {
+  const entries = [...map.entries()];
+  if(!orderArr) return entries;
+  return entries.sort((a, b) => {
+    const ia = orderArr.indexOf(a[0]);
+    const ib = orderArr.indexOf(b[0]);
+    return (ia < 0 ? 9999 : ia) - (ib < 0 ? 9999 : ib);
+  });
+}
+
 // ── Body ───────────────────────────────────────────────────
 function renderBody(l1map, cols, cens) {
   const body = document.getElementById('pnlBody');
@@ -785,7 +875,6 @@ function renderBody(l1map, cols, cens) {
 
   let html = '';
 
-  // Get value from byCen map for one cenario+col
   function val(byCen, cen, col) {
     return (byCen.get(cen)?.get(col)) || 0;
   }
@@ -798,7 +887,6 @@ function renderBody(l1map, cols, cens) {
   function cells(byCen) {
     let c = '';
     if(isTotal) {
-      // one cell per cenario, sum all cols
       const totals = cens.map(cen => totalVal(byCen, cen));
       totals.forEach(v => c += `<td class="${v<0?'neg':''}">${fmt(v)}</td>`);
       if(cens.length===2){
@@ -808,7 +896,6 @@ function renderBody(l1map, cols, cens) {
         c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${vp!=null?vp.toFixed(1)+'%':'—'}</td>`;
       }
     } else if(!multi) {
-      // simple: one col per period
       const cen = cens[0];
       cols.forEach(k => {
         const v = val(byCen, cen, k);
@@ -819,7 +906,6 @@ function renderBody(l1map, cols, cens) {
         c += `<td class="col-total-cell bold ${t<0?'neg':''}">${fmt(t)}</td>`;
       }
     } else {
-      // multi-cen evolutivo
       cols.forEach(k => {
         cens.forEach(cen => {
           const v = val(byCen, cen, k);
@@ -840,41 +926,60 @@ function renderBody(l1map, cols, cens) {
     return c;
   }
 
-  for(const [k1, n1] of l1map) {
-    const open1 = expL1.has(k1);
-    const hasChildren1 = n1.children.size > 0;
-    html += `<tr class="row-l1" data-k1="${escAttr(k1)}">
-      <td class="sticky-col">
-        <span class="xbtn" onclick="toggleL1(event,this)">
-          <span class="xarr${open1?' open':''}${hasChildren1?'':' invisible'}">▶</span>${k1}
-        </span>
-      </td>${cells(n1.byCen)}</tr>`;
+  // ── P&L Waterfall rendering ────────────────────────────
+  // MNG_1 = subtotal row (shown at BOTTOM of each block)
+  // MNG_2 = expandable component row
+  // MNG_3 = detail row (shown when MNG_2 is expanded)
+  // Exception: "Metrics" section uses MNG_1 as dark header (top)
 
-    if(!open1) continue;
+  for(const [k1, n1] of sortedBy(l1map, MNG1_ORDER)) {
+    const isMetrics = k1 === 'Metrics';
 
-    for(const [k2, n2] of n1.children) {
-      const l2k = k1+'|||'+k2;
-      const open2 = expL2.has(l2k);
-      const hasChildren2 = n2.children.size > 0;
-      html += `<tr class="row-l2" data-l2k="${escAttr(l2k)}">
-        <td class="sticky-col i2">
-          <span class="xbtn" onclick="toggleL2(event,this)">
-            <span class="xarr${open2?' open':''}${hasChildren2?'':' invisible'}">▶</span>${k2}
+    // Gap row between sections
+    html += `<tr class="pnl-gap"><td colspan="99"></td></tr>`;
+
+    if(isMetrics) {
+      // Metrics: dark header at top, MNG_2 as flat rows below
+      const open1 = expL1.has(k1);
+      html += `<tr class="row-l1" data-k1="${escAttr(k1)}">
+        <td class="sticky-col">
+          <span class="xbtn" onclick="toggleL1(event,this)">
+            <span class="xarr${open1?' open':''}">▶</span>METRICS
           </span>
-        </td>${cells(n2.byCen)}</tr>`;
-
-      if(!open2) continue;
-
-      for(const [k3, n3] of n2.children) {
-        html += `<tr class="row-l3">
-          <td class="sticky-col i3">${k3}</td>
-          ${cells(n3.byCen)}
-        </tr>`;
+        </td>${cells(n1.byCen)}</tr>`;
+      if(open1) {
+        for(const [k2, n2] of sortedBy(n1.children, MNG2_ORDER[k1])) {
+          html += `<tr class="row-l3">
+            <td class="sticky-col i2">${k2}</td>${cells(n2.byCen)}</tr>`;
+        }
       }
+    } else {
+      // P&L section: MNG_2 rows first, MNG_1 subtotal at bottom
+      for(const [k2, n2] of sortedBy(n1.children, MNG2_ORDER[k1])) {
+        const l2k = k1+'|||'+k2;
+        const open2 = expL2.has(l2k);
+        const hasCh = n2.children.size > 0;
+        html += `<tr class="row-l2" data-l2k="${escAttr(l2k)}">
+          <td class="sticky-col i2">
+            <span class="xbtn" onclick="toggleL2(event,this)">
+              <span class="xarr${open2?' open':''}${hasCh?'':' invisible'}">▶</span>${k2}
+            </span>
+          </td>${cells(n2.byCen)}</tr>`;
+        if(open2 && hasCh) {
+          for(const [k3, n3] of n2.children) {
+            html += `<tr class="row-l3">
+              <td class="sticky-col i3">${k3}</td>${cells(n3.byCen)}</tr>`;
+          }
+        }
+      }
+      // MNG_1 subtotal at bottom
+      html += `<tr class="row-subtotal">
+        <td class="sticky-col">${k1}</td>${cells(n1.byCen)}</tr>`;
     }
   }
 
-  if(!html) html = '<tr><td colspan="99" class="empty">Nenhum dado para os filtros selecionados.</td></tr>';
+  if(!html.includes('<td') || !l1map.size)
+    html = '<tr><td colspan="99" class="empty">Nenhum dado para os filtros selecionados.</td></tr>';
   body.innerHTML = html;
 }
 
