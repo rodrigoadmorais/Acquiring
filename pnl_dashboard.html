@@ -234,10 +234,19 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
   <div class="fg" id="granWrap">
     <label>Granularidade</label>
     <div class="bg" id="granGrp">
-      <button class="on" data-g="mensal" onclick="setGran(this)">Mensal</button>
+      <button data-g="mensal" onclick="setGran(this)">Mensal</button>
       <button data-g="trimestral" onclick="setGran(this)">Trimestral</button>
-      <button data-g="anual" onclick="setGran(this)">Anual</button>
+      <button class="on" data-g="anual" onclick="setGran(this)">Anual</button>
+      <button data-g="ytdfy" onclick="setGran(this)">YTD/FY</button>
     </div>
+  </div>
+
+  <!-- Corte YTD (visível apenas em modo YTD/FY) -->
+  <div class="fg" id="cutoffGroup" style="display:none">
+    <label>Corte YTD</label>
+    <select id="cutoffSel" onchange="setCutoff(this.value)"
+      style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+             background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
   </div>
 
   <div class="sep"></div>
@@ -328,8 +337,9 @@ let selMacro = [];
 let selProd  = [];
 
 let viewMode = 'evolutivo';   // 'evolutivo' | 'total'
-let granMode = 'mensal';      // 'mensal' | 'trimestral' | 'anual'
+let granMode = 'anual';       // 'mensal' | 'trimestral' | 'anual' | 'ytdfy'
 let unitDiv  = 1_000_000;
+let cutoffMes = null;         // YTD cutoff month (YYYYMM int)
 
 // expand state (Set of keys)
 let expL1 = new Set();
@@ -496,13 +506,30 @@ function initFilters() {
     pillsDiv.appendChild(el);
   });
 
-  buildMsPanel('ano',   optAnos,  selAnos,  v => selAnos  = v);
-  buildMsPanel('macro', optMacro, selMacro, v => selMacro = v);
-  buildMsPanel('prod',  optProd,  selProd,  v => selProd  = v);
+  buildMsPanel('ano',   optAnos,  selAnos,  v => { selAnos  = v; });
+  buildMsPanel('macro', optMacro, selMacro, v => { selMacro = v; cascadeBU(); });
+  buildMsPanel('prod',  optProd,  selProd,  v => { selProd  = v; });
   buildMesSelects();
+  buildCutoffSel();
+  // Apply initial granularity state (default=anual: hide mesGroup)
+  updateGranVisibility();
 }
 
 function uniq(arr){ return [...new Set(arr.filter(v => v != null && v !== ''))]; }
+
+// ── Cascade Macro BU → BU ──────────────────────────────────
+function cascadeBU() {
+  const avail = uniq(
+    allData
+      .filter(d => !selMacro.length || selMacro.includes(d.Macro_BU))
+      .map(d => d.Product)
+  ).sort();
+  // Keep only BUs that are valid for selected Macro BUs
+  selProd = selProd.filter(p => avail.includes(p));
+  if(!selProd.length) selProd = [...avail];
+  buildMsPanel('prod', avail, selProd, v => { selProd = v; });
+  // Don't call render() here — caller will do it
+}
 
 // ── Mes from/to ────────────────────────────────────────────
 function buildMesSelects() {
@@ -580,7 +607,7 @@ function msAll(id, all) {
   cbs.forEach(c => c.checked = all);
   const vals = all ? cbs.map(c => c.dataset.opt) : [];
   if(id==='ano')  { selAnos  = vals; updateMsLabel('ano',  vals, optAnos); }
-  if(id==='macro'){ selMacro = vals; updateMsLabel('macro',vals, optMacro); }
+  if(id==='macro'){ selMacro = vals; updateMsLabel('macro',vals, optMacro); cascadeBU(); }
   if(id==='prod') { selProd  = vals; updateMsLabel('prod', vals, optProd); }
   render();
 }
@@ -599,20 +626,49 @@ document.addEventListener('click', () => {
 // ═══════════════════════════════════════════════════════════
 //  MODE TOGGLES
 // ═══════════════════════════════════════════════════════════
+function updateGranVisibility() {
+  const ev = viewMode === 'evolutivo';
+  document.getElementById('granWrap').style.display    = ev ? '' : 'none';
+  document.getElementById('mesGroup').style.display    = (ev && granMode==='mensal') ? '' : 'none';
+  document.getElementById('cutoffGroup').style.display = (ev && granMode==='ytdfy') ? '' : 'none';
+}
+
 function setView(btn) {
   viewMode = btn.dataset.v;
   document.querySelectorAll('#viewGrp button').forEach(b => b.classList.toggle('on', b===btn));
-  const ev = viewMode === 'evolutivo';
-  document.getElementById('granWrap').style.display  = ev ? '' : 'none';
-  document.getElementById('mesGroup').style.display  = (ev && granMode==='mensal') ? '' : (ev ? 'none' : '');
+  updateGranVisibility();
   render();
 }
 
 function setGran(btn) {
   granMode = btn.dataset.g;
   document.querySelectorAll('#granGrp button').forEach(b => b.classList.toggle('on', b===btn));
-  document.getElementById('mesGroup').style.display = granMode==='mensal' ? '' : 'none';
+  updateGranVisibility();
   render();
+}
+
+function setCutoff(val) {
+  cutoffMes = val ? parseInt(val) : null;
+  render();
+}
+
+function buildCutoffSel() {
+  const sel = document.getElementById('cutoffSel');
+  if(!sel) return;
+  sel.innerHTML = '';
+  optMeses.forEach(m => {
+    const mm = String(m).slice(4,6);
+    const yy = String(m).slice(2,4);
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = (MN[mm]||mm) + '/' + yy;
+    sel.appendChild(opt);
+  });
+  // Default: auto-detected cutoff
+  const auto = getAutoCutoff();
+  if(auto && optMeses.includes(auto)) sel.value = auto;
+  else if(optMeses.length) sel.value = optMeses[optMeses.length-1];
+  cutoffMes = parseInt(sel.value) || null;
 }
 
 function setUnit(btn) {
@@ -644,29 +700,51 @@ function getFiltered() {
 // ═══════════════════════════════════════════════════════════
 //  COLUMN KEY
 // ═══════════════════════════════════════════════════════════
+// Auto-detect YTD cutoff: last month with Realizado/Actual data
+function getAutoCutoff() {
+  const actual = allData.filter(d =>
+    d.Cenario==='Realizado' || d.Cenario==='Actual Sin Distribuir'
+  ).map(d => d.MES);
+  return actual.length ? Math.max(...actual) : null;
+}
+
 function colKey(row) {
   if(viewMode==='total') return '__total__';
   if(granMode==='mensal')     return String(row.MES);
   if(granMode==='trimestral') return (row.QUARTER||'Q?') + '/' + String(row.ANO).slice(2);
   if(granMode==='anual')      return String(row.ANO);
+  if(granMode==='ytdfy') {
+    const cut = cutoffMes || getAutoCutoff();
+    if(!cut) return String(row.ANO);
+    const cutY = Math.floor(cut/100);
+    const cutM = cut % 100;
+    if(row.ANO !== cutY) return 'fy_' + row.ANO;   // other years → FY
+    return (row.MES % 100) <= cutM ? 'ytd' : 'ytg'; // current year → YTD or YTG
+  }
   return '__total__';
 }
 
 function colLabel(k) {
-  if(k==='__total__') return 'Total';
+  if(k==='__total__') return granMode==='ytdfy' ? 'FY' : 'Total';
+  if(k==='ytd') return 'YTD';
+  if(k==='ytg') return 'YTG';
+  if(/^fy_\d{4}$/.test(k)) return 'FY ' + k.slice(3);
   if(/^\d{6}$/.test(k)) return (MN[k.slice(4,6)]||k.slice(4,6)) + '/' + k.slice(2,4);
   return k;
 }
 
 function sortColKeys(arr) {
   function rank(k) {
-    if(k==='__total__') return 99999999;
-    if(/^\d{6}$/.test(k)) return parseInt(k);
+    if(k==='ytd')            return 1;
+    if(k==='ytg')            return 2;
+    if(k==='__total__')      return 99999998;
+    if(/^fy_\d{4}$/.test(k)) return 99990000 + parseInt(k.slice(3));
+    if(/^\d{6}$/.test(k))   return parseInt(k);
     if(/^Q\d\/\d{2}$/.test(k)){
       const [q,y] = k.split('/');
       return parseInt(y)*10 + parseInt(q[1]);
     }
-    if(/^\d{4}$/.test(k)) return parseInt(k)*100;
+    if(/^\d{4}$/.test(k))   return parseInt(k)*100;
     return 0;
   }
   return [...arr].sort((a,b) => rank(a)-rank(b));
@@ -763,13 +841,15 @@ function renderHead(cols, cens) {
       const total = k==='__total__';
       h += `<th${total?' class="col-total-hdr"':''}>${colLabel(k)}</th>`;
     });
-    if(!cols.includes('__total__'))
-      h += '<th class="col-total-hdr">Total</th>';
+    const grandLbl = granMode==='ytdfy' ? 'FY' : 'Total';
+    if(!cols.includes('__total__') && granMode !== 'anual')
+      h += `<th class="col-total-hdr">${grandLbl}</th>`;
     h += '</tr>';
     head.innerHTML = h;
   } else {
     // Multi-cenario evolutivo: grouped per period
     const hasTotal = cols.includes('__total__');
+    const grandLbl = granMode==='ytdfy' ? 'FY' : 'Total';
     let h1 = '<tr><th class="sticky-col" rowspan="2">Conta</th>';
     let h2 = '<tr>';
     cols.forEach(k => {
@@ -777,9 +857,9 @@ function renderHead(cols, cens) {
       h1 += `<th colspan="${cens.length}"${total?' class="col-total-hdr grp-hdr"':' class="grp-hdr"'}>${colLabel(k)}</th>`;
       cens.forEach(c => h2 += `<th style="font-size:10px;background:#252540">${shortCen(c)}</th>`);
     });
-    if(!hasTotal){
+    if(!hasTotal && granMode !== 'anual'){
       const extra = cens.length + (cens.length===2 ? 2 : 0);
-      h1 += `<th colspan="${extra}" class="col-total-hdr grp-hdr">Total</th>`;
+      h1 += `<th colspan="${extra}" class="col-total-hdr grp-hdr">${grandLbl}</th>`;
       cens.forEach(c => h2 += `<th class="col-total-hdr" style="font-size:10px">${shortCen(c)}</th>`);
       if(cens.length===2){
         h2 += '<th class="col-var-hdr" style="font-size:10px">Var</th>';
@@ -871,7 +951,9 @@ function renderBody(l1map, cols, cens) {
   const body = document.getElementById('pnlBody');
   const isTotal = viewMode === 'total';
   const multi   = cens.length >= 2;
-  const addGrand = !cols.includes('__total__') && !isTotal;
+  // No grand-total in annual view (year IS the total); always add in ytdfy (shows FY)
+  const addGrand = !cols.includes('__total__') && !isTotal
+                   && granMode !== 'anual';
 
   let html = '';
 
