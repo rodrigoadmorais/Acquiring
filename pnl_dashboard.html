@@ -995,7 +995,7 @@ function render() {
 
   renderHead(cols, cens);
   renderBody(l1,   cols, cens);
-  updateStickyTop();
+  requestAnimationFrame(updateStickyTop);
 }
 
 // ── Feature 4: Fixed sticky header ────────────────────────
@@ -1003,12 +1003,19 @@ function updateStickyTop() {
   const hdr = document.querySelector('.hdr');
   const filterBar = document.getElementById('filterBar');
   if(!hdr || !filterBar) return;
-  const top = hdr.getBoundingClientRect().height + filterBar.getBoundingClientRect().height;
-  document.querySelectorAll('#pnlTable th').forEach(th => {
-    th.style.top = top + 'px';
+  const base = hdr.getBoundingClientRect().height + filterBar.getBoundingClientRect().height;
+  // Multi-row thead: each row sticks below the previous one
+  const rows = document.querySelectorAll('#pnlTable thead tr');
+  let offset = base;
+  rows.forEach(row => {
+    row.querySelectorAll('th').forEach(th => {
+      th.style.top = offset + 'px';
+    });
+    const rowH = row.getBoundingClientRect().height || 30;
+    offset += rowH;
   });
 }
-window.addEventListener('resize', updateStickyTop);
+window.addEventListener('resize', () => requestAnimationFrame(updateStickyTop));
 
 // ── Head ───────────────────────────────────────────────────
 function renderHead(cols, cens) {
@@ -1363,7 +1370,10 @@ function renderBody(l1map, cols, cens) {
       // Feature 7: Cumulative subtotal
       addByCen(cumByCen, n1.byCen);
       const chartKeyCum = '__cum__'+k1;
-      chartData.set(chartKeyCum, cumByCen);
+      // Store a snapshot (deep copy) so chartData is not affected by future accumulation
+      const cumSnapshot = new Map();
+      addByCen(cumSnapshot, cumByCen);
+      chartData.set(chartKeyCum, cumSnapshot);
       html += `<tr class="row-subtotal" ${chartClickAttr(chartKey1)}>
         <td class="sticky-col">${k1}</td>${cells(cumByCen, false)}</tr>`;
     }
