@@ -1,0 +1,104 @@
+{
+  "name": "FDVP SMB LT - Live Dashboard (Hourly)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "f1a2b3c4-0001-4000-8000-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [0, 0],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1R-p6kZIavad6Y_R8LDUYTezvZ48AaQ8HTOocJN5msYc/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FDVP e FDVT"
+        },
+        "options": {}
+      },
+      "id": "f1a2b3c4-0002-4000-8000-000000000002",
+      "name": "Read Sheet FDVP e FDVT",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [224, 0],
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "fdvp_smb_lt_data.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "Atualizando dados FDVP SMB LT via Verdi",
+        "additionalParameters": {
+          "branch": "master"
+        }
+      },
+      "id": "f1a2b3c4-0003-4000-8000-000000000003",
+      "name": "Write to GitHub",
+      "type": "n8n-nodes-base.github",
+      "position": [448, 0],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [{ "node": "Read Sheet FDVP e FDVT", "type": "main", "index": 0 }]
+      ]
+    },
+    "Read Sheet FDVP e FDVT": {
+      "main": [
+        [{ "node": "Write to GitHub", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "85260b6a32af0aede929fef314a09f9eb905ee8ed00741f8ad438b405f1b84a4"
+  },
+  "tags": []
+}
