@@ -225,21 +225,26 @@ function barChart(id, data, fmtFn) {
   });
 }
 
-// Combo bar+line — linha sempre ACIMA das barras via escala projetada.
-// A linha é mapeada para a faixa [78%..96%] da escala das barras,
-// garantindo que nunca sobreponha rótulos de barras, independente da escala.
+// Combo bar+line — escala dupla engenheirada:
+//   y  (barras): max = barMax × 2.5  → barras ocupam até ~40% da altura visual
+//   y1 (linha) : escala calculada para que a linha apareça na faixa 60–87%
+//   Resultado: rótulos de barras (acima das barras, ~42%) e de linha (acima
+//   dos pontos, 62–89%) ficam sempre separados por ~20% de altura (≈60 px).
 function comboChart(id, barData, rawLine, barFmt, lineFmt, lineDash) {
   if (!document.getElementById(id)) return;
 
-  const barMax  = Math.max(...barData);
-  const lMin    = Math.min(...rawLine);
-  const lMax    = Math.max(...rawLine);
-  const range   = lMax > lMin ? lMax - lMin : 1;
+  const barMax = Math.max(...barData);
+  const lMin   = Math.min(...rawLine);
+  const lMax   = Math.max(...rawLine);
 
-  // Projected line positions on the bar's y-axis (top 20% band)
-  const TOP_LO  = barMax * 0.78;
-  const TOP_HI  = barMax * 0.96;
-  const projLine = rawLine.map(v => TOP_LO + ((v - lMin) / range) * (TOP_HI - TOP_LO));
+  // y-axis: barras no terço inferior do gráfico
+  const yMax = barMax * 2.5;
+
+  // y1-axis: linha na faixa 60–87% da altura
+  // Fórmula derivada de P = (v - minY1)/(maxY1 - minY1):
+  //   para lMin em 60% → minY1 = (lMin - 0.60·maxY1) / 0.40
+  const maxY1 = lMax * (lMax !== lMin ? 1.20 : 1.50);
+  const minY1 = (lMin - 0.60 * maxY1) / 0.40;
 
   const lineLabel = id === 'p3' ? '% Atingimento' : 'TPV Médio (K)';
   const barLabel  = id.startsWith('p') ? 'FDVP' : 'FDVT';
@@ -257,15 +262,14 @@ function comboChart(id, barData, rawLine, barFmt, lineFmt, lineDash) {
           order: 2,
           yAxisID: 'y',
           datalabels: {
-            // Rótulo dentro da barra (não toca a linha acima)
-            display: true, anchor: 'end', align: 'start', offset: 5,
+            display: true, anchor: 'end', align: 'end', offset: 3,
             formatter: barFmt, font: lf(), color: DARK
           }
         },
         {
           type: 'line',
           label: lineLabel,
-          data: projLine,            // posição visual projetada
+          data: rawLine,          // valores reais — sem transformação
           borderColor: DARK, backgroundColor: DARK,
           pointBackgroundColor: DARK,
           pointBorderColor: '#fff', pointBorderWidth: 2,
@@ -273,12 +277,10 @@ function comboChart(id, barData, rawLine, barFmt, lineFmt, lineDash) {
           borderWidth: 2.5, fill: false, tension: 0,
           borderDash: lineDash ? [5,4] : [],
           order: 1,
-          yAxisID: 'y',
+          yAxisID: 'y1',
           datalabels: {
-            // Rótulo acima do ponto (área de padding — nunca toca barra)
-            display: true, anchor: 'end', align: 'top', offset: 4,
-            formatter: (_, ctx) => lineFmt(rawLine[ctx.dataIndex]),  // valor real
-            font: lf(), color: DARK
+            display: true, anchor: 'end', align: 'top', offset: 3,
+            formatter: lineFmt, font: lf(), color: DARK
           }
         }
       ]
@@ -291,19 +293,12 @@ function comboChart(id, barData, rawLine, barFmt, lineFmt, lineDash) {
           display: true, position: 'bottom',
           labels: { boxWidth: 12, font: lgf(), padding: 8 }
         },
-        tooltip: {
-          mode: 'index', intersect: false,
-          callbacks: {
-            label: ctx => {
-              if (ctx.datasetIndex === 0) return `${barLabel}: ${barFmt(ctx.parsed.y)}`;
-              return `${lineLabel}: ${lineFmt(rawLine[ctx.dataIndex])}`;
-            }
-          }
-        }
+        tooltip: { mode: 'index', intersect: false }
       },
       scales: {
         x: xAxis(),
-        y: { ...yHide, suggestedMax: barMax * 1.28 }
+        y:  { ...yHide, min: 0, max: yMax },
+        y1: { ...yHide, min: minY1, max: maxY1 }
       },
       layout: { padding: { top: 46 } }
     }
