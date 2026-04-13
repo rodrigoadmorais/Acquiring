@@ -283,6 +283,14 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
              background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
   </div>
 
+  <!-- Cenário Ref (visível apenas em modo comparação) -->
+  <div class="fg" id="cenRefGroup" style="display:none">
+    <label>Cenário Ref</label>
+    <select id="cenRefSel" onchange="setCenRef(this.value)"
+      style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+             background:var(--card);color:var(--text);font-size:12px;min-width:130px;cursor:pointer"></select>
+  </div>
+
   <div class="sep"></div>
 
   <!-- Ano -->
@@ -393,6 +401,8 @@ let granMode    = 'anual';       // 'mensal' | 'trimestral' | 'anual' | 'ytdfy'
 let unitDiv     = 1_000_000;
 let cutoffMes   = null;          // YTD cutoff month (YYYYMM int)
 let displayMode = 'abs';         // 'abs' | 'pct_tpv'
+let compCenario = null;          // reference scenario for comparação mode
+let compHasFcst = false;         // whether Forecast data exists for the ref month
 
 // expand state (Set of keys)
 let expL1 = new Set();
@@ -570,6 +580,7 @@ function initFilters() {
   buildMsPanel('prod',  optProd,  selProd,  v => { selProd  = v; });
   buildMesSelects();
   buildMesRefSel();
+  buildCenRefSel();
   buildCutoffSel();
   // Apply initial granularity state (default=anual: hide mesGroup)
   updateGranVisibility();
@@ -661,6 +672,30 @@ function getMesRef() {
   return parseInt(document.getElementById('mesRefSel').value||0);
 }
 
+// ── Cenário Ref (for comparação mode) ─────────────────────
+function buildCenRefSel() {
+  const sel = document.getElementById('cenRefSel');
+  if(!sel) return;
+  sel.innerHTML = '';
+  optCen.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  if(compCenario && optCen.includes(compCenario)) sel.value = compCenario;
+  else { sel.value = optCen[0]||''; compCenario = sel.value; }
+}
+
+function setCenRef(val) {
+  compCenario = val;
+  render();
+}
+
+function getCenRef() {
+  return compCenario || document.getElementById('cenRefSel')?.value || (optCen[0]||'');
+}
+
 // Compute LY (same month previous year) and LM (previous month) from ref
 function getCompPeriods(ref) {
   if(!ref) return { ref, ly: null, lm: null };
@@ -750,6 +785,7 @@ function updateGranVisibility() {
   document.getElementById('mesGroup').style.display    = (ev && granMode==='mensal') ? '' : 'none';
   document.getElementById('cutoffGroup').style.display = (ev && granMode==='ytdfy') ? '' : 'none';
   document.getElementById('mesRefGroup').style.display = comp ? '' : 'none';
+  document.getElementById('cenRefGroup').style.display = comp ? '' : 'none';
 }
 
 function setView(btn) {
@@ -814,14 +850,19 @@ function toggleTheme() {
 // ═══════════════════════════════════════════════════════════
 function getFiltered() {
   if(viewMode === 'comparacao') {
-    const ref = getMesRef();
+    const ref    = getMesRef();
+    const cenRef = getCenRef();
     const { ly, lm } = getCompPeriods(ref);
-    const allowed = new Set([ref, ly, lm].filter(Boolean));
     return allData.filter(d =>
-      selCen.includes(d.Cenario) &&
       (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
       (selProd.length===0  || selProd.includes(d.Product)) &&
-      allowed.has(d.MES)
+      (
+        (d.MES === ref && d.Cenario === cenRef)        ||  // ref: user-chosen scenario
+        (d.MES === ref && d.Cenario === 'Plan')         ||  // Δ vs Plan
+        (d.MES === ref && d.Cenario === 'Forecast')     ||  // Δ vs Forecast
+        (lm && d.MES === lm && d.Cenario === 'Realizado') ||  // Δ vs Real LM
+        (ly && d.MES === ly && d.Cenario === 'Realizado')     // Δ vs Real LY
+      )
     );
   }
   const [mf, mt] = getMesRange();
@@ -848,12 +889,16 @@ function getAutoCutoff() {
 function colKey(row) {
   if(viewMode==='total') return '__total__';
   if(viewMode==='comparacao') {
-    const ref = getMesRef();
+    const ref    = getMesRef();
+    const cenRef = getCenRef();
     const { ly, lm } = getCompPeriods(ref);
-    if(row.MES === ref) return 'comp_ref';
-    if(row.MES === ly)  return 'comp_ly';
-    if(row.MES === lm)  return 'comp_lm';
-    return null; // should not happen since getFiltered only returns the 3 months
+    // Order matters: ref scenario check first so it takes priority
+    if(row.MES === ref && row.Cenario === cenRef)        return 'comp_ref';
+    if(row.MES === ref && row.Cenario === 'Plan')         return 'comp_plan';
+    if(row.MES === ref && row.Cenario === 'Forecast')     return 'comp_fcst';
+    if(lm && row.MES === lm && row.Cenario === 'Realizado') return 'comp_lm';
+    if(ly && row.MES === ly && row.Cenario === 'Realizado') return 'comp_ly';
+    return null;
   }
   if(granMode==='mensal')     return String(row.MES);
   if(granMode==='trimestral') return (row.QUARTER||'Q?') + '/' + String(row.ANO).slice(2);
@@ -870,21 +915,11 @@ function colKey(row) {
 }
 
 function colLabel(k, refPeriods) {
-  if(k==='comp_ref') {
-    const ref = refPeriods?.ref;
-    if(ref) return mesLabel(ref);
-    return 'Ref';
-  }
-  if(k==='comp_ly') {
-    const ly = refPeriods?.ly;
-    if(ly) return mesLabel(ly);
-    return 'LY';
-  }
-  if(k==='comp_lm') {
-    const lm = refPeriods?.lm;
-    if(lm) return mesLabel(lm);
-    return 'LM';
-  }
+  if(k==='comp_ref')  return 'Ref';
+  if(k==='comp_plan') return 'Δ Plan';
+  if(k==='comp_fcst') return 'Δ Fcst';
+  if(k==='comp_lm')   return 'Δ Real LM';
+  if(k==='comp_ly')   return 'Δ Real LY';
   if(k==='__total__') return granMode==='ytdfy' ? 'FY' : 'Total';
   if(k==='ytd') return 'YTD';
   if(k==='ytg') return 'YTG';
@@ -902,8 +937,10 @@ function mesLabel(mes) {
 function sortColKeys(arr) {
   function rank(k) {
     if(k==='comp_ref')        return 1;
-    if(k==='comp_ly')         return 2;
-    if(k==='comp_lm')         return 3;
+    if(k==='comp_plan')       return 2;
+    if(k==='comp_fcst')       return 3;
+    if(k==='comp_lm')         return 4;
+    if(k==='comp_ly')         return 5;
     if(k==='ytd')             return 1;
     if(k==='ytg')             return 2;
     if(k==='__total__')       return 99999998;
@@ -990,6 +1027,16 @@ function render() {
   const {l1, cols} = aggregate(data);
   const cens = selCen.filter(c => optCen.includes(c));
 
+  // Compute whether Forecast data exists for the ref month (for comparação mode)
+  if(viewMode === 'comparacao') {
+    const ref = getMesRef();
+    compHasFcst = allData.some(d =>
+      d.MES === ref && d.Cenario === 'Forecast' &&
+      (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
+      (selProd.length===0  || selProd.includes(d.Product))
+    );
+  }
+
   // Reset chart data store
   chartData = new Map();
 
@@ -1025,27 +1072,33 @@ function renderHead(cols, cens) {
   const multi   = cens.length >= 2;
 
   if(isComp) {
-    // Feature 2: Comparação header
-    const ref = getMesRef();
-    const periods = getCompPeriods(ref);
-    const compCols = ['comp_ref','comp_ly','comp_lm'];
-    // grouped header: 3 period groups + Δ columns
-    let h1 = '<tr><th class="sticky-col" rowspan="2">Conta</th>';
-    let h2 = '<tr>';
-    compCols.forEach((ck, i) => {
-      const labels = { comp_ref: mesLabel(periods.ref), comp_ly: mesLabel(periods.ly||0)||'LY', comp_lm: mesLabel(periods.lm||0)||'LM' };
-      h1 += `<th colspan="${cens.length}" class="grp-hdr">${labels[ck]}</th>`;
-      cens.forEach(c => h2 += `<th style="font-size:10px;background:#252540">${shortCen(c)}</th>`);
-    });
-    // Δ columns: LY vs Ref
-    h1 += `<th colspan="2" class="col-var-hdr">Δ LY vs Ref</th>`;
-    h2 += `<th class="col-var-hdr" style="font-size:10px">Var</th>`;
-    h2 += `<th class="col-var-hdr" style="font-size:10px">Var%</th>`;
-    // Δ LM vs Ref
-    h1 += `<th colspan="2" class="col-var-hdr">Δ LM vs Ref</th>`;
-    h2 += `<th class="col-var-hdr" style="font-size:10px">Var</th>`;
-    h2 += `<th class="col-var-hdr" style="font-size:10px">Var%</th>`;
-    head.innerHTML = h1+'</tr>'+h2+'</tr>';
+    // Comparação: single header row with delta columns only
+    const ref    = getMesRef();
+    const cenRef = getCenRef();
+    const { ly, lm } = getCompPeriods(ref);
+    const refLbl = mesLabel(ref);
+    const lmLbl  = lm ? mesLabel(lm) : 'LM';
+    const lyLbl  = ly ? mesLabel(ly) : 'LY';
+    // Sub-label showing reference: "Ref: Realizado Jan/25"
+    const refInfo = `${refLbl} · ${shortCen(cenRef)}`;
+    let h = `<tr>`;
+    h += `<th class="sticky-col">Conta<br><span style="font-size:10px;font-weight:400;color:#8899bb">Ref: ${refInfo}</span></th>`;
+    // Δ vs Plan
+    h += `<th class="col-var-hdr">Δ vs Plan<br><span style="font-size:10px;font-weight:400">${refLbl}</span></th>`;
+    h += `<th class="col-var-hdr" style="font-size:10px">%</th>`;
+    // Δ vs Forecast (only when data exists)
+    if(compHasFcst) {
+      h += `<th class="col-var-hdr">Δ vs Fcst<br><span style="font-size:10px;font-weight:400">${refLbl}</span></th>`;
+      h += `<th class="col-var-hdr" style="font-size:10px">%</th>`;
+    }
+    // Δ vs Real LM
+    h += `<th class="col-var-hdr">Δ vs Real LM<br><span style="font-size:10px;font-weight:400">${lmLbl}</span></th>`;
+    h += `<th class="col-var-hdr" style="font-size:10px">%</th>`;
+    // Δ vs Real LY
+    h += `<th class="col-var-hdr">Δ vs Real LY<br><span style="font-size:10px;font-weight:400">${lyLbl}</span></th>`;
+    h += `<th class="col-var-hdr" style="font-size:10px">%</th>`;
+    h += `</tr>`;
+    head.innerHTML = h;
     return;
   }
 
@@ -1215,36 +1268,36 @@ function renderBody(l1map, cols, cens) {
   function cells(byCen, isMetrics) {
     let c = '';
     if(isComp) {
-      // Feature 2: comparação mode cells
-      const ref = getMesRef();
-      const periods = getCompPeriods(ref);
-      const compCols = ['comp_ref','comp_ly','comp_lm'];
-      // For each period, show values per cen
-      const cenVals = {}; // cenario -> {ref, ly, lm}
-      cens.forEach(cen => {
-        cenVals[cen] = {};
-        compCols.forEach(ck => {
-          cenVals[cen][ck] = val(byCen, cen, ck);
-        });
-      });
-      compCols.forEach(ck => {
-        cens.forEach(cen => {
-          const v = cenVals[cen][ck];
-          c += `<td class="${v<0?'neg':''}">${fmt(v)}</td>`;
-        });
-      });
-      // Δ LY vs Ref: use first cen for comparison (or avg if multi)
-      const refSum  = cens.reduce((s,cen) => s + cenVals[cen]['comp_ref'], 0);
-      const lySum   = cens.reduce((s,cen) => s + cenVals[cen]['comp_ly'],  0);
-      const lmSum   = cens.reduce((s,cen) => s + cenVals[cen]['comp_lm'],  0);
-      const lyVar   = lySum - refSum;
-      const lyVarP  = refSum ? (lyVar / Math.abs(refSum) * 100) : null;
-      const lmVar   = lmSum - refSum;
-      const lmVarP  = refSum ? (lmVar / Math.abs(refSum) * 100) : null;
-      c += `<td class="col-var-cell ${lyVar>=0?'vpos':'vneg'}">${fmt(lyVar)}</td>`;
-      c += `<td class="col-var-cell ${lyVar>=0?'vpos':'vneg'}">${lyVarP!=null?lyVarP.toFixed(1)+'%':'—'}</td>`;
-      c += `<td class="col-var-cell ${lmVar>=0?'vpos':'vneg'}">${fmt(lmVar)}</td>`;
-      c += `<td class="col-var-cell ${lmVar>=0?'vpos':'vneg'}">${lmVarP!=null?lmVarP.toFixed(1)+'%':'—'}</td>`;
+      // Comparação: delta-only cells (Ref minus each comparison baseline)
+      // Values are keyed by colKey → each scenario's byCen holds the right column
+      const cenRef  = getCenRef();
+      // Helper: sum a colKey across all entries in byCen that have it
+      const sumCol = (ck) => {
+        let s = 0;
+        for(const [, colMap] of byCen) s += (colMap.get(ck)||0);
+        return s;
+      };
+      const refVal  = (byCen.get(cenRef)?.get('comp_ref'))  || sumCol('comp_ref');
+      const planVal = (byCen.get('Plan')?.get('comp_plan'))  || sumCol('comp_plan');
+      const fcstVal = (byCen.get('Forecast')?.get('comp_fcst')) || sumCol('comp_fcst');
+      const lmVal   = (byCen.get('Realizado')?.get('comp_lm')) || sumCol('comp_lm');
+      const lyVal   = (byCen.get('Realizado')?.get('comp_ly')) || sumCol('comp_ly');
+
+      function deltaCell(d, base) {
+        const cls = d >= 0 ? 'vpos' : 'vneg';
+        const pct = base !== 0 ? (d / Math.abs(base) * 100) : null;
+        c += `<td class="col-var-cell ${cls}">${fmt(d)}</td>`;
+        c += `<td class="col-var-cell ${cls}">${pct != null ? pct.toFixed(1)+'%' : '—'}</td>`;
+      }
+
+      // Δ vs Plan
+      deltaCell(refVal - planVal, planVal);
+      // Δ vs Forecast (only when Forecast data exists globally)
+      if(compHasFcst) deltaCell(refVal - fcstVal, fcstVal);
+      // Δ vs Real LM
+      deltaCell(refVal - lmVal, lmVal);
+      // Δ vs Real LY
+      deltaCell(refVal - lyVal, lyVal);
       return c;
     }
     if(isTotal) {
