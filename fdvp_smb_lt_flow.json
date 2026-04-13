@@ -6,16 +6,15 @@
         "rule": {
           "interval": [
             {
-              "field": "hours",
-              "hoursInterval": 1
+              "field": "hours"
             }
           ]
         }
       },
-      "id": "f1a2b3c4-0001-4000-8000-000000000001",
+      "id": "8bf84a81-678a-4db1-af35-918f35b9b63f",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "position": [0, 0],
+      "position": [-304, 0],
       "typeVersion": 1.2
     },
     {
@@ -32,10 +31,10 @@
         },
         "options": {}
       },
-      "id": "f1a2b3c4-0002-4000-8000-000000000002",
+      "id": "d8a21b36-9a34-4774-a1d8-3b0d1ff997e7",
       "name": "Read Sheet FDVP e FDVT",
       "type": "n8n-nodes-base.googleSheets",
-      "position": [224, 0],
+      "position": [-80, 0],
       "executeOnce": true,
       "typeVersion": 4.7,
       "credentials": {
@@ -61,15 +60,13 @@
         },
         "filePath": "fdvp_smb_lt_data.json",
         "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
-        "commitMessage": "Atualizando dados FDVP SMB LT via Verdi",
-        "additionalParameters": {
-          "branch": "master"
-        }
+        "commitMessage": "Atualizando dados FDVP SMB LT via Verdi"
       },
-      "id": "f1a2b3c4-0003-4000-8000-000000000003",
+      "id": "90cc7808-a5f9-484a-8b3c-71e72ae1d0a5",
       "name": "Write to GitHub",
       "type": "n8n-nodes-base.github",
-      "position": [448, 0],
+      "position": [128, 0],
+      "webhookId": "396104d4-b328-490b-84aa-1c4ffd6088b0",
       "executeOnce": true,
       "typeVersion": 1.1,
       "credentials": {
@@ -84,12 +81,16 @@
   "connections": {
     "Schedule Trigger": {
       "main": [
-        [{ "node": "Read Sheet FDVP e FDVT", "type": "main", "index": 0 }]
+        [
+          { "node": "Read Sheet FDVP e FDVT", "type": "main", "index": 0 }
+        ]
       ]
     },
     "Read Sheet FDVP e FDVT": {
       "main": [
-        [{ "node": "Write to GitHub", "type": "main", "index": 0 }]
+        [
+          { "node": "Write to GitHub", "type": "main", "index": 0 }
+        ]
       ]
     }
   },
@@ -97,8 +98,11 @@
   "settings": {
     "executionOrder": "v1"
   },
+  "versionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "meta": {
-    "instanceId": "85260b6a32af0aede929fef314a09f9eb905ee8ed00741f8ad438b405f1b84a4"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7fa8c733db20fb5e95cb08b0c1fbcd66d08a3226e222f28c9efd2fcd19ffd10a"
   },
+  "id": "FDVPSMBLTdash01",
   "tags": []
 }
