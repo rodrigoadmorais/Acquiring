@@ -190,6 +190,25 @@ td.col-var-cell.vneg{background:rgba(198,40,40,.06)}
 
 .invisible{visibility:hidden}
 
+/* ── Row highlight (click to select) ── */
+tr.row-selected td{
+  background:#fff8c5 !important;
+  outline:2px solid #f0c000;
+  outline-offset:-1px;
+}
+tr.row-selected td.sticky-col{
+  background:#fff8c5 !important;
+  border-left:4px solid #f0c000 !important;
+}
+[data-theme=dark] tr.row-selected td{
+  background:#3a3000 !important;
+  outline-color:#f0c000;
+}
+[data-theme=dark] tr.row-selected td.sticky-col{
+  background:#3a3000 !important;
+  border-left-color:#f0c000 !important;
+}
+
 /* ── Subtotal row (MNG_1 at bottom of each P&L section) ── */
 .row-subtotal td{
   background:#dce7f5;color:#0f1e3a;
@@ -432,6 +451,8 @@ let optCen = [], optAnos = [], optMeses = [], optMacro = [], optProd = [], optSe
 let chartData = new Map();
 // current chart.js instance
 let chartInstance = null;
+// selected (highlighted) row keys
+let selectedRows = new Set();
 
 const MN = {
   '01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun',
@@ -1366,9 +1387,16 @@ function renderBody(l1map, cols, cens) {
     return c;
   }
 
-  // ── Feature 6: Chart click handler ────────────────────────
+  // ── Row click: single = highlight toggle, double = chart ──
   function chartClickAttr(chartKey) {
-    return `onclick="handleRowClick(event,'${escAttr(chartKey)}')"`;
+    const k = escAttr(chartKey);
+    return `onclick="handleRowClick(event,'${k}')" ondblclick="handleRowDblClick(event,'${k}')"`;
+  }
+  // Apply pre-existing highlight state to freshly rendered rows
+  function applySelectionClass() {
+    document.querySelectorAll('#pnlBody tr[data-rk]').forEach(tr => {
+      tr.classList.toggle('row-selected', selectedRows.has(tr.dataset.rk));
+    });
   }
 
   // ── P&L Waterfall rendering ────────────────────────────
@@ -1395,7 +1423,7 @@ function renderBody(l1map, cols, cens) {
     if(isMetrics) {
       // Metrics: dark header at top, MNG_2 as flat rows below
       const open1 = expL1.has(k1);
-      html += `<tr class="row-l1" data-k1="${escAttr(k1)}" ${chartClickAttr(chartKey1)}>
+      html += `<tr class="row-l1" data-k1="${escAttr(k1)}" data-rk="${escAttr(chartKey1)}" ${chartClickAttr(chartKey1)}>
         <td class="sticky-col">
           <span class="xbtn" onclick="toggleL1(event,this)">
             <span class="xarr${open1?' open':''}">▶</span>METRICS
@@ -1405,7 +1433,7 @@ function renderBody(l1map, cols, cens) {
         for(const [k2, n2] of sortedBy(n1.children, MNG2_ORDER[k1])) {
           const chartKey2 = k1+'|||'+k2;
           chartData.set(chartKey2, n2.byCen);
-          html += `<tr class="row-l3" ${chartClickAttr(chartKey2)}>
+          html += `<tr class="row-l3" data-rk="${escAttr(chartKey2)}" ${chartClickAttr(chartKey2)}>
             <td class="sticky-col i2">${k2}</td>${cells(n2.byCen, true)}</tr>`;
         }
       }
@@ -1417,7 +1445,7 @@ function renderBody(l1map, cols, cens) {
         const hasCh = n2.children.size > 0;
         const chartKey2 = l2k;
         chartData.set(chartKey2, n2.byCen);
-        html += `<tr class="row-l2" data-l2k="${escAttr(l2k)}" ${chartClickAttr(chartKey2)}>
+        html += `<tr class="row-l2" data-l2k="${escAttr(l2k)}" data-rk="${escAttr(chartKey2)}" ${chartClickAttr(chartKey2)}>
           <td class="sticky-col i2">
             <span class="xbtn" onclick="toggleL2(event,this)">
               <span class="xarr${open2?' open':''}${hasCh?'':' invisible'}">▶</span>${k2}
@@ -1430,7 +1458,7 @@ function renderBody(l1map, cols, cens) {
             const hasCh3 = n3.children && n3.children.size > 0;
             const chartKey3 = l3k;
             chartData.set(chartKey3, n3.byCen);
-            html += `<tr class="row-l3" data-l3k="${escAttr(l3k)}" ${chartClickAttr(chartKey3)}>
+            html += `<tr class="row-l3" data-l3k="${escAttr(l3k)}" data-rk="${escAttr(chartKey3)}" ${chartClickAttr(chartKey3)}>
               <td class="sticky-col i3">
                 <span class="xbtn" onclick="toggleL3(event,this)">
                   <span class="xarr${open3?' open':''}${hasCh3?'':' invisible'}">▶</span>${k3}
@@ -1441,7 +1469,7 @@ function renderBody(l1map, cols, cens) {
               for(const [k4, n4] of n3.children) {
                 const chartKey4 = l3k+'|||'+k4;
                 chartData.set(chartKey4, n4.byCen);
-                html += `<tr class="row-l4" ${chartClickAttr(chartKey4)}>
+                html += `<tr class="row-l4" data-rk="${escAttr(chartKey4)}" ${chartClickAttr(chartKey4)}>
                   <td class="sticky-col i4">${k4}</td>${cells(n4.byCen, false)}</tr>`;
               }
             }
@@ -1451,11 +1479,10 @@ function renderBody(l1map, cols, cens) {
       // Feature 7: Cumulative subtotal
       addByCen(cumByCen, n1.byCen);
       const chartKeyCum = '__cum__'+k1;
-      // Store a snapshot (deep copy) so chartData is not affected by future accumulation
       const cumSnapshot = new Map();
       addByCen(cumSnapshot, cumByCen);
       chartData.set(chartKeyCum, cumSnapshot);
-      html += `<tr class="row-subtotal" ${chartClickAttr(chartKey1)}>
+      html += `<tr class="row-subtotal" data-rk="${escAttr(chartKey1)}" ${chartClickAttr(chartKey1)}>
         <td class="sticky-col">${k1}</td>${cells(cumByCen, false)}</tr>`;
     }
   }
@@ -1463,6 +1490,7 @@ function renderBody(l1map, cols, cens) {
   if(!html.includes('<td') || !l1map.size)
     html = '<tr><td colspan="99" class="empty">Nenhum dado para os filtros selecionados.</td></tr>';
   body.innerHTML = html;
+  applySelectionClass();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1506,10 +1534,25 @@ function toggleL3(e, el) {
 function handleRowClick(e, chartKey) {
   // Don't fire if clicking the expand arrow
   if(e.target.closest('.xbtn')) return;
+  // Single click = toggle row highlight
+  const tr = e.currentTarget || e.target.closest('tr');
+  if(!tr) return;
+  const rk = tr.dataset.rk || chartKey;
+  if(selectedRows.has(rk)) {
+    selectedRows.delete(rk);
+    tr.classList.remove('row-selected');
+  } else {
+    selectedRows.add(rk);
+    tr.classList.add('row-selected');
+  }
+}
+
+function handleRowDblClick(e, chartKey) {
+  // Don't fire if clicking the expand arrow
+  if(e.target.closest('.xbtn')) return;
+  e.preventDefault();
   const byCen = chartData.get(chartKey);
   if(!byCen) return;
-
-  // Determine row label from chartKey
   const parts = chartKey.split('|||');
   const label = parts[parts.length-1].replace(/^__cum__/,'');
   showChart(label, byCen);
