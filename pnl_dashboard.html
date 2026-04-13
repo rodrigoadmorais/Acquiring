@@ -24,7 +24,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-     background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+     background:var(--bg);color:var(--text);font-size:13px;
+     height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
 /* ── Header ── */
 .hdr{background:var(--yellow);height:50px;padding:0 20px;
@@ -91,19 +92,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
                    background:none;border:none;cursor:pointer;padding:0}
 
 /* ── Table wrapper ── */
-.tbl-wrap{padding:0 20px 16px}
-.tbl-outer{overflow-x:auto;border-radius:10px;
-           box-shadow:0 2px 12px rgba(0,0,0,.08)}
-.tbl-outer::-webkit-scrollbar{height:6px}
-.tbl-outer::-webkit-scrollbar-track{background:var(--bg)}
-.tbl-outer::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* tbl-wrap = scroll container for the table (both axes)
+   This ensures position:sticky on <th> is relative to tbl-wrap
+   (not to tbl-outer which was the bug: overflow-x:auto on tbl-outer
+    made it the sticky container, causing headers to float incorrectly) */
+.tbl-wrap{flex:1 1 0;min-height:0;overflow-x:auto;overflow-y:auto;padding:0 20px 16px}
+.tbl-wrap::-webkit-scrollbar{height:6px;width:6px}
+.tbl-wrap::-webkit-scrollbar-track{background:var(--bg)}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.tbl-outer{border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
 
 /* ── P&L Table ── */
 #pnlTable{border-collapse:collapse;width:100%;font-size:12px;
           border-radius:10px;overflow:hidden}
 #pnlTable th{background:#111d36;color:#c8d4e8;padding:9px 12px;
              text-align:right;white-space:nowrap;font-size:11px;font-weight:600;
-             position:sticky;top:110px;z-index:100;
+             position:sticky;top:0;z-index:100;
              border-bottom:2px solid #0a1220;letter-spacing:.3px}
 #pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
                         background:#111d36;min-width:260px;max-width:340px;
@@ -1042,26 +1046,19 @@ function render() {
 
   renderHead(cols, cens);
   renderBody(l1,   cols, cens);
-  // Synchronous pass so th.top is set immediately (avoids 1-frame white gap)
-  updateStickyTop();
-  // Deferred pass after browser reflow for precision
   requestAnimationFrame(updateStickyTop);
 }
 
-// ── Feature 4: Fixed sticky header ────────────────────────
+// ── Feature 4: Sticky header row stacking ────────────────────
+// Since tbl-wrap is now the scroll container, top:0 = top of tbl-wrap.
+// For multi-row headers (evolutivo multi-cenario), row 2 must be offset
+// by row 1's height so they stack correctly without overlap.
 function updateStickyTop() {
-  const filterBar = document.getElementById('filterBar');
-  if(!filterBar) return;
-  // Use filterBar.bottom as base — works correctly regardless of header height
-  const base = Math.round(filterBar.getBoundingClientRect().bottom);
   const rows = document.querySelectorAll('#pnlTable thead tr');
-  let offset = base;
+  let offset = 0;
   rows.forEach(row => {
-    row.querySelectorAll('th').forEach(th => {
-      th.style.top = offset + 'px';
-    });
-    const rowH = row.getBoundingClientRect().height || 34;
-    offset += rowH;
+    row.querySelectorAll('th').forEach(th => { th.style.top = offset + 'px'; });
+    offset += row.getBoundingClientRect().height || 34;
   });
 }
 window.addEventListener('resize', () => requestAnimationFrame(updateStickyTop));
