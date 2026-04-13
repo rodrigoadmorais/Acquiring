@@ -1495,15 +1495,10 @@ function handleRowClick(e, chartKey) {
 }
 
 function showChart(rowLabel, byCen) {
-  const cens = selCen.filter(c => optCen.includes(c));
-  // Determine columns for chart
-  const data = getFiltered();
-  const { cols } = aggregate(data);
-  const displayCols = cols.length > 0 ? cols : [];
+  const isDark    = document.documentElement.dataset.theme === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
+  const textColor = isDark ? '#c8d4e8' : '#333';
 
-  const labels = displayCols.map(k => colLabel(k));
-
-  // Color palette (blue shades + teal/purple)
   const palette = [
     'rgba(21,101,192,0.85)',
     'rgba(2,136,209,0.85)',
@@ -1513,37 +1508,68 @@ function showChart(rowLabel, byCen) {
     'rgba(123,31,162,0.85)',
   ];
 
-  const datasets = cens.map((cen, i) => {
-    const cenMap = byCen.get(cen);
-    const vals = displayCols.map(k => {
-      if(!cenMap) return 0;
-      if(k === '__total__') {
-        return [...cenMap.values()].reduce((s,v)=>s+v, 0);
-      }
-      return (cenMap.get(k) || 0) / unitDiv;
-    });
-    return {
-      label: shortCen(cen),
-      data: vals,
-      backgroundColor: palette[i % palette.length],
-      borderRadius: 4,
-    };
-  });
+  let labels, datasets;
 
-  // Destroy previous chart
-  if(chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
+  if(viewMode === 'comparacao') {
+    // ── Comparação chart: absolute values per benchmark (ref + baselines) ──
+    const cenRef = getCenRef();
+    const ref    = getMesRef();
+    const { ly, lm } = getCompPeriods(ref);
+
+    const sumCol = (ck) => {
+      let s = 0;
+      for(const [, colMap] of byCen) s += (colMap.get(ck)||0);
+      return s;
+    };
+    const refVal  = byCen.get(cenRef)?.get('comp_ref')      ?? sumCol('comp_ref');
+    const planVal = byCen.get('Plan')?.get('comp_plan')      ?? sumCol('comp_plan');
+    const lmVal   = byCen.get('Realizado')?.get('comp_lm')   ?? sumCol('comp_lm');
+    const lyVal   = byCen.get('Realizado')?.get('comp_ly')   ?? sumCol('comp_ly');
+    const fcstVal = compHasFcst
+      ? (byCen.get('Forecast')?.get('comp_fcst') ?? sumCol('comp_fcst'))
+      : null;
+
+    // Build series in desired order: Ref | Plan | Fcst? | Real LM | Real LY
+    const series = [
+      { label: `${shortCen(cenRef)} ${mesLabel(ref)}`, val: refVal,  color: 'rgba(21,101,192,0.9)'  },
+      { label: `Plan ${mesLabel(ref)}`,                 val: planVal, color: 'rgba(2,136,209,0.75)'  },
+      ...(compHasFcst ? [{ label: `Fcst ${mesLabel(ref)}`, val: fcstVal, color: 'rgba(0,150,136,0.75)' }] : []),
+      { label: `Real ${mesLabel(lm)}`,                  val: lmVal,   color: 'rgba(123,31,162,0.75)' },
+      { label: `Real ${mesLabel(ly)}`,                  val: lyVal,   color: 'rgba(198,40,40,0.65)'  },
+    ];
+
+    labels   = series.map(s => s.label);
+    datasets = [{
+      label: rowLabel,
+      data:  series.map(s => s.val / unitDiv),
+      backgroundColor: series.map(s => s.color),
+      borderRadius: 4,
+    }];
+
+  } else {
+    // ── Evolutivo / Total chart: one dataset per scenario ──
+    const cens = selCen.filter(c => optCen.includes(c));
+    const { cols } = aggregate(getFiltered());
+    const displayCols = cols.length > 0 ? cols : [];
+    labels   = displayCols.map(k => colLabel(k));
+    datasets = cens.map((cen, i) => {
+      const cenMap = byCen.get(cen);
+      const vals = displayCols.map(k => {
+        if(!cenMap) return 0;
+        if(k === '__total__') return [...cenMap.values()].reduce((s,v)=>s+v, 0) / unitDiv;
+        return (cenMap.get(k) || 0) / unitDiv;
+      });
+      return { label: shortCen(cen), data: vals,
+               backgroundColor: palette[i % palette.length], borderRadius: 4 };
+    });
   }
+
+  if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
 
   document.getElementById('chartTitle').textContent = rowLabel;
   document.getElementById('chartModal').classList.add('open');
 
   const ctx = document.getElementById('chartCanvas').getContext('2d');
-  const isDark = document.documentElement.dataset.theme === 'dark';
-  const gridColor = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
-  const textColor = isDark ? '#c8d4e8' : '#333';
-
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: { labels, datasets },
@@ -1553,7 +1579,9 @@ function showChart(rowLabel, byCen) {
         legend: { labels: { color: textColor, font: { size: 11 } } },
         tooltip: {
           callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits:1,maximumFractionDigits:1}) : '—'}`
+            label: c => `${c.dataset.label}: ${c.parsed.y != null
+              ? c.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits:1,maximumFractionDigits:1})
+              : '—'}`
           }
         }
       },
