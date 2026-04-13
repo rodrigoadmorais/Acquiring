@@ -91,7 +91,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
                    background:none;border:none;cursor:pointer;padding:0}
 
 /* ── Table wrapper ── */
-.tbl-wrap{padding:16px 20px}
+.tbl-wrap{padding:0 20px 16px}
 .tbl-outer{overflow-x:auto;border-radius:10px;
            box-shadow:0 2px 12px rgba(0,0,0,.08)}
 .tbl-outer::-webkit-scrollbar{height:6px}
@@ -103,7 +103,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
           border-radius:10px;overflow:hidden}
 #pnlTable th{background:#111d36;color:#c8d4e8;padding:9px 12px;
              text-align:right;white-space:nowrap;font-size:11px;font-weight:600;
-             position:sticky;top:0;z-index:100;
+             position:sticky;top:110px;z-index:100;
              border-bottom:2px solid #0a1220;letter-spacing:.3px}
 #pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
                         background:#111d36;min-width:260px;max-width:340px;
@@ -1042,23 +1042,25 @@ function render() {
 
   renderHead(cols, cens);
   renderBody(l1,   cols, cens);
+  // Synchronous pass so th.top is set immediately (avoids 1-frame white gap)
+  updateStickyTop();
+  // Deferred pass after browser reflow for precision
   requestAnimationFrame(updateStickyTop);
 }
 
 // ── Feature 4: Fixed sticky header ────────────────────────
 function updateStickyTop() {
-  const hdr = document.querySelector('.hdr');
   const filterBar = document.getElementById('filterBar');
-  if(!hdr || !filterBar) return;
-  const base = hdr.getBoundingClientRect().height + filterBar.getBoundingClientRect().height;
-  // Multi-row thead: each row sticks below the previous one
+  if(!filterBar) return;
+  // Use filterBar.bottom as base — works correctly regardless of header height
+  const base = Math.round(filterBar.getBoundingClientRect().bottom);
   const rows = document.querySelectorAll('#pnlTable thead tr');
   let offset = base;
   rows.forEach(row => {
     row.querySelectorAll('th').forEach(th => {
       th.style.top = offset + 'px';
     });
-    const rowH = row.getBoundingClientRect().height || 30;
+    const rowH = row.getBoundingClientRect().height || 34;
     offset += rowH;
   });
 }
