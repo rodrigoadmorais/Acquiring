@@ -225,70 +225,87 @@ function barChart(id, data, fmtFn) {
   });
 }
 
-// Combo bar+line:
-//   • order 2 = bars drawn first (background)
-//   • order 1 = line drawn on top (always visible)
-//   • bar labels INSIDE the bar (align:'start') — never above chart
-//   • line labels ABOVE the points (align:'top') — in the top padding area
-function comboChart(id, barData, lineData, barFmt, lineFmt, lineDash) {
+// Combo bar+line — linha sempre ACIMA das barras via escala projetada.
+// A linha é mapeada para a faixa [78%..96%] da escala das barras,
+// garantindo que nunca sobreponha rótulos de barras, independente da escala.
+function comboChart(id, barData, rawLine, barFmt, lineFmt, lineDash) {
   if (!document.getElementById(id)) return;
+
+  const barMax  = Math.max(...barData);
+  const lMin    = Math.min(...rawLine);
+  const lMax    = Math.max(...rawLine);
+  const range   = lMax > lMin ? lMax - lMin : 1;
+
+  // Projected line positions on the bar's y-axis (top 20% band)
+  const TOP_LO  = barMax * 0.78;
+  const TOP_HI  = barMax * 0.96;
+  const projLine = rawLine.map(v => TOP_LO + ((v - lMin) / range) * (TOP_HI - TOP_LO));
+
+  const lineLabel = id === 'p3' ? '% Atingimento' : 'TPV Médio (K)';
+  const barLabel  = id.startsWith('p') ? 'FDVP' : 'FDVT';
+
   instances[id] = new Chart(document.getElementById(id), {
     data: {
       labels: MONTHS.map(m => MONTH_LABELS[m]),
       datasets: [
         {
           type: 'bar',
-          label: id.startsWith('p') ? 'FDVP' : 'FDVT',
+          label: barLabel,
           data: barData,
           backgroundColor: YELLOW,
           borderRadius: 3,
-          order: 2,          // drawn first → behind the line
+          order: 2,
           yAxisID: 'y',
           datalabels: {
-            // Inside top of bar — zero conflict with line labels above
-            display: true, anchor: 'end', align: 'start', offset: 4,
+            // Rótulo dentro da barra (não toca a linha acima)
+            display: true, anchor: 'end', align: 'start', offset: 5,
             formatter: barFmt, font: lf(), color: DARK
           }
         },
         {
           type: 'line',
-          label: id === 'p3' ? '% Atingimento' : 'TPV Médio (K)',
-          data: lineData,
+          label: lineLabel,
+          data: projLine,            // posição visual projetada
           borderColor: DARK, backgroundColor: DARK,
           pointBackgroundColor: DARK,
-          pointBorderColor: '#fff', pointBorderWidth: 1.5,  // white ring → visible over yellow bars
+          pointBorderColor: '#fff', pointBorderWidth: 2,
           pointRadius: 5, pointHoverRadius: 6,
           borderWidth: 2.5, fill: false, tension: 0,
           borderDash: lineDash ? [5,4] : [],
-          order: 1,          // drawn last → always on top of bars
-          yAxisID: 'y1',
+          order: 1,
+          yAxisID: 'y',
           datalabels: {
-            // Above the points — in the top padding area, never touching bar labels
-            display: true, anchor: 'end', align: 'top', offset: 3,
-            formatter: lineFmt, font: lf(), color: DARK
+            // Rótulo acima do ponto (área de padding — nunca toca barra)
+            display: true, anchor: 'end', align: 'top', offset: 4,
+            formatter: (_, ctx) => lineFmt(rawLine[ctx.dataIndex]),  // valor real
+            font: lf(), color: DARK
           }
         }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      clip: false,   // allow datalabels to render into top padding area
+      clip: false,
       plugins: {
         legend: {
           display: true, position: 'bottom',
           labels: { boxWidth: 12, font: lgf(), padding: 8 }
         },
-        tooltip: { mode: 'index', intersect: false }
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            label: ctx => {
+              if (ctx.datasetIndex === 0) return `${barLabel}: ${barFmt(ctx.parsed.y)}`;
+              return `${lineLabel}: ${lineFmt(rawLine[ctx.dataIndex])}`;
+            }
+          }
+        }
       },
       scales: {
         x: xAxis(),
-        // Bars occupy lower ~60% of chart; line floats in upper ~40%
-        y:  { ...yHide, suggestedMax: Math.max(...barData) * 1.65 },
-        y1: { ...yHide,
-              suggestedMax: Math.max(...lineData) * 1.25,
-              suggestedMin:  Math.min(...lineData) * 0.85 }
+        y: { ...yHide, suggestedMax: barMax * 1.28 }
       },
-      layout: { padding: { top: 48 } }   // generous top room for line labels
+      layout: { padding: { top: 46 } }
     }
   });
 }
