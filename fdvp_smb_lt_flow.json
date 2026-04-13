@@ -1,5 +1,5 @@
 {
-  "name": "FDVP SMB LT - Live Dashboard (Hourly)",
+  "name": "FDVP SMB LT - Hourly",
   "nodes": [
     {
       "parameters": {
@@ -11,10 +11,10 @@
           ]
         }
       },
-      "id": "8bf84a81-678a-4db1-af35-918f35b9b63f",
+      "id": "cc11aa22-bb33-4444-8888-fdvp00000001",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
-      "position": [-304, 0],
+      "position": [0, 0],
       "typeVersion": 1.2
     },
     {
@@ -31,10 +31,10 @@
         },
         "options": {}
       },
-      "id": "d8a21b36-9a34-4774-a1d8-3b0d1ff997e7",
+      "id": "cc11aa22-bb33-4444-8888-fdvp00000002",
       "name": "Read Sheet FDVP e FDVT",
       "type": "n8n-nodes-base.googleSheets",
-      "position": [-80, 0],
+      "position": [224, 0],
       "executeOnce": true,
       "typeVersion": 4.7,
       "credentials": {
@@ -60,13 +60,15 @@
         },
         "filePath": "fdvp_smb_lt_data.json",
         "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
-        "commitMessage": "Atualizando dados FDVP SMB LT via Verdi"
+        "commitMessage": "Atualizando dados FDVP SMB LT via Verdi",
+        "additionalParameters": {
+          "branch": "master"
+        }
       },
-      "id": "90cc7808-a5f9-484a-8b3c-71e72ae1d0a5",
+      "id": "cc11aa22-bb33-4444-8888-fdvp00000003",
       "name": "Write to GitHub",
       "type": "n8n-nodes-base.github",
-      "position": [128, 0],
-      "webhookId": "396104d4-b328-490b-84aa-1c4ffd6088b0",
+      "position": [448, 0],
       "executeOnce": true,
       "typeVersion": 1.1,
       "credentials": {
@@ -98,11 +100,8 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "7fa8c733db20fb5e95cb08b0c1fbcd66d08a3226e222f28c9efd2fcd19ffd10a"
+    "instanceId": "85260b6a32af0aede929fef314a09f9eb905ee8ed00741f8ad438b405f1b84a4"
   },
-  "id": "FDVPSMBLTdash01",
   "tags": []
 }
