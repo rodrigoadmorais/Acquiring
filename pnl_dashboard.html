@@ -324,6 +324,17 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 
   <div class="sep"></div>
 
+  <!-- Seção P&L (MNG_1) -->
+  <div class="fg">
+    <label>Seção P&L</label>
+    <div class="ms-wrap">
+      <div class="ms-trig" onclick="toggleMs(event,'secao')">
+        <span id="secaoLabel">Todas</span><span class="caret">▼</span>
+      </div>
+      <div class="ms-panel" id="secaoPanel"></div>
+    </div>
+  </div>
+
   <!-- Macro BU -->
   <div class="fg">
     <label>Macro BU</label>
@@ -399,6 +410,7 @@ let selCen   = [];   // selected cenarios
 let selAnos  = [];   // selected anos (strings)
 let selMacro = [];
 let selProd  = [];
+let selSecao = [];   // selected MNG_1 sections
 
 let viewMode    = 'evolutivo';   // 'evolutivo' | 'total' | 'comparacao'
 let granMode    = 'anual';       // 'mensal' | 'trimestral' | 'anual' | 'ytdfy'
@@ -414,7 +426,7 @@ let expL2 = new Set();
 let expL3 = new Set();
 
 // option lists
-let optCen = [], optAnos = [], optMeses = [], optMacro = [], optProd = [];
+let optCen = [], optAnos = [], optMeses = [], optMacro = [], optProd = [], optSecao = [];
 
 // global chart data store: key -> byCen map
 let chartData = new Map();
@@ -558,11 +570,14 @@ function initFilters() {
   optMeses = uniq(allData.map(d => d.MES)).sort((a,b) => a-b);
   optMacro = uniq(allData.map(d => d.Macro_BU)).sort();
   optProd  = uniq(allData.map(d => d.Product)).sort();
+  // Seção P&L: use MNG1_ORDER so options appear in P&L order
+  optSecao = MNG1_ORDER.filter(s => allData.some(d => d.MNG_1 === s));
 
   selCen   = [...optCen];
   selAnos  = [...optAnos];
   selMacro = [...optMacro];
   selProd  = [...optProd];
+  selSecao = [...optSecao];
 
   // Cenário pills
   const pillsDiv = document.getElementById('cenarioPills');
@@ -580,6 +595,7 @@ function initFilters() {
   });
 
   buildMsPanel('ano',   optAnos,  selAnos,  v => { selAnos  = v; cascadeMonths(); });
+  buildMsPanel('secao', optSecao, selSecao, v => { selSecao = v; });
   buildMsPanel('macro', optMacro, selMacro, v => { selMacro = v; cascadeBU(); });
   buildMsPanel('prod',  optProd,  selProd,  v => { selProd  = v; });
   buildMesSelects();
@@ -762,15 +778,16 @@ function msAll(id, all) {
   const cbs = [...panel.querySelectorAll('input')];
   cbs.forEach(c => c.checked = all);
   const vals = all ? cbs.map(c => c.dataset.opt) : [];
-  if(id==='ano')  { selAnos  = vals; updateMsLabel('ano',  vals, optAnos); cascadeMonths(); }
-  if(id==='macro'){ selMacro = vals; updateMsLabel('macro',vals, optMacro); cascadeBU(); }
-  if(id==='prod') { selProd  = vals; updateMsLabel('prod', vals, optProd); }
+  if(id==='ano')   { selAnos  = vals; updateMsLabel('ano',  vals, optAnos);  cascadeMonths(); }
+  if(id==='secao') { selSecao = vals; updateMsLabel('secao',vals, optSecao); }
+  if(id==='macro') { selMacro = vals; updateMsLabel('macro',vals, optMacro); cascadeBU(); }
+  if(id==='prod')  { selProd  = vals; updateMsLabel('prod', vals, optProd); }
   render();
 }
 
 function toggleMs(e, id) {
   e.stopPropagation();
-  ['ano','macro','prod'].forEach(x => {
+  ['ano','secao','macro','prod'].forEach(x => {
     if(x!==id) document.getElementById(x+'Panel').classList.remove('open');
   });
   document.getElementById(id+'Panel').classList.toggle('open');
@@ -858,14 +875,15 @@ function getFiltered() {
     const cenRef = getCenRef();
     const { ly, lm } = getCompPeriods(ref);
     return allData.filter(d =>
+      (selSecao.length===0 || selSecao.includes(d.MNG_1)) &&
       (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
       (selProd.length===0  || selProd.includes(d.Product)) &&
       (
-        (d.MES === ref && d.Cenario === cenRef)        ||  // ref: user-chosen scenario
-        (d.MES === ref && d.Cenario === 'Plan')         ||  // Δ vs Plan
-        (d.MES === ref && d.Cenario === 'Forecast')     ||  // Δ vs Forecast
-        (lm && d.MES === lm && d.Cenario === 'Realizado') ||  // Δ vs Real LM
-        (ly && d.MES === ly && d.Cenario === 'Realizado')     // Δ vs Real LY
+        (d.MES === ref && d.Cenario === cenRef)        ||
+        (d.MES === ref && d.Cenario === 'Plan')         ||
+        (d.MES === ref && d.Cenario === 'Forecast')     ||
+        (lm && d.MES === lm && d.Cenario === 'Realizado') ||
+        (ly && d.MES === ly && d.Cenario === 'Realizado')
       )
     );
   }
@@ -873,6 +891,7 @@ function getFiltered() {
   return allData.filter(d =>
     selCen.includes(d.Cenario) &&
     (selAnos.length===0  || selAnos.includes(String(d.ANO))) &&
+    (selSecao.length===0 || selSecao.includes(d.MNG_1)) &&
     (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
     (selProd.length===0  || selProd.includes(d.Product)) &&
     d.MES >= mf && d.MES <= mt
@@ -1362,6 +1381,8 @@ function renderBody(l1map, cols, cens) {
   const cumByCen = new Map();
 
   for(const [k1, n1] of sortedBy(l1map, MNG1_ORDER)) {
+    // Skip sections not selected in Seção P&L filter
+    if(selSecao.length > 0 && !selSecao.includes(k1)) continue;
     const isMetrics = k1 === 'Metrics';
 
     // Gap row between sections
