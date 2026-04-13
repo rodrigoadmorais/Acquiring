@@ -9,58 +9,132 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; background: #f0f0f0; padding: 20px; }
-  .page { max-width: 1180px; margin: 0 auto; background: #fff; padding: 24px 28px 28px; border-radius: 4px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
-  .header-left {}
-  .header-title { font-size: 20px; font-weight: bold; color: #222; letter-spacing: 0.3px; }
+  .page { max-width: 1200px; margin: 0 auto; background: #fff; padding: 24px 28px 32px; border-radius: 4px; }
+
+  /* Header */
+  .top-bar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+  .header-title { font-size: 20px; font-weight: bold; color: #222; }
   .header-sub { font-size: 11px; color: #888; margin-top: 3px; }
-  .header-tags { display: flex; gap: 8px; align-items: center; }
-  .tag { border: 1.5px solid #333; border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: bold; color: #333; background: #fff; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  .card { background: #fff; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
-  .card-title { background: #FFE600; color: #222; font-weight: bold; font-size: 13.5px; padding: 9px 16px; text-align: center; }
-  .card-body { padding: 14px 16px 12px; height: 290px; position: relative; }
+  .header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .tag { border: 1.5px solid #333; border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: bold; color: #333; }
+
+  /* Font controls */
+  .controls { display: flex; gap: 4px; align-items: center; }
+  .ctrl-btn {
+    border: 1.5px solid #aaa; border-radius: 6px; background: #fff;
+    cursor: pointer; color: #333; line-height: 1; padding: 4px 9px;
+    font-family: Arial, sans-serif; font-size: 12px; transition: background .15s;
+  }
+  .ctrl-btn:hover { background: #f5f5f5; }
+  .ctrl-btn.active { background: #FFE600; border-color: #bba000; font-weight: bold; }
+  .ctrl-label { font-size: 11px; color: #888; margin-right: 2px; }
+
+  /* Section header */
+  .section-header {
+    background: #222; color: #FFE600;
+    font-weight: bold; font-size: 13px; letter-spacing: 0.5px;
+    padding: 7px 14px; border-radius: 4px 4px 0 0;
+    margin-top: 22px; margin-bottom: 0;
+  }
+
+  /* Grid — no gap between cards */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    overflow: hidden;
+  }
+  .card {
+    background: #fff;
+    border-right: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+  }
+  .card:nth-child(2n) { border-right: none; }
+  .card:nth-last-child(-n+2) { border-bottom: none; }
+
+  .card-title { background: #FFE600; color: #222; font-weight: bold; font-size: 13px; padding: 8px 16px; text-align: center; }
+  .card-body { padding: 12px 14px 14px; height: 300px; position: relative; }
+  .card-empty { display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 13px; font-style: italic; }
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="header">
-    <div class="header-left">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div>
       <div class="header-title">FDVP | SMB &amp; LT</div>
-      <div class="header-sub" id="lastUpdate">Carregando dados…</div>
+      <div class="header-sub" id="lastUpdate">Carregando…</div>
     </div>
-    <div class="header-tags">
+    <div class="header-right">
+      <div class="controls">
+        <span class="ctrl-label">Rótulos:</span>
+        <button class="ctrl-btn" onclick="changeSize(-1)" title="Diminuir fonte">A−</button>
+        <button class="ctrl-btn" onclick="changeSize(1)"  title="Aumentar fonte">A+</button>
+        <button class="ctrl-btn" id="btnBold" onclick="toggleBold()" title="Negrito">B</button>
+      </div>
       <div class="tag">LC</div>
       <div class="tag">🌐 BRAZIL</div>
     </div>
   </div>
-  <div class="grid">
-    <div class="card"><div class="card-title">Investimento</div><div class="card-body"><canvas id="c1"></canvas></div></div>
-    <div class="card"><div class="card-title">TPV M1 &amp; TPV Médio</div><div class="card-body"><canvas id="c2"></canvas></div></div>
-    <div class="card"><div class="card-title">Headcount vs % Atingimento</div><div class="card-body"><canvas id="c3"></canvas></div></div>
-    <div class="card"><div class="card-title">New Sellers (k)</div><div class="card-body"><canvas id="c4"></canvas></div></div>
+
+  <!-- FDVP SECTION -->
+  <div class="section-header">FDV PRÓPRIA</div>
+  <div class="grid" id="gridFDVP">
+    <div class="card"><div class="card-title">Investimento</div><div class="card-body"><canvas id="p1"></canvas></div></div>
+    <div class="card"><div class="card-title">TPV M1 &amp; TPV Médio</div><div class="card-body"><canvas id="p2"></canvas></div></div>
+    <div class="card"><div class="card-title">Headcount vs % Atingimento</div><div class="card-body"><canvas id="p3"></canvas></div></div>
+    <div class="card"><div class="card-title">New Sellers (k)</div><div class="card-body"><canvas id="p4"></canvas></div></div>
   </div>
-</div>
+
+  <!-- FDVT SECTION -->
+  <div class="section-header">FDV TERCEIRA</div>
+  <div class="grid" id="gridFDVT">
+    <div class="card"><div class="card-title">Investimento</div><div class="card-body"><canvas id="t1"></canvas></div></div>
+    <div class="card"><div class="card-title">TPV M1 &amp; TPV Médio</div><div class="card-body"><canvas id="t2"></canvas></div></div>
+    <div class="card"><div class="card-title">Headcount vs % Atingimento</div><div class="card-body card-empty" id="t3-empty">Sem dados disponíveis</div></div>
+    <div class="card"><div class="card-title">New Sellers (k)</div><div class="card-body"><canvas id="t4"></canvas></div></div>
+  </div>
+
+</div><!-- .page -->
 
 <script>
 Chart.register(ChartDataLabels);
 
-// ─── CONSTANTS ─────────────────────────────────────────────────────────────
-const YELLOW = '#FFE600';
-const DARK   = '#222222';
-const YELLOW2 = '#FFC000';
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let LABEL_SIZE  = 9;
+let LEGEND_SIZE = 10;
+let LABEL_BOLD  = false;
+let currentData = null;
+
+// ─── CONSTANTS ──────────────────────────────────────────────────────────────
+const YELLOW  = '#FFE600';
+const DARK    = '#222222';
 
 const MONTH_LABELS = {
   '202501':'Jan/25','202502':'Fev/25','202503':'Mar/25','202504':'Abr/25',
   '202505':'Mai/25','202506':'Jun/25','202507':'Jul/25','202508':'Ago/25',
   '202509':'Set/25','202510':'Out/25','202511':'Nov/25','202512':'Dez/25',
-  '202601':'Jan/26','202602':'Fev/26','202603':'Mar/26','202604':'Abr/26',
-  '202605':'Mai/26','202606':'Jun/26','202607':'Jul/26','202608':'Ago/26'
+  '202601':'Jan/26','202602':'Fev/26','202603':'Mar/26','202604':'Abr/26'
 };
 
-// Display months: Fev/25 → Mar/26
 const MONTHS = ['202502','202503','202504','202505','202506','202507',
                 '202508','202509','202510','202511','202512','202601','202602','202603'];
+
+// ─── CONTROLS ───────────────────────────────────────────────────────────────
+function changeSize(d) {
+  LABEL_SIZE  = Math.max(7, Math.min(16, LABEL_SIZE  + d));
+  LEGEND_SIZE = Math.max(8, Math.min(17, LEGEND_SIZE + d));
+  if (currentData) renderCharts(currentData);
+}
+function toggleBold() {
+  LABEL_BOLD = !LABEL_BOLD;
+  document.getElementById('btnBold').classList.toggle('active', LABEL_BOLD);
+  if (currentData) renderCharts(currentData);
+}
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 function num(v) {
@@ -68,166 +142,120 @@ function num(v) {
   const n = parseFloat(String(v).replace(/\./g,'').replace(',','.'));
   return isNaN(n) ? 0 : n;
 }
-
 function findRow(rows, metric, scenario, canal) {
-  return rows.find(r =>
-    r.metric === metric &&
+  return rows.find(r => r.metric === metric &&
     (scenario === null || r.scenario === scenario) &&
-    (canal === null || r.canal === canal)
-  ) || {};
+    (canal === null || r.canal === canal)) || {};
 }
+function lf() { return { size: LABEL_SIZE,  weight: LABEL_BOLD ? 'bold' : 'normal' }; }
+function lgf(){ return { size: LEGEND_SIZE, weight: LABEL_BOLD ? 'bold' : 'normal' }; }
 
-// ─── COMPUTE CHART DATA FROM ROWS ───────────────────────────────────────────
+// ─── COMPUTE ────────────────────────────────────────────────────────────────
 function compute(rows) {
-  const invPP  = findRow(rows, 'INV_PP', 'R', 'FDVP');
-  const invV   = findRow(rows, 'INV_V',  'R', 'FDVP');
-  const invTP  = findRow(rows, 'INV_TP', 'R', 'FDVT');
-  const tpvP   = findRow(rows, 'TPV',   'R', 'FDVP');
-  const tpvT   = findRow(rows, 'TPV',   'R', 'FDVT');
-  const tmedP  = findRow(rows, 'TMED',  'R', 'FDVP');
-  const tmedT  = findRow(rows, 'TMED',  'R', 'FDVT');
-  const nsP    = findRow(rows, 'NS',    'R', 'FDVP');
-  const nsT    = findRow(rows, 'NS',    'R', 'FDVT');
-  const hcR    = findRow(rows, 'HC',    'R', 'FDVP');
-  const hcPl   = findRow(rows, 'HC',    'P', 'FDVP');
+  const r = (m, s, c) => findRow(rows, m, s, c);
+  const v = (row, m) => num(row[m]);
 
-  const invFDVP  = MONTHS.map(m => Math.abs(num(invPP[m]) + num(invV[m])) / 1e6);
-  const invFDVT  = MONTHS.map(m => Math.abs(num(invTP[m])) / 1e6);
-  const invTotal = invFDVP.map((p, i) => +(p + invFDVT[i]).toFixed(2));
+  // FDVP: INV = |PP + Ventas|
+  const invPP = r('INV_PP','R','FDVP'), invV = r('INV_V','R','FDVP');
+  const invTP = r('INV_TP','R','FDVT');
 
-  const tpvM1 = MONTHS.map(m => +((num(tpvP[m]) + num(tpvT[m])) / 1e6).toFixed(1));
-  const tpvMedio = MONTHS.map(m => {
-    const totalTPV = num(tpvP[m]) + num(tpvT[m]);
-    const totalNS  = num(nsP[m]) + num(nsT[m]);
-    return totalNS > 0 ? +(totalTPV / totalNS / 1000).toFixed(1) : 0;
-  });
+  const p_inv  = MONTHS.map(m => Math.abs(v(invPP,m) + v(invV,m)) / 1e6);
+  const t_inv  = MONTHS.map(m => Math.abs(v(invTP,m)) / 1e6);
 
-  const hcReal  = MONTHS.map(m => num(hcR[m]));
-  const hcPlan  = MONTHS.map(m => num(hcPl[m]));
-  const pctAting = hcReal.map((r, i) => hcPlan[i] > 0 ? +(r / hcPlan[i] * 100).toFixed(1) : 0);
+  const tpvP  = r('TPV','R','FDVP'), tpvT = r('TPV','R','FDVT');
+  const tmedP = r('TMED','R','FDVP'), tmedT = r('TMED','R','FDVT');
+  const nsP   = r('NS','R','FDVP'),   nsT  = r('NS','R','FDVT');
+  const hcR   = r('HC','R','FDVP'),   hcPl = r('HC','P','FDVP');
 
-  const newSell = MONTHS.map(m => +((num(nsP[m]) + num(nsT[m])) / 1000).toFixed(1));
+  const p_tpv  = MONTHS.map(m => +(v(tpvP,m)/1e6).toFixed(1));
+  const p_tmed = MONTHS.map(m => +(v(tmedP,m)/1000).toFixed(1));
+  const t_tpv  = MONTHS.map(m => +(v(tpvT,m)/1e6).toFixed(1));
+  const t_tmed = MONTHS.map(m => +(v(tmedT,m)/1000).toFixed(1));
 
-  return { invFDVP, invFDVT, invTotal, tpvM1, tpvMedio, hcReal, pctAting, newSell };
+  const hcReal  = MONTHS.map(m => v(hcR,m));
+  const hcPlan  = MONTHS.map(m => v(hcPl,m));
+  const pct     = hcReal.map((r,i) => hcPlan[i]>0 ? +(r/hcPlan[i]*100).toFixed(1) : 0);
+
+  const p_ns = MONTHS.map(m => +((v(nsP,m))/1000).toFixed(1));
+  const t_ns = MONTHS.map(m => +((v(nsT,m))/1000).toFixed(1));
+
+  return { p_inv, t_inv, p_tpv, p_tmed, t_tpv, t_tmed, hcReal, pct, p_ns, t_ns };
 }
 
-// ─── RAW N8N FORMAT PARSER (best-effort) ────────────────────────────────────
-// Handles output from n8n Google Sheets node reading "FDVP e FDVT" tab.
-// Searches rows for known keywords in first 4 columns.
-function parseRaw(rows) {
-  try {
-    // n8n returns rows with {row_number, <header1>, col_2, col_3, ...}
-    // Find the first named key (the sheet's row-1 header for col A)
-    const sampleRow = rows.find(r => r.row_number);
-    if (!sampleRow) return null;
-
-    const keys = Object.keys(sampleRow).filter(k => k !== 'row_number');
-    const col0 = keys[0]; // "Dado:" or equivalent
-    const col1 = keys[1]; // "Cenario"
-    const col2 = keys[2]; // "CANAL"
-
-    // Build a month-column map by finding the header row
-    // (row where col0 is empty and col2 looks like CANAL_AJUSTADO/MNG_4/CANAL,
-    //  and the remaining columns contain 6-digit numbers like 202501)
-    let monthColMap = {}; // colKey → "202501"
-    rows.forEach(row => {
-      const c2 = String(row[col2] || '').trim();
-      if (c2 === 'CANAL_AJUSTADO' || c2 === 'CANAL' || c2 === 'MNG_4') {
-        keys.slice(3).forEach(k => {
-          const v = String(row[k] || '').trim().replace(/[.\s]/g,'');
-          if (/^2025\d{2}$|^2026\d{2}$/.test(v)) monthColMap[k] = v;
-        });
-      }
-    });
-
-    if (Object.keys(monthColMap).length === 0) return null;
-
-    // Helper: extract row data as { "202501": value, ... }
-    function extractMonths(row) {
-      const out = {};
-      Object.entries(monthColMap).forEach(([k, m]) => {
-        out[m] = parseFloat(String(row[k] || '0').replace(/[.\s]/g,'').replace(',','.')) || 0;
-      });
-      return out;
-    }
-
-    // Build clean rows
-    const clean = [];
-
-    rows.forEach(row => {
-      const c0 = String(row[col0] || '').trim();
-      const c1 = String(row[col1] || '').trim();
-      const c2 = String(row[col2] || '').trim();
-      const months = extractMonths(row);
-
-      if (c0 === 'New Sellers') {
-        const canal = /PROPRIA|PROPIA|FDVP/i.test(c2) ? 'FDVP' : 'FDVT';
-        clean.push({ metric: 'NS', scenario: 'R', canal, ...months });
-      } else if (c0 === 'Investimento') {
-        const sc = /realizado/i.test(c1) ? 'R' : 'P';
-        if (/Propia Point/i.test(c2))   clean.push({ metric: 'INV_PP', scenario: sc, canal: 'FDVP', ...months });
-        if (/Ventas$/i.test(c2) && !/Terceros/i.test(c2) && !/Propia/i.test(c2))
-          clean.push({ metric: 'INV_V', scenario: sc, canal: 'FDVP', ...months });
-        if (/Terceros/i.test(c2))       clean.push({ metric: 'INV_TP', scenario: sc, canal: 'FDVT', ...months });
-      } else if (c0 === 'HCs') {
-        const sc = /realizado/i.test(c1) ? 'R' : 'P';
-        if (/FDVP/i.test(c2))           clean.push({ metric: 'HC', scenario: sc, canal: 'FDVP', ...months });
-      } else if (c0 === 'TPV M0') {
-        const sc = /realizado/i.test(c1) ? 'R' : 'P';
-        if (/PROPRIA|PROPIA|FDVP/i.test(c2)) clean.push({ metric: 'TPV', scenario: sc, canal: 'FDVP', ...months });
-        if (/TERCEIRA|FDVT/i.test(c2))       clean.push({ metric: 'TPV', scenario: sc, canal: 'FDVT', ...months });
-      } else if (/TPV.*MEDIO|TPV.*MED/i.test(c0)) {
-        const sc = /realizado/i.test(c1) ? 'R' : 'P';
-        if (/PROPRIA|PROPIA|FDVP/i.test(c2)) clean.push({ metric: 'TMED', scenario: sc, canal: 'FDVP', ...months });
-        if (/TERCEIRA|FDVT/i.test(c2))       clean.push({ metric: 'TMED', scenario: sc, canal: 'FDVT', ...months });
-      }
-    });
-
-    return clean.length >= 4 ? clean : null;
-  } catch(e) {
-    console.warn('parseRaw error:', e);
-    return null;
-  }
-}
-
-// ─── CHART INSTANCES ────────────────────────────────────────────────────────
-const charts = {};
-
+// ─── CHART FACTORY ──────────────────────────────────────────────────────────
+const instances = {};
 function destroyAll() {
-  Object.keys(charts).forEach(k => { charts[k].destroy(); delete charts[k]; });
+  Object.keys(instances).forEach(k => { instances[k].destroy(); delete instances[k]; });
 }
 
-function renderCharts(d) {
-  destroyAll();
-  const labels = MONTHS.map(m => MONTH_LABELS[m]);
-  const xAxis = { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: false } };
-  const yHide = { display: false, grid: { display: false } };
+const xAxis = () => ({
+  grid: { display: false },
+  ticks: { font: lgf(), maxRotation: 0, autoSkip: false }
+});
+const yHide = { display: false, grid: { display: false } };
 
-  // ── Chart 1: Investimento ────────────────────────────────────────────────
-  charts.c1 = new Chart(document.getElementById('c1'), {
+// Bar-only chart
+function barChart(id, data, fmtFn) {
+  if (!document.getElementById(id)) return;
+  instances[id] = new Chart(document.getElementById(id), {
     type: 'bar',
     data: {
-      labels,
+      labels: MONTHS.map(m => MONTH_LABELS[m]),
+      datasets: [{
+        data,
+        backgroundColor: YELLOW,
+        borderRadius: 3,
+        datalabels: {
+          display: true, anchor: 'end', align: 'end', offset: 2,
+          formatter: fmtFn,
+          font: lf(), color: DARK
+        }
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: xAxis(),
+        y: { ...yHide, suggestedMax: Math.max(...data) * 1.4 }
+      },
+      layout: { padding: { top: 28 } }
+    }
+  });
+}
+
+// Combo bar+line chart (bar labels above, line labels BELOW points to avoid overlap)
+function comboChart(id, barData, lineData, barFmt, lineFmt, lineDash) {
+  if (!document.getElementById(id)) return;
+  instances[id] = new Chart(document.getElementById(id), {
+    data: {
+      labels: MONTHS.map(m => MONTH_LABELS[m]),
       datasets: [
         {
-          label: 'FDVP',
-          data: d.invFDVP,
+          type: 'bar',
+          label: id.startsWith('p') ? 'FDVP' : 'FDVT',
+          data: barData,
           backgroundColor: YELLOW,
-          borderRadius: 0,
-          stack: 'inv',
-          datalabels: { display: false }
+          borderRadius: 3,
+          yAxisID: 'y',
+          datalabels: {
+            display: true, anchor: 'end', align: 'end', offset: 2,
+            formatter: barFmt, font: lf(), color: DARK
+          }
         },
         {
-          label: 'FDVT',
-          data: d.invFDVT,
-          backgroundColor: YELLOW2,
-          borderRadius: 2,
-          stack: 'inv',
+          type: 'line',
+          label: id === 'p3' ? '% Atingimento' : 'TPV Médio (K)',
+          data: lineData,
+          borderColor: DARK, backgroundColor: DARK,
+          pointBackgroundColor: DARK, pointRadius: 4, pointHoverRadius: 5,
+          borderWidth: 2, fill: false, tension: 0,
+          borderDash: lineDash ? [5,4] : [],
+          yAxisID: 'y1',
+          // Line labels BELOW the points — never overlaps with bar labels above
           datalabels: {
-            display: true,
-            anchor: 'end', align: 'top',
-            formatter: (_, ctx) => d.invTotal[ctx.dataIndex].toFixed(1) + 'M',
-            font: { size: 9, weight: 'bold' }, color: DARK
+            display: true, anchor: 'start', align: 'bottom', offset: 3,
+            formatter: lineFmt, font: lf(), color: DARK
           }
         }
       ]
@@ -235,108 +263,121 @@ function renderCharts(d) {
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, padding: 8 } },
-        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: R$ ${ctx.parsed.y.toFixed(1)}M` } }
-      },
-      scales: { x: xAxis, y: { ...yHide, stacked: true, suggestedMax: Math.max(...d.invTotal) * 1.28 } },
-      layout: { padding: { top: 22 } }
-    }
-  });
-
-  // ── Chart 2: TPV M1 & TPV Médio ─────────────────────────────────────────
-  charts.c2 = new Chart(document.getElementById('c2'), {
-    data: {
-      labels,
-      datasets: [
-        {
-          type: 'bar', label: 'TPV M1 (M)', data: d.tpvM1,
-          backgroundColor: YELLOW, borderRadius: 2, yAxisID: 'y',
-          datalabels: { display: true, anchor: 'end', align: 'top',
-            formatter: v => v.toFixed(0), font: { size: 9, weight: 'bold' }, color: DARK }
+        legend: {
+          display: true, position: 'bottom',
+          labels: { boxWidth: 12, font: lgf(), padding: 8 }
         },
-        {
-          type: 'line', label: 'TPV Médio (K)', data: d.tpvMedio,
-          borderColor: DARK, backgroundColor: DARK, pointBackgroundColor: DARK,
-          pointRadius: 4, borderWidth: 2, fill: false, tension: 0, yAxisID: 'y1',
-          datalabels: { display: true, anchor: 'end', align: 'top', offset: 2,
-            formatter: v => v.toFixed(1), font: { size: 9, weight: 'bold' }, color: DARK }
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, padding: 8 } },
         tooltip: { mode: 'index', intersect: false }
       },
       scales: {
-        x: xAxis,
-        y:  { ...yHide, suggestedMax: Math.max(...d.tpvM1) * 1.3 },
-        y1: { ...yHide, suggestedMax: Math.max(...d.tpvMedio) * 1.5, suggestedMin: 0 }
+        x: xAxis(),
+        // Give bars extra headroom so line and bar labels don't touch
+        y:  { ...yHide, suggestedMax: Math.max(...barData) * 1.55 },
+        y1: { ...yHide, suggestedMax: Math.max(...lineData) * 1.55, suggestedMin: Math.min(...lineData) * 0.7 }
       },
-      layout: { padding: { top: 22 } }
-    }
-  });
-
-  // ── Chart 3: HC vs % Atingimento ─────────────────────────────────────────
-  charts.c3 = new Chart(document.getElementById('c3'), {
-    data: {
-      labels,
-      datasets: [
-        {
-          type: 'bar', label: 'HC Real', data: d.hcReal,
-          backgroundColor: YELLOW, borderRadius: 2, yAxisID: 'y',
-          datalabels: { display: true, anchor: 'end', align: 'top',
-            formatter: v => v.toLocaleString('pt-BR'), font: { size: 9, weight: 'bold' }, color: DARK }
-        },
-        {
-          type: 'line', label: '% Atingimento', data: d.pctAting,
-          borderColor: DARK, backgroundColor: DARK, pointBackgroundColor: DARK,
-          pointRadius: 4, borderWidth: 2, borderDash: [5, 4], fill: false, tension: 0, yAxisID: 'y1',
-          datalabels: { display: true, anchor: 'end', align: 'top', offset: 2,
-            formatter: v => v.toFixed(0) + '%', font: { size: 9, weight: 'bold' }, color: DARK }
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10 }, padding: 8 } },
-        tooltip: { mode: 'index', intersect: false }
-      },
-      scales: {
-        x: xAxis,
-        y:  { ...yHide, suggestedMax: Math.max(...d.hcReal) * 1.28 },
-        y1: { ...yHide, suggestedMax: 130, suggestedMin: 60 }
-      },
-      layout: { padding: { top: 22 } }
-    }
-  });
-
-  // ── Chart 4: New Sellers ──────────────────────────────────────────────────
-  charts.c4 = new Chart(document.getElementById('c4'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        data: d.newSell, backgroundColor: YELLOW, borderRadius: 2,
-        datalabels: { display: true, anchor: 'end', align: 'top',
-          formatter: v => v.toFixed(1), font: { size: 9, weight: 'bold' }, color: DARK }
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => `New Sellers: ${ctx.parsed.y.toFixed(1)}k` } }
-      },
-      scales: { x: xAxis, y: { ...yHide, suggestedMax: Math.max(...d.newSell) * 1.28 } },
-      layout: { padding: { top: 22 } }
+      layout: { padding: { top: 28 } }
     }
   });
 }
 
-// ─── EMBEDDED DEFAULT DATA ───────────────────────────────────────────────────
+// ─── RENDER ─────────────────────────────────────────────────────────────────
+function renderCharts(d) {
+  destroyAll();
+
+  // ── FDVP ──
+  // P1: Investimento FDVP
+  barChart('p1', d.p_inv, v => v.toFixed(1)+'M');
+
+  // P2: TPV FDVP + TPV Médio FDVP
+  comboChart('p2', d.p_tpv, d.p_tmed,
+    v => v.toFixed(0)+'M',
+    v => v.toFixed(1)+'K',
+    false
+  );
+
+  // P3: HC FDVP + % Atingimento
+  comboChart('p3', d.hcReal, d.pct,
+    v => v.toLocaleString('pt-BR'),
+    v => v.toFixed(0)+'%',
+    true
+  );
+
+  // P4: New Sellers FDVP
+  barChart('p4', d.p_ns, v => v.toFixed(1));
+
+  // ── FDVT ──
+  // T1: Investimento FDVT
+  barChart('t1', d.t_inv, v => v.toFixed(1)+'M');
+
+  // T2: TPV FDVT + TPV Médio FDVT
+  comboChart('t2', d.t_tpv, d.t_tmed,
+    v => v.toFixed(0)+'M',
+    v => v.toFixed(1)+'K',
+    false
+  );
+
+  // T3: HC FDVT — empty (canvas hidden, message shown)
+
+  // T4: New Sellers FDVT
+  barChart('t4', d.t_ns, v => v.toFixed(1));
+}
+
+// ─── RAW N8N PARSER ─────────────────────────────────────────────────────────
+function parseRaw(rows) {
+  try {
+    const sampleRow = rows.find(r => r.row_number !== undefined);
+    if (!sampleRow) return null;
+    const keys = Object.keys(sampleRow).filter(k => k !== 'row_number');
+    const col0 = keys[0], col1 = keys[1], col2 = keys[2];
+    let monthColMap = {};
+    rows.forEach(row => {
+      const c2 = String(row[col2]||'').trim();
+      if (['CANAL_AJUSTADO','CANAL','MNG_4'].includes(c2)) {
+        keys.slice(3).forEach(k => {
+          const v = String(row[k]||'').trim().replace(/[.\s]/g,'');
+          if (/^2025\d{2}$|^2026\d{2}$/.test(v)) monthColMap[k] = v;
+        });
+      }
+    });
+    if (!Object.keys(monthColMap).length) return null;
+    function em(row) {
+      const out = {};
+      Object.entries(monthColMap).forEach(([k,m]) => {
+        out[m] = parseFloat(String(row[k]||'0').replace(/[.\s]/g,'').replace(',','.')) || 0;
+      });
+      return out;
+    }
+    const clean = [];
+    rows.forEach(row => {
+      const c0 = String(row[col0]||'').trim();
+      const c1 = String(row[col1]||'').trim();
+      const c2 = String(row[col2]||'').trim();
+      const months = em(row);
+      if (c0==='New Sellers') {
+        clean.push({ metric:'NS', scenario:'R', canal:/PROPRIA|PROPIA|FDVP/i.test(c2)?'FDVP':'FDVT', ...months });
+      } else if (c0==='Investimento') {
+        const sc = /realizado/i.test(c1)?'R':'P';
+        if (/Propia Point/i.test(c2))  clean.push({ metric:'INV_PP', scenario:sc, canal:'FDVP', ...months });
+        if (/^Fuerza de Ventas$/i.test(c2)) clean.push({ metric:'INV_V', scenario:sc, canal:'FDVP', ...months });
+        if (/Terceros/i.test(c2))       clean.push({ metric:'INV_TP', scenario:sc, canal:'FDVT', ...months });
+      } else if (c0==='HCs') {
+        const sc = /realizado/i.test(c1)?'R':'P';
+        if (/FDVP/i.test(c2)) clean.push({ metric:'HC', scenario:sc, canal:'FDVP', ...months });
+      } else if (c0==='TPV M0') {
+        const sc = /realizado/i.test(c1)?'R':'P';
+        if (/PROPRIA|PROPIA|FDVP/i.test(c2)) clean.push({ metric:'TPV', scenario:sc, canal:'FDVP', ...months });
+        if (/TERCEIRA|FDVT/i.test(c2))       clean.push({ metric:'TPV', scenario:sc, canal:'FDVT', ...months });
+      } else if (/TPV.*M[EÉ]D/i.test(c0)) {
+        const sc = /realizado/i.test(c1)?'R':'P';
+        if (/PROPRIA|PROPIA|FDVP/i.test(c2)) clean.push({ metric:'TMED', scenario:sc, canal:'FDVP', ...months });
+        if (/TERCEIRA|FDVT/i.test(c2))       clean.push({ metric:'TMED', scenario:sc, canal:'FDVT', ...months });
+      }
+    });
+    return clean.length >= 4 ? clean : null;
+  } catch(e) { return null; }
+}
+
+// ─── DEFAULT DATA ────────────────────────────────────────────────────────────
 const DEFAULT_ROWS = [
   {"metric":"NS","scenario":"R","canal":"FDVP","202501":4495,"202502":9641,"202503":6032,"202504":6875,"202505":8000,"202506":9270,"202507":9831,"202508":10110,"202509":10974,"202510":12141,"202511":12264,"202512":10854,"202601":11294,"202602":11342,"202603":13002,"202604":4505},
   {"metric":"NS","scenario":"R","canal":"FDVT","202501":3902,"202502":3975,"202503":3917,"202504":4627,"202505":4969,"202506":4890,"202507":5685,"202508":6200,"202509":5588,"202510":5516,"202511":5064,"202512":4577,"202601":3916,"202602":3564,"202603":4293,"202604":1471},
@@ -353,32 +394,23 @@ const DEFAULT_ROWS = [
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 async function init() {
-  // Render immediately with embedded data
-  renderCharts(compute(DEFAULT_ROWS));
-  document.getElementById('lastUpdate').textContent = 'Dados embutidos (offline)';
+  currentData = compute(DEFAULT_ROWS);
+  renderCharts(currentData);
+  document.getElementById('lastUpdate').textContent = 'Dados embutidos';
 
-  // Try to load fresh JSON from GitHub
   try {
     const resp = await fetch('fdvp_smb_lt_data.json?t=' + Date.now());
     if (!resp.ok) return;
     const raw = await resp.json();
-    if (!Array.isArray(raw) || raw.length === 0) return;
-
-    let rows = null;
-    if (raw[0].metric !== undefined) {
-      rows = raw; // clean format
-    } else if (raw[0].row_number !== undefined) {
-      rows = parseRaw(raw); // raw n8n format
-    }
-
+    if (!Array.isArray(raw) || !raw.length) return;
+    let rows = raw[0].metric !== undefined ? raw : parseRaw(raw);
     if (rows && rows.length >= 4) {
-      renderCharts(compute(rows));
+      currentData = compute(rows);
+      renderCharts(currentData);
       const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
       document.getElementById('lastUpdate').textContent = 'Atualizado: ' + now;
     }
-  } catch(e) {
-    console.warn('Usando dados embutidos:', e.message);
-  }
+  } catch(e) { console.warn('Fallback to default data:', e.message); }
 }
 
 init();
