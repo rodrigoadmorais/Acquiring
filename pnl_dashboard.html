@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>P&L Brasil</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 :root {
   --yellow:#FFE600; --bg:#F0F2F5; --card:#fff; --border:#E0E0E0;
@@ -149,8 +150,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 [data-theme=dark] .row-l3 td{background:#1f2937;color:#d1d9e0;border-color:#2a3545}
 [data-theme=dark] .row-l3 td.sticky-col{background:#1f2937}
 
+/* L4 = MNG4 detail: white, slightly gray, italic */
+.row-l4 td{
+  background:#fff;font-weight:400;font-size:11px;color:#555;font-style:italic;
+  border-bottom:1px solid #f0f3f8}
+.row-l4 td.sticky-col{background:#fafafa}
+[data-theme=dark] .row-l4 td{background:#1a2030;color:#a8b8c8;border-color:#222d3a;font-style:italic}
+[data-theme=dark] .row-l4 td.sticky-col{background:#1a2030}
+
 /* Hover — subtle highlight */
-.row-l2 tr:hover td,.row-l3:hover td{filter:brightness(.97)}
+.row-l2 tr:hover td,.row-l3:hover td,.row-l4:hover td{filter:brightness(.97)}
 
 /* Expand toggle */
 .xbtn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;
@@ -160,6 +169,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .xarr.open{transform:rotate(90deg)}
 .i2{padding-left:22px!important}
 .i3{padding-left:42px!important}
+.i4{padding-left:58px!important}
 
 /* Value classes */
 .neg{color:var(--red)}
@@ -197,6 +207,21 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 /* Tooltip badge */
 .badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;
        font-weight:700;background:var(--blue-lt);color:var(--blue);margin-left:4px}
+
+/* ── Chart Modal ── */
+#chartModal{
+  display:none;position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.65);align-items:center;justify-content:center}
+#chartModal.open{display:flex}
+#chartBox{
+  background:var(--card);border-radius:14px;padding:24px;
+  max-width:860px;width:90vw;box-shadow:0 16px 48px rgba(0,0,0,.35);
+  position:relative;max-height:90vh;overflow-y:auto}
+#chartTitle{font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px}
+#chartClose{position:absolute;top:12px;right:14px;font-size:20px;cursor:pointer;
+            color:var(--muted);background:none;border:none;line-height:1;padding:4px 8px}
+#chartClose:hover{color:var(--text)}
+#chartCanvas{max-height:400px}
 </style>
 </head>
 <body>
@@ -227,6 +252,7 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
     <div class="bg" id="viewGrp">
       <button class="on" data-v="evolutivo" onclick="setView(this)">Evolutivo</button>
       <button data-v="total" onclick="setView(this)">Período Total</button>
+      <button data-v="comparacao" onclick="setView(this)">Comparação</button>
     </div>
   </div>
 
@@ -245,6 +271,14 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
   <div class="fg" id="cutoffGroup" style="display:none">
     <label>Corte YTD</label>
     <select id="cutoffSel" onchange="setCutoff(this.value)"
+      style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+             background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
+  </div>
+
+  <!-- Mês Ref (visível apenas em modo comparação) -->
+  <div class="fg" id="mesRefGroup" style="display:none">
+    <label>Mês Ref</label>
+    <select id="mesRefSel" onchange="render()"
       style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
              background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
   </div>
@@ -303,12 +337,21 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
   <div class="sep"></div>
 
   <!-- Unidade -->
-  <div class="fg ml-a">
+  <div class="fg">
     <label>Unidade</label>
     <div class="bg" id="unitGrp">
       <button data-u="1" onclick="setUnit(this)">R$</button>
       <button data-u="1000" onclick="setUnit(this)">R$ mil</button>
       <button class="on" data-u="1000000" onclick="setUnit(this)">R$ M</button>
+    </div>
+  </div>
+
+  <!-- % TPV toggle -->
+  <div class="fg ml-a">
+    <label>Display</label>
+    <div class="bg" id="displayGrp">
+      <button class="on" data-dm="abs" onclick="setDisplayMode(this)">Abs</button>
+      <button data-dm="pct_tpv" onclick="setDisplayMode(this)">% TPV</button>
     </div>
   </div>
 
@@ -326,6 +369,15 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
   </div>
 </div>
 
+<!-- ── Chart Modal ── -->
+<div id="chartModal" onclick="closeChartOnOverlay(event)">
+  <div id="chartBox">
+    <button id="chartClose" onclick="closeChart()">✕</button>
+    <div id="chartTitle"></div>
+    <canvas id="chartCanvas"></canvas>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════
 //  STATE
@@ -336,17 +388,24 @@ let selAnos  = [];   // selected anos (strings)
 let selMacro = [];
 let selProd  = [];
 
-let viewMode = 'evolutivo';   // 'evolutivo' | 'total'
-let granMode = 'anual';       // 'mensal' | 'trimestral' | 'anual' | 'ytdfy'
-let unitDiv  = 1_000_000;
-let cutoffMes = null;         // YTD cutoff month (YYYYMM int)
+let viewMode    = 'evolutivo';   // 'evolutivo' | 'total' | 'comparacao'
+let granMode    = 'anual';       // 'mensal' | 'trimestral' | 'anual' | 'ytdfy'
+let unitDiv     = 1_000_000;
+let cutoffMes   = null;          // YTD cutoff month (YYYYMM int)
+let displayMode = 'abs';         // 'abs' | 'pct_tpv'
 
 // expand state (Set of keys)
 let expL1 = new Set();
 let expL2 = new Set();
+let expL3 = new Set();
 
 // option lists
 let optCen = [], optAnos = [], optMeses = [], optMacro = [], optProd = [];
+
+// global chart data store: key -> byCen map
+let chartData = new Map();
+// current chart.js instance
+let chartInstance = null;
 
 const MN = {
   '01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun',
@@ -506,16 +565,36 @@ function initFilters() {
     pillsDiv.appendChild(el);
   });
 
-  buildMsPanel('ano',   optAnos,  selAnos,  v => { selAnos  = v; });
+  buildMsPanel('ano',   optAnos,  selAnos,  v => { selAnos  = v; cascadeMonths(); });
   buildMsPanel('macro', optMacro, selMacro, v => { selMacro = v; cascadeBU(); });
   buildMsPanel('prod',  optProd,  selProd,  v => { selProd  = v; });
   buildMesSelects();
+  buildMesRefSel();
   buildCutoffSel();
   // Apply initial granularity state (default=anual: hide mesGroup)
   updateGranVisibility();
 }
 
 function uniq(arr){ return [...new Set(arr.filter(v => v != null && v !== ''))]; }
+
+// ── Feature 1: Year → Month cascade ─────────────────────────
+function cascadeMonths() {
+  // Rebuild optMeses based on selected years
+  const yearsSet = new Set(selAnos.map(Number));
+  const prevFrom = parseInt(document.getElementById('mesFrom').value || 0);
+  const prevTo   = parseInt(document.getElementById('mesTo').value   || 999999);
+
+  optMeses = uniq(
+    allData
+      .filter(d => !selAnos.length || yearsSet.has(d.ANO))
+      .map(d => d.MES)
+  ).sort((a,b) => a-b);
+
+  buildMesSelects(prevFrom, prevTo);
+  buildMesRefSel();
+  buildCutoffSel();
+  // caller (buildMsPanel setter) will call render()
+}
 
 // ── Cascade Macro BU → BU ──────────────────────────────────
 function cascadeBU() {
@@ -532,8 +611,8 @@ function cascadeBU() {
 }
 
 // ── Mes from/to ────────────────────────────────────────────
-function buildMesSelects() {
-  ['mesFrom','mesTo'].forEach(id => {
+function buildMesSelects(prevFrom, prevTo) {
+  ['mesFrom','mesTo'].forEach((id, i) => {
     const sel = document.getElementById(id);
     sel.innerHTML = '';
     optMeses.forEach(m => {
@@ -546,8 +625,11 @@ function buildMesSelects() {
     });
   });
   if(optMeses.length){
-    document.getElementById('mesFrom').value = optMeses[0];
-    document.getElementById('mesTo').value   = optMeses[optMeses.length-1];
+    // Restore previous values if they still exist, else use first/last
+    const newFrom = (prevFrom && optMeses.includes(prevFrom)) ? prevFrom : optMeses[0];
+    const newTo   = (prevTo   && optMeses.includes(prevTo))   ? prevTo   : optMeses[optMeses.length-1];
+    document.getElementById('mesFrom').value = newFrom;
+    document.getElementById('mesTo').value   = newTo;
   }
 }
 
@@ -555,6 +637,41 @@ function getMesRange(){
   const f = parseInt(document.getElementById('mesFrom').value||0);
   const t = parseInt(document.getElementById('mesTo').value||999999);
   return [Math.min(f,t), Math.max(f,t)];
+}
+
+// ── Mês Ref (for comparação mode) ─────────────────────────
+function buildMesRefSel() {
+  const sel = document.getElementById('mesRefSel');
+  if(!sel) return;
+  const prev = parseInt(sel.value||0);
+  sel.innerHTML = '';
+  optMeses.forEach(m => {
+    const mm = String(m).slice(4,6);
+    const yy = String(m).slice(2,4);
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = (MN[mm]||mm) + '/' + yy;
+    sel.appendChild(opt);
+  });
+  if(prev && optMeses.includes(prev)) sel.value = prev;
+  else if(optMeses.length) sel.value = optMeses[optMeses.length-1];
+}
+
+function getMesRef() {
+  return parseInt(document.getElementById('mesRefSel').value||0);
+}
+
+// Compute LY (same month previous year) and LM (previous month) from ref
+function getCompPeriods(ref) {
+  if(!ref) return { ref, ly: null, lm: null };
+  const refY = Math.floor(ref / 100);
+  const refM = ref % 100;
+  const ly = (refY - 1) * 100 + refM;
+  // previous month
+  let lmY = refY, lmM = refM - 1;
+  if(lmM < 1) { lmM = 12; lmY--; }
+  const lm = lmY * 100 + lmM;
+  return { ref, ly, lm };
 }
 
 // ── Multi-select panel ─────────────────────────────────────
@@ -606,7 +723,7 @@ function msAll(id, all) {
   const cbs = [...panel.querySelectorAll('input')];
   cbs.forEach(c => c.checked = all);
   const vals = all ? cbs.map(c => c.dataset.opt) : [];
-  if(id==='ano')  { selAnos  = vals; updateMsLabel('ano',  vals, optAnos); }
+  if(id==='ano')  { selAnos  = vals; updateMsLabel('ano',  vals, optAnos); cascadeMonths(); }
   if(id==='macro'){ selMacro = vals; updateMsLabel('macro',vals, optMacro); cascadeBU(); }
   if(id==='prod') { selProd  = vals; updateMsLabel('prod', vals, optProd); }
   render();
@@ -627,10 +744,12 @@ document.addEventListener('click', () => {
 //  MODE TOGGLES
 // ═══════════════════════════════════════════════════════════
 function updateGranVisibility() {
-  const ev = viewMode === 'evolutivo';
+  const ev   = viewMode === 'evolutivo';
+  const comp = viewMode === 'comparacao';
   document.getElementById('granWrap').style.display    = ev ? '' : 'none';
   document.getElementById('mesGroup').style.display    = (ev && granMode==='mensal') ? '' : 'none';
   document.getElementById('cutoffGroup').style.display = (ev && granMode==='ytdfy') ? '' : 'none';
+  document.getElementById('mesRefGroup').style.display = comp ? '' : 'none';
 }
 
 function setView(btn) {
@@ -677,6 +796,13 @@ function setUnit(btn) {
   render();
 }
 
+// Feature 5: % TPV toggle
+function setDisplayMode(btn) {
+  displayMode = btn.dataset.dm;
+  document.querySelectorAll('#displayGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  render();
+}
+
 function toggleTheme() {
   const dark = document.documentElement.dataset.theme === 'dark';
   document.documentElement.dataset.theme = dark ? 'light' : 'dark';
@@ -687,6 +813,17 @@ function toggleTheme() {
 //  FILTERING
 // ═══════════════════════════════════════════════════════════
 function getFiltered() {
+  if(viewMode === 'comparacao') {
+    const ref = getMesRef();
+    const { ly, lm } = getCompPeriods(ref);
+    const allowed = new Set([ref, ly, lm].filter(Boolean));
+    return allData.filter(d =>
+      selCen.includes(d.Cenario) &&
+      (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
+      (selProd.length===0  || selProd.includes(d.Product)) &&
+      allowed.has(d.MES)
+    );
+  }
   const [mf, mt] = getMesRange();
   return allData.filter(d =>
     selCen.includes(d.Cenario) &&
@@ -710,6 +847,14 @@ function getAutoCutoff() {
 
 function colKey(row) {
   if(viewMode==='total') return '__total__';
+  if(viewMode==='comparacao') {
+    const ref = getMesRef();
+    const { ly, lm } = getCompPeriods(ref);
+    if(row.MES === ref) return 'comp_ref';
+    if(row.MES === ly)  return 'comp_ly';
+    if(row.MES === lm)  return 'comp_lm';
+    return null; // should not happen since getFiltered only returns the 3 months
+  }
   if(granMode==='mensal')     return String(row.MES);
   if(granMode==='trimestral') return (row.QUARTER||'Q?') + '/' + String(row.ANO).slice(2);
   if(granMode==='anual')      return String(row.ANO);
@@ -724,7 +869,22 @@ function colKey(row) {
   return '__total__';
 }
 
-function colLabel(k) {
+function colLabel(k, refPeriods) {
+  if(k==='comp_ref') {
+    const ref = refPeriods?.ref;
+    if(ref) return mesLabel(ref);
+    return 'Ref';
+  }
+  if(k==='comp_ly') {
+    const ly = refPeriods?.ly;
+    if(ly) return mesLabel(ly);
+    return 'LY';
+  }
+  if(k==='comp_lm') {
+    const lm = refPeriods?.lm;
+    if(lm) return mesLabel(lm);
+    return 'LM';
+  }
   if(k==='__total__') return granMode==='ytdfy' ? 'FY' : 'Total';
   if(k==='ytd') return 'YTD';
   if(k==='ytg') return 'YTG';
@@ -733,18 +893,27 @@ function colLabel(k) {
   return k;
 }
 
+function mesLabel(mes) {
+  const mm = String(mes).slice(4,6);
+  const yy = String(mes).slice(2,4);
+  return (MN[mm]||mm) + '/' + yy;
+}
+
 function sortColKeys(arr) {
   function rank(k) {
-    if(k==='ytd')            return 1;
-    if(k==='ytg')            return 2;
-    if(k==='__total__')      return 99999998;
+    if(k==='comp_ref')        return 1;
+    if(k==='comp_ly')         return 2;
+    if(k==='comp_lm')         return 3;
+    if(k==='ytd')             return 1;
+    if(k==='ytg')             return 2;
+    if(k==='__total__')       return 99999998;
     if(/^fy_\d{4}$/.test(k)) return 99990000 + parseInt(k.slice(3));
-    if(/^\d{6}$/.test(k))   return parseInt(k);
+    if(/^\d{6}$/.test(k))    return parseInt(k);
     if(/^Q\d\/\d{2}$/.test(k)){
       const [q,y] = k.split('/');
       return parseInt(y)*10 + parseInt(q[1]);
     }
-    if(/^\d{4}$/.test(k))   return parseInt(k)*100;
+    if(/^\d{4}$/.test(k))    return parseInt(k)*100;
     return 0;
   }
   return [...arr].sort((a,b) => rank(a)-rank(b));
@@ -754,7 +923,7 @@ function sortColKeys(arr) {
 //  AGGREGATION
 // ═══════════════════════════════════════════════════════════
 function aggregate(data) {
-  // result: Map<"l1|||l2|||l3", Map<cenario, Map<colKey, number>>>
+  // result: Map<"l1|||l2|||l3|||l4", Map<cenario, Map<colKey, number>>>
   const rows = new Map();
   const colSet = new Set();
 
@@ -762,22 +931,24 @@ function aggregate(data) {
     const k1 = d.MNG_1 || '(s/ MNG_1)';
     const k2 = d.MNG_2 || '(s/ MNG_2)';
     const k3 = d.MNG_3 || '(s/ MNG_3)';
+    const k4 = d.MNG_4 || '';
     const ck  = colKey(d);
+    if(!ck) continue;
     const cen = d.Cenario;
     colSet.add(ck);
-    const rowKey = k1+'|||'+k2+'|||'+k3;
-    if(!rows.has(rowKey)) rows.set(rowKey, {k1,k2,k3, byCen:new Map()});
+    const rowKey = k1+'|||'+k2+'|||'+k3+'|||'+k4;
+    if(!rows.has(rowKey)) rows.set(rowKey, {k1,k2,k3,k4, byCen:new Map()});
     const byCen = rows.get(rowKey).byCen;
     if(!byCen.has(cen)) byCen.set(cen, new Map());
     const byCol = byCen.get(cen);
     byCol.set(ck, (byCol.get(ck)||0) + (d.Value||0));
   }
 
-  // Build hierarchy: l1 -> l2 -> l3
-  const l1 = new Map();  // k1 -> {byCen, children: Map<k2, {byCen, children: Map<k3, {byCen}>}>}
+  // Build hierarchy: l1 -> l2 -> l3 -> l4
+  const l1 = new Map();
 
   for(const [, row] of rows) {
-    const {k1,k2,k3,byCen} = row;
+    const {k1,k2,k3,k4,byCen} = row;
     if(!l1.has(k1)) l1.set(k1, {byCen:new Map(), children:new Map()});
     const n1 = l1.get(k1);
     addByCen(n1.byCen, byCen);
@@ -786,9 +957,16 @@ function aggregate(data) {
     const n2 = n1.children.get(k2);
     addByCen(n2.byCen, byCen);
 
-    if(!n2.children.has(k3)) n2.children.set(k3, {byCen:new Map()});
+    if(!n2.children.has(k3)) n2.children.set(k3, {byCen:new Map(), children:new Map()});
     const n3 = n2.children.get(k3);
     addByCen(n3.byCen, byCen);
+
+    // MNG_4 level
+    if(k4) {
+      if(!n3.children.has(k4)) n3.children.set(k4, {byCen:new Map()});
+      const n4 = n3.children.get(k4);
+      addByCen(n4.byCen, byCen);
+    }
   }
 
   return { l1, cols: sortColKeys([...colSet]) };
@@ -812,15 +990,57 @@ function render() {
   const {l1, cols} = aggregate(data);
   const cens = selCen.filter(c => optCen.includes(c));
 
+  // Reset chart data store
+  chartData = new Map();
+
   renderHead(cols, cens);
   renderBody(l1,   cols, cens);
+  updateStickyTop();
 }
+
+// ── Feature 4: Fixed sticky header ────────────────────────
+function updateStickyTop() {
+  const hdr = document.querySelector('.hdr');
+  const filterBar = document.getElementById('filterBar');
+  if(!hdr || !filterBar) return;
+  const top = hdr.getBoundingClientRect().height + filterBar.getBoundingClientRect().height;
+  document.querySelectorAll('#pnlTable th').forEach(th => {
+    th.style.top = top + 'px';
+  });
+}
+window.addEventListener('resize', updateStickyTop);
 
 // ── Head ───────────────────────────────────────────────────
 function renderHead(cols, cens) {
   const head = document.getElementById('pnlHead');
   const isTotal = viewMode === 'total';
+  const isComp  = viewMode === 'comparacao';
   const multi   = cens.length >= 2;
+
+  if(isComp) {
+    // Feature 2: Comparação header
+    const ref = getMesRef();
+    const periods = getCompPeriods(ref);
+    const compCols = ['comp_ref','comp_ly','comp_lm'];
+    // grouped header: 3 period groups + Δ columns
+    let h1 = '<tr><th class="sticky-col" rowspan="2">Conta</th>';
+    let h2 = '<tr>';
+    compCols.forEach((ck, i) => {
+      const labels = { comp_ref: mesLabel(periods.ref), comp_ly: mesLabel(periods.ly||0)||'LY', comp_lm: mesLabel(periods.lm||0)||'LM' };
+      h1 += `<th colspan="${cens.length}" class="grp-hdr">${labels[ck]}</th>`;
+      cens.forEach(c => h2 += `<th style="font-size:10px;background:#252540">${shortCen(c)}</th>`);
+    });
+    // Δ columns: LY vs Ref
+    h1 += `<th colspan="2" class="col-var-hdr">Δ LY vs Ref</th>`;
+    h2 += `<th class="col-var-hdr" style="font-size:10px">Var</th>`;
+    h2 += `<th class="col-var-hdr" style="font-size:10px">Var%</th>`;
+    // Δ LM vs Ref
+    h1 += `<th colspan="2" class="col-var-hdr">Δ LM vs Ref</th>`;
+    h2 += `<th class="col-var-hdr" style="font-size:10px">Var</th>`;
+    h2 += `<th class="col-var-hdr" style="font-size:10px">Var%</th>`;
+    head.innerHTML = h1+'</tr>'+h2+'</tr>';
+    return;
+  }
 
   if(isTotal) {
     // Columns = one per cenario + var (if 2 scenarios)
@@ -950,10 +1170,17 @@ function sortedBy(map, orderArr) {
 function renderBody(l1map, cols, cens) {
   const body = document.getElementById('pnlBody');
   const isTotal = viewMode === 'total';
+  const isComp  = viewMode === 'comparacao';
   const multi   = cens.length >= 2;
   // No grand-total in annual view (year IS the total); always add in ytdfy (shows FY)
-  const addGrand = !cols.includes('__total__') && !isTotal
+  const addGrand = !cols.includes('__total__') && !isTotal && !isComp
                    && granMode !== 'anual';
+
+  // Feature 5: Extract TPV byCen for % TPV display
+  let tpvByCen = null;
+  if(displayMode === 'pct_tpv') {
+    tpvByCen = l1map.get('Metrics')?.children?.get('TPV')?.byCen || null;
+  }
 
   let html = '';
 
@@ -966,11 +1193,56 @@ function renderBody(l1map, cols, cens) {
     return cols.reduce((s,k) => s + (m.get(k)||0), 0);
   }
 
-  function cells(byCen) {
+  // Feature 5: Format value as % TPV if applicable
+  function fmtCell(v, cen, col, isMetrics) {
+    if(displayMode === 'pct_tpv' && !isMetrics && tpvByCen) {
+      const tpvVal = col === '__grand__'
+        ? totalVal(tpvByCen, cen)
+        : (tpvByCen.get(cen)?.get(col) || 0);
+      if(tpvVal === 0) return '—';
+      return (v / Math.abs(tpvVal) * 100).toFixed(2) + '%';
+    }
+    return fmt(v);
+  }
+
+  function cells(byCen, isMetrics) {
     let c = '';
+    if(isComp) {
+      // Feature 2: comparação mode cells
+      const ref = getMesRef();
+      const periods = getCompPeriods(ref);
+      const compCols = ['comp_ref','comp_ly','comp_lm'];
+      // For each period, show values per cen
+      const cenVals = {}; // cenario -> {ref, ly, lm}
+      cens.forEach(cen => {
+        cenVals[cen] = {};
+        compCols.forEach(ck => {
+          cenVals[cen][ck] = val(byCen, cen, ck);
+        });
+      });
+      compCols.forEach(ck => {
+        cens.forEach(cen => {
+          const v = cenVals[cen][ck];
+          c += `<td class="${v<0?'neg':''}">${fmt(v)}</td>`;
+        });
+      });
+      // Δ LY vs Ref: use first cen for comparison (or avg if multi)
+      const refSum  = cens.reduce((s,cen) => s + cenVals[cen]['comp_ref'], 0);
+      const lySum   = cens.reduce((s,cen) => s + cenVals[cen]['comp_ly'],  0);
+      const lmSum   = cens.reduce((s,cen) => s + cenVals[cen]['comp_lm'],  0);
+      const lyVar   = lySum - refSum;
+      const lyVarP  = refSum ? (lyVar / Math.abs(refSum) * 100) : null;
+      const lmVar   = lmSum - refSum;
+      const lmVarP  = refSum ? (lmVar / Math.abs(refSum) * 100) : null;
+      c += `<td class="col-var-cell ${lyVar>=0?'vpos':'vneg'}">${fmt(lyVar)}</td>`;
+      c += `<td class="col-var-cell ${lyVar>=0?'vpos':'vneg'}">${lyVarP!=null?lyVarP.toFixed(1)+'%':'—'}</td>`;
+      c += `<td class="col-var-cell ${lmVar>=0?'vpos':'vneg'}">${fmt(lmVar)}</td>`;
+      c += `<td class="col-var-cell ${lmVar>=0?'vpos':'vneg'}">${lmVarP!=null?lmVarP.toFixed(1)+'%':'—'}</td>`;
+      return c;
+    }
     if(isTotal) {
       const totals = cens.map(cen => totalVal(byCen, cen));
-      totals.forEach(v => c += `<td class="${v<0?'neg':''}">${fmt(v)}</td>`);
+      totals.forEach((v, i) => c += `<td class="${v<0?'neg':''}">${fmtCell(v, cens[i], '__grand__', isMetrics)}</td>`);
       if(cens.length===2){
         const vv = totals[1]-totals[0];
         const vp = totals[0] ? (vv/Math.abs(totals[0])*100) : null;
@@ -981,22 +1253,22 @@ function renderBody(l1map, cols, cens) {
       const cen = cens[0];
       cols.forEach(k => {
         const v = val(byCen, cen, k);
-        c += `<td class="${k==='__total__'?'col-total-cell ':''} ${v<0?'neg':''}">${fmt(v)}</td>`;
+        c += `<td class="${k==='__total__'?'col-total-cell ':''} ${v<0?'neg':''}">${fmtCell(v, cen, k, isMetrics)}</td>`;
       });
       if(addGrand){
         const t = totalVal(byCen, cen);
-        c += `<td class="col-total-cell bold ${t<0?'neg':''}">${fmt(t)}</td>`;
+        c += `<td class="col-total-cell bold ${t<0?'neg':''}">${fmtCell(t, cen, '__grand__', isMetrics)}</td>`;
       }
     } else {
       cols.forEach(k => {
         cens.forEach(cen => {
           const v = val(byCen, cen, k);
-          c += `<td class="${k==='__total__'?'col-total-cell ':''} ${v<0?'neg':''}">${fmt(v)}</td>`;
+          c += `<td class="${k==='__total__'?'col-total-cell ':''} ${v<0?'neg':''}">${fmtCell(v, cen, k, isMetrics)}</td>`;
         });
       });
       if(addGrand){
         const tots = cens.map(cen => totalVal(byCen, cen));
-        tots.forEach(v => c += `<td class="col-total-cell bold ${v<0?'neg':''}">${fmt(v)}</td>`);
+        tots.forEach((v, i) => c += `<td class="col-total-cell bold ${v<0?'neg':''}">${fmtCell(v, cens[i], '__grand__', isMetrics)}</td>`);
         if(cens.length===2){
           const vv = tots[1]-tots[0];
           const vp = tots[0] ? (vv/Math.abs(tots[0])*100) : null;
@@ -1008,11 +1280,19 @@ function renderBody(l1map, cols, cens) {
     return c;
   }
 
+  // ── Feature 6: Chart click handler ────────────────────────
+  function chartClickAttr(chartKey) {
+    return `onclick="handleRowClick(event,'${escAttr(chartKey)}')"`;
+  }
+
   // ── P&L Waterfall rendering ────────────────────────────
-  // MNG_1 = subtotal row (shown at BOTTOM of each block)
+  // MNG_1 = subtotal row (shown at BOTTOM of each P&L section)
   // MNG_2 = expandable component row
-  // MNG_3 = detail row (shown when MNG_2 is expanded)
+  // MNG_3 = detail row (shown when MNG_2 is expanded) - now expandable for L4
   // Exception: "Metrics" section uses MNG_1 as dark header (top)
+
+  // Feature 7: cumulative P&L totals
+  const cumByCen = new Map();
 
   for(const [k1, n1] of sortedBy(l1map, MNG1_ORDER)) {
     const isMetrics = k1 === 'Metrics';
@@ -1020,43 +1300,72 @@ function renderBody(l1map, cols, cens) {
     // Gap row between sections
     html += `<tr class="pnl-gap"><td colspan="99"></td></tr>`;
 
+    // Store in chartData
+    const chartKey1 = k1;
+    chartData.set(chartKey1, n1.byCen);
+
     if(isMetrics) {
       // Metrics: dark header at top, MNG_2 as flat rows below
       const open1 = expL1.has(k1);
-      html += `<tr class="row-l1" data-k1="${escAttr(k1)}">
+      html += `<tr class="row-l1" data-k1="${escAttr(k1)}" ${chartClickAttr(chartKey1)}>
         <td class="sticky-col">
           <span class="xbtn" onclick="toggleL1(event,this)">
             <span class="xarr${open1?' open':''}">▶</span>METRICS
           </span>
-        </td>${cells(n1.byCen)}</tr>`;
+        </td>${cells(n1.byCen, true)}</tr>`;
       if(open1) {
         for(const [k2, n2] of sortedBy(n1.children, MNG2_ORDER[k1])) {
-          html += `<tr class="row-l3">
-            <td class="sticky-col i2">${k2}</td>${cells(n2.byCen)}</tr>`;
+          const chartKey2 = k1+'|||'+k2;
+          chartData.set(chartKey2, n2.byCen);
+          html += `<tr class="row-l3" ${chartClickAttr(chartKey2)}>
+            <td class="sticky-col i2">${k2}</td>${cells(n2.byCen, true)}</tr>`;
         }
       }
     } else {
-      // P&L section: MNG_2 rows first, MNG_1 subtotal at bottom
+      // P&L section: MNG_2 rows first, MNG_1 cumulative subtotal at bottom
       for(const [k2, n2] of sortedBy(n1.children, MNG2_ORDER[k1])) {
         const l2k = k1+'|||'+k2;
         const open2 = expL2.has(l2k);
         const hasCh = n2.children.size > 0;
-        html += `<tr class="row-l2" data-l2k="${escAttr(l2k)}">
+        const chartKey2 = l2k;
+        chartData.set(chartKey2, n2.byCen);
+        html += `<tr class="row-l2" data-l2k="${escAttr(l2k)}" ${chartClickAttr(chartKey2)}>
           <td class="sticky-col i2">
             <span class="xbtn" onclick="toggleL2(event,this)">
               <span class="xarr${open2?' open':''}${hasCh?'':' invisible'}">▶</span>${k2}
             </span>
-          </td>${cells(n2.byCen)}</tr>`;
+          </td>${cells(n2.byCen, false)}</tr>`;
         if(open2 && hasCh) {
           for(const [k3, n3] of n2.children) {
-            html += `<tr class="row-l3">
-              <td class="sticky-col i3">${k3}</td>${cells(n3.byCen)}</tr>`;
+            const l3k = l2k+'|||'+k3;
+            const open3 = expL3.has(l3k);
+            const hasCh3 = n3.children && n3.children.size > 0;
+            const chartKey3 = l3k;
+            chartData.set(chartKey3, n3.byCen);
+            html += `<tr class="row-l3" data-l3k="${escAttr(l3k)}" ${chartClickAttr(chartKey3)}>
+              <td class="sticky-col i3">
+                <span class="xbtn" onclick="toggleL3(event,this)">
+                  <span class="xarr${open3?' open':''}${hasCh3?'':' invisible'}">▶</span>${k3}
+                </span>
+              </td>${cells(n3.byCen, false)}</tr>`;
+            // Feature 3: L4 rows (MNG_4)
+            if(open3 && hasCh3) {
+              for(const [k4, n4] of n3.children) {
+                const chartKey4 = l3k+'|||'+k4;
+                chartData.set(chartKey4, n4.byCen);
+                html += `<tr class="row-l4" ${chartClickAttr(chartKey4)}>
+                  <td class="sticky-col i4">${k4}</td>${cells(n4.byCen, false)}</tr>`;
+              }
+            }
           }
         }
       }
-      // MNG_1 subtotal at bottom
-      html += `<tr class="row-subtotal">
-        <td class="sticky-col">${k1}</td>${cells(n1.byCen)}</tr>`;
+      // Feature 7: Cumulative subtotal
+      addByCen(cumByCen, n1.byCen);
+      const chartKeyCum = '__cum__'+k1;
+      chartData.set(chartKeyCum, cumByCen);
+      html += `<tr class="row-subtotal" ${chartClickAttr(chartKey1)}>
+        <td class="sticky-col">${k1}</td>${cells(cumByCen, false)}</tr>`;
     }
   }
 
@@ -1091,6 +1400,108 @@ function toggleL2(e, el) {
   const l2k = el.closest('tr').dataset.l2k;
   expL2.has(l2k) ? expL2.delete(l2k) : expL2.add(l2k);
   render();
+}
+// Feature 3: L3 toggle for MNG_4
+function toggleL3(e, el) {
+  e.stopPropagation();
+  const l3k = el.closest('tr').dataset.l3k;
+  expL3.has(l3k) ? expL3.delete(l3k) : expL3.add(l3k);
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FEATURE 6: CHART ON CLICK
+// ═══════════════════════════════════════════════════════════
+function handleRowClick(e, chartKey) {
+  // Don't fire if clicking the expand arrow
+  if(e.target.closest('.xbtn')) return;
+  const byCen = chartData.get(chartKey);
+  if(!byCen) return;
+
+  // Determine row label from chartKey
+  const parts = chartKey.split('|||');
+  const label = parts[parts.length-1].replace(/^__cum__/,'');
+  showChart(label, byCen);
+}
+
+function showChart(rowLabel, byCen) {
+  const cens = selCen.filter(c => optCen.includes(c));
+  // Determine columns for chart
+  const data = getFiltered();
+  const { cols } = aggregate(data);
+  const displayCols = cols.length > 0 ? cols : [];
+
+  const labels = displayCols.map(k => colLabel(k));
+
+  // Color palette (blue shades + teal/purple)
+  const palette = [
+    'rgba(21,101,192,0.85)',
+    'rgba(2,136,209,0.85)',
+    'rgba(0,188,212,0.85)',
+    'rgba(0,150,136,0.85)',
+    'rgba(56,142,60,0.85)',
+    'rgba(123,31,162,0.85)',
+  ];
+
+  const datasets = cens.map((cen, i) => {
+    const cenMap = byCen.get(cen);
+    const vals = displayCols.map(k => {
+      if(!cenMap) return 0;
+      if(k === '__total__') {
+        return [...cenMap.values()].reduce((s,v)=>s+v, 0);
+      }
+      return (cenMap.get(k) || 0) / unitDiv;
+    });
+    return {
+      label: shortCen(cen),
+      data: vals,
+      backgroundColor: palette[i % palette.length],
+      borderRadius: 4,
+    };
+  });
+
+  // Destroy previous chart
+  if(chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  document.getElementById('chartTitle').textContent = rowLabel;
+  document.getElementById('chartModal').classList.add('open');
+
+  const ctx = document.getElementById('chartCanvas').getContext('2d');
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
+  const textColor = isDark ? '#c8d4e8' : '#333';
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: textColor, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits:1,maximumFractionDigits:1}) : '—'}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: textColor, font:{size:10} }, grid: { color: gridColor } },
+        y: { ticks: { color: textColor, font:{size:10} }, grid: { color: gridColor } }
+      }
+    }
+  });
+}
+
+function closeChart() {
+  document.getElementById('chartModal').classList.remove('open');
+  if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
+}
+
+function closeChartOnOverlay(e) {
+  if(e.target === document.getElementById('chartModal')) closeChart();
 }
 
 // ═══════════════════════════════════════════════════════════
