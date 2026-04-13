@@ -993,8 +993,8 @@ async function loadData(){
   try{
     const t=Date.now();
     const [r25,r26]=await Promise.all([
-      fetch('../data/headcount_2025.json?t='+t).catch(()=>null),
-      fetch('../data/headcount_2026.json?t='+t).catch(()=>null)
+      fetch('data/headcount_2025.json?t='+t).catch(()=>null),
+      fetch('data/headcount_2026.json?t='+t).catch(()=>null)
     ]);
     if(r25&&r25.ok){
       const rows=await r25.json();
