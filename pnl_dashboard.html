@@ -1071,17 +1071,20 @@ function renderHead(cols, cens) {
   const multi   = cens.length >= 2;
 
   if(isComp) {
-    // Comparação: single header row with delta columns only
+    // Comparação: reference value (highlighted) + delta columns
     const ref    = getMesRef();
     const cenRef = getCenRef();
     const { ly, lm } = getCompPeriods(ref);
     const refLbl = mesLabel(ref);
     const lmLbl  = lm ? mesLabel(lm) : 'LM';
     const lyLbl  = ly ? mesLabel(ly) : 'LY';
-    // Sub-label showing reference: "Ref: Realizado Jan/25"
     const refInfo = `${refLbl} · ${shortCen(cenRef)}`;
     let h = `<tr>`;
-    h += `<th class="sticky-col">Conta<br><span style="font-size:10px;font-weight:400;color:#8899bb">Ref: ${refInfo}</span></th>`;
+    h += `<th class="sticky-col">Conta</th>`;
+    // ── Reference value column (highlighted) ──
+    h += `<th class="col-total-hdr" style="border-left:3px solid #4a7fc1;min-width:100px">${shortCen(cenRef)}<br><span style="font-size:10px;font-weight:400">${refLbl}</span></th>`;
+    // ── Separator ──
+    h += `<th style="background:#0a1220;width:6px;padding:0;border:none"></th>`;
     // Δ vs Plan
     h += `<th class="col-var-hdr">Δ vs Plan<br><span style="font-size:10px;font-weight:400">${refLbl}</span></th>`;
     h += `<th class="col-var-hdr" style="font-size:10px">%</th>`;
@@ -1276,11 +1279,16 @@ function renderBody(l1map, cols, cens) {
         for(const [, colMap] of byCen) s += (colMap.get(ck)||0);
         return s;
       };
-      const refVal  = (byCen.get(cenRef)?.get('comp_ref'))  || sumCol('comp_ref');
-      const planVal = (byCen.get('Plan')?.get('comp_plan'))  || sumCol('comp_plan');
-      const fcstVal = (byCen.get('Forecast')?.get('comp_fcst')) || sumCol('comp_fcst');
-      const lmVal   = (byCen.get('Realizado')?.get('comp_lm')) || sumCol('comp_lm');
-      const lyVal   = (byCen.get('Realizado')?.get('comp_ly')) || sumCol('comp_ly');
+      const refVal  = (byCen.get(cenRef)?.get('comp_ref'))      || sumCol('comp_ref');
+      const planVal = (byCen.get('Plan')?.get('comp_plan'))      || sumCol('comp_plan');
+      const fcstVal = (byCen.get('Forecast')?.get('comp_fcst'))  || sumCol('comp_fcst');
+      const lmVal   = (byCen.get('Realizado')?.get('comp_lm'))   || sumCol('comp_lm');
+      const lyVal   = (byCen.get('Realizado')?.get('comp_ly'))   || sumCol('comp_ly');
+
+      // ── Reference value (highlighted) ──
+      c += `<td class="col-total-cell bold ${refVal<0?'neg':''}" style="border-left:3px solid #4a7fc1">${fmt(refVal)}</td>`;
+      // ── Separator ──
+      c += `<td style="background:var(--border);padding:0;width:6px"></td>`;
 
       function deltaCell(d, base) {
         const cls = d >= 0 ? 'vpos' : 'vneg';
