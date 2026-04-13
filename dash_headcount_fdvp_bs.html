@@ -966,27 +966,69 @@ function exportExcel(){
 // ── INIT (carrega dados vivos do JSON; fallback = arrays embutidos) ────────
 // O Verdi Flow salva headcount_2025.json e headcount_2026.json com linhas brutas.
 function transformRows(rows, year){
-  const mk={
-    '2025':['jan./25','fev./25','mar./25','abr./25','mai./25','jun./25','jul./25','ago./25','set./25','out./25','nov./25','dez./25'],
-    '2026':['jan./26','fev./26','mar./26','abr./26','mai./26','jun./26','jul./26','ago./26','set./26','out./26','nov./26','dez./26']
-  };
-  const keys=mk[year];
-  if(!keys)return{plan:[],real:[]};
   const plan=[],real=[];
-  rows.forEach(row=>{
-    const cenario=(row['CENÁRIO']||row['CENARIO']||'').trim().toUpperCase();
-    const obj={
-      canal:(row['Canal']||'').trim(),
-      subbu:(row['Sub-bu']||row['Sub-BU']||'').trim(),
-      cargo:(row['Cargo']||'').trim(),
-      role:(row['Role']||'').trim(),
-      rv:(row['RV']||'').trim(),
-      m:keys.map(k=>{const n=parseFloat(String(row[k]||'0').replace(',','.'));return isNaN(n)?0:n;})
+  if(!rows||!rows.length) return{plan,real};
+
+  // Detecta formato Verdi (novo): tem chaves col_11, col_13, etc.
+  const isNewFormat = 'col_11' in rows[0];
+
+  if(isNewFormat){
+    // Primeira linha é cabeçalho — constrói mapa de nomes → chaves
+    const hdr = rows[0];
+    const cenarioKey = Object.keys(hdr)[1]; // 'Budget_20XX_...'
+    const colMap = {};
+    Object.entries(hdr).forEach(([k,v])=>{ if(typeof v==='string') colMap[v.trim()]=k; });
+
+    // col_2 sempre contém o canal top-level (BIG SELLERS / FDVP / FARMING ASSESSORADO)
+    const canalCol  = 'col_2';
+    const subbuCol  = colMap['Sub-bu']||colMap['Sub-BU'];
+    const roleCol   = colMap['Position type']||colMap['Role'];
+    const cargoCol  = colMap['Cargo'];
+    const rvCol     = colMap['RV'];
+    const yr2 = year.slice(-2);
+    const monthNames = ['jan.','fev.','mar.','abr.','mai.','jun.','jul.','ago.','set.','out.','nov.','dez.'];
+    const monthCols = monthNames.map(m=>colMap[m+'/'+yr2]).filter(Boolean);
+    if(!monthCols.length) return{plan,real};
+
+    rows.forEach(row=>{
+      const cenario=(row[cenarioKey]||'').trim().toUpperCase();
+      // Pula linha de cabeçalho e linhas sem número no primeiro mês
+      if(!cenario||cenario.startsWith('CEN')||typeof row[monthCols[0]]!=='number') return;
+      const obj={
+        canal:(row[canalCol]||'').trim(),
+        subbu:subbuCol?(row[subbuCol]||'').trim():'',
+        cargo:cargoCol?(row[cargoCol]||'').trim():'',
+        role:roleCol?(row[roleCol]||'').trim():'',
+        rv:rvCol?(row[rvCol]||'').trim():'',
+        m:monthCols.map(c=>{const n=parseFloat(String(row[c]||'0').replace(',','.'));return isNaN(n)?0:n;})
+      };
+      if(!obj.canal) return;
+      if(cenario==='PLANO') plan.push(obj);
+      else if(cenario==='REALIZADO'||cenario.startsWith('REALIZADO')) real.push(obj);
+    });
+  } else {
+    // Formato antigo — chaves diretas (CENÁRIO, Canal, Cargo…)
+    const mk={
+      '2025':['jan./25','fev./25','mar./25','abr./25','mai./25','jun./25','jul./25','ago./25','set./25','out./25','nov./25','dez./25'],
+      '2026':['jan./26','fev./26','mar./26','abr./26','mai./26','jun./26','jul./26','ago./26','set./26','out./26','nov./26','dez./26']
     };
-    if(!obj.canal)return;
-    if(cenario==='PLANO') plan.push(obj);
-    else real.push(obj);
-  });
+    const keys=mk[year];
+    if(!keys) return{plan,real};
+    rows.forEach(row=>{
+      const cenario=(row['CENÁRIO']||row['CENARIO']||'').trim().toUpperCase();
+      const obj={
+        canal:(row['Canal']||'').trim(),
+        subbu:(row['Sub-bu']||row['Sub-BU']||'').trim(),
+        cargo:(row['Cargo']||'').trim(),
+        role:(row['Role']||'').trim(),
+        rv:(row['RV']||'').trim(),
+        m:keys.map(k=>{const n=parseFloat(String(row[k]||'0').replace(',','.'));return isNaN(n)?0:n;})
+      };
+      if(!obj.canal) return;
+      if(cenario==='PLANO') plan.push(obj);
+      else real.push(obj);
+    });
+  }
   return{plan,real};
 }
 async function loadData(){
