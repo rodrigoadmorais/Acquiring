@@ -368,7 +368,12 @@ function parseRaw(rows) {
     function em(row) {
       const out = {};
       Object.entries(monthColMap).forEach(([k,m]) => {
-        out[m] = parseFloat(String(row[k]||'0').replace(/[.\s]/g,'').replace(',','.')) || 0;
+        const raw = row[k];
+        // Values from Verdi are already JS numbers — use directly to avoid
+        // decimal-point stripping (e.g. -14720227.29 → -1472022729 if stringified)
+        const n = typeof raw === 'number' ? raw
+                : parseFloat(String(raw||'0').trim().replace(/\s/g,'').replace(',','.'));
+        out[m] = isNaN(n) ? 0 : n;
       });
       return out;
     }
