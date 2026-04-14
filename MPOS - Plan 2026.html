@@ -679,19 +679,19 @@
                             </div>
                             <div class="divide-y divide-gray-100">
                                 <div class="flex items-center justify-between px-3 py-2.5">
-                                    <span class="text-[11px] font-semibold text-gray-500">Smart</span>
+                                    <span class="text-sm font-semibold text-gray-500">Smart</span>
                                     <span id="stock-cd-smart" class="text-sm font-bold text-gray-600">–</span>
                                 </div>
                                 <div class="flex items-center justify-between px-3 py-2.5">
-                                    <span class="text-[11px] font-semibold text-gray-500">Pro</span>
+                                    <span class="text-sm font-semibold text-gray-500">Pro</span>
                                     <span id="stock-cd-pro" class="text-sm font-bold text-gray-600">–</span>
                                 </div>
                                 <div class="flex items-center justify-between px-3 py-2.5">
-                                    <span class="text-[11px] font-semibold text-gray-500">Air</span>
+                                    <span class="text-sm font-semibold text-gray-500">Air</span>
                                     <span id="stock-cd-air" class="text-sm font-bold text-gray-600">–</span>
                                 </div>
                                 <div class="flex items-center justify-between px-3 py-2.5">
-                                    <span class="text-[11px] font-semibold text-gray-500">Mini</span>
+                                    <span class="text-sm font-semibold text-gray-500">Mini</span>
                                     <span id="stock-cd-mini" class="text-sm font-bold text-gray-600">–</span>
                                 </div>
                             </div>
@@ -733,6 +733,15 @@
                             class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400"></select>
                         <select id="mix-mo-b" onchange="renderStockMix()" style="display:none"
                             class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400"></select>
+                    </div>
+                    <!-- Nomes dos cenários -->
+                    <div class="flex flex-col items-center gap-0.5">
+                        <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Cenários</span>
+                        <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="mixNameDown()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
+                            <span id="mix-name-size" class="px-1.5 text-[10px] font-bold text-gray-400">10</span>
+                            <button onclick="mixNameUp()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
+                        </div>
                     </div>
                     <!-- Rótulos das barras -->
                     <div class="flex flex-col items-center gap-0.5">
@@ -2558,8 +2567,9 @@
         /* ══════════════════════════════════════════════════════
            MPOS SALES PER DEVICE — controles e mix de devices
         ══════════════════════════════════════════════════════ */
-        let mixSectionWidth = 70;
-        let mixBarLabelSize = 13;
+        let mixSectionWidth  = 70;
+        let mixBarLabelSize  = 13;
+        let mixNameLabelSize = 10;  // tamanho do "Plano" / "Realizado" abaixo das barras e nos totais
 
         function mixWidthDown() {
             mixSectionWidth = Math.max(mixSectionWidth - 10, 40);
@@ -2581,6 +2591,16 @@
         function mixLabelUp() {
             mixBarLabelSize = Math.min(mixBarLabelSize + 1, 22);
             document.getElementById('mix-label-size').textContent = mixBarLabelSize;
+            renderStockMix();
+        }
+        function mixNameDown() {
+            mixNameLabelSize = Math.max(mixNameLabelSize - 1, 7);
+            document.getElementById('mix-name-size').textContent = mixNameLabelSize;
+            renderStockMix();
+        }
+        function mixNameUp() {
+            mixNameLabelSize = Math.min(mixNameLabelSize + 1, 22);
+            document.getElementById('mix-name-size').textContent = mixNameLabelSize;
             renderStockMix();
         }
 
@@ -2727,12 +2747,15 @@
                 return `<div style="height:200px;width:68px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;">${segs}</div>`;
             }
 
-            const fK = v => (Math.abs(v) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil';
-            const fM = v => (Math.abs(v) / 1e6).toLocaleString('pt-BR',  { maximumFractionDigits: 1 }) + ' mi';
+            const fK    = v => (Math.abs(v) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil';
+            const fM    = v => (Math.abs(v) / 1e6).toLocaleString('pt-BR',  { maximumFractionDigits: 1 }) + ' mi';
+            // Formatter com sinal (para CMV negativo)
+            const fMsgn = v => (v < 0 ? '−' : '') + (Math.abs(v) / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi';
+            const ns    = mixNameLabelSize; // tamanho do nome do cenário
 
             function card(title, metric, fmt) {
-                const aTot = DEVS.reduce((s, d) => s + devA[d][metric], 0);
-                const bTot = DEVS.reduce((s, d) => s + devB[d][metric], 0);
+                const aTot  = DEVS.reduce((s, d) => s + devA[d][metric], 0);
+                const bTot  = DEVS.reduce((s, d) => s + devB[d][metric], 0);
                 const delta = bTot - aTot;
                 const dColor = delta >= 0 ? '#22c55e' : '#ef4444';
                 const dSign  = delta >= 0 ? '+' : '−';
@@ -2740,26 +2763,26 @@
                     <p class="text-xs font-black text-gray-500 uppercase tracking-widest text-center leading-tight">${title}</p>
                     <div class="flex items-center gap-3 flex-wrap justify-center">
                         <div class="text-center">
-                            <div class="text-base font-black text-gray-700">${fmt(aTot)}</div>
-                            <div class="text-[10px] text-gray-400 font-bold truncate max-w-[72px]" title="${labelA}">${labelA}</div>
+                            <div class="text-base font-normal text-gray-700">${fmt(aTot)}</div>
+                            <div style="font-size:${ns}px;" class="text-gray-400 font-medium truncate max-w-[72px]" title="${labelA}">${labelA}</div>
                         </div>
                         <div class="flex flex-col items-center gap-0" style="line-height:1;">
-                            <span style="color:${dColor};font-size:11px;font-weight:900;">${dSign}${fmt(Math.abs(delta))}</span>
+                            <span style="color:${dColor};font-size:11px;font-weight:900;">${dSign}${fM(Math.abs(delta))}</span>
                             <span style="color:#d1d5db;font-size:20px;">→</span>
                         </div>
                         <div class="text-center">
-                            <div class="text-base font-black text-gray-700">${fmt(bTot)}</div>
-                            <div class="text-[10px] text-gray-400 font-bold truncate max-w-[72px]" title="${labelB}">${labelB}</div>
+                            <div class="text-base font-normal text-gray-700">${fmt(bTot)}</div>
+                            <div style="font-size:${ns}px;" class="text-gray-400 font-medium truncate max-w-[72px]" title="${labelB}">${labelB}</div>
                         </div>
                     </div>
                     <div class="flex gap-3 items-end">
                         <div class="flex flex-col items-center gap-1">
                             ${bar(devA, metric)}
-                            <span class="text-[10px] font-bold text-gray-400 text-center max-w-[68px] truncate" title="${labelA}">${labelA}</span>
+                            <span style="font-size:${ns}px;" class="font-medium text-gray-400 text-center max-w-[68px] truncate" title="${labelA}">${labelA}</span>
                         </div>
                         <div class="flex flex-col items-center gap-1">
                             ${bar(devB, metric)}
-                            <span class="text-[10px] font-bold text-gray-400 text-center max-w-[68px] truncate" title="${labelB}">${labelB}</span>
+                            <span style="font-size:${ns}px;" class="font-medium text-gray-400 text-center max-w-[68px] truncate" title="${labelB}">${labelB}</span>
                         </div>
                     </div>
                 </div>`;
@@ -2777,7 +2800,7 @@
                 ${divider}
                 ${card('Revenue',      'receita', fM)}
                 ${divider}
-                ${card('CMV (sales)',  'cmv',     fM)}
+                ${card('CMV (sales)',  'cmv',     fMsgn)}
                 ${legend}
             </div>`;
         }
