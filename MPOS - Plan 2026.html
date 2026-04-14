@@ -617,13 +617,49 @@
                             <button onclick="stockWidthUp()" title="Gráfico mais largo"
                                 class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">►</button>
                         </div>
-                        <!-- Botões de tamanho de fonte dos rótulos -->
-                        <div class="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-                            <button onclick="stockFontDown()" title="Diminuir rótulos"
-                                class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
-                            <span id="stock-font-size-label" class="px-2 text-[10px] font-bold text-gray-400">10</span>
-                            <button onclick="stockFontUp()" title="Aumentar rótulos"
-                                class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
+                        <!-- Fontes — Barras -->
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Barras</span>
+                            <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                                <button onclick="stockFontDown()" title="Diminuir rótulos das barras"
+                                    class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
+                                <span id="stock-font-size-label" class="px-1.5 text-[10px] font-bold text-gray-400">10</span>
+                                <button onclick="stockFontUp()" title="Aumentar rótulos das barras"
+                                    class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
+                            </div>
+                        </div>
+                        <!-- Fontes — Linha (Cover Days) -->
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Linha</span>
+                            <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                                <button onclick="stockLineFontDown()" title="Diminuir rótulos da linha"
+                                    class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
+                                <span id="stock-line-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">11</span>
+                                <button onclick="stockLineFontUp()" title="Aumentar rótulos da linha"
+                                    class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
+                            </div>
+                        </div>
+                        <!-- Fontes — Eixo X -->
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Eixo X</span>
+                            <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                                <button onclick="stockXFontDown()" title="Diminuir meses do eixo X"
+                                    class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
+                                <span id="stock-x-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">10</span>
+                                <button onclick="stockXFontUp()" title="Aumentar meses do eixo X"
+                                    class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
+                            </div>
+                        </div>
+                        <!-- Fontes — Legenda -->
+                        <div class="flex flex-col items-center gap-0.5">
+                            <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Legenda</span>
+                            <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                                <button onclick="stockLegendFontDown()" title="Diminuir legenda"
+                                    class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
+                                <span id="stock-legend-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">11</span>
+                                <button onclick="stockLegendFontUp()" title="Aumentar legenda"
+                                    class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2173,19 +2209,23 @@
         /* ══════════════════════════════════════════════════════
            ESTOQUE TAB — render
         ══════════════════════════════════════════════════════ */
-        let stockLabelFontSize = 10;
+        let stockLabelFontSize = 10;   // barras
+        let stockLineFontSize  = 11;   // rótulos da linha Cover Days
+        let stockXFontSize     = 10;   // eixo X (meses)
+        let stockLegendFontSize = 11;  // legenda
         let stockChartWidth = 100;
 
-        function stockFontUp() {
-            stockLabelFontSize = Math.min(stockLabelFontSize + 1, 18);
-            document.getElementById('stock-font-size-label').textContent = stockLabelFontSize;
-            renderEstoqueTab();
-        }
-        function stockFontDown() {
-            stockLabelFontSize = Math.max(stockLabelFontSize - 1, 7);
-            document.getElementById('stock-font-size-label').textContent = stockLabelFontSize;
-            renderEstoqueTab();
-        }
+        function stockFontUp()   { stockLabelFontSize = Math.min(stockLabelFontSize + 1, 22); document.getElementById('stock-font-size-label').textContent = stockLabelFontSize; renderEstoqueTab(); }
+        function stockFontDown() { stockLabelFontSize = Math.max(stockLabelFontSize - 1, 7);  document.getElementById('stock-font-size-label').textContent = stockLabelFontSize; renderEstoqueTab(); }
+
+        function stockLineFontUp()   { stockLineFontSize = Math.min(stockLineFontSize + 1, 22); document.getElementById('stock-line-font-label').textContent = stockLineFontSize; renderEstoqueTab(); }
+        function stockLineFontDown() { stockLineFontSize = Math.max(stockLineFontSize - 1, 7);  document.getElementById('stock-line-font-label').textContent = stockLineFontSize; renderEstoqueTab(); }
+
+        function stockXFontUp()   { stockXFontSize = Math.min(stockXFontSize + 1, 22); document.getElementById('stock-x-font-label').textContent = stockXFontSize; renderEstoqueTab(); }
+        function stockXFontDown() { stockXFontSize = Math.max(stockXFontSize - 1, 7);  document.getElementById('stock-x-font-label').textContent = stockXFontSize; renderEstoqueTab(); }
+
+        function stockLegendFontUp()   { stockLegendFontSize = Math.min(stockLegendFontSize + 1, 22); document.getElementById('stock-legend-font-label').textContent = stockLegendFontSize; renderEstoqueTab(); }
+        function stockLegendFontDown() { stockLegendFontSize = Math.max(stockLegendFontSize - 1, 7);  document.getElementById('stock-legend-font-label').textContent = stockLegendFontSize; renderEstoqueTab(); }
         function stockWidthDown() {
             stockChartWidth = Math.max(stockChartWidth - 10, 40);
             document.getElementById('stock-width-label').textContent = stockChartWidth + '%';
@@ -2404,7 +2444,7 @@
                                 align: 'top',
                                 offset: 4,
                                 color: '#333',
-                                font: { weight: 'black', size: fs + 1 },
+                                font: { weight: 'black', size: stockLineFontSize },
                                 // Mostra o valor REAL (não o escalado)
                                 formatter: (_, c) => {
                                     const real = c.dataset.originalData?.[c.dataIndex];
@@ -2422,7 +2462,7 @@
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { font: { weight: 'bold', size: 11 }, padding: 16, usePointStyle: true }
+                            labels: { font: { weight: 'bold', size: stockLegendFontSize }, padding: 16, usePointStyle: true }
                         },
                         tooltip: {
                             callbacks: {
@@ -2439,7 +2479,7 @@
                     scales: {
                         x: {
                             grid: { display: false },
-                            ticks: { font: { weight: 'bold', size: 10 }, color: '#6b7280' }
+                            ticks: { font: { weight: 'bold', size: stockXFontSize }, color: '#6b7280' }
                         },
                         y: { display: false, min: 0, max: chartMax }
                     }
