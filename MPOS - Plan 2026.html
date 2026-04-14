@@ -713,7 +713,7 @@
                     <select id="mix-comp-type" onchange="handleMixTypeChange()"
                         class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
                         <option value="YEAR">Ano</option>
-                        <option value="MONTH">Mês</option>
+                        <option value="MONTH" selected>Mês</option>
                         <option value="YTD">YTD</option>
                         <option value="YTG">YTG</option>
                     </select>
@@ -739,7 +739,7 @@
                         <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Rótulos</span>
                         <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                             <button onclick="mixLabelDown()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
-                            <span id="mix-label-size" class="px-1.5 text-[10px] font-bold text-gray-400">10</span>
+                            <span id="mix-label-size" class="px-1.5 text-[10px] font-bold text-gray-400">13</span>
                             <button onclick="mixLabelUp()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
                         </div>
                     </div>
@@ -748,7 +748,7 @@
                         <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Largura</span>
                         <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                             <button onclick="mixWidthDown()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">◄</button>
-                            <span id="mix-width-label" class="px-1.5 text-[10px] font-bold text-gray-400">100%</span>
+                            <span id="mix-width-label" class="px-1.5 text-[10px] font-bold text-gray-400">70%</span>
                             <button onclick="mixWidthUp()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">►</button>
                         </div>
                     </div>
@@ -2558,8 +2558,8 @@
         /* ══════════════════════════════════════════════════════
            MPOS SALES PER DEVICE — controles e mix de devices
         ══════════════════════════════════════════════════════ */
-        let mixSectionWidth = 100;
-        let mixBarLabelSize = 10;
+        let mixSectionWidth = 70;
+        let mixBarLabelSize = 13;
 
         function mixWidthDown() {
             mixSectionWidth = Math.max(mixSectionWidth - 10, 40);
@@ -2603,13 +2603,32 @@
                 });
                 sel.innerHTML = html;
             });
-            const yr = new Date().getFullYear().toString();
+            // Calcular mês anterior (mês atual - 1)
+            const now = new Date();
+            const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const prevYr  = prev.getFullYear().toString();
+            const prevMo  = String(prev.getMonth() + 1).padStart(2, '0');
+            const prevKey = prevYr + prevMo; // ex: '202603'
+
+            // Forçar tipo Mês
+            const ctSel = document.getElementById('mix-comp-type');
+            if (ctSel) ctSel.value = 'MONTH';
+
             const scA = document.getElementById('mix-sc-a');
             const scB = document.getElementById('mix-sc-b');
-            if (scA && scenarioList.some(s => s.id === `PLAN|${yr}`))   scA.value = `PLAN|${yr}`;
-            if (scB && scenarioList.some(s => s.id === `ACTUAL|${yr}`)) scB.value = `ACTUAL|${yr}`;
+            if (scA && scenarioList.some(s => s.id === `PLAN|${prevYr}`))   scA.value = `PLAN|${prevYr}`;
+            if (scB && scenarioList.some(s => s.id === `ACTUAL|${prevYr}`)) scB.value = `ACTUAL|${prevYr}`;
+
+            // Popula meses e seleciona o mês anterior em ambos
             handleMixScenarioChange('a', false);
             handleMixScenarioChange('b', false);
+            const moA = document.getElementById('mix-mo-a');
+            const moB = document.getElementById('mix-mo-b');
+            if (moA && Array.from(moA.options).some(o => o.value === prevKey)) moA.value = prevKey;
+            if (moB && Array.from(moB.options).some(o => o.value === prevKey)) moB.value = prevKey;
+
+            // Garantir visibilidade dos selects de mês
+            handleMixTypeChange(false);
         }
 
         function handleMixScenarioChange(side, runRender = true) {
@@ -2641,6 +2660,8 @@
         function renderStockMix() {
             const container = document.getElementById('stock-mix-wrap');
             if (!container) return;
+            // Aplicar largura e rótulo defaults
+            container.style.maxWidth = mixSectionWidth < 100 ? mixSectionWidth + '%' : '';
             if (!db || (!db.PLAN.length && !db.ACTUAL.length)) {
                 container.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Sem dados. Carregue no Motor de Comparação.</p>';
                 return;
@@ -2661,8 +2682,10 @@
             const pidA = ct === 'YEAR' ? `YEAR|${yearA}` : `${ct}|${yearA}${moA}`;
             const pidB = ct === 'YEAR' ? `YEAR|${yearB}` : `${ct}|${yearB}${moB}`;
 
-            const labelA = scenarioList.find(s => s.id === scA.value)?.label || 'A';
-            const labelB = scenarioList.find(s => s.id === scB.value)?.label || 'B';
+            // Rótulos curtos por tipo de cenário
+            const shortLbl = t => t.startsWith('PLAN') ? 'Plano' : t.startsWith('ACTUAL') ? 'Realizado' : 'Forecast';
+            const labelA = shortLbl(typeA);
+            const labelB = shortLbl(typeB);
 
             const rawA = extractValue(typeA, pidA, 'ALL', 'ALL');
             const rawB = extractValue(typeB, pidB, 'ALL', 'ALL');
