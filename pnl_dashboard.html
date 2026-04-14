@@ -279,20 +279,26 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .cpa-table th.cpa-name-hdr{text-align:left;position:sticky;left:0;z-index:200;
                             background:#111d36;color:#c8d4e8;
                             min-width:240px;max-width:360px;font-size:12px}
-/* Monthly columns: dark navy with soft amber distinction */
-.cpa-hdr-monthly{background:#111d36;color:#f0d080}
-/* Realizado highlighted */
-.cpa-hdr-real{background:#162444;color:#a8d0ff;border-left:2px solid #2a5fa0}
-/* YTD columns: dark teal */
-.cpa-hdr-ytd{background:#0b2e1a;color:#7dd4a0}
+/* Monthly columns (Realizado, Plan, PM): golden yellow */
+.cpa-hdr-monthly{background:#D4910F;color:#1a0a00;font-weight:700}
+/* Realizado: same yellow family, slightly richer */
+.cpa-hdr-real{background:#E8A020;color:#1a0a00;font-weight:700}
+/* YTD columns: medium blue */
+.cpa-hdr-ytd{background:#1565C0;color:#fff;font-weight:700}
 /* Gap column */
-.cpa-hdr-sep{background:#0a1220;width:8px;padding:0;border:none}
-/* Delta columns: deep dark with muted text */
-.cpa-hdr-delta{background:#1a1a2e;color:#9090b8;border-left:1px solid #0a1220;font-size:10px}
+.cpa-hdr-sep{background:#e8e8ee;width:10px;padding:0;border:none}
+/* Delta columns: blue-gray */
+.cpa-hdr-delta{background:#546E7A;color:#fff;font-weight:700;border-left:1px solid #455A64;font-size:10px}
 /* Group sub-header row */
 .cpa-table tr.cpa-grp-hdr th{background:#0a1220;color:#6080a0;font-size:10px;
                                padding:4px 12px;border-bottom:1px solid #0a1220}
 .cpa-table tr.cpa-grp-hdr th.cpa-name-hdr{background:#0a1220;color:#6080a0}
+/* Dark theme overrides for column headers */
+[data-theme=dark] .cpa-hdr-real{background:#b87418;color:#fff9e6}
+[data-theme=dark] .cpa-hdr-monthly{background:#9e6a0c;color:#fff9e6}
+[data-theme=dark] .cpa-hdr-ytd{background:#0d47a1;color:#c8deff}
+[data-theme=dark] .cpa-hdr-sep{background:#1a2030}
+[data-theme=dark] .cpa-hdr-delta{background:#37474F;color:#cfd8dc}
 
 /* ── CPA/MPOS Table rows ── */
 .cpa-table td{padding:5px 12px;border-bottom:1px solid var(--border);
@@ -1969,7 +1975,7 @@ function buildCpaHead(mes, ud, tableId) {
     <th class="cpa-hdr-monthly" style="min-width:90px">Prior Month<br><span style="font-size:10px;font-weight:400">${pmLbl}</span></th>
     <th class="cpa-hdr-ytd" style="min-width:100px">Actual YTD<br><span style="font-size:10px;font-weight:400">${ytdLbl}</span></th>
     <th class="cpa-hdr-ytd" style="min-width:100px">Plan YTD<br><span style="font-size:10px;font-weight:400">${ytdLbl}</span></th>
-    <th class="cpa-hdr-sep"></th>
+    <th class="cpa-hdr-sep" style="border:none"></th>
     <th class="cpa-hdr-delta" style="min-width:85px">Δ Plan<br><span style="font-size:9px;font-weight:400">${mesLbl}</span></th>
     <th class="cpa-hdr-delta" style="min-width:85px">Δ Prior Month<br><span style="font-size:9px;font-weight:400">${pmLbl}</span></th>
     <th class="cpa-hdr-delta" style="min-width:95px">Δ Plan YTD<br><span style="font-size:9px;font-weight:400">${ytdLbl}</span></th>
@@ -1992,7 +1998,7 @@ function buildCpaRow(label, data, ud, rowClass, isNameOnly) {
     <td class="${pm<0?'neg':''}">${fmtCpa(pm,ud)}</td>
     <td class="cpa-ytd-cell ${ytdReal<0?'neg':''}">${fmtCpa(ytdReal,ud)}</td>
     <td class="cpa-ytd-cell ${ytdPlan<0?'neg':''}">${fmtCpa(ytdPlan,ud)}</td>
-    <td style="background:var(--border);padding:0;width:8px"></td>
+    <td style="background:#e8e8ee;padding:0;width:10px"></td>
     ${deltaCell(real-plan, ud)}
     ${deltaCell(real-pm, ud)}
     ${deltaCell(ytdReal-ytdPlan, ud)}
