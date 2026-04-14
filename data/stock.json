@@ -1,15 +1,8 @@
 [
-  {"Período": "Feb 25", "Estoque": 188, "Cover Days": 38, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Mar 25", "Estoque": 170, "Cover Days": 36, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Apr 25", "Estoque": 133, "Cover Days": 27, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "May 25", "Estoque": 169, "Cover Days": 34, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Jun 25", "Estoque": 140, "Cover Days": 28, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Jul 25", "Estoque": 182, "Cover Days": 35, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Aug 25", "Estoque": 134, "Cover Days": 24, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Sep 25", "Estoque": 167, "Cover Days": 28, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Oct 25", "Estoque": 215, "Cover Days": 37, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Nov 25", "Estoque": 190, "Cover Days": 36, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Dec 25", "Estoque": 129, "Cover Days": 28, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Jan 26", "Estoque": 168, "Cover Days": 36, "Cover Smart": 0, "Cover Pro": 0, "Cover Air": 0, "Cover Mini": 0},
-  {"Período": "Feb 26", "Estoque": 155, "Cover Days": 31, "Cover Smart": 24, "Cover Pro": 21, "Cover Air": 36, "Cover Mini": 40}
+  {"col_1":"Stock","February":188000,"March":170000,"April":133000,"May":169000,"June":140000,"July":182000,"August":134000,"September":166830,"October":215066,"November":189521,"December":129481,"January":168297,"row_number":3},
+  {"col_1":"Days Cover","February":38,"March":36,"April":27,"May":34,"June":28,"July":35,"August":24,"September":28,"October":37,"November":36,"December":28,"January":36,"row_number":4},
+  {"col_1":"","February":null,"March":null,"April":null,"May":null,"June":null,"July":null,"August":null,"September":null,"October":null,"November":"Days Cover","December":"Smart","January":null,"row_number":5},
+  {"col_1":"","February":null,"March":null,"April":null,"May":null,"June":null,"July":null,"August":null,"September":null,"October":null,"November":"Days Cover","December":"Pro","January":null,"row_number":6},
+  {"col_1":"","February":null,"March":null,"April":null,"May":null,"June":null,"July":null,"August":null,"September":null,"October":null,"November":"Days Cover","December":"Air","January":null,"row_number":7},
+  {"col_1":"","February":null,"March":null,"April":null,"May":null,"June":null,"July":null,"August":null,"September":null,"October":null,"November":"Days Cover","December":"Mini","January":null,"row_number":8}
 ]

@@ -29,7 +29,15 @@
           "mode": "name",
           "value": "Base Stock"
         },
-        "options": {}
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "headerRow": 2,
+              "firstDataRow": 3
+            }
+          }
+        }
       },
       "id": "stock-read-0000-0000-0000-000000000001",
       "name": "Get Base Stock",

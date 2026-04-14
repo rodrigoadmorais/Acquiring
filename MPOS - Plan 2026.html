@@ -2170,77 +2170,122 @@
         function renderEstoqueTab() {
             if (!dbStock || dbStock.length === 0) return;
 
-            // ── helpers para ler colunas com nomes alternativos ───────────
-            function col(row, ...keys) {
-                for (const k of keys) {
-                    if (row[k] !== undefined && row[k] !== null && row[k] !== '') return row[k];
+            /* ══════════════════════════════════════════════════
+               PARSER — estrutura TRANSPOSTA da aba "Base Stock"
+               Linhas = métricas, Colunas = meses (chaves JSON)
+               Verdi lê com headerRow:2 → chaves são nomes dos meses
+            ══════════════════════════════════════════════════ */
+
+            // Mapeamento nome-do-mês → índice 0-11
+            const MNAME_IDX = {
+                january:0,february:1,march:2,april:3,may:4,june:5,
+                july:6,august:7,september:8,october:9,november:10,december:11,
+                janeiro:0,fevereiro:1,março:2,abril:3,maio:4,junho:5,
+                julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11
+            };
+            const MABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+            // Chaves que NÃO são meses
+            const META_RE = /^(row_number|col_\d+|__row|rowIndex|_)$/i;
+
+            // Coletar chaves-mês da 1ª linha, na ordem de aparição
+            const allKeys = Object.keys(dbStock[0] || {});
+            const monthKeys = allKeys.filter(k => {
+                const lo = k.toLowerCase().trim();
+                return MNAME_IDX[lo] !== undefined && !META_RE.test(k);
+            });
+
+            // Atribuir ano a cada mês (detectar virada de ano pelo índice)
+            let year = 2025;
+            let prevIdx = -1;
+            const monthLabels = [];      // "Feb 25", "Mar 25", …
+            const monthYearMap = {};     // key → "Feb 25"
+            monthKeys.forEach(mk => {
+                const idx = MNAME_IDX[mk.toLowerCase().trim()];
+                if (prevIdx >= 0 && idx <= prevIdx) year++;
+                const label = `${MABBR[idx]} ${String(year).slice(2)}`;
+                monthLabels.push(label);
+                monthYearMap[mk] = label;
+                prevIdx = idx;
+            });
+
+            // Extrai label da linha (primeira coluna / col_1 / string vazia)
+            function rowLabel(row) {
+                for (const k of ['col_1','col_2','','label','Label','tipo','Tipo','metric','Metric']) {
+                    const v = row[k];
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+                }
+                return '';
+            }
+
+            // Detecta nome do device em qualquer célula da linha
+            const DEVICE_RE = /^(smart|pro|air|mini)$/i;
+            function rowDevice(row) {
+                for (const v of Object.values(row)) {
+                    const s = String(v || '').trim();
+                    if (DEVICE_RE.test(s)) return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
                 }
                 return null;
             }
-            function num(row, ...keys) {
-                const v = col(row, ...keys);
-                if (v === null) return 0;
-                const n = parseFloat(String(v).replace(',', '.'));
-                return isNaN(n) ? 0 : n;
+
+            // Extrai valores numéricos por mês (texto → 0)
+            function rowValues(row) {
+                return monthKeys.map(k => {
+                    const v = row[k];
+                    if (v === null || v === undefined || v === '') return 0;
+                    const n = parseFloat(String(v).replace(',', '.'));
+                    return isNaN(n) ? 0 : n;
+                });
             }
 
-            // ── ordenar por período cronológico ───────────────────────────
-            const MONTH_ORDER = { 'jan':0,'fev':1,'feb':1,'mar':2,'abr':3,'apr':3,
-                'mai':4,'may':4,'jun':5,'jul':6,'ago':7,'aug':7,
-                'set':8,'sep':8,'out':9,'oct':9,'nov':10,'dez':11,'dec':11 };
+            // Classificar cada linha
+            let estoque   = new Array(monthKeys.length).fill(0);
+            let coverDays = new Array(monthKeys.length).fill(0);
+            const devData = { Smart: null, Pro: null, Air: null, Mini: null };
 
-            function periodToNum(p) {
-                if (!p) return 0;
-                const s = String(p).toLowerCase().replace(/\./g,'').trim();
-                const m = s.match(/([a-z]+)[\s\/\-]?(\d{2,4})/);
-                if (!m) return 0;
-                const mo = MONTH_ORDER[m[1].substring(0,3)] ?? 0;
-                const yr = parseInt(m[2]);
-                const yr4 = yr < 100 ? 2000 + yr : yr;
-                return yr4 * 100 + mo;
+            for (const row of dbStock) {
+                const lbl    = rowLabel(row).toLowerCase();
+                const device = rowDevice(row);
+
+                if (device && devData[device] === null) {
+                    devData[device] = rowValues(row);
+                    continue;
+                }
+                if (lbl.includes('stock') || lbl.includes('estoque')) {
+                    estoque = rowValues(row);
+                } else if (lbl.includes('days cover') || lbl.includes('cover days') ||
+                           lbl.includes('cobertura') || lbl.includes('dias')) {
+                    coverDays = rowValues(row);
+                }
             }
 
-            const sorted = [...dbStock].sort((a, b) => {
-                const pa = col(a, 'Período','Mês','Mes','período','mes','month','Month');
-                const pb = col(b, 'Período','Mês','Mes','período','mes','month','Month');
-                return periodToNum(pa) - periodToNum(pb);
-            });
-
-            const labels    = sorted.map(r => col(r,'Período','Mês','Mes','período','mes','month','Month') || '');
-            const estoque   = sorted.map(r => num(r,'Estoque','Stock','Devices Stock','DevicesStock','estoque','stock'));
-            const coverDays = sorted.map(r => num(r,'Cover Days','CoverDays','Dias Cobertura','Cobertura','cover_days','coverdays','dias_cobertura'));
-            const cdSmart   = sorted.map(r => num(r,'Cover Smart','CoverSmart','Cobertura Smart','cover_smart'));
-            const cdPro     = sorted.map(r => num(r,'Cover Pro','CoverPro','Cobertura Pro','cover_pro'));
-            const cdAir     = sorted.map(r => num(r,'Cover Air','CoverAir','Cobertura Air','cover_air'));
-            const cdMini    = sorted.map(r => num(r,'Cover Mini','CoverMini','Cobertura Mini','cover_mini'));
+            // Fallback: arrays vazios para devices sem dados
+            Object.keys(devData).forEach(d => { if (!devData[d]) devData[d] = new Array(monthKeys.length).fill(0); });
 
             // ── popular select do mês ─────────────────────────────────────
             const sel = document.getElementById('stock-month-select');
-            const prevLabel = sel.options[sel.selectedIndex]?.text || '';
+            const prevSelLabel = sel.options[sel.selectedIndex]?.text || '';
             sel.innerHTML = '';
-            labels.forEach((l, i) => {
+            monthLabels.forEach((l, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
                 opt.textContent = l;
                 sel.appendChild(opt);
             });
-            // default: mês mais recente; preservar seleção manual
-            const matchIdx = labels.indexOf(prevLabel);
-            sel.value = (matchIdx >= 0 && prevLabel !== '') ? matchIdx : (labels.length - 1);
+            const matchIdx = monthLabels.indexOf(prevSelLabel);
+            sel.value = matchIdx >= 0 ? matchIdx : monthLabels.length - 1;
 
-            // ── painel lateral ────────────────────────────────────────────
+            // ── painel lateral — mostrar mês selecionado ──────────────────
             const idx = parseInt(sel.value);
-            document.getElementById('stock-cd-smart').textContent = cdSmart[idx] || '–';
-            document.getElementById('stock-cd-pro').textContent   = cdPro[idx]   || '–';
-            document.getElementById('stock-cd-air').textContent   = cdAir[idx]   || '–';
-            document.getElementById('stock-cd-mini').textContent  = cdMini[idx]  || '–';
+            const fmt = v => (v && v > 0) ? Math.round(v) : '–';
+            document.getElementById('stock-cd-smart').textContent = fmt(devData.Smart[idx]);
+            document.getElementById('stock-cd-pro').textContent   = fmt(devData.Pro[idx]);
+            document.getElementById('stock-cd-air').textContent   = fmt(devData.Air[idx]);
+            document.getElementById('stock-cd-mini').textContent  = fmt(devData.Mini[idx]);
 
-            // ── escala normalizada para eixo único oculto ─────────────────
-            // Para que barras e linha convivam bem sem eixos visíveis,
-            // normalizamos a linha para a mesma escala visual das barras.
+            // ── escala normalizada — eixo único oculto ────────────────────
             const maxStock = Math.max(...estoque, 1);
             const maxCover = Math.max(...coverDays, 1);
-            // linha escalada visualmente para 80% do topo das barras
             const coverScaled = coverDays.map(v => (v / maxCover) * maxStock * 0.80);
 
             // ── gráfico combinado (barras + linha) ────────────────────────
@@ -2251,7 +2296,7 @@
 
             stockChart = new Chart(ctx, {
                 data: {
-                    labels,
+                    labels: monthLabels,
                     datasets: [
                         {
                             type: 'bar',
