@@ -78,7 +78,9 @@
     <div class="header-right">
       <div class="controls">
         <span class="ctrl-label">De:</span>
-        <select class="ctrl-select" id="startMonthSelect" onchange="setStartMonth(this.value)"></select>
+        <select class="ctrl-select" id="startMonthSelect" onchange="setMonthRange()"></select>
+        <span class="ctrl-label" style="margin-left:4px">Até:</span>
+        <select class="ctrl-select" id="endMonthSelect" onchange="setMonthRange()"></select>
       </div>
       <div class="controls">
         <span class="ctrl-label">Rótulos:</span>
@@ -137,23 +139,27 @@ const ALL_MONTHS = [
   '202508','202509','202510','202511','202512',
   '202601','202602','202603','202604'
 ];
-let MONTHS = ALL_MONTHS.slice(ALL_MONTHS.indexOf('202502')); // default: Fev/25
+let MONTHS = ALL_MONTHS.slice(ALL_MONTHS.indexOf('202502'), ALL_MONTHS.indexOf('202603') + 1); // default: Fev/25–Mar/26
 
-function setStartMonth(code) {
-  const idx = ALL_MONTHS.indexOf(code);
-  if (idx < 0) return;
-  MONTHS = ALL_MONTHS.slice(idx);
-  if (currentData) { currentData = compute(_lastRows); renderCharts(currentData); }
+function setMonthRange() {
+  const startSel = document.getElementById('startMonthSelect');
+  const endSel   = document.getElementById('endMonthSelect');
+  const si = ALL_MONTHS.indexOf(startSel.value);
+  const ei = ALL_MONTHS.indexOf(endSel.value);
+  if (si < 0 || ei < 0 || si > ei) return;
+  MONTHS = ALL_MONTHS.slice(si, ei + 1);
+  if (_lastRows) { currentData = compute(_lastRows); renderCharts(currentData); }
 }
 
 function buildMonthSelect() {
-  const sel = document.getElementById('startMonthSelect');
+  const startSel = document.getElementById('startMonthSelect');
+  const endSel   = document.getElementById('endMonthSelect');
   ALL_MONTHS.forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m;
-    opt.textContent = MONTH_LABELS[m];
-    if (m === '202502') opt.selected = true;
-    sel.appendChild(opt);
+    const label = MONTH_LABELS[m];
+    const o1 = new Option(label, m, m === '202502', m === '202502');
+    const o2 = new Option(label, m, m === '202603', m === '202603');
+    startSel.appendChild(o1);
+    endSel.appendChild(o2);
   });
 }
 
