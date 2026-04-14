@@ -703,16 +703,61 @@
 
             <!-- ── MPOS Sales per Device ─────────────────────────────── -->
             <div class="card overflow-hidden">
-                <div class="bg-[#FFE600] px-6 py-3 flex items-center justify-between">
+                <!-- Título -->
+                <div class="bg-[#FFE600] px-6 py-3">
                     <h3 class="text-sm font-black tracking-widest uppercase text-gray-800">MPOS Sales per Device</h3>
-                    <select id="stock-mix-year" onchange="renderStockMix()"
-                        class="bg-white border border-yellow-300 text-gray-700 text-xs font-bold rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                        <option value="2025">FY 2025</option>
-                        <option value="2026">FY 2026</option>
-                    </select>
                 </div>
-                <div id="stock-mix-content" class="p-6">
-                    <p class="text-xs text-gray-400 text-center py-6">Carregando…</p>
+                <!-- Barra de filtros -->
+                <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 flex flex-wrap items-center gap-3">
+                    <!-- Tipo de período -->
+                    <select id="mix-comp-type" onchange="handleMixTypeChange()"
+                        class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                        <option value="YEAR">Ano</option>
+                        <option value="MONTH">Mês</option>
+                        <option value="YTD">YTD</option>
+                        <option value="YTG">YTG</option>
+                    </select>
+                    <!-- Cenário A -->
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">A</span>
+                        <select id="mix-sc-a" onchange="handleMixScenarioChange('a')"
+                            class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400"></select>
+                        <select id="mix-mo-a" onchange="renderStockMix()" style="display:none"
+                            class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400"></select>
+                    </div>
+                    <span class="text-[10px] font-black text-gray-300 uppercase tracking-widest">vs</span>
+                    <!-- Cenário B -->
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">B</span>
+                        <select id="mix-sc-b" onchange="handleMixScenarioChange('b')"
+                            class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400"></select>
+                        <select id="mix-mo-b" onchange="renderStockMix()" style="display:none"
+                            class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400"></select>
+                    </div>
+                    <!-- Rótulos das barras -->
+                    <div class="flex flex-col items-center gap-0.5">
+                        <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Rótulos</span>
+                        <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="mixLabelDown()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
+                            <span id="mix-label-size" class="px-1.5 text-[10px] font-bold text-gray-400">10</span>
+                            <button onclick="mixLabelUp()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
+                        </div>
+                    </div>
+                    <!-- Largura -->
+                    <div class="ml-auto flex flex-col items-center gap-0.5">
+                        <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Largura</span>
+                        <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="mixWidthDown()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">◄</button>
+                            <span id="mix-width-label" class="px-1.5 text-[10px] font-bold text-gray-400">100%</span>
+                            <button onclick="mixWidthUp()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">►</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Conteúdo -->
+                <div class="p-6">
+                    <div id="stock-mix-wrap" style="transition: max-width 0.25s ease;">
+                        <p class="text-xs text-gray-400 text-center py-6">Carregando…</p>
+                    </div>
                 </div>
             </div>
 
@@ -1068,6 +1113,7 @@
                 populateGlobalFilters();
                 populatePLScenarios();
                 populateTPVScenarios();
+                populateMixScenarios();
 
             } catch (err) {
                 console.log(err);
@@ -2510,30 +2556,125 @@
         }
 
         /* ══════════════════════════════════════════════════════
-           MPOS SALES PER DEVICE — mix de devices (qty, receita, CMV)
+           MPOS SALES PER DEVICE — controles e mix de devices
         ══════════════════════════════════════════════════════ */
+        let mixSectionWidth = 100;
+        let mixBarLabelSize = 10;
+
+        function mixWidthDown() {
+            mixSectionWidth = Math.max(mixSectionWidth - 10, 40);
+            document.getElementById('mix-width-label').textContent = mixSectionWidth + '%';
+            const w = document.getElementById('stock-mix-wrap');
+            if (w) w.style.maxWidth = mixSectionWidth + '%';
+        }
+        function mixWidthUp() {
+            mixSectionWidth = Math.min(mixSectionWidth + 10, 100);
+            document.getElementById('mix-width-label').textContent = mixSectionWidth + '%';
+            const w = document.getElementById('stock-mix-wrap');
+            if (w) w.style.maxWidth = mixSectionWidth < 100 ? mixSectionWidth + '%' : '';
+        }
+        function mixLabelDown() {
+            mixBarLabelSize = Math.max(mixBarLabelSize - 1, 7);
+            document.getElementById('mix-label-size').textContent = mixBarLabelSize;
+            renderStockMix();
+        }
+        function mixLabelUp() {
+            mixBarLabelSize = Math.min(mixBarLabelSize + 1, 22);
+            document.getElementById('mix-label-size').textContent = mixBarLabelSize;
+            renderStockMix();
+        }
+
+        function populateMixScenarios() {
+            ['mix-sc-a', 'mix-sc-b'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (!sel) return;
+                let html = '';
+                ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                    let group = scenarioList.filter(s => s.type === t);
+                    if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
+                        group = group.concat(scenarioList.filter(s => s.type === key));
+                    });
+                    if (group.length > 0) {
+                        const lbl = t === 'PLAN' ? '🟢 Plano' : (t === 'ACTUAL' ? '🔵 Realizado' : '🟠 Forecast');
+                        html += `<optgroup label="${lbl}">`;
+                        group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
+                        html += `</optgroup>`;
+                    }
+                });
+                sel.innerHTML = html;
+            });
+            const yr = new Date().getFullYear().toString();
+            const scA = document.getElementById('mix-sc-a');
+            const scB = document.getElementById('mix-sc-b');
+            if (scA && scenarioList.some(s => s.id === `PLAN|${yr}`))   scA.value = `PLAN|${yr}`;
+            if (scB && scenarioList.some(s => s.id === `ACTUAL|${yr}`)) scB.value = `ACTUAL|${yr}`;
+            handleMixScenarioChange('a', false);
+            handleMixScenarioChange('b', false);
+        }
+
+        function handleMixScenarioChange(side, runRender = true) {
+            const scSel = document.getElementById(`mix-sc-${side}`);
+            const moSel = document.getElementById(`mix-mo-${side}`);
+            const scenario = scenarioList.find(s => s.id === scSel.value);
+            if (scenario) {
+                const prev = moSel.value;
+                moSel.innerHTML = scenario.months.map(m =>
+                    `<option value="${m}">${m} — ${PT_MONTHS[parseInt(m.substring(4,6))-1]?.substring(0,3) || m}</option>`
+                ).join('');
+                if (Array.from(moSel.options).some(o => o.value === prev)) moSel.value = prev;
+                else if (scenario.months.length > 0) moSel.value = scenario.months[scenario.months.length - 1];
+            }
+            handleMixTypeChange(false);
+            if (runRender) renderStockMix();
+        }
+
+        function handleMixTypeChange(runRender = true) {
+            const ct = document.getElementById('mix-comp-type')?.value || 'YEAR';
+            const moA = document.getElementById('mix-mo-a');
+            const moB = document.getElementById('mix-mo-b');
+            if (!moA || !moB) return;
+            if (ct === 'YEAR')                { moA.style.display = 'none';  moB.style.display = 'none'; }
+            else if (ct === 'YTD' || ct === 'YTG') { moA.style.display = '';     moB.style.display = 'none'; }
+            else                              { moA.style.display = '';     moB.style.display = ''; }
+            if (runRender) renderStockMix();
+        }
         function renderStockMix() {
-            const container = document.getElementById('stock-mix-content');
+            const container = document.getElementById('stock-mix-wrap');
             if (!container) return;
             if (!db || (!db.PLAN.length && !db.ACTUAL.length)) {
                 container.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Sem dados. Carregue no Motor de Comparação.</p>';
                 return;
             }
 
-            const year = document.getElementById('stock-mix-year')?.value || '2025';
-            const pid  = 'YEAR|' + year;
+            const scA = document.getElementById('mix-sc-a');
+            const scB = document.getElementById('mix-sc-b');
+            if (!scA?.value || !scB?.value) {
+                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Selecione os cenários acima.</p>';
+                return;
+            }
 
-            const rawP = extractValue('PLAN',   pid, 'ALL', 'ALL');
-            const rawR = extractValue('ACTUAL', pid, 'ALL', 'ALL');
-            const plP  = computePL(rawP.byCanalDeviceRaw || rawP.byCanalDevice);
-            const plR  = computePL(rawR.byCanalDeviceRaw || rawR.byCanalDevice);
+            const ct   = document.getElementById('mix-comp-type')?.value || 'YEAR';
+            const [typeA, yearA] = scA.value.split('|');
+            const [typeB, yearB] = scB.value.split('|');
+            const moA  = document.getElementById('mix-mo-a')?.value || '';
+            const moB  = (ct === 'YTD' || ct === 'YTG') ? moA : (document.getElementById('mix-mo-b')?.value || '');
+            const pidA = ct === 'YEAR' ? `YEAR|${yearA}` : `${ct}|${yearA}${moA}`;
+            const pidB = ct === 'YEAR' ? `YEAR|${yearB}` : `${ct}|${yearB}${moB}`;
+
+            const labelA = scenarioList.find(s => s.id === scA.value)?.label || 'A';
+            const labelB = scenarioList.find(s => s.id === scB.value)?.label || 'B';
+
+            const rawA = extractValue(typeA, pidA, 'ALL', 'ALL');
+            const rawB = extractValue(typeB, pidB, 'ALL', 'ALL');
+            const plA  = computePL(rawA.byCanalDeviceRaw || rawA.byCanalDevice);
+            const plB  = computePL(rawB.byCanalDeviceRaw || rawB.byCanalDevice);
 
             const DEVS   = ['SMART', 'PRO', 'AIR', 'MINI'];
             const COLORS = { SMART: '#78350f', PRO: '#c2410c', AIR: '#fb923c', MINI: '#fde68a' };
             const TEXTS  = { SMART: '#fff',    PRO: '#fff',    AIR: '#fff',    MINI: '#92400e' };
             const DLABEL = { SMART: 'Smart',   PRO: 'Pro',     AIR: 'Air',     MINI: 'Mini'   };
+            const fs     = mixBarLabelSize;
 
-            // Soma por device a partir do resultado do computePL
             function devAgg(pl) {
                 const out = {};
                 DEVS.forEach(d => { out[d] = { qty: 0, receita: 0, cmv: 0 }; });
@@ -2546,61 +2687,56 @@
                 return out;
             }
 
-            const devP = devAgg(plP);
-            const devR = devAgg(plR);
+            const devA = devAgg(plA);
+            const devB = devAgg(plB);
 
-            // Barra empilhada CSS pura
             function bar(devObj, metric) {
                 const vals = DEVS.map(d => Math.abs(devObj[d][metric]));
                 const tot  = vals.reduce((s, v) => s + v, 0);
                 if (!tot) return '<div style="height:200px;width:68px;background:#f3f4f6;border-radius:6px;"></div>';
                 const segs = DEVS.map((d, i) => {
                     const pct  = (vals[i] / tot) * 100;
-                    const show = pct >= 7;
+                    const show = pct >= 6;
                     return `<div style="height:${pct.toFixed(2)}%;background:${COLORS[d]};display:flex;align-items:center;justify-content:center;overflow:hidden;">` +
-                           (show ? `<span style="color:${TEXTS[d]};font-size:10px;font-weight:700;white-space:nowrap;">${pct.toFixed(1)}%</span>` : '') +
+                           (show ? `<span style="color:${TEXTS[d]};font-size:${fs}px;font-weight:700;white-space:nowrap;">${pct.toFixed(1)}%</span>` : '') +
                            `</div>`;
                 }).join('');
                 return `<div style="height:200px;width:68px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;">${segs}</div>`;
             }
 
-            // Formatadores
             const fK = v => (Math.abs(v) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil';
             const fM = v => (Math.abs(v) / 1e6).toLocaleString('pt-BR',  { maximumFractionDigits: 1 }) + ' mi';
 
-            // Card de métrica
             function card(title, metric, fmt) {
-                const pTot = DEVS.reduce((s, d) => s + devP[d][metric], 0);
-                const rTot = DEVS.reduce((s, d) => s + devR[d][metric], 0);
-                const delta = rTot - pTot;
-                // Para CMV (valores negativos): delta positivo = gastou menos = bom (verde)
+                const aTot = DEVS.reduce((s, d) => s + devA[d][metric], 0);
+                const bTot = DEVS.reduce((s, d) => s + devB[d][metric], 0);
+                const delta = bTot - aTot;
                 const dColor = delta >= 0 ? '#22c55e' : '#ef4444';
                 const dSign  = delta >= 0 ? '+' : '−';
-                const dFmt   = fmt(Math.abs(delta));
                 return `<div class="flex-1 flex flex-col items-center gap-3 min-w-0 px-2">
                     <p class="text-xs font-black text-gray-500 uppercase tracking-widest text-center leading-tight">${title}</p>
                     <div class="flex items-center gap-3 flex-wrap justify-center">
                         <div class="text-center">
-                            <div class="text-base font-black text-gray-700">${fmt(pTot)}</div>
-                            <div class="text-[10px] text-gray-400 font-bold">Plano</div>
+                            <div class="text-base font-black text-gray-700">${fmt(aTot)}</div>
+                            <div class="text-[10px] text-gray-400 font-bold truncate max-w-[72px]" title="${labelA}">${labelA}</div>
                         </div>
                         <div class="flex flex-col items-center gap-0" style="line-height:1;">
-                            <span style="color:${dColor};font-size:11px;font-weight:900;">${dSign}${dFmt}</span>
+                            <span style="color:${dColor};font-size:11px;font-weight:900;">${dSign}${fmt(Math.abs(delta))}</span>
                             <span style="color:#d1d5db;font-size:20px;">→</span>
                         </div>
                         <div class="text-center">
-                            <div class="text-base font-black text-gray-700">${fmt(rTot)}</div>
-                            <div class="text-[10px] text-gray-400 font-bold">Realizado</div>
+                            <div class="text-base font-black text-gray-700">${fmt(bTot)}</div>
+                            <div class="text-[10px] text-gray-400 font-bold truncate max-w-[72px]" title="${labelB}">${labelB}</div>
                         </div>
                     </div>
                     <div class="flex gap-3 items-end">
                         <div class="flex flex-col items-center gap-1">
-                            ${bar(devP, metric)}
-                            <span class="text-[10px] font-bold text-gray-400">Plano</span>
+                            ${bar(devA, metric)}
+                            <span class="text-[10px] font-bold text-gray-400 text-center max-w-[68px] truncate" title="${labelA}">${labelA}</span>
                         </div>
                         <div class="flex flex-col items-center gap-1">
-                            ${bar(devR, metric)}
-                            <span class="text-[10px] font-bold text-gray-400">Realizado</span>
+                            ${bar(devB, metric)}
+                            <span class="text-[10px] font-bold text-gray-400 text-center max-w-[68px] truncate" title="${labelB}">${labelB}</span>
                         </div>
                     </div>
                 </div>`;
