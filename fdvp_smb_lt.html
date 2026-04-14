@@ -293,7 +293,7 @@ function comboChart(id, barData, rawLine, barFmt, lineFmt, lineDash) {
   const maxY1 = lMax * (lMax !== lMin ? 1.20 : 1.50);
   const minY1 = (lMin - 0.60 * maxY1) / 0.40;
 
-  const lineLabel = id === 'p3' ? '% Atingimento' : 'TPV Médio (K)';
+  const lineLabel = (id === 'p3' || id === 't3') ? '% Atingimento' : 'TPV Médio (K)';
   const barLabel  = id.startsWith('p') ? 'FDVP' : 'FDVT';
 
   instances[id] = new Chart(document.getElementById(id), {
