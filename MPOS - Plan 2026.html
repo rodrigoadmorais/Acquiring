@@ -2274,9 +2274,25 @@
             if (stockChart) stockChart.destroy();
             const fs = stockLabelFontSize;
 
-            // Escala dos eixos — ambos ocultos
-            const maxStock = Math.max(...visEstoque, 1);
-            const maxCover = Math.max(...visCover.filter(v => v > 0), 1);
+            /* Estratégia de posicionamento:
+               - Eixo único oculto. Escala total = chartMax.
+               - Barras ocupam 0 → 62% da altura (chartMax = maxStock / 0.62)
+               - Linha escalada para aparecer entre 72% e 90% da altura
+                 → sempre acima das barras com folga visível                */
+            const maxStock   = Math.max(...visEstoque, 1);
+            const chartMax   = maxStock / 0.62;           // barras ficam abaixo de 62%
+
+            const nonZeroCD  = visCover.filter(v => v > 0);
+            const minCD      = nonZeroCD.length ? Math.min(...nonZeroCD) : 0;
+            const maxCD      = nonZeroCD.length ? Math.max(...nonZeroCD) : 1;
+            const cdRange    = maxCD - minCD || 1;
+
+            // Mapeia cover days para 72%-90% da altura total
+            const coverScaled = visCover.map(v => {
+                if (!v || v <= 0) return null;
+                const norm = (v - minCD) / cdRange;       // 0..1
+                return chartMax * (0.72 + norm * 0.18);   // 72% → 90%
+            });
 
             stockChart = new Chart(ctx, {
                 data: {
@@ -2290,21 +2306,22 @@
                             borderColor: '#E6CE00',
                             borderWidth: 1,
                             borderRadius: 4,
-                            yAxisID: 'yStock',
-                            // Label DENTRO da barra, rotacionado — nunca sobrepõe a linha
+                            yAxisID: 'y',
                             datalabels: {
                                 anchor: 'center',
                                 align: 'center',
                                 rotation: -90,
                                 color: '#555',
                                 font: { weight: 'bold', size: fs },
-                                formatter: v => v > 0 ? Math.round(v).toLocaleString('pt-BR') : ''
+                                // Abreviado em K
+                                formatter: v => v > 0 ? Math.round(v / 1000) + 'K' : ''
                             }
                         },
                         {
                             type: 'line',
                             label: 'Cover Days',
-                            data: visCover,
+                            data: coverScaled,          // posição visual escalada
+                            originalData: visCover,    // valor real para labels/tooltip
                             borderColor: '#C89A00',
                             backgroundColor: '#C89A00',
                             pointBackgroundColor: '#C89A00',
@@ -2314,15 +2331,18 @@
                             pointHoverRadius: 7,
                             borderWidth: 2.5,
                             tension: 0.3,
-                            yAxisID: 'yCover',
-                            // Label ACIMA do ponto — eixo separado garante que nunca coincide com barra
+                            yAxisID: 'y',
                             datalabels: {
                                 anchor: 'end',
                                 align: 'top',
-                                offset: 5,
+                                offset: 4,
                                 color: '#333',
                                 font: { weight: 'black', size: fs + 1 },
-                                formatter: v => (v && v > 0) ? Math.round(v) : ''
+                                // Mostra o valor REAL (não o escalado)
+                                formatter: (_, c) => {
+                                    const real = c.dataset.originalData?.[c.dataIndex];
+                                    return (real && real > 0) ? Math.round(real) : '';
+                                }
                             }
                         }
                     ]
@@ -2330,7 +2350,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: { top: 40, right: 10, bottom: 0, left: 4 } },
+                    layout: { padding: { top: 36, right: 10, bottom: 0, left: 4 } },
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: {
@@ -2339,9 +2359,12 @@
                         },
                         tooltip: {
                             callbacks: {
-                                label: c => c.dataset.label === 'Devices Stock'
-                                    ? ` Stock: ${Math.round(c.raw).toLocaleString('pt-BR')} unid.`
-                                    : ` Cover Days: ${Math.round(c.raw)} dias`
+                                label: c => {
+                                    if (c.dataset.label === 'Devices Stock')
+                                        return ` Stock: ${Math.round(c.raw).toLocaleString('pt-BR')} unid.`;
+                                    const real = c.dataset.originalData?.[c.dataIndex] ?? 0;
+                                    return ` Cover Days: ${Math.round(real)} dias`;
+                                }
                             }
                         },
                         datalabels: {}
@@ -2351,18 +2374,7 @@
                             grid: { display: false },
                             ticks: { font: { weight: 'bold', size: 10 }, color: '#6b7280' }
                         },
-                        // Eixo das barras — oculto, escala real
-                        yStock: {
-                            type: 'linear', position: 'left',
-                            display: false, min: 0, max: maxStock * 1.15
-                        },
-                        // Eixo da linha — oculto, escala real do Cover Days
-                        // max com folga ampla para a linha ficar acima de tudo
-                        yCover: {
-                            type: 'linear', position: 'right',
-                            display: false, min: 0,
-                            max: maxCover * 1.7   // linha ocupa ~60% do topo → sempre acima das barras
-                        }
+                        y: { display: false, min: 0, max: chartMax }
                     }
                 },
                 plugins: [ChartDataLabels]
