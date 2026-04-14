@@ -739,7 +739,7 @@
                         <span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">Cenários</span>
                         <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                             <button onclick="mixNameDown()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
-                            <span id="mix-name-size" class="px-1.5 text-[10px] font-bold text-gray-400">10</span>
+                            <span id="mix-name-size" class="px-1.5 text-[10px] font-bold text-gray-400">13</span>
                             <button onclick="mixNameUp()" class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
                         </div>
                     </div>
@@ -2569,7 +2569,7 @@
         ══════════════════════════════════════════════════════ */
         let mixSectionWidth  = 70;
         let mixBarLabelSize  = 13;
-        let mixNameLabelSize = 10;  // tamanho do "Plano" / "Realizado" abaixo das barras e nos totais
+        let mixNameLabelSize = 13;  // tamanho do "Plano" / "Realizado" abaixo das barras e nos totais
 
         function mixWidthDown() {
             mixSectionWidth = Math.max(mixSectionWidth - 10, 40);
@@ -2747,7 +2747,7 @@
                 return `<div style="height:200px;width:68px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;">${segs}</div>`;
             }
 
-            const fK    = v => (Math.abs(v) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil';
+            const fK    = v => (Math.abs(v) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'k';
             const fM    = v => (Math.abs(v) / 1e6).toLocaleString('pt-BR',  { maximumFractionDigits: 1 }) + ' mi';
             // Formatter com sinal (para CMV negativo)
             const fMsgn = v => (v < 0 ? '−' : '') + (Math.abs(v) / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi';
@@ -2767,7 +2767,7 @@
                             <div style="font-size:${ns}px;" class="text-gray-400 font-medium truncate max-w-[72px]" title="${labelA}">${labelA}</div>
                         </div>
                         <div class="flex flex-col items-center gap-0" style="line-height:1;">
-                            <span style="color:${dColor};font-size:11px;font-weight:900;">${dSign}${fM(Math.abs(delta))}</span>
+                            <span style="color:${dColor};font-size:11px;font-weight:900;">${dSign}${fmt(Math.abs(delta))}</span>
                             <span style="color:#d1d5db;font-size:20px;">→</span>
                         </div>
                         <div class="text-center">
