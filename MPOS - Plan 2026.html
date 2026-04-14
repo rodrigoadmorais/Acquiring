@@ -2320,7 +2320,9 @@
 
             // Regex que reconhece qualquer chave no formato "Jan 25", "Feb 26", etc.
             // (3 letras de mês + espaço + 2 dígitos de ano)
-            const PERIOD_KEY_RE = /^(jan|feb|fev|mar|abr|apr|mai|may|jun|jul|ago|aug|set|sep|out|oct|nov|dez|dec)\s*\d{2,4}$/i;
+            // Aceita tanto "Jan 25" / "Feb 26" (formato antigo com ano)
+            // quanto "January" / "February" (formato novo sem ano do Verdi)
+            const PERIOD_KEY_RE = /^(jan(uary)?|feb(ruary)?|fev(ereiro)?|mar(ch|c[oö])?|abr(il)?|apr(il)?|mai(o)?|may|jun(e|ho)?|jul(y|ho)?|ago(sto)?|aug(ust)?|set(embro)?|sep(tember)?|out(ubro)?|oct(ober)?|nov(ember|embro)?|dez(embro)?|dec(ember)?)(\s+\d{2,4})?$/i;
 
             // Chaves meta a ignorar
             const META_RE = /^(row_number|col_\d+|__row|rowIndex|_|\s*)$/i;
