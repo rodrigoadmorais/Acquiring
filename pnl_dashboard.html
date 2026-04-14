@@ -1995,43 +1995,53 @@ function buildCpaMonthSelectors() {
   });
 }
 
-// ── Aggregate CPA / MPOS data for a given month ─────────────
-function aggregateCpaData(mng3Value, mes) {
-  // Returns: { total: {real,plan,pm,ytdReal,ytdPlan}, items: Map<mng4, {real,plan,pm,ytdReal,ytdPlan}> }
-  if(!mes) return null;
-  const year  = Math.floor(mes / 100);
-  const month = mes % 100;
-  const janOfYear = year * 100 + 1;
-  let pmMes;
-  if(month === 1) pmMes = (year - 1) * 100 + 12;
-  else pmMes = year * 100 + (month - 1);
+// ── Normalize MNG names with encoding issues ─────────────
+function normalizeName(s) {
+  if(!s) return s;
+  if(s.includes('Telemet'))                          return 'Telemetría';
+  if(s.includes('Previsi') && s.includes('Costo'))   return 'Previsión Costo MPOS';
+  return s;
+}
+
+// ── Generic line aggregator ───────────────────────────────
+// filterFn(row) → bool; key derived from MNG_4 (or MNG_3 fallback), normalized
+function aggregateLines(filterFn, mes) {
+  if(!mes || !allData.length) return { total:{real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0}, items:new Map() };
+  const year = Math.floor(mes/100);
+  const month = mes%100;
+  const janOfYear = year*100+1;
+  const pmMes = month===1 ? (year-1)*100+12 : year*100+(month-1);
 
   const items = new Map();
-  const total = { real:0, plan:0, pm:0, ytdReal:0, ytdPlan:0 };
+  const total = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
 
   for(const d of allData) {
-    if(d.MNG_2 !== 'Customer Acquisition Cost') continue;
-    // Match MNG_3: support encoding issue by using includes for Prevision
-    if(mng3Value === 'PREVISION_MPOS') {
-      if(!d.MNG_3 || !d.MNG_3.includes('MPOS Cost')) continue;
-    } else {
-      if(d.MNG_3 !== mng3Value) continue;
-    }
-
-    const k4 = d.MNG_4 || '(outros)';
-    if(!items.has(k4)) items.set(k4, { real:0, plan:0, pm:0, ytdReal:0, ytdPlan:0 });
+    if(!filterFn(d)) continue;
+    const k4 = normalizeName(d.MNG_4 || d.MNG_3 || '(outros)');
+    if(!items.has(k4)) items.set(k4, {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0});
     const item = items.get(k4);
     const v = d.Value || 0;
-
-    if(d.MES === mes && d.Cenario === 'Realizado')     { item.real    += v; total.real    += v; }
-    if(d.MES === mes && d.Cenario === 'Plan')           { item.plan    += v; total.plan    += v; }
-    if(d.MES === pmMes && d.Cenario === 'Realizado')   { item.pm      += v; total.pm      += v; }
-    if(d.MES >= janOfYear && d.MES <= mes && d.Cenario === 'Realizado') { item.ytdReal += v; total.ytdReal += v; }
-    if(d.MES >= janOfYear && d.MES <= mes && d.Cenario === 'Plan')      { item.ytdPlan += v; total.ytdPlan += v; }
+    if(d.MES===mes   && d.Cenario==='Realizado')                                { item.real+=v;    total.real+=v; }
+    if(d.MES===mes   && d.Cenario==='Plan')                                     { item.plan+=v;    total.plan+=v; }
+    if(d.MES===pmMes && d.Cenario==='Realizado')                               { item.pm+=v;      total.pm+=v; }
+    if(d.MES>=janOfYear&&d.MES<=mes&&d.Cenario==='Realizado')                  { item.ytdReal+=v; total.ytdReal+=v; }
+    if(d.MES>=janOfYear&&d.MES<=mes&&d.Cenario==='Plan')                       { item.ytdPlan+=v; total.ytdPlan+=v; }
   }
-
-  return { total, items };
+  return {total, items};
 }
+
+// ── Data filters per section ──────────────────────────────
+const CPA_FILTER = d =>
+  (d.MNG_2==='Customer Acquisition Cost' && d.MNG_3==='CPA') ||
+  (d.MNG_2==='Direct Variable Costs'     && d.MNG_4==='Consultor Certificado');
+
+const MPOS_FILTERS = {
+  'Sales':    d => d.MNG_2==='Customer Acquisition Cost' && d.MNG_3==='Sales MPOS',
+  'PointCogs': d =>
+    (d.MNG_2==='Customer Acquisition Cost' && d.MNG_3==='Point COGS') ||
+    (d.MNG_2==='Customer Acquisition Cost' && d.MNG_3 && d.MNG_3.includes('MPOS Cost')) ||
+    (d.MNG_2==='Direct Variable Costs'     && d.MNG_3 && d.MNG_3.includes('Telemet'))
+};
 
 // ── Format value for CPA/MPOS tables ──────────────────────
 function fmtCpa(v, ud) {
@@ -2106,12 +2116,12 @@ function buildCpaRow(label, data, ud, rowClass, isNameOnly) {
 const CPA_DEFAULT_ORDER = [
   'Paid On Media','MGM','Fuerza de Venta Propia Point',
   'Fuerza de Venta de Terceros Point','Comisiones a Resellers Point',
-  'Televentas','Venta en pagina web de terceros','Other Sales Expenses Point'
+  'Televentas','Venta en pagina web de terceros','Other Sales Expenses Point',
+  'Consultor Certificado'
 ];
 const MPOS_BLOCKS_DEF = [
-  { key:'Point COGS',     label:'Point COGS',           defOrder:['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs'] },
-  { key:'PREVISION_MPOS', label:'Prevision MPOS Cost',  defOrder:[] },
-  { key:'Sales MPOS',     label:'Sales MPOS',           defOrder:['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
+  { key:'Sales',    label:'Sales',      defOrder:['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
+  { key:'PointCogs',label:'Point COGS', defOrder:['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs','Previsión Costo MPOS','Telemetría'] },
 ];
 
 let cpaLineOrder  = [...CPA_DEFAULT_ORDER];
@@ -2168,7 +2178,7 @@ function renderCpaTab() {
   if(!mes || !allData.length) return;
   const ud = cpaUnitDiv;
 
-  const data = aggregateCpaData('CPA', mes);
+  const data = aggregateLines(CPA_FILTER, mes);
   if(!data) return;
 
   document.getElementById('cpaHead').innerHTML = buildCpaHead(mes, ud, 'cpaTable');
@@ -2197,13 +2207,6 @@ function renderCpaTab() {
   });
 }
 
-// ── MNG_3 display name cleanup ───────────────────────────
-function cleanMng3Label(s) {
-  if(!s) return s;
-  if(s.includes('MPOS Cost')) return 'Prevision MPOS Cost';
-  return s;
-}
-
 // ── Point & MPOS Tab renderer (uses line config) ─────────
 function renderMposTab() {
   const mes = parseInt(document.getElementById('mposMesSel').value || 0);
@@ -2215,10 +2218,11 @@ function renderMposTab() {
   let html = '';
 
   for(const blockDef of MPOS_BLOCKS_DEF) {
-    const data = aggregateCpaData(blockDef.key, mes);
-    if(!data) continue;
+    const filterFn = MPOS_FILTERS[blockDef.key];
+    if(!filterFn) continue;
+    const data = aggregateLines(filterFn, mes);
 
-    const cfg = mposLineCfg[blockDef.key];
+    const cfg = mposLineCfg[blockDef.key] || { order: blockDef.defOrder, hidden: new Set() };
     const dataKeys = [...data.items.keys()];
     const allKeys  = [...new Set([...cfg.order, ...dataKeys])];
 
@@ -2227,7 +2231,7 @@ function renderMposTab() {
     html += buildCpaRow(blockDef.label + ' Total', data.total, ud, 'cpa-row-total', false);
 
     for(const k4 of allKeys) {
-      if(cfg.hidden.has(k4)) continue;
+      if(cfg.hidden && cfg.hidden.has(k4)) continue;
       const vals = data.items.get(k4);
       if(!vals) continue;
       html += buildCpaRow(k4, vals, ud, 'cpa-row-item', false);
@@ -2294,7 +2298,7 @@ function buildLcmList() {
   }
 
   if(lcmActiveTab === 'cpa') {
-    const dataKeys = [...new Set(allData.filter(d=>d.MNG_2==='Customer Acquisition Cost'&&d.MNG_3==='CPA'&&d.MNG_4).map(d=>d.MNG_4))];
+    const dataKeys = [...new Set(allData.filter(CPA_FILTER).map(d => normalizeName(d.MNG_4||d.MNG_3)).filter(Boolean))];
     const allKeys  = [...new Set([...cpaLineOrder, ...dataKeys])];
     allKeys.forEach(name => container.appendChild(makeItem(name, cpaLineHidden.has(name), '')));
   } else {
@@ -2304,12 +2308,11 @@ function buildLcmList() {
       hdr.textContent = blockDef.label;
       container.appendChild(hdr);
 
-      const cfg = mposLineCfg[blockDef.key];
-      const dataKeys = [...new Set(allData.filter(d=>{
-        if(d.MNG_2!=='Customer Acquisition Cost') return false;
-        if(blockDef.key==='PREVISION_MPOS') return d.MNG_3&&d.MNG_3.includes('MPOS Cost');
-        return d.MNG_3===blockDef.key;
-      }).map(d=>d.MNG_4).filter(Boolean))];
+      const cfg = mposLineCfg[blockDef.key] || { order: blockDef.defOrder, hidden: new Set() };
+      const filterFn = MPOS_FILTERS[blockDef.key];
+      const dataKeys = filterFn
+        ? [...new Set(allData.filter(filterFn).map(d => normalizeName(d.MNG_4||d.MNG_3)).filter(Boolean))]
+        : [];
       const allKeys = [...new Set([...cfg.order, ...dataKeys])];
       allKeys.forEach(name => container.appendChild(makeItem(name, cfg.hidden.has(name), blockDef.key)));
     });
