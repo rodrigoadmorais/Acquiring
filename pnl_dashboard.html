@@ -343,6 +343,61 @@ td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
 /* Hover */
 .cpa-row-item:hover td,.cpa-row-total:hover td{filter:brightness(.97)}
 .cpa-row-block:hover td{filter:brightness(1.08)}
+
+/* ── Compact mode ── */
+.cpa-table.compact th{padding:5px 7px;font-size:10px}
+.cpa-table.compact td{padding:3px 7px;font-size:11px}
+.cpa-table.compact th.cpa-name-hdr,.cpa-table.compact td.cpa-name-cell{min-width:190px;max-width:260px}
+.cpa-table.compact .cpa-row-item td.cpa-name-cell{padding-left:22px!important}
+
+/* ── Config / compact buttons in filter bar ── */
+.cpa-cfg-btn{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;
+             background:var(--card);color:var(--muted);cursor:pointer;font-size:11px;
+             font-weight:700;transition:.15s;white-space:nowrap;display:flex;
+             align-items:center;gap:5px;line-height:1.4}
+.cpa-cfg-btn:hover{border-color:var(--blue);color:var(--blue)}
+.cpa-cfg-btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ── Line Config Modal ── */
+#lineConfigModal{display:none;position:fixed;inset:0;z-index:1500;
+                 background:rgba(0,0,0,.62);align-items:center;justify-content:center}
+#lineConfigModal.open{display:flex}
+#lineConfigBox{background:var(--card);border-radius:14px;padding:24px;max-width:460px;
+               width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;
+               height:min(600px,80vh);display:flex;flex-direction:column}
+.lcm-header{display:flex;justify-content:space-between;align-items:center;
+            margin-bottom:12px;flex-shrink:0}
+.lcm-title{font-size:14px;font-weight:700;color:var(--text)}
+.lcm-close{background:none;border:none;cursor:pointer;color:var(--muted);
+           font-size:20px;padding:4px 8px;line-height:1}
+.lcm-close:hover{color:var(--text)}
+.lcm-top-acts{display:flex;gap:10px;margin-bottom:10px;flex-shrink:0}
+.lcm-top-btn{font-size:11px;font-weight:700;color:var(--blue);
+             background:none;border:none;cursor:pointer;padding:0}
+.lcm-top-btn:hover{text-decoration:underline}
+.lcm-scroll{flex:1 1 0;overflow-y:auto;min-height:0;padding-right:2px}
+.lcm-block-hdr{font-size:10px;font-weight:700;text-transform:uppercase;
+               letter-spacing:.7px;color:var(--muted);padding:12px 4px 5px;
+               border-bottom:1px solid var(--border);margin-bottom:4px}
+.lcm-item{display:flex;align-items:center;gap:9px;padding:7px 9px;
+          border-radius:8px;user-select:none;border:1.5px solid transparent;
+          margin-bottom:3px;background:var(--bg);transition:.1s;cursor:default}
+.lcm-item:hover{background:var(--blue-lt)}
+.lcm-item.lcm-dragging{opacity:.3;border-color:var(--border)}
+.lcm-item.lcm-over{border-color:var(--blue);background:var(--blue-lt)}
+.lcm-handle{cursor:grab;color:var(--muted);font-size:16px;flex-shrink:0;line-height:1}
+.lcm-handle:active{cursor:grabbing}
+.lcm-check{width:15px;height:15px;accent-color:var(--blue);cursor:pointer;flex-shrink:0}
+.lcm-label{flex:1;font-size:12px;color:var(--text);
+           white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lcm-footer{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;
+            flex-shrink:0;border-top:1px solid var(--border);padding-top:14px}
+.lcm-btn{padding:7px 18px;border-radius:8px;border:1.5px solid var(--border);
+         background:var(--card);color:var(--text);cursor:pointer;
+         font-size:12px;font-weight:600;transition:.15s}
+.lcm-btn:hover{background:var(--bg)}
+.lcm-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.lcm-btn.primary:hover{background:#1256a8}
 </style>
 </head>
 <body>
@@ -533,6 +588,16 @@ td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
         <button class="on" data-u="1000000" onclick="setCpaUnit(this)">R$ M</button>
       </div>
     </div>
+    <div style="margin-left:auto;display:flex;align-items:flex-end;gap:8px">
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Colunas</label>
+        <button class="cpa-cfg-btn" id="cpaCompactBtn" onclick="toggleCpaCompact()">⊟ Compacto</button>
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Linhas</label>
+        <button class="cpa-cfg-btn" onclick="openLcm('cpa')">⚙ Editar linhas</button>
+      </div>
+    </div>
   </div>
   <div class="cpa-tbl-wrap">
     <div class="tbl-outer">
@@ -561,6 +626,16 @@ td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
         <button class="on" data-u="1000000" onclick="setMposUnit(this)">R$ M</button>
       </div>
     </div>
+    <div style="margin-left:auto;display:flex;align-items:flex-end;gap:8px">
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Colunas</label>
+        <button class="cpa-cfg-btn" id="mposCompactBtn" onclick="toggleMposCompact()">⊟ Compacto</button>
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Linhas</label>
+        <button class="cpa-cfg-btn" onclick="openLcm('mpos')">⚙ Editar linhas</button>
+      </div>
+    </div>
   </div>
   <div class="cpa-tbl-wrap">
     <div class="tbl-outer">
@@ -568,6 +643,26 @@ td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
         <thead id="mposHead"></thead>
         <tbody id="mposBody"><tr><td colspan="12" class="empty">⏳ Carregando...</td></tr></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Line Config Modal ── -->
+<div id="lineConfigModal" onclick="lcmOverlayClick(event)">
+  <div id="lineConfigBox">
+    <div class="lcm-header">
+      <span class="lcm-title" id="lcmTitle">Configurar Linhas</span>
+      <button class="lcm-close" onclick="closeLcm()">✕</button>
+    </div>
+    <div class="lcm-top-acts">
+      <button class="lcm-top-btn" onclick="lcmToggleAll(true)">Mostrar todas</button>
+      <span style="color:var(--border);font-size:11px">·</span>
+      <button class="lcm-top-btn" onclick="lcmToggleAll(false)">Ocultar todas</button>
+    </div>
+    <div class="lcm-scroll" id="lcmList"></div>
+    <div class="lcm-footer">
+      <button class="lcm-btn" onclick="closeLcm()">Cancelar</button>
+      <button class="lcm-btn primary" onclick="applyLcm()">Aplicar</button>
     </div>
   </div>
 </div>
@@ -2005,7 +2100,69 @@ function buildCpaRow(label, data, ud, rowClass, isNameOnly) {
   </tr>`;
 }
 
-// ── CPA Tab renderer ─────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  LINE CONFIG STATE + COMPACT
+// ═══════════════════════════════════════════════════════════
+const CPA_DEFAULT_ORDER = [
+  'Paid On Media','MGM','Fuerza de Venta Propia Point',
+  'Fuerza de Venta de Terceros Point','Comisiones a Resellers Point',
+  'Televentas','Venta en pagina web de terceros','Other Sales Expenses Point'
+];
+const MPOS_BLOCKS_DEF = [
+  { key:'Point COGS',     label:'Point COGS',           defOrder:['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs'] },
+  { key:'PREVISION_MPOS', label:'Prevision MPOS Cost',  defOrder:[] },
+  { key:'Sales MPOS',     label:'Sales MPOS',           defOrder:['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
+];
+
+let cpaLineOrder  = [...CPA_DEFAULT_ORDER];
+let cpaLineHidden = new Set();
+let mposLineCfg   = {};
+MPOS_BLOCKS_DEF.forEach(b => { mposLineCfg[b.key] = { order:[...b.defOrder], hidden:new Set() }; });
+
+let cpaCompact  = false;
+let mposCompact = false;
+
+// Load persisted config
+(function loadLineCfg(){
+  try {
+    const c = localStorage.getItem('acq_cpa_cfg');
+    if(c){ const p=JSON.parse(c); if(p.order) cpaLineOrder=p.order; cpaLineHidden=new Set(p.hidden||[]); }
+    const m = localStorage.getItem('acq_mpos_cfg');
+    if(m){ const p=JSON.parse(m); for(const[k,v] of Object.entries(p)) if(mposLineCfg[k]){ mposLineCfg[k].order=v.order||mposLineCfg[k].order; mposLineCfg[k].hidden=new Set(v.hidden||[]); } }
+    const cp = localStorage.getItem('acq_compact');
+    if(cp){ const p=JSON.parse(cp); cpaCompact=!!p.cpa; mposCompact=!!p.mpos; }
+  } catch(e){}
+})();
+
+function persistLineCfg(tab){
+  try{
+    if(tab==='cpa') localStorage.setItem('acq_cpa_cfg', JSON.stringify({order:cpaLineOrder,hidden:[...cpaLineHidden]}));
+    else { const obj={}; for(const[k,v] of Object.entries(mposLineCfg)) obj[k]={order:v.order,hidden:[...v.hidden]}; localStorage.setItem('acq_mpos_cfg',JSON.stringify(obj)); }
+    localStorage.setItem('acq_compact',JSON.stringify({cpa:cpaCompact,mpos:mposCompact}));
+  } catch(e){}
+}
+
+// ── Compact toggle ────────────────────────────────────────
+function toggleCpaCompact(){
+  cpaCompact=!cpaCompact;
+  document.getElementById('cpaCompactBtn').classList.toggle('on',cpaCompact);
+  document.getElementById('cpaTable').classList.toggle('compact',cpaCompact);
+  persistLineCfg('cpa');
+}
+function toggleMposCompact(){
+  mposCompact=!mposCompact;
+  document.getElementById('mposCompactBtn').classList.toggle('on',mposCompact);
+  document.getElementById('mposTable').classList.toggle('compact',mposCompact);
+  persistLineCfg('mpos');
+}
+function syncCompactButtons(){
+  document.getElementById('cpaCompactBtn')?.classList.toggle('on',cpaCompact);
+  document.getElementById('mposCompactBtn')?.classList.toggle('on',mposCompact);
+  document.getElementById('cpaTable')?.classList.toggle('compact',cpaCompact);
+  document.getElementById('mposTable')?.classList.toggle('compact',mposCompact);
+}
+
+// ── CPA Tab renderer (uses line config) ──────────────────
 function renderCpaTab() {
   const mes = parseInt(document.getElementById('cpaMesSel').value || 0);
   if(!mes || !allData.length) return;
@@ -2014,86 +2171,65 @@ function renderCpaTab() {
   const data = aggregateCpaData('CPA', mes);
   if(!data) return;
 
-  // Build header
   document.getElementById('cpaHead').innerHTML = buildCpaHead(mes, ud, 'cpaTable');
 
-  // Build body
   let html = '';
-  // CPA Total row
   html += buildCpaRow('CPA Total', data.total, ud, 'cpa-row-total', false);
 
-  // Sub-lines (MNG_4) — order by known list if possible
-  const CPA_MNG4_ORDER = [
-    'Paid On Media','MGM','Fuerza de Venta Propia Point','Fuerza de Venta de Terceros Point',
-    'Comisiones a Resellers Point','Televentas','Venta en pagina web de terceros',
-    'Other Sales Expenses Point'
-  ];
-  const sortedItems = [...data.items.entries()].sort((a,b) => {
-    const ia = CPA_MNG4_ORDER.indexOf(a[0]);
-    const ib = CPA_MNG4_ORDER.indexOf(b[0]);
-    return (ia<0?999:ia) - (ib<0?999:ib);
-  });
+  // Merge config order with any new lines from data
+  const dataKeys = [...data.items.keys()];
+  const allKeys  = [...new Set([...cpaLineOrder, ...dataKeys])];
 
-  for(const [k4, vals] of sortedItems) {
+  for(const k4 of allKeys) {
+    if(cpaLineHidden.has(k4)) continue;
+    const vals = data.items.get(k4);
+    if(!vals) continue;
     html += buildCpaRow(k4, vals, ud, 'cpa-row-item', false);
   }
 
-  if(!sortedItems.length)
+  if(!data.items.size)
     html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
 
   document.getElementById('cpaBody').innerHTML = html;
   requestAnimationFrame(() => {
-    const ths = document.querySelectorAll('#cpaTable thead tr th');
-    ths.forEach(th => th.style.top = '0px');
+    document.querySelectorAll('#cpaTable thead tr th').forEach(th => th.style.top='0px');
+    syncCompactButtons();
   });
 }
 
 // ── MNG_3 display name cleanup ───────────────────────────
 function cleanMng3Label(s) {
   if(!s) return s;
-  // Fix encoding: Previsi?n → Prevision
   if(s.includes('MPOS Cost')) return 'Prevision MPOS Cost';
   return s;
 }
 
-// ── Point & MPOS Tab renderer ────────────────────────────
+// ── Point & MPOS Tab renderer (uses line config) ─────────
 function renderMposTab() {
   const mes = parseInt(document.getElementById('mposMesSel').value || 0);
   if(!mes || !allData.length) return;
   const ud = mposUnitDiv;
 
-  // Three blocks
-  const blocks = [
-    { mng3: 'Point COGS',       label: 'Point COGS',           order: ['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs'] },
-    { mng3: 'PREVISION_MPOS',   label: 'Prevision MPOS Cost',  order: [] },
-    { mng3: 'Sales MPOS',       label: 'Sales MPOS',           order: ['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
-  ];
-
-  // Build header
   document.getElementById('mposHead').innerHTML = buildCpaHead(mes, ud, 'mposTable');
 
   let html = '';
 
-  for(const block of blocks) {
-    const data = aggregateCpaData(block.mng3, mes);
+  for(const blockDef of MPOS_BLOCKS_DEF) {
+    const data = aggregateCpaData(blockDef.key, mes);
     if(!data) continue;
 
-    // Gap between blocks
+    const cfg = mposLineCfg[blockDef.key];
+    const dataKeys = [...data.items.keys()];
+    const allKeys  = [...new Set([...cfg.order, ...dataKeys])];
+
     html += '<tr class="cpa-gap"><td colspan="10"></td></tr>';
+    html += buildCpaRow(blockDef.label, null, ud, 'cpa-row-block', true);
+    html += buildCpaRow(blockDef.label + ' Total', data.total, ud, 'cpa-row-total', false);
 
-    // Block header (dark navy, like L1)
-    html += buildCpaRow(block.label, null, ud, 'cpa-row-block', true);
-
-    // Block total row
-    html += buildCpaRow(block.label + ' Total', data.total, ud, 'cpa-row-total', false);
-
-    // Sub-lines (MNG_4)
-    const sortedItems = [...data.items.entries()].sort((a,b) => {
-      const ia = block.order.indexOf(a[0]);
-      const ib = block.order.indexOf(b[0]);
-      return (ia<0?999:ia) - (ib<0?999:ib);
-    });
-    for(const [k4, vals] of sortedItems) {
+    for(const k4 of allKeys) {
+      if(cfg.hidden.has(k4)) continue;
+      const vals = data.items.get(k4);
+      if(!vals) continue;
       html += buildCpaRow(k4, vals, ud, 'cpa-row-item', false);
     }
   }
@@ -2101,9 +2237,109 @@ function renderMposTab() {
   if(!html) html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
   document.getElementById('mposBody').innerHTML = html;
   requestAnimationFrame(() => {
-    const ths = document.querySelectorAll('#mposTable thead tr th');
-    ths.forEach(th => th.style.top = '0px');
+    document.querySelectorAll('#mposTable thead tr th').forEach(th => th.style.top='0px');
+    syncCompactButtons();
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LINE CONFIG MODAL
+// ═══════════════════════════════════════════════════════════
+let lcmActiveTab = 'cpa';
+let lcmDragSrc   = null;
+
+function openLcm(tab) {
+  lcmActiveTab = tab;
+  document.getElementById('lcmTitle').textContent =
+    tab === 'cpa' ? 'Configurar Linhas — CPA' : 'Configurar Linhas — Point & MPOS';
+  buildLcmList();
+  document.getElementById('lineConfigModal').classList.add('open');
+}
+function closeLcm() {
+  document.getElementById('lineConfigModal').classList.remove('open');
+}
+function lcmOverlayClick(e) {
+  if(e.target === document.getElementById('lineConfigModal')) closeLcm();
+}
+function lcmToggleAll(show) {
+  document.querySelectorAll('#lcmList .lcm-check').forEach(cb => cb.checked = show);
+}
+
+function buildLcmList() {
+  const container = document.getElementById('lcmList');
+  container.innerHTML = '';
+
+  function makeItem(name, isHidden, blockKey) {
+    const div = document.createElement('div');
+    div.className = 'lcm-item';
+    div.draggable = true;
+    div.dataset.name  = name;
+    div.dataset.block = blockKey || '';
+    div.innerHTML =
+      `<span class="lcm-handle" title="Arrastar para reordenar">⠿</span>` +
+      `<input type="checkbox" class="lcm-check"${isHidden?'':' checked'}>` +
+      `<span class="lcm-label" title="${name}">${name}</span>`;
+    div.addEventListener('dragstart', e => { lcmDragSrc=div; div.classList.add('lcm-dragging'); e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',''); });
+    div.addEventListener('dragend',   () => { div.classList.remove('lcm-dragging'); container.querySelectorAll('.lcm-item').forEach(i=>i.classList.remove('lcm-over')); lcmDragSrc=null; });
+    div.addEventListener('dragover',  e => { e.preventDefault(); if(div!==lcmDragSrc){ container.querySelectorAll('.lcm-item').forEach(i=>i.classList.remove('lcm-over')); div.classList.add('lcm-over'); } });
+    div.addEventListener('drop',      e => {
+      e.preventDefault(); div.classList.remove('lcm-over');
+      if(!lcmDragSrc || lcmDragSrc===div) return;
+      if(lcmActiveTab==='mpos' && lcmDragSrc.dataset.block !== div.dataset.block) return;
+      const items = [...container.querySelectorAll(`.lcm-item[data-block="${div.dataset.block}"]`)];
+      const si = items.indexOf(lcmDragSrc), ti = items.indexOf(div);
+      if(ti > si) div.after(lcmDragSrc); else div.before(lcmDragSrc);
+    });
+    return div;
+  }
+
+  if(lcmActiveTab === 'cpa') {
+    const dataKeys = [...new Set(allData.filter(d=>d.MNG_2==='Customer Acquisition Cost'&&d.MNG_3==='CPA'&&d.MNG_4).map(d=>d.MNG_4))];
+    const allKeys  = [...new Set([...cpaLineOrder, ...dataKeys])];
+    allKeys.forEach(name => container.appendChild(makeItem(name, cpaLineHidden.has(name), '')));
+  } else {
+    MPOS_BLOCKS_DEF.forEach(blockDef => {
+      const hdr = document.createElement('div');
+      hdr.className = 'lcm-block-hdr';
+      hdr.textContent = blockDef.label;
+      container.appendChild(hdr);
+
+      const cfg = mposLineCfg[blockDef.key];
+      const dataKeys = [...new Set(allData.filter(d=>{
+        if(d.MNG_2!=='Customer Acquisition Cost') return false;
+        if(blockDef.key==='PREVISION_MPOS') return d.MNG_3&&d.MNG_3.includes('MPOS Cost');
+        return d.MNG_3===blockDef.key;
+      }).map(d=>d.MNG_4).filter(Boolean))];
+      const allKeys = [...new Set([...cfg.order, ...dataKeys])];
+      allKeys.forEach(name => container.appendChild(makeItem(name, cfg.hidden.has(name), blockDef.key)));
+    });
+  }
+}
+
+function applyLcm() {
+  const items = [...document.querySelectorAll('#lcmList .lcm-item')];
+
+  if(lcmActiveTab === 'cpa') {
+    cpaLineOrder  = items.map(el => el.dataset.name);
+    cpaLineHidden = new Set(items.filter(el => !el.querySelector('.lcm-check').checked).map(el => el.dataset.name));
+    persistLineCfg('cpa');
+    closeLcm();
+    renderCpaTab();
+  } else {
+    const byBlock = {};
+    items.forEach(el => {
+      const b = el.dataset.block;
+      if(!byBlock[b]) byBlock[b] = { order:[], hidden:new Set() };
+      byBlock[b].order.push(el.dataset.name);
+      if(!el.querySelector('.lcm-check').checked) byBlock[b].hidden.add(el.dataset.name);
+    });
+    for(const [k, v] of Object.entries(byBlock)) {
+      if(mposLineCfg[k]) mposLineCfg[k] = v;
+    }
+    persistLineCfg('mpos');
+    closeLcm();
+    renderMposTab();
+  }
 }
 </script>
 </body>
