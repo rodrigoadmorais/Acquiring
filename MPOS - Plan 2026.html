@@ -2172,63 +2172,43 @@
 
             /* ══════════════════════════════════════════════════
                PARSER — estrutura TRANSPOSTA da aba "Base Stock"
-               Linhas = métricas, Colunas = meses (chaves JSON)
-               Verdi lê com headerRow:2 → chaves são nomes dos meses
+               Chaves JSON = "Jan 25", "Feb 25", ... (abbrev+ano)
+               geradas pelo Verdi com headerRow:2
             ══════════════════════════════════════════════════ */
 
-            // Mapeamento nome-do-mês → índice 0-11
-            const MNAME_IDX = {
-                january:0,february:1,march:2,april:3,may:4,june:5,
-                july:6,august:7,september:8,october:9,november:10,december:11,
-                janeiro:0,fevereiro:1,março:2,abril:3,maio:4,junho:5,
-                julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11
-            };
-            const MABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            // Regex que reconhece qualquer chave no formato "Jan 25", "Feb 26", etc.
+            // (3 letras de mês + espaço + 2 dígitos de ano)
+            const PERIOD_KEY_RE = /^(jan|feb|fev|mar|abr|apr|mai|may|jun|jul|ago|aug|set|sep|out|oct|nov|dez|dec)\s*\d{2,4}$/i;
 
-            // Chaves que NÃO são meses
-            const META_RE = /^(row_number|col_\d+|__row|rowIndex|_)$/i;
+            // Chaves meta a ignorar
+            const META_RE = /^(row_number|col_\d+|__row|rowIndex|_|\s*)$/i;
 
-            // Coletar chaves-mês da 1ª linha, na ordem de aparição
+            // Coletar chaves-mês da 1ª linha, preservando a ordem original
             const allKeys = Object.keys(dbStock[0] || {});
-            const monthKeys = allKeys.filter(k => {
-                const lo = k.toLowerCase().trim();
-                return MNAME_IDX[lo] !== undefined && !META_RE.test(k);
-            });
+            const monthKeys = allKeys.filter(k => PERIOD_KEY_RE.test(k.trim()) && !META_RE.test(k.trim()));
 
-            // Atribuir ano a cada mês (detectar virada de ano pelo índice)
-            let year = 2025;
-            let prevIdx = -1;
-            const monthLabels = [];      // "Feb 25", "Mar 25", …
-            const monthYearMap = {};     // key → "Feb 25"
-            monthKeys.forEach(mk => {
-                const idx = MNAME_IDX[mk.toLowerCase().trim()];
-                if (prevIdx >= 0 && idx <= prevIdx) year++;
-                const label = `${MABBR[idx]} ${String(year).slice(2)}`;
-                monthLabels.push(label);
-                monthYearMap[mk] = label;
-                prevIdx = idx;
-            });
+            // Labels = as próprias chaves (já estão em "Jan 25" format)
+            const monthLabels = monthKeys.map(k => k.trim());
 
-            // Extrai label da linha (primeira coluna / col_1 / string vazia)
+            // ── helpers ───────────────────────────────────────────────────
             function rowLabel(row) {
-                for (const k of ['col_1','col_2','','label','Label','tipo','Tipo','metric','Metric']) {
+                for (const k of ['col_1','col_2','','label','Label','tipo','metric','Metric']) {
                     const v = row[k];
                     if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
                 }
                 return '';
             }
 
-            // Detecta nome do device em qualquer célula da linha
             const DEVICE_RE = /^(smart|pro|air|mini)$/i;
             function rowDevice(row) {
                 for (const v of Object.values(row)) {
-                    const s = String(v || '').trim();
+                    const s = String(v ?? '').trim();
                     if (DEVICE_RE.test(s)) return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
                 }
                 return null;
             }
 
-            // Extrai valores numéricos por mês (texto → 0)
+            // Extrai apenas valores numéricos das colunas-mês (string/null → 0)
             function rowValues(row) {
                 return monthKeys.map(k => {
                     const v = row[k];
@@ -2238,90 +2218,93 @@
                 });
             }
 
-            // Classificar cada linha
+            // ── classificar linhas ────────────────────────────────────────
             let estoque   = new Array(monthKeys.length).fill(0);
             let coverDays = new Array(monthKeys.length).fill(0);
             const devData = { Smart: null, Pro: null, Air: null, Mini: null };
 
             for (const row of dbStock) {
-                const lbl    = rowLabel(row).toLowerCase();
                 const device = rowDevice(row);
+                if (device && !devData[device]) { devData[device] = rowValues(row); continue; }
 
-                if (device && devData[device] === null) {
-                    devData[device] = rowValues(row);
-                    continue;
-                }
+                const lbl = rowLabel(row).toLowerCase();
                 if (lbl.includes('stock') || lbl.includes('estoque')) {
                     estoque = rowValues(row);
-                } else if (lbl.includes('days cover') || lbl.includes('cover days') ||
-                           lbl.includes('cobertura') || lbl.includes('dias')) {
+                } else if (lbl.includes('cover') || lbl.includes('cobertura') || lbl.includes('dias')) {
                     coverDays = rowValues(row);
                 }
             }
+            Object.keys(devData).forEach(d => {
+                if (!devData[d]) devData[d] = new Array(monthKeys.length).fill(0);
+            });
 
-            // Fallback: arrays vazios para devices sem dados
-            Object.keys(devData).forEach(d => { if (!devData[d]) devData[d] = new Array(monthKeys.length).fill(0); });
+            // ── filtrar meses com dados (excluir zeros finais) ────────────
+            const lastNonZero = Math.max(
+                estoque.reduce((acc, v, i) => v > 0 ? i : acc, -1),
+                coverDays.reduce((acc, v, i) => v > 0 ? i : acc, -1)
+            );
+            const cutoff = lastNonZero >= 0 ? lastNonZero + 1 : monthKeys.length;
+            const visLabels   = monthLabels.slice(0, cutoff);
+            const visEstoque  = estoque.slice(0, cutoff);
+            const visCover    = coverDays.slice(0, cutoff);
+            const visDevData  = { Smart: devData.Smart.slice(0, cutoff), Pro: devData.Pro.slice(0, cutoff),
+                                  Air:   devData.Air.slice(0, cutoff),   Mini: devData.Mini.slice(0, cutoff) };
 
             // ── popular select do mês ─────────────────────────────────────
             const sel = document.getElementById('stock-month-select');
-            const prevSelLabel = sel.options[sel.selectedIndex]?.text || '';
+            const prevLabel = sel.options[sel.selectedIndex]?.text || '';
             sel.innerHTML = '';
-            monthLabels.forEach((l, i) => {
+            visLabels.forEach((l, i) => {
                 const opt = document.createElement('option');
-                opt.value = i;
-                opt.textContent = l;
-                sel.appendChild(opt);
+                opt.value = i; opt.textContent = l; sel.appendChild(opt);
             });
-            const matchIdx = monthLabels.indexOf(prevSelLabel);
-            sel.value = matchIdx >= 0 ? matchIdx : monthLabels.length - 1;
+            const matchIdx = visLabels.indexOf(prevLabel);
+            sel.value = matchIdx >= 0 ? matchIdx : visLabels.length - 1;
 
-            // ── painel lateral — mostrar mês selecionado ──────────────────
+            // ── painel lateral ────────────────────────────────────────────
             const idx = parseInt(sel.value);
             const fmt = v => (v && v > 0) ? Math.round(v) : '–';
-            document.getElementById('stock-cd-smart').textContent = fmt(devData.Smart[idx]);
-            document.getElementById('stock-cd-pro').textContent   = fmt(devData.Pro[idx]);
-            document.getElementById('stock-cd-air').textContent   = fmt(devData.Air[idx]);
-            document.getElementById('stock-cd-mini').textContent  = fmt(devData.Mini[idx]);
+            document.getElementById('stock-cd-smart').textContent = fmt(visDevData.Smart[idx]);
+            document.getElementById('stock-cd-pro').textContent   = fmt(visDevData.Pro[idx]);
+            document.getElementById('stock-cd-air').textContent   = fmt(visDevData.Air[idx]);
+            document.getElementById('stock-cd-mini').textContent  = fmt(visDevData.Mini[idx]);
 
-            // ── escala normalizada — eixo único oculto ────────────────────
-            const maxStock = Math.max(...estoque, 1);
-            const maxCover = Math.max(...coverDays, 1);
-            const coverScaled = coverDays.map(v => (v / maxCover) * maxStock * 0.80);
-
-            // ── gráfico combinado (barras + linha) ────────────────────────
+            // ── gráfico ───────────────────────────────────────────────────
             const ctx = document.getElementById('stockChart').getContext('2d');
             if (stockChart) stockChart.destroy();
-
             const fs = stockLabelFontSize;
+
+            // Escala dos eixos — ambos ocultos
+            const maxStock = Math.max(...visEstoque, 1);
+            const maxCover = Math.max(...visCover.filter(v => v > 0), 1);
 
             stockChart = new Chart(ctx, {
                 data: {
-                    labels: monthLabels,
+                    labels: visLabels,
                     datasets: [
                         {
                             type: 'bar',
                             label: 'Devices Stock',
-                            data: estoque,
+                            data: visEstoque,
                             backgroundColor: '#FFE600',
                             borderColor: '#E6CE00',
                             borderWidth: 1,
                             borderRadius: 4,
-                            yAxisID: 'y',
+                            yAxisID: 'yStock',
+                            // Label DENTRO da barra, rotacionado — nunca sobrepõe a linha
                             datalabels: {
-                                anchor: 'end',
-                                align: 'end',
-                                offset: -2,
-                                color: '#333',
+                                anchor: 'center',
+                                align: 'center',
+                                rotation: -90,
+                                color: '#555',
                                 font: { weight: 'bold', size: fs },
-                                formatter: v => v ? Math.round(v).toLocaleString('pt-BR') : ''
+                                formatter: v => v > 0 ? Math.round(v).toLocaleString('pt-BR') : ''
                             }
                         },
                         {
                             type: 'line',
                             label: 'Cover Days',
-                            // dados reais para tooltip, escalonados para posição visual
-                            data: coverScaled,
-                            originalData: coverDays,
+                            data: visCover,
                             borderColor: '#C89A00',
                             backgroundColor: '#C89A00',
                             pointBackgroundColor: '#C89A00',
@@ -2331,17 +2314,15 @@
                             pointHoverRadius: 7,
                             borderWidth: 2.5,
                             tension: 0.3,
-                            yAxisID: 'y',
+                            yAxisID: 'yCover',
+                            // Label ACIMA do ponto — eixo separado garante que nunca coincide com barra
                             datalabels: {
                                 anchor: 'end',
                                 align: 'top',
-                                offset: 4,
+                                offset: 5,
                                 color: '#333',
                                 font: { weight: 'black', size: fs + 1 },
-                                formatter: (v, ctx2) => {
-                                    const real = ctx2.dataset.originalData?.[ctx2.dataIndex];
-                                    return real != null ? Math.round(real) : '';
-                                }
+                                formatter: v => (v && v > 0) ? Math.round(v) : ''
                             }
                         }
                     ]
@@ -2349,7 +2330,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: { top: 36, right: 12, bottom: 0, left: 4 } },
+                    layout: { padding: { top: 40, right: 10, bottom: 0, left: 4 } },
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: {
@@ -2358,13 +2339,9 @@
                         },
                         tooltip: {
                             callbacks: {
-                                label: ctx2 => {
-                                    if (ctx2.dataset.label === 'Devices Stock')
-                                        return ` Stock: ${Math.round(ctx2.raw).toLocaleString('pt-BR')} unid.`;
-                                    // linha: mostrar valor real, não o escalado
-                                    const real = ctx2.dataset.originalData?.[ctx2.dataIndex] ?? ctx2.raw;
-                                    return ` Cover Days: ${Math.round(real)} dias`;
-                                }
+                                label: c => c.dataset.label === 'Devices Stock'
+                                    ? ` Stock: ${Math.round(c.raw).toLocaleString('pt-BR')} unid.`
+                                    : ` Cover Days: ${Math.round(c.raw)} dias`
                             }
                         },
                         datalabels: {}
@@ -2374,10 +2351,17 @@
                             grid: { display: false },
                             ticks: { font: { weight: 'bold', size: 10 }, color: '#6b7280' }
                         },
-                        y: {
-                            display: false,          // eixo único — oculto
-                            min: 0,
-                            max: maxStock * 1.25     // folga extra no topo para os rótulos
+                        // Eixo das barras — oculto, escala real
+                        yStock: {
+                            type: 'linear', position: 'left',
+                            display: false, min: 0, max: maxStock * 1.15
+                        },
+                        // Eixo da linha — oculto, escala real do Cover Days
+                        // max com folga ampla para a linha ficar acima de tudo
+                        yCover: {
+                            type: 'linear', position: 'right',
+                            display: false, min: 0,
+                            max: maxCover * 1.7   // linha ocupa ~60% do topo → sempre acima das barras
                         }
                     }
                 },
