@@ -1,0 +1,104 @@
+{
+  "name": "Stock - Base Stock",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "stock-trigger-0000-0000-0000-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [-304, 0],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1JXp2qU-Tl2VmFcmNlrqqVtXZMNzA6VUilhpmBMVurKo/edit?usp=sharing"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Base Stock"
+        },
+        "options": {}
+      },
+      "id": "stock-read-0000-0000-0000-000000000001",
+      "name": "Get Base Stock",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [-80, 0],
+      "executeOnce": true,
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleGenericOAuth2Api": {
+          "id": "sC7ffTfXkwXEsrvT",
+          "name": "Google account cIlo-Xx5bNUIVd3qo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "rodrigoadmorais"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Acquiring"
+        },
+        "filePath": "data/stock.json",
+        "fileContent": "={{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "commitMessage": "Atualizando estoque via Verdi (Base Stock)"
+      },
+      "id": "stock-write-0000-0000-0000-000000000001",
+      "name": "Write Stock",
+      "type": "n8n-nodes-base.github",
+      "position": [128, 0],
+      "executeOnce": true,
+      "typeVersion": 1.1,
+      "credentials": {
+        "githubApi": {
+          "id": "fWDKMzcwXPVONCxV",
+          "name": "GitHub account b5tV-4CmhNNgM432n"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          { "node": "Get Base Stock", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get Base Stock": {
+      "main": [
+        [
+          { "node": "Write Stock", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "7fa8c733db20fb5e95cb08b0c1fbcd66d08a3226e222f28c9efd2fcd19ffd10a"
+  },
+  "tags": []
+}
