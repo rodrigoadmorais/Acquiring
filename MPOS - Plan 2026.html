@@ -590,13 +590,32 @@
                     <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
                         <i data-lucide="package" class="w-4 h-4 text-yellow-500"></i> Devices Stock vs Cover Days
                     </h2>
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- De / Até range -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">De</span>
+                            <select id="stock-range-start" onchange="renderEstoqueTab()"
+                                class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            </select>
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Até</span>
+                            <select id="stock-range-end" onchange="renderEstoqueTab()"
+                                class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            </select>
+                        </div>
                         <!-- Filtro de mês (fora do painel) -->
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Cover Days de</span>
                             <select id="stock-month-select" onchange="renderEstoqueTab()"
                                 class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
                             </select>
+                        </div>
+                        <!-- Largura do gráfico -->
+                        <div class="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="stockWidthDown()" title="Gráfico mais estreito"
+                                class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">◄</button>
+                            <span id="stock-width-label" class="px-2 text-[10px] font-bold text-gray-400">100%</span>
+                            <button onclick="stockWidthUp()" title="Gráfico mais largo"
+                                class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">►</button>
                         </div>
                         <!-- Botões de tamanho de fonte dos rótulos -->
                         <div class="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
@@ -613,7 +632,7 @@
                     <div class="flex gap-5 items-start">
 
                         <!-- Chart -->
-                        <div class="flex-1" style="min-height:400px;">
+                        <div id="stock-chart-wrap" class="flex-1" style="min-height:400px; transition: max-width 0.25s ease;">
                             <canvas id="stockChart"></canvas>
                         </div>
 
@@ -2155,6 +2174,7 @@
            ESTOQUE TAB — render
         ══════════════════════════════════════════════════════ */
         let stockLabelFontSize = 10;
+        let stockChartWidth = 100;
 
         function stockFontUp() {
             stockLabelFontSize = Math.min(stockLabelFontSize + 1, 18);
@@ -2165,6 +2185,18 @@
             stockLabelFontSize = Math.max(stockLabelFontSize - 1, 7);
             document.getElementById('stock-font-size-label').textContent = stockLabelFontSize;
             renderEstoqueTab();
+        }
+        function stockWidthDown() {
+            stockChartWidth = Math.max(stockChartWidth - 10, 40);
+            document.getElementById('stock-width-label').textContent = stockChartWidth + '%';
+            const wrap = document.getElementById('stock-chart-wrap');
+            if (wrap) wrap.style.maxWidth = stockChartWidth + '%';
+        }
+        function stockWidthUp() {
+            stockChartWidth = Math.min(stockChartWidth + 10, 100);
+            document.getElementById('stock-width-label').textContent = stockChartWidth + '%';
+            const wrap = document.getElementById('stock-chart-wrap');
+            if (wrap) { wrap.style.maxWidth = stockChartWidth < 100 ? stockChartWidth + '%' : ''; }
         }
 
         function renderEstoqueTab() {
@@ -2250,24 +2282,59 @@
             const visDevData  = { Smart: devData.Smart.slice(0, cutoff), Pro: devData.Pro.slice(0, cutoff),
                                   Air:   devData.Air.slice(0, cutoff),   Mini: devData.Mini.slice(0, cutoff) };
 
+            // ── popular selects de range De/Até ──────────────────────────
+            const selStart = document.getElementById('stock-range-start');
+            const selEnd   = document.getElementById('stock-range-end');
+            const prevStart = selStart.options[selStart.selectedIndex]?.text || '';
+            const prevEnd   = selEnd.options[selEnd.selectedIndex]?.text || '';
+            selStart.innerHTML = '';
+            selEnd.innerHTML   = '';
+            visLabels.forEach((l, i) => {
+                const o1 = document.createElement('option'); o1.value = i; o1.textContent = l; selStart.appendChild(o1);
+                const o2 = document.createElement('option'); o2.value = i; o2.textContent = l; selEnd.appendChild(o2);
+            });
+            // Default: últimos 12 meses terminando no último mês com dados
+            const defaultEndIdx   = visLabels.length - 1;
+            const defaultStartIdx = Math.max(0, defaultEndIdx - 11);
+            const startMatchIdx = visLabels.indexOf(prevStart);
+            const endMatchIdx   = visLabels.indexOf(prevEnd);
+            selStart.value = startMatchIdx >= 0 ? startMatchIdx : defaultStartIdx;
+            selEnd.value   = endMatchIdx   >= 0 ? endMatchIdx   : defaultEndIdx;
+            // Garantir start <= end
+            if (parseInt(selStart.value) > parseInt(selEnd.value)) selStart.value = selEnd.value;
+
+            const rangeStart = parseInt(selStart.value);
+            const rangeEnd   = parseInt(selEnd.value);
+
+            // Fatiar dados pelo range
+            const rLabels  = visLabels.slice(rangeStart, rangeEnd + 1);
+            const rEstoque = visEstoque.slice(rangeStart, rangeEnd + 1);
+            const rCover   = visCover.slice(rangeStart, rangeEnd + 1);
+            const rDevData = {
+                Smart: visDevData.Smart.slice(rangeStart, rangeEnd + 1),
+                Pro:   visDevData.Pro.slice(rangeStart, rangeEnd + 1),
+                Air:   visDevData.Air.slice(rangeStart, rangeEnd + 1),
+                Mini:  visDevData.Mini.slice(rangeStart, rangeEnd + 1)
+            };
+
             // ── popular select do mês ─────────────────────────────────────
             const sel = document.getElementById('stock-month-select');
             const prevLabel = sel.options[sel.selectedIndex]?.text || '';
             sel.innerHTML = '';
-            visLabels.forEach((l, i) => {
+            rLabels.forEach((l, i) => {
                 const opt = document.createElement('option');
                 opt.value = i; opt.textContent = l; sel.appendChild(opt);
             });
-            const matchIdx = visLabels.indexOf(prevLabel);
-            sel.value = matchIdx >= 0 ? matchIdx : visLabels.length - 1;
+            const matchIdx = rLabels.indexOf(prevLabel);
+            sel.value = matchIdx >= 0 ? matchIdx : rLabels.length - 1;
 
             // ── painel lateral ────────────────────────────────────────────
             const idx = parseInt(sel.value);
             const fmt = v => (v && v > 0) ? Math.round(v) : '–';
-            document.getElementById('stock-cd-smart').textContent = fmt(visDevData.Smart[idx]);
-            document.getElementById('stock-cd-pro').textContent   = fmt(visDevData.Pro[idx]);
-            document.getElementById('stock-cd-air').textContent   = fmt(visDevData.Air[idx]);
-            document.getElementById('stock-cd-mini').textContent  = fmt(visDevData.Mini[idx]);
+            document.getElementById('stock-cd-smart').textContent = fmt(rDevData.Smart[idx]);
+            document.getElementById('stock-cd-pro').textContent   = fmt(rDevData.Pro[idx]);
+            document.getElementById('stock-cd-air').textContent   = fmt(rDevData.Air[idx]);
+            document.getElementById('stock-cd-mini').textContent  = fmt(rDevData.Mini[idx]);
 
             // ── gráfico ───────────────────────────────────────────────────
             const ctx = document.getElementById('stockChart').getContext('2d');
@@ -2279,16 +2346,16 @@
                - Barras ocupam 0 → 62% da altura (chartMax = maxStock / 0.62)
                - Linha escalada para aparecer entre 72% e 90% da altura
                  → sempre acima das barras com folga visível                */
-            const maxStock   = Math.max(...visEstoque, 1);
+            const maxStock   = Math.max(...rEstoque, 1);
             const chartMax   = maxStock / 0.62;           // barras ficam abaixo de 62%
 
-            const nonZeroCD  = visCover.filter(v => v > 0);
+            const nonZeroCD  = rCover.filter(v => v > 0);
             const minCD      = nonZeroCD.length ? Math.min(...nonZeroCD) : 0;
             const maxCD      = nonZeroCD.length ? Math.max(...nonZeroCD) : 1;
             const cdRange    = maxCD - minCD || 1;
 
             // Mapeia cover days para 72%-90% da altura total
-            const coverScaled = visCover.map(v => {
+            const coverScaled = rCover.map(v => {
                 if (!v || v <= 0) return null;
                 const norm = (v - minCD) / cdRange;       // 0..1
                 return chartMax * (0.72 + norm * 0.18);   // 72% → 90%
@@ -2296,12 +2363,12 @@
 
             stockChart = new Chart(ctx, {
                 data: {
-                    labels: visLabels,
+                    labels: rLabels,
                     datasets: [
                         {
                             type: 'bar',
                             label: 'Devices Stock',
-                            data: visEstoque,
+                            data: rEstoque,
                             backgroundColor: '#FFE600',
                             borderColor: '#E6CE00',
                             borderWidth: 1,
@@ -2310,7 +2377,7 @@
                             datalabels: {
                                 anchor: 'center',
                                 align: 'center',
-                                rotation: -90,
+                                rotation: 0,
                                 color: '#555',
                                 font: { weight: 'bold', size: fs },
                                 // Abreviado em K
@@ -2321,7 +2388,7 @@
                             type: 'line',
                             label: 'Cover Days',
                             data: coverScaled,          // posição visual escalada
-                            originalData: visCover,    // valor real para labels/tooltip
+                            originalData: rCover,      // valor real para labels/tooltip
                             borderColor: '#C89A00',
                             backgroundColor: '#C89A00',
                             pointBackgroundColor: '#C89A00',
