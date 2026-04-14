@@ -701,6 +701,21 @@
                 </div>
             </div>
 
+            <!-- ── MPOS Sales per Device ─────────────────────────────── -->
+            <div class="card overflow-hidden">
+                <div class="bg-[#FFE600] px-6 py-3 flex items-center justify-between">
+                    <h3 class="text-sm font-black tracking-widest uppercase text-gray-800">MPOS Sales per Device</h3>
+                    <select id="stock-mix-year" onchange="renderStockMix()"
+                        class="bg-white border border-yellow-300 text-gray-700 text-xs font-bold rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                        <option value="2025">FY 2025</option>
+                        <option value="2026">FY 2026</option>
+                    </select>
+                </div>
+                <div id="stock-mix-content" class="p-6">
+                    <p class="text-xs text-gray-400 text-center py-6">Carregando…</p>
+                </div>
+            </div>
+
         </div> <!-- end tab-content-estoque -->
 
     </main>
@@ -2490,6 +2505,122 @@
                 },
                 plugins: [ChartDataLabels]
             });
+
+            renderStockMix();
+        }
+
+        /* ══════════════════════════════════════════════════════
+           MPOS SALES PER DEVICE — mix de devices (qty, receita, CMV)
+        ══════════════════════════════════════════════════════ */
+        function renderStockMix() {
+            const container = document.getElementById('stock-mix-content');
+            if (!container) return;
+            if (!db || (!db.PLAN.length && !db.ACTUAL.length)) {
+                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Sem dados. Carregue no Motor de Comparação.</p>';
+                return;
+            }
+
+            const year = document.getElementById('stock-mix-year')?.value || '2025';
+            const pid  = 'YEAR|' + year;
+
+            const rawP = extractValue('PLAN',   pid, 'ALL', 'ALL');
+            const rawR = extractValue('ACTUAL', pid, 'ALL', 'ALL');
+            const plP  = computePL(rawP.byCanalDeviceRaw || rawP.byCanalDevice);
+            const plR  = computePL(rawR.byCanalDeviceRaw || rawR.byCanalDevice);
+
+            const DEVS   = ['SMART', 'PRO', 'AIR', 'MINI'];
+            const COLORS = { SMART: '#78350f', PRO: '#c2410c', AIR: '#fb923c', MINI: '#fde68a' };
+            const TEXTS  = { SMART: '#fff',    PRO: '#fff',    AIR: '#fff',    MINI: '#92400e' };
+            const DLABEL = { SMART: 'Smart',   PRO: 'Pro',     AIR: 'Air',     MINI: 'Mini'   };
+
+            // Soma por device a partir do resultado do computePL
+            function devAgg(pl) {
+                const out = {};
+                DEVS.forEach(d => { out[d] = { qty: 0, receita: 0, cmv: 0 }; });
+                Object.values(pl.byCanal).forEach(ch => {
+                    Object.entries(ch.devices || {}).forEach(([dev, dd]) => {
+                        const k = dev.toUpperCase();
+                        if (out[k]) { out[k].qty += dd.qty; out[k].receita += dd.receita; out[k].cmv += dd.cmv; }
+                    });
+                });
+                return out;
+            }
+
+            const devP = devAgg(plP);
+            const devR = devAgg(plR);
+
+            // Barra empilhada CSS pura
+            function bar(devObj, metric) {
+                const vals = DEVS.map(d => Math.abs(devObj[d][metric]));
+                const tot  = vals.reduce((s, v) => s + v, 0);
+                if (!tot) return '<div style="height:200px;width:68px;background:#f3f4f6;border-radius:6px;"></div>';
+                const segs = DEVS.map((d, i) => {
+                    const pct  = (vals[i] / tot) * 100;
+                    const show = pct >= 7;
+                    return `<div style="height:${pct.toFixed(2)}%;background:${COLORS[d]};display:flex;align-items:center;justify-content:center;overflow:hidden;">` +
+                           (show ? `<span style="color:${TEXTS[d]};font-size:10px;font-weight:700;white-space:nowrap;">${pct.toFixed(1)}%</span>` : '') +
+                           `</div>`;
+                }).join('');
+                return `<div style="height:200px;width:68px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column;">${segs}</div>`;
+            }
+
+            // Formatadores
+            const fK = v => (Math.abs(v) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil';
+            const fM = v => (Math.abs(v) / 1e6).toLocaleString('pt-BR',  { maximumFractionDigits: 1 }) + ' mi';
+
+            // Card de métrica
+            function card(title, metric, fmt) {
+                const pTot = DEVS.reduce((s, d) => s + devP[d][metric], 0);
+                const rTot = DEVS.reduce((s, d) => s + devR[d][metric], 0);
+                const delta = rTot - pTot;
+                // Para CMV (valores negativos): delta positivo = gastou menos = bom (verde)
+                const dColor = delta >= 0 ? '#22c55e' : '#ef4444';
+                const dSign  = delta >= 0 ? '+' : '−';
+                const dFmt   = fmt(Math.abs(delta));
+                return `<div class="flex-1 flex flex-col items-center gap-3 min-w-0 px-2">
+                    <p class="text-xs font-black text-gray-500 uppercase tracking-widest text-center leading-tight">${title}</p>
+                    <div class="flex items-center gap-3 flex-wrap justify-center">
+                        <div class="text-center">
+                            <div class="text-base font-black text-gray-700">${fmt(pTot)}</div>
+                            <div class="text-[10px] text-gray-400 font-bold">Plano</div>
+                        </div>
+                        <div class="flex flex-col items-center gap-0" style="line-height:1;">
+                            <span style="color:${dColor};font-size:11px;font-weight:900;">${dSign}${dFmt}</span>
+                            <span style="color:#d1d5db;font-size:20px;">→</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-base font-black text-gray-700">${fmt(rTot)}</div>
+                            <div class="text-[10px] text-gray-400 font-bold">Realizado</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 items-end">
+                        <div class="flex flex-col items-center gap-1">
+                            ${bar(devP, metric)}
+                            <span class="text-[10px] font-bold text-gray-400">Plano</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1">
+                            ${bar(devR, metric)}
+                            <span class="text-[10px] font-bold text-gray-400">Realizado</span>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            const divider = '<div class="w-px bg-gray-100 self-stretch"></div>';
+            const legend  = `<div class="flex flex-col gap-3 justify-center pl-5 border-l border-gray-100 shrink-0">` +
+                DEVS.map(d => `<div class="flex items-center gap-2">
+                    <div style="width:14px;height:14px;background:${COLORS[d]};border-radius:3px;flex-shrink:0;"></div>
+                    <span class="text-xs font-bold text-gray-600">${DLABEL[d]}</span>
+                </div>`).join('') + `</div>`;
+
+            container.innerHTML = `<div class="flex items-start justify-center gap-2">
+                ${card('Devices Sold', 'qty',     fK)}
+                ${divider}
+                ${card('Revenue',      'receita', fM)}
+                ${divider}
+                ${card('CMV (sales)',  'cmv',     fM)}
+                ${legend}
+            </div>`;
         }
 
         function togglePLUnitMode() {
