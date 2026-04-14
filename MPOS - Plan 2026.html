@@ -585,46 +585,59 @@
 
             <!-- Chart Card -->
             <div class="card overflow-hidden">
-                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
+                <!-- Header -->
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
                     <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
                         <i data-lucide="package" class="w-4 h-4 text-yellow-500"></i> Devices Stock vs Cover Days
                     </h2>
-                    <span id="stock-last-update" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest"></span>
+                    <div class="flex items-center gap-3">
+                        <!-- Filtro de mês (fora do painel) -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Cover Days de</span>
+                            <select id="stock-month-select" onchange="renderEstoqueTab()"
+                                class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            </select>
+                        </div>
+                        <!-- Botões de tamanho de fonte dos rótulos -->
+                        <div class="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
+                            <button onclick="stockFontDown()" title="Diminuir rótulos"
+                                class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
+                            <span id="stock-font-size-label" class="px-2 text-[10px] font-bold text-gray-400">10</span>
+                            <button onclick="stockFontUp()" title="Aumentar rótulos"
+                                class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="p-6">
-                    <div class="flex gap-6 items-stretch">
+                    <div class="flex gap-5 items-start">
 
                         <!-- Chart -->
-                        <div class="flex-1" style="min-height:380px;">
+                        <div class="flex-1" style="min-height:400px;">
                             <canvas id="stockChart"></canvas>
                         </div>
 
-                        <!-- Side Panel -->
-                        <div class="flex flex-col gap-3 shrink-0" style="width:190px;">
-                            <div class="bg-[#FFE600] rounded-2xl p-5 shadow-md flex-1 flex flex-col gap-4">
-                                <div>
-                                    <p class="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Cover Days</p>
-                                    <select id="stock-month-select" onchange="renderEstoqueTab()"
-                                        class="w-full bg-yellow-300 border border-yellow-500 text-gray-800 text-xs font-black rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-600">
-                                    </select>
+                        <!-- Side Panel — discreto -->
+                        <div class="shrink-0 border border-gray-100 rounded-xl bg-gray-50 overflow-hidden" style="width:130px;">
+                            <div class="bg-[#FFE600] px-3 py-2">
+                                <p class="text-[10px] font-black text-gray-700 uppercase tracking-widest text-center">Cover Days</p>
+                            </div>
+                            <div class="divide-y divide-gray-100">
+                                <div class="flex items-center justify-between px-3 py-2.5">
+                                    <span class="text-[11px] font-semibold text-gray-500">Smart</span>
+                                    <span id="stock-cd-smart" class="text-base font-black text-gray-800">–</span>
                                 </div>
-                                <div class="space-y-4 mt-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-gray-700">Smart</span>
-                                        <span id="stock-cd-smart" class="text-3xl font-black text-gray-900 leading-none">–</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-gray-700">Pro</span>
-                                        <span id="stock-cd-pro" class="text-3xl font-black text-gray-900 leading-none">–</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-gray-700">Air</span>
-                                        <span id="stock-cd-air" class="text-3xl font-black text-gray-900 leading-none">–</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-gray-700">Mini</span>
-                                        <span id="stock-cd-mini" class="text-3xl font-black text-gray-900 leading-none">–</span>
-                                    </div>
+                                <div class="flex items-center justify-between px-3 py-2.5">
+                                    <span class="text-[11px] font-semibold text-gray-500">Pro</span>
+                                    <span id="stock-cd-pro" class="text-base font-black text-gray-800">–</span>
+                                </div>
+                                <div class="flex items-center justify-between px-3 py-2.5">
+                                    <span class="text-[11px] font-semibold text-gray-500">Air</span>
+                                    <span id="stock-cd-air" class="text-base font-black text-gray-800">–</span>
+                                </div>
+                                <div class="flex items-center justify-between px-3 py-2.5">
+                                    <span class="text-[11px] font-semibold text-gray-500">Mini</span>
+                                    <span id="stock-cd-mini" class="text-base font-black text-gray-800">–</span>
                                 </div>
                             </div>
                         </div>
@@ -2141,6 +2154,19 @@
         /* ══════════════════════════════════════════════════════
            ESTOQUE TAB — render
         ══════════════════════════════════════════════════════ */
+        let stockLabelFontSize = 10;
+
+        function stockFontUp() {
+            stockLabelFontSize = Math.min(stockLabelFontSize + 1, 18);
+            document.getElementById('stock-font-size-label').textContent = stockLabelFontSize;
+            renderEstoqueTab();
+        }
+        function stockFontDown() {
+            stockLabelFontSize = Math.max(stockLabelFontSize - 1, 7);
+            document.getElementById('stock-font-size-label').textContent = stockLabelFontSize;
+            renderEstoqueTab();
+        }
+
         function renderEstoqueTab() {
             if (!dbStock || dbStock.length === 0) return;
 
@@ -2166,7 +2192,6 @@
             function periodToNum(p) {
                 if (!p) return 0;
                 const s = String(p).toLowerCase().replace(/\./g,'').trim();
-                // "feb 26" / "fev 26" / "feb/26" / "fev/26"
                 const m = s.match(/([a-z]+)[\s\/\-]?(\d{2,4})/);
                 if (!m) return 0;
                 const mo = MONTH_ORDER[m[1].substring(0,3)] ?? 0;
@@ -2176,22 +2201,22 @@
             }
 
             const sorted = [...dbStock].sort((a, b) => {
-                const pa = col(a, 'Período', 'Mês', 'Mes', 'período', 'mes', 'month', 'Month');
-                const pb = col(b, 'Período', 'Mês', 'Mes', 'período', 'mes', 'month', 'Month');
+                const pa = col(a, 'Período','Mês','Mes','período','mes','month','Month');
+                const pb = col(b, 'Período','Mês','Mes','período','mes','month','Month');
                 return periodToNum(pa) - periodToNum(pb);
             });
 
-            const labels = sorted.map(r => col(r, 'Período','Mês','Mes','período','mes','month','Month') || '');
-            const estoque = sorted.map(r => num(r, 'Estoque','Stock','Devices Stock','DevicesStock','estoque','stock'));
-            const coverDays = sorted.map(r => num(r, 'Cover Days','CoverDays','Dias Cobertura','Cobertura','cover_days','coverdays','dias_cobertura'));
-            const cdSmart = sorted.map(r => num(r, 'Cover Smart','CoverSmart','Cobertura Smart','cover_smart'));
-            const cdPro   = sorted.map(r => num(r, 'Cover Pro','CoverPro','Cobertura Pro','cover_pro'));
-            const cdAir   = sorted.map(r => num(r, 'Cover Air','CoverAir','Cobertura Air','cover_air'));
-            const cdMini  = sorted.map(r => num(r, 'Cover Mini','CoverMini','Cobertura Mini','cover_mini'));
+            const labels    = sorted.map(r => col(r,'Período','Mês','Mes','período','mes','month','Month') || '');
+            const estoque   = sorted.map(r => num(r,'Estoque','Stock','Devices Stock','DevicesStock','estoque','stock'));
+            const coverDays = sorted.map(r => num(r,'Cover Days','CoverDays','Dias Cobertura','Cobertura','cover_days','coverdays','dias_cobertura'));
+            const cdSmart   = sorted.map(r => num(r,'Cover Smart','CoverSmart','Cobertura Smart','cover_smart'));
+            const cdPro     = sorted.map(r => num(r,'Cover Pro','CoverPro','Cobertura Pro','cover_pro'));
+            const cdAir     = sorted.map(r => num(r,'Cover Air','CoverAir','Cobertura Air','cover_air'));
+            const cdMini    = sorted.map(r => num(r,'Cover Mini','CoverMini','Cobertura Mini','cover_mini'));
 
             // ── popular select do mês ─────────────────────────────────────
             const sel = document.getElementById('stock-month-select');
-            const prevVal = sel.value;
+            const prevLabel = sel.options[sel.selectedIndex]?.text || '';
             sel.innerHTML = '';
             labels.forEach((l, i) => {
                 const opt = document.createElement('option');
@@ -2199,10 +2224,9 @@
                 opt.textContent = l;
                 sel.appendChild(opt);
             });
-            // default: mês mais recente (último); preservar seleção manual
-            const defaultIdx = labels.length - 1;
-            const savedIdx = labels.indexOf(prevVal);
-            sel.value = (savedIdx >= 0 && prevVal !== '') ? savedIdx : defaultIdx;
+            // default: mês mais recente; preservar seleção manual
+            const matchIdx = labels.indexOf(prevLabel);
+            sel.value = (matchIdx >= 0 && prevLabel !== '') ? matchIdx : (labels.length - 1);
 
             // ── painel lateral ────────────────────────────────────────────
             const idx = parseInt(sel.value);
@@ -2211,9 +2235,19 @@
             document.getElementById('stock-cd-air').textContent   = cdAir[idx]   || '–';
             document.getElementById('stock-cd-mini').textContent  = cdMini[idx]  || '–';
 
+            // ── escala normalizada para eixo único oculto ─────────────────
+            // Para que barras e linha convivam bem sem eixos visíveis,
+            // normalizamos a linha para a mesma escala visual das barras.
+            const maxStock = Math.max(...estoque, 1);
+            const maxCover = Math.max(...coverDays, 1);
+            // linha escalada visualmente para 80% do topo das barras
+            const coverScaled = coverDays.map(v => (v / maxCover) * maxStock * 0.80);
+
             // ── gráfico combinado (barras + linha) ────────────────────────
             const ctx = document.getElementById('stockChart').getContext('2d');
             if (stockChart) stockChart.destroy();
+
+            const fs = stockLabelFontSize;
 
             stockChart = new Chart(ctx, {
                 data: {
@@ -2227,33 +2261,42 @@
                             borderColor: '#E6CE00',
                             borderWidth: 1,
                             borderRadius: 4,
-                            yAxisID: 'yStock',
+                            yAxisID: 'y',
                             datalabels: {
-                                anchor: 'end', align: 'top',
+                                anchor: 'end',
+                                align: 'end',
+                                offset: -2,
                                 color: '#333',
-                                font: { weight: 'bold', size: 10 },
+                                font: { weight: 'bold', size: fs },
                                 formatter: v => v ? Math.round(v).toLocaleString('pt-BR') : ''
                             }
                         },
                         {
                             type: 'line',
                             label: 'Cover Days',
-                            data: coverDays,
-                            borderColor: '#E6AE00',
-                            backgroundColor: '#E6AE00',
-                            pointBackgroundColor: '#E6AE00',
+                            // dados reais para tooltip, escalonados para posição visual
+                            data: coverScaled,
+                            originalData: coverDays,
+                            borderColor: '#C89A00',
+                            backgroundColor: '#C89A00',
+                            pointBackgroundColor: '#C89A00',
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
                             pointRadius: 5,
                             pointHoverRadius: 7,
                             borderWidth: 2.5,
                             tension: 0.3,
-                            yAxisID: 'yCover',
+                            yAxisID: 'y',
                             datalabels: {
-                                anchor: 'top', align: 'top',
+                                anchor: 'end',
+                                align: 'top',
+                                offset: 4,
                                 color: '#333',
-                                font: { weight: 'black', size: 11 },
-                                formatter: v => v ? Math.round(v) : ''
+                                font: { weight: 'black', size: fs + 1 },
+                                formatter: (v, ctx2) => {
+                                    const real = ctx2.dataset.originalData?.[ctx2.dataIndex];
+                                    return real != null ? Math.round(real) : '';
+                                }
                             }
                         }
                     ]
@@ -2261,23 +2304,21 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 36, right: 12, bottom: 0, left: 4 } },
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: {
-                                font: { weight: 'bold', size: 11 },
-                                padding: 16,
-                                usePointStyle: true
-                            }
+                            labels: { font: { weight: 'bold', size: 11 }, padding: 16, usePointStyle: true }
                         },
                         tooltip: {
                             callbacks: {
-                                label: ctx => {
-                                    const v = ctx.raw;
-                                    if (ctx.dataset.label === 'Devices Stock')
-                                        return ` Stock: ${Math.round(v).toLocaleString('pt-BR')} unid.`;
-                                    return ` Cover Days: ${Math.round(v)} dias`;
+                                label: ctx2 => {
+                                    if (ctx2.dataset.label === 'Devices Stock')
+                                        return ` Stock: ${Math.round(ctx2.raw).toLocaleString('pt-BR')} unid.`;
+                                    // linha: mostrar valor real, não o escalado
+                                    const real = ctx2.dataset.originalData?.[ctx2.dataIndex] ?? ctx2.raw;
+                                    return ` Cover Days: ${Math.round(real)} dias`;
                                 }
                             }
                         },
@@ -2288,33 +2329,10 @@
                             grid: { display: false },
                             ticks: { font: { weight: 'bold', size: 10 }, color: '#6b7280' }
                         },
-                        yStock: {
-                            type: 'linear',
-                            position: 'left',
-                            grid: { color: '#f3f4f6' },
-                            ticks: {
-                                font: { weight: 'bold', size: 10 }, color: '#6b7280',
-                                callback: v => Math.round(v).toLocaleString('pt-BR')
-                            },
-                            title: {
-                                display: true,
-                                text: 'Devices Stock',
-                                font: { weight: 'bold', size: 10 }, color: '#9ca3af'
-                            }
-                        },
-                        yCover: {
-                            type: 'linear',
-                            position: 'right',
-                            grid: { drawOnChartArea: false },
-                            ticks: {
-                                font: { weight: 'bold', size: 10 }, color: '#6b7280',
-                                callback: v => v + ' d'
-                            },
-                            title: {
-                                display: true,
-                                text: 'Cover Days',
-                                font: { weight: 'bold', size: 10 }, color: '#9ca3af'
-                            }
+                        y: {
+                            display: false,          // eixo único — oculto
+                            min: 0,
+                            max: maxStock * 1.25     // folga extra no topo para os rótulos
                         }
                     }
                 },
