@@ -107,7 +107,7 @@
   <div class="grid" id="gridFDVT">
     <div class="card"><div class="card-title">Investimento</div><div class="card-body"><canvas id="t1"></canvas></div></div>
     <div class="card"><div class="card-title">TPV M1 &amp; TPV Médio</div><div class="card-body"><canvas id="t2"></canvas></div></div>
-    <div class="card"><div class="card-title">Headcount vs % Atingimento</div><div class="card-body card-empty" id="t3-empty">Sem dados disponíveis</div></div>
+    <div class="card"><div class="card-title">Headcount vs % Atingimento</div><div class="card-body"><canvas id="t3"></canvas></div></div>
     <div class="card"><div class="card-title">New Sellers (k)</div><div class="card-body"><canvas id="t4"></canvas></div></div>
   </div>
 
@@ -207,21 +207,26 @@ function compute(rows) {
   const tpvP  = r('TPV','R','FDVP'), tpvT = r('TPV','R','FDVT');
   const tmedP = r('TMED','R','FDVP'), tmedT = r('TMED','R','FDVT');
   const nsP   = r('NS','R','FDVP'),   nsT  = r('NS','R','FDVT');
-  const hcR   = r('HC','R','FDVP'),   hcPl = r('HC','P','FDVP');
+  const hcR   = r('HC','R','FDVP'),   hcPl  = r('HC','P','FDVP');
+  const hcRT  = r('HC','R','FDVT'),   hcPlt = r('HC','P','FDVT');
 
   const p_tpv  = MONTHS.map(m => +(v(tpvP,m)/1e6).toFixed(1));
   const p_tmed = MONTHS.map(m => +(v(tmedP,m)/1000).toFixed(1));
   const t_tpv  = MONTHS.map(m => +(v(tpvT,m)/1e6).toFixed(1));
   const t_tmed = MONTHS.map(m => +(v(tmedT,m)/1000).toFixed(1));
 
-  const hcReal  = MONTHS.map(m => v(hcR,m));
-  const hcPlan  = MONTHS.map(m => v(hcPl,m));
-  const pct     = hcReal.map((r,i) => hcPlan[i]>0 ? +(r/hcPlan[i]*100).toFixed(1) : 0);
+  const hcReal   = MONTHS.map(m => v(hcR,m));
+  const hcPlan   = MONTHS.map(m => v(hcPl,m));
+  const pct      = hcReal.map((r,i) => hcPlan[i]>0 ? +(r/hcPlan[i]*100).toFixed(1) : 0);
+
+  const t_hcReal = MONTHS.map(m => v(hcRT,m));
+  const t_hcPlan = MONTHS.map(m => v(hcPlt,m));
+  const t_pct    = t_hcReal.map((r,i) => t_hcPlan[i]>0 ? +(r/t_hcPlan[i]*100).toFixed(1) : 0);
 
   const p_ns = MONTHS.map(m => +((v(nsP,m))/1000).toFixed(1));
   const t_ns = MONTHS.map(m => +((v(nsT,m))/1000).toFixed(1));
 
-  return { p_inv, t_inv, p_tpv, p_tmed, t_tpv, t_tmed, hcReal, pct, p_ns, t_ns };
+  return { p_inv, t_inv, p_tpv, p_tmed, t_tpv, t_tmed, hcReal, pct, t_hcReal, t_pct, p_ns, t_ns };
 }
 
 // ─── CHART FACTORY ──────────────────────────────────────────────────────────
@@ -383,7 +388,12 @@ function renderCharts(d) {
     false
   );
 
-  // T3: HC FDVT — empty (canvas hidden, message shown)
+  // T3: HC FDVT + % Atingimento
+  comboChart('t3', d.t_hcReal, d.t_pct,
+    v => v.toLocaleString('pt-BR'),
+    v => v.toFixed(0)+'%',
+    true
+  );
 
   // T4: New Sellers FDVT
   barChart('t4', d.t_ns, v => v.toFixed(1));
@@ -461,7 +471,9 @@ const DEFAULT_ROWS = [
   {"metric":"TPV","scenario":"R","canal":"FDVP","202501":36255527,"202502":49402023,"202503":59884042,"202504":86277990,"202505":95500563,"202506":109121821,"202507":115419603,"202508":119896299,"202509":117381748,"202510":132649723,"202511":138207433,"202512":157381299,"202601":103412262,"202602":113454339,"202603":139357289,"202604":21394211},
   {"metric":"TPV","scenario":"R","canal":"FDVT","202501":19152950,"202502":17969799,"202503":17098500,"202504":25380484,"202505":25336852,"202506":28039579,"202507":33532968,"202508":32430799,"202509":27907205,"202510":30114692,"202511":28941591,"202512":33964864,"202601":18522411,"202602":17377006,"202603":23932365,"202604":3164453},
   {"metric":"TMED","scenario":"R","canal":"FDVP","202501":8066,"202502":5124,"202503":9928,"202504":12550,"202505":11938,"202506":11772,"202507":11740,"202508":11859,"202509":10696,"202510":10926,"202511":11269,"202512":14500,"202601":9156,"202602":10003,"202603":10718,"202604":4749},
-  {"metric":"TMED","scenario":"R","canal":"FDVT","202501":4908,"202502":4521,"202503":4365,"202504":5485,"202505":5099,"202506":5734,"202507":5898,"202508":5231,"202509":4994,"202510":5460,"202511":5715,"202512":7421,"202601":4730,"202602":4876,"202603":5575,"202604":2151}
+  {"metric":"TMED","scenario":"R","canal":"FDVT","202501":4908,"202502":4521,"202503":4365,"202504":5485,"202505":5099,"202506":5734,"202507":5898,"202508":5231,"202509":4994,"202510":5460,"202511":5715,"202512":7421,"202601":4730,"202602":4876,"202603":5575,"202604":2151},
+  {"metric":"HC","scenario":"R","canal":"FDVT","202501":0,"202502":0,"202503":0,"202504":945,"202505":942,"202506":928,"202507":886,"202508":882,"202509":878,"202510":888,"202511":831,"202512":758,"202601":775,"202602":875,"202603":866,"202604":881},
+  {"metric":"HC","scenario":"P","canal":"FDVT","202501":0,"202502":0,"202503":0,"202504":964,"202505":897,"202506":928,"202507":820,"202508":832,"202509":905,"202510":846,"202511":839,"202512":815,"202601":852,"202602":866,"202603":875,"202604":890}
 ];
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
