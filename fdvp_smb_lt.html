@@ -280,9 +280,9 @@ function barChart(id, data, fmtFn) {
 function comboChart(id, barData, rawLine, barFmt, lineFmt, lineDash) {
   if (!document.getElementById(id)) return;
 
-  const barMax = Math.max(...barData);
+  const barMax = Math.max(...barData.filter(v => v > 0), 1);
   const lMin   = Math.min(...rawLine);
-  const lMax   = Math.max(...rawLine);
+  const lMax   = Math.max(...rawLine.filter(v => v > 0), 1);
 
   // y-axis: barras no terço inferior do gráfico
   const yMax = barMax * 2.5;
@@ -491,6 +491,12 @@ async function init() {
     if (!Array.isArray(raw) || !raw.length) return;
     let rows = raw[0].metric !== undefined ? raw : parseRaw(raw);
     if (rows && rows.length >= 4) {
+      // Inject static HC FDVT rows if the sheet doesn't have them
+      const hasHcFdvt = rows.some(r => r.metric === 'HC' && r.canal === 'FDVT');
+      if (!hasHcFdvt) {
+        const hcFdvt = DEFAULT_ROWS.filter(r => r.metric === 'HC' && r.canal === 'FDVT');
+        rows = [...rows, ...hcFdvt];
+      }
       _lastRows = rows;
       currentData = compute(_lastRows);
       renderCharts(currentData);
