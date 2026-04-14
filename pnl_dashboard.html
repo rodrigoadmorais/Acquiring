@@ -245,6 +245,98 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
             color:var(--muted);background:none;border:none;line-height:1;padding:4px 8px}
 #chartClose:hover{color:var(--text)}
 #chartCanvas{max-height:400px}
+
+/* ── Tab Navigation ── */
+.tab-nav{background:var(--card);border-bottom:2px solid var(--border);
+         padding:0 20px;display:flex;gap:0;align-items:stretch;
+         position:sticky;top:50px;z-index:360;min-height:38px}
+.tab-btn{padding:0 22px;border:none;border-bottom:3px solid transparent;
+         background:none;color:var(--muted);cursor:pointer;font-size:13px;
+         font-weight:600;transition:.15s;white-space:nowrap;
+         display:flex;align-items:center;margin-bottom:-2px}
+.tab-btn:hover{color:var(--text);background:var(--bg)}
+.tab-btn.on{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* ── CPA / MPOS panel ── */
+.cpa-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.cpa-filter-bar{background:var(--card);border-bottom:1px solid var(--border);
+                padding:10px 20px;display:flex;gap:14px;flex-wrap:wrap;
+                align-items:flex-end;flex-shrink:0}
+.cpa-filter-bar label{font-size:10px;font-weight:700;color:var(--muted);
+                      text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;
+                      display:block;margin-bottom:3px}
+.cpa-tbl-wrap{flex:1 1 0;min-height:0;overflow-x:auto;overflow-y:auto;padding:0 20px 16px}
+.cpa-tbl-wrap::-webkit-scrollbar{height:6px;width:6px}
+.cpa-tbl-wrap::-webkit-scrollbar-track{background:var(--bg)}
+.cpa-tbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.cpa-tbl-wrap .tbl-outer{border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-top:16px}
+
+/* ── CPA/MPOS Table ── */
+.cpa-table{border-collapse:collapse;width:100%;font-size:12px;border-radius:10px;overflow:hidden}
+.cpa-table th{padding:9px 12px;text-align:right;white-space:nowrap;
+              font-size:11px;font-weight:600;position:sticky;top:0;z-index:100;
+              border-bottom:2px solid #0a1220;letter-spacing:.3px}
+.cpa-table th.cpa-name-hdr{text-align:left;position:sticky;left:0;z-index:200;
+                            background:#111d36;color:#c8d4e8;
+                            min-width:240px;max-width:360px;font-size:12px}
+/* Monthly columns: dark navy with soft amber distinction */
+.cpa-hdr-monthly{background:#111d36;color:#f0d080}
+/* Realizado highlighted */
+.cpa-hdr-real{background:#162444;color:#a8d0ff;border-left:2px solid #2a5fa0}
+/* YTD columns: dark teal */
+.cpa-hdr-ytd{background:#0b2e1a;color:#7dd4a0}
+/* Gap column */
+.cpa-hdr-sep{background:#0a1220;width:8px;padding:0;border:none}
+/* Delta columns: deep dark with muted text */
+.cpa-hdr-delta{background:#1a1a2e;color:#9090b8;border-left:1px solid #0a1220;font-size:10px}
+/* Group sub-header row */
+.cpa-table tr.cpa-grp-hdr th{background:#0a1220;color:#6080a0;font-size:10px;
+                               padding:4px 12px;border-bottom:1px solid #0a1220}
+.cpa-table tr.cpa-grp-hdr th.cpa-name-hdr{background:#0a1220;color:#6080a0}
+
+/* ── CPA/MPOS Table rows ── */
+.cpa-table td{padding:5px 12px;border-bottom:1px solid var(--border);
+              white-space:nowrap;text-align:right}
+.cpa-table td.cpa-name-cell{text-align:left;position:sticky;left:0;
+                             background:var(--sticky);z-index:50;
+                             min-width:240px;max-width:360px}
+/* Block header row (like L1) */
+.cpa-row-block td{background:#1e2d4e;color:#e8ecf5;font-weight:700;font-size:11px;
+                  letter-spacing:.6px;text-transform:uppercase;
+                  border-top:3px solid #111d36;border-bottom:1px solid #111d36;
+                  padding-top:7px;padding-bottom:7px}
+.cpa-row-block td.cpa-name-cell{background:#1e2d4e;color:#e8ecf5}
+[data-theme=dark] .cpa-row-block td{background:#0d1a30;color:#c5cfe0}
+[data-theme=dark] .cpa-row-block td.cpa-name-cell{background:#0d1a30}
+/* Total row */
+.cpa-row-total td{background:#f0f4fb;font-weight:700;font-size:12.5px;color:#1a2a4a;
+                  border-top:2px solid #4a7fc1;border-bottom:3px solid #1e2d4e;
+                  padding-top:6px;padding-bottom:6px}
+.cpa-row-total td.cpa-name-cell{background:#dce7f5;border-left:4px solid #1e2d4e}
+[data-theme=dark] .cpa-row-total td{background:#142340;color:#c0d4f0;border-color:#2a4a80}
+[data-theme=dark] .cpa-row-total td.cpa-name-cell{background:#142340;border-left-color:#4a7fc1}
+/* Item row */
+.cpa-row-item td{background:#fff;font-weight:400;color:#333;border-bottom:1px solid #eaeef5}
+.cpa-row-item td.cpa-name-cell{background:#fff;padding-left:30px!important}
+[data-theme=dark] .cpa-row-item td{background:#1f2937;color:#d1d9e0;border-color:#2a3545}
+[data-theme=dark] .cpa-row-item td.cpa-name-cell{background:#1f2937}
+/* Gap between blocks */
+tr.cpa-gap td{height:8px;background:var(--bg);border:none;padding:0}
+/* Delta cell colors */
+td.cpa-delta-cell{background:rgba(26,26,46,.04)}
+td.cpa-delta-cell.vpos{background:rgba(46,125,50,.08);color:var(--green);font-weight:600}
+td.cpa-delta-cell.vneg{background:rgba(198,40,40,.07);color:var(--red);font-weight:600}
+[data-theme=dark] td.cpa-delta-cell{background:rgba(26,46,94,.2)}
+[data-theme=dark] td.cpa-delta-cell.vpos{background:rgba(46,125,50,.2)}
+[data-theme=dark] td.cpa-delta-cell.vneg{background:rgba(198,40,40,.18)}
+/* Realizado cell highlight */
+td.cpa-real-cell{background:rgba(26,46,94,.07);font-weight:700;border-left:2px solid rgba(42,95,160,.3)}
+/* YTD cell */
+td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
+[data-theme=dark] td.cpa-ytd-cell{background:rgba(0,80,40,.2)}
+/* Hover */
+.cpa-row-item:hover td,.cpa-row-total:hover td{filter:brightness(.97)}
+.cpa-row-block:hover td{filter:brightness(1.08)}
 </style>
 </head>
 <body>
@@ -258,8 +350,15 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
   </div>
 </header>
 
+<!-- ── Tab Navigation ── -->
+<nav class="tab-nav" id="tabNav">
+  <button class="tab-btn on" data-tab="pnl" onclick="switchTab(this)">P&amp;L</button>
+  <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
+  <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">Point &amp; MPOS</button>
+</nav>
+
 <!-- ── Filters ── -->
-<div class="filters" id="filterBar">
+<div class="filters" id="filterBar" style="top:88px">
 
   <!-- Cenários -->
   <div class="fg">
@@ -408,6 +507,62 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
         <tr><td colspan="50" class="empty">⏳ Carregando dados...</td></tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- ── CPA Panel ── -->
+<div id="cpaPanel" class="cpa-panel" style="display:none">
+  <div class="cpa-filter-bar">
+    <div>
+      <label>Mês</label>
+      <select id="cpaMesSel" onchange="renderCpaTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
+    </div>
+    <div>
+      <label>Unidade</label>
+      <div class="bg" id="cpaUnitGrp">
+        <button data-u="1" onclick="setCpaUnit(this)">R$</button>
+        <button data-u="1000" onclick="setCpaUnit(this)">R$ mil</button>
+        <button class="on" data-u="1000000" onclick="setCpaUnit(this)">R$ M</button>
+      </div>
+    </div>
+  </div>
+  <div class="cpa-tbl-wrap">
+    <div class="tbl-outer">
+      <table class="cpa-table" id="cpaTable">
+        <thead id="cpaHead"></thead>
+        <tbody id="cpaBody"><tr><td colspan="12" class="empty">⏳ Carregando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Point & MPOS Panel ── -->
+<div id="mposPanel" class="cpa-panel" style="display:none">
+  <div class="cpa-filter-bar">
+    <div>
+      <label>Mês</label>
+      <select id="mposMesSel" onchange="renderMposTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
+    </div>
+    <div>
+      <label>Unidade</label>
+      <div class="bg" id="mposUnitGrp">
+        <button data-u="1" onclick="setMposUnit(this)">R$</button>
+        <button data-u="1000" onclick="setMposUnit(this)">R$ mil</button>
+        <button class="on" data-u="1000000" onclick="setMposUnit(this)">R$ M</button>
+      </div>
+    </div>
+  </div>
+  <div class="cpa-tbl-wrap">
+    <div class="tbl-outer">
+      <table class="cpa-table" id="mposTable">
+        <thead id="mposHead"></thead>
+        <tbody id="mposBody"><tr><td colspan="12" class="empty">⏳ Carregando...</td></tr></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -623,6 +778,7 @@ function initFilters() {
   buildMesRefSel();
   buildCenRefSel();
   buildCutoffSel();
+  buildCpaMonthSelectors();
   // Apply initial granularity state (default=anual: hide mesGroup)
   updateGranVisibility();
 }
@@ -1677,6 +1833,271 @@ function fmt(v) {
   const str = abs.toLocaleString('pt-BR',
     {minimumFractionDigits:dec, maximumFractionDigits:dec});
   return neg ? `(${str})` : str;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TAB SYSTEM
+// ═══════════════════════════════════════════════════════════
+let currentTab  = 'pnl';
+let cpaUnitDiv  = 1_000_000;
+let mposUnitDiv = 1_000_000;
+
+function switchTab(btn) {
+  currentTab = btn.dataset.tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b===btn));
+
+  const isPnl  = currentTab === 'pnl';
+  const isCpa  = currentTab === 'cpa';
+  const isMpos = currentTab === 'mpos';
+
+  document.getElementById('filterBar').style.display  = isPnl  ? '' : 'none';
+  document.querySelector('.tbl-wrap').style.display   = isPnl  ? '' : 'none';
+  document.getElementById('cpaPanel').style.display   = isCpa  ? '' : 'none';
+  document.getElementById('mposPanel').style.display  = isMpos ? '' : 'none';
+
+  if(isCpa)  renderCpaTab();
+  if(isMpos) renderMposTab();
+}
+
+function setCpaUnit(btn) {
+  cpaUnitDiv = parseFloat(btn.dataset.u);
+  document.querySelectorAll('#cpaUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  renderCpaTab();
+}
+function setMposUnit(btn) {
+  mposUnitDiv = parseFloat(btn.dataset.u);
+  document.querySelectorAll('#mposUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  renderMposTab();
+}
+
+// ── Build month selectors for CPA/MPOS tabs ─────────────────
+function buildCpaMonthSelectors() {
+  // Show all months that have Realizado data for CPA lines
+  const cpaMeses = [...new Set(
+    allData
+      .filter(d => d.MNG_2 === 'Customer Acquisition Cost' && d.Cenario === 'Realizado')
+      .map(d => d.MES)
+  )].sort((a,b) => a-b);
+
+  ['cpaMesSel','mposMesSel'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '';
+    cpaMeses.forEach(m => {
+      const mm = String(m).slice(4,6);
+      const yy = String(m).slice(2,4);
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = (MN[mm]||mm) + '/' + yy;
+      sel.appendChild(opt);
+    });
+    if(cpaMeses.length) sel.value = cpaMeses[cpaMeses.length-1];
+  });
+}
+
+// ── Aggregate CPA / MPOS data for a given month ─────────────
+function aggregateCpaData(mng3Value, mes) {
+  // Returns: { total: {real,plan,pm,ytdReal,ytdPlan}, items: Map<mng4, {real,plan,pm,ytdReal,ytdPlan}> }
+  if(!mes) return null;
+  const year  = Math.floor(mes / 100);
+  const month = mes % 100;
+  const janOfYear = year * 100 + 1;
+  let pmMes;
+  if(month === 1) pmMes = (year - 1) * 100 + 12;
+  else pmMes = year * 100 + (month - 1);
+
+  const items = new Map();
+  const total = { real:0, plan:0, pm:0, ytdReal:0, ytdPlan:0 };
+
+  for(const d of allData) {
+    if(d.MNG_2 !== 'Customer Acquisition Cost') continue;
+    // Match MNG_3: support encoding issue by using includes for Prevision
+    if(mng3Value === 'PREVISION_MPOS') {
+      if(!d.MNG_3 || !d.MNG_3.includes('MPOS Cost')) continue;
+    } else {
+      if(d.MNG_3 !== mng3Value) continue;
+    }
+
+    const k4 = d.MNG_4 || '(outros)';
+    if(!items.has(k4)) items.set(k4, { real:0, plan:0, pm:0, ytdReal:0, ytdPlan:0 });
+    const item = items.get(k4);
+    const v = d.Value || 0;
+
+    if(d.MES === mes && d.Cenario === 'Realizado')     { item.real    += v; total.real    += v; }
+    if(d.MES === mes && d.Cenario === 'Plan')           { item.plan    += v; total.plan    += v; }
+    if(d.MES === pmMes && d.Cenario === 'Realizado')   { item.pm      += v; total.pm      += v; }
+    if(d.MES >= janOfYear && d.MES <= mes && d.Cenario === 'Realizado') { item.ytdReal += v; total.ytdReal += v; }
+    if(d.MES >= janOfYear && d.MES <= mes && d.Cenario === 'Plan')      { item.ytdPlan += v; total.ytdPlan += v; }
+  }
+
+  return { total, items };
+}
+
+// ── Format value for CPA/MPOS tables ──────────────────────
+function fmtCpa(v, ud) {
+  if(v===0 || v==null) return '—';
+  const neg = v < 0;
+  const abs = Math.abs(v) / ud;
+  const dec = ud >= 1_000_000 ? 1 : 0;
+  const str = abs.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  return neg ? `(${str})` : str;
+}
+
+function deltaCell(d, ud) {
+  const cls = d >= 0 ? 'vpos' : 'vneg';
+  return `<td class="cpa-delta-cell ${cls}">${fmtCpa(d, ud)}</td>`;
+}
+
+// ── Build CPA/MPOS table header ─────────────────────────────
+function buildCpaHead(mes, ud, tableId) {
+  const mm = String(mes).slice(4,6);
+  const yy = '20' + String(mes).slice(2,4);
+  const mesLbl = (MN[mm]||mm) + '/' + String(mes).slice(2,4);
+  const year = Math.floor(mes / 100);
+  const month = mes % 100;
+  let pmMes;
+  if(month === 1) pmMes = (year - 1) * 100 + 12;
+  else pmMes = year * 100 + (month - 1);
+  const pmMm = String(pmMes).slice(4,6);
+  const pmLbl = (MN[pmMm]||pmMm) + '/' + String(pmMes).slice(2,4);
+  const unitLbl = ud >= 1e6 ? 'R$ M' : ud >= 1e3 ? 'R$ mil' : 'R$';
+  const ytdLbl = 'YTD ' + year;
+
+  return `<tr>
+    <th class="cpa-name-hdr" style="background:#111d36;color:#c8d4e8">Linha</th>
+    <th class="cpa-hdr-real" style="min-width:90px">Realizado<br><span style="font-size:10px;font-weight:400">${mesLbl} · ${unitLbl}</span></th>
+    <th class="cpa-hdr-monthly" style="min-width:90px">Plan<br><span style="font-size:10px;font-weight:400">${mesLbl}</span></th>
+    <th class="cpa-hdr-monthly" style="min-width:90px">Prior Month<br><span style="font-size:10px;font-weight:400">${pmLbl}</span></th>
+    <th class="cpa-hdr-ytd" style="min-width:100px">Actual YTD<br><span style="font-size:10px;font-weight:400">${ytdLbl}</span></th>
+    <th class="cpa-hdr-ytd" style="min-width:100px">Plan YTD<br><span style="font-size:10px;font-weight:400">${ytdLbl}</span></th>
+    <th class="cpa-hdr-sep"></th>
+    <th class="cpa-hdr-delta" style="min-width:85px">Δ Plan<br><span style="font-size:9px;font-weight:400">${mesLbl}</span></th>
+    <th class="cpa-hdr-delta" style="min-width:85px">Δ Prior Month<br><span style="font-size:9px;font-weight:400">${pmLbl}</span></th>
+    <th class="cpa-hdr-delta" style="min-width:95px">Δ Plan YTD<br><span style="font-size:9px;font-weight:400">${ytdLbl}</span></th>
+  </tr>`;
+}
+
+// ── Build a row from aggregated data ─────────────────────
+function buildCpaRow(label, data, ud, rowClass, isNameOnly) {
+  if(isNameOnly) {
+    // Block header row (no data)
+    return `<tr class="${rowClass}">
+      <td class="cpa-name-cell" colspan="10">${label}</td>
+    </tr>`;
+  }
+  const { real, plan, pm, ytdReal, ytdPlan } = data;
+  return `<tr class="${rowClass}">
+    <td class="cpa-name-cell">${label}</td>
+    <td class="cpa-real-cell ${real<0?'neg':''}">${fmtCpa(real,ud)}</td>
+    <td class="${plan<0?'neg':''}">${fmtCpa(plan,ud)}</td>
+    <td class="${pm<0?'neg':''}">${fmtCpa(pm,ud)}</td>
+    <td class="cpa-ytd-cell ${ytdReal<0?'neg':''}">${fmtCpa(ytdReal,ud)}</td>
+    <td class="cpa-ytd-cell ${ytdPlan<0?'neg':''}">${fmtCpa(ytdPlan,ud)}</td>
+    <td style="background:var(--border);padding:0;width:8px"></td>
+    ${deltaCell(real-plan, ud)}
+    ${deltaCell(real-pm, ud)}
+    ${deltaCell(ytdReal-ytdPlan, ud)}
+  </tr>`;
+}
+
+// ── CPA Tab renderer ─────────────────────────────────────
+function renderCpaTab() {
+  const mes = parseInt(document.getElementById('cpaMesSel').value || 0);
+  if(!mes || !allData.length) return;
+  const ud = cpaUnitDiv;
+
+  const data = aggregateCpaData('CPA', mes);
+  if(!data) return;
+
+  // Build header
+  document.getElementById('cpaHead').innerHTML = buildCpaHead(mes, ud, 'cpaTable');
+
+  // Build body
+  let html = '';
+  // CPA Total row
+  html += buildCpaRow('CPA Total', data.total, ud, 'cpa-row-total', false);
+
+  // Sub-lines (MNG_4) — order by known list if possible
+  const CPA_MNG4_ORDER = [
+    'Paid On Media','MGM','Fuerza de Venta Propia Point','Fuerza de Venta de Terceros Point',
+    'Comisiones a Resellers Point','Televentas','Venta en pagina web de terceros',
+    'Other Sales Expenses Point'
+  ];
+  const sortedItems = [...data.items.entries()].sort((a,b) => {
+    const ia = CPA_MNG4_ORDER.indexOf(a[0]);
+    const ib = CPA_MNG4_ORDER.indexOf(b[0]);
+    return (ia<0?999:ia) - (ib<0?999:ib);
+  });
+
+  for(const [k4, vals] of sortedItems) {
+    html += buildCpaRow(k4, vals, ud, 'cpa-row-item', false);
+  }
+
+  if(!sortedItems.length)
+    html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
+
+  document.getElementById('cpaBody').innerHTML = html;
+  requestAnimationFrame(() => {
+    const ths = document.querySelectorAll('#cpaTable thead tr th');
+    ths.forEach(th => th.style.top = '0px');
+  });
+}
+
+// ── MNG_3 display name cleanup ───────────────────────────
+function cleanMng3Label(s) {
+  if(!s) return s;
+  // Fix encoding: Previsi?n → Prevision
+  if(s.includes('MPOS Cost')) return 'Prevision MPOS Cost';
+  return s;
+}
+
+// ── Point & MPOS Tab renderer ────────────────────────────
+function renderMposTab() {
+  const mes = parseInt(document.getElementById('mposMesSel').value || 0);
+  if(!mes || !allData.length) return;
+  const ud = mposUnitDiv;
+
+  // Three blocks
+  const blocks = [
+    { mng3: 'Point COGS',       label: 'Point COGS',           order: ['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs'] },
+    { mng3: 'PREVISION_MPOS',   label: 'Prevision MPOS Cost',  order: [] },
+    { mng3: 'Sales MPOS',       label: 'Sales MPOS',           order: ['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
+  ];
+
+  // Build header
+  document.getElementById('mposHead').innerHTML = buildCpaHead(mes, ud, 'mposTable');
+
+  let html = '';
+
+  for(const block of blocks) {
+    const data = aggregateCpaData(block.mng3, mes);
+    if(!data) continue;
+
+    // Gap between blocks
+    html += '<tr class="cpa-gap"><td colspan="10"></td></tr>';
+
+    // Block header (dark navy, like L1)
+    html += buildCpaRow(block.label, null, ud, 'cpa-row-block', true);
+
+    // Block total row
+    html += buildCpaRow(block.label + ' Total', data.total, ud, 'cpa-row-total', false);
+
+    // Sub-lines (MNG_4)
+    const sortedItems = [...data.items.entries()].sort((a,b) => {
+      const ia = block.order.indexOf(a[0]);
+      const ib = block.order.indexOf(b[0]);
+      return (ia<0?999:ia) - (ib<0?999:ib);
+    });
+    for(const [k4, vals] of sortedItems) {
+      html += buildCpaRow(k4, vals, ud, 'cpa-row-item', false);
+    }
+  }
+
+  if(!html) html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
+  document.getElementById('mposBody').innerHTML = html;
+  requestAnimationFrame(() => {
+    const ths = document.querySelectorAll('#mposTable thead tr th');
+    ths.forEach(th => th.style.top = '0px');
+  });
 }
 </script>
 </body>
