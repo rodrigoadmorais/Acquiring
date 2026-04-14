@@ -613,7 +613,7 @@
                         <div class="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
                             <button onclick="stockWidthDown()" title="Gráfico mais estreito"
                                 class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">◄</button>
-                            <span id="stock-width-label" class="px-2 text-[10px] font-bold text-gray-400">100%</span>
+                            <span id="stock-width-label" class="px-2 text-[10px] font-bold text-gray-400">60%</span>
                             <button onclick="stockWidthUp()" title="Gráfico mais largo"
                                 class="px-2.5 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">►</button>
                         </div>
@@ -623,7 +623,7 @@
                             <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                                 <button onclick="stockFontDown()" title="Diminuir rótulos das barras"
                                     class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
-                                <span id="stock-font-size-label" class="px-1.5 text-[10px] font-bold text-gray-400">10</span>
+                                <span id="stock-font-size-label" class="px-1.5 text-[10px] font-bold text-gray-400">12</span>
                                 <button onclick="stockFontUp()" title="Aumentar rótulos das barras"
                                     class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
                             </div>
@@ -634,7 +634,7 @@
                             <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                                 <button onclick="stockLineFontDown()" title="Diminuir rótulos da linha"
                                     class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
-                                <span id="stock-line-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">11</span>
+                                <span id="stock-line-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">22</span>
                                 <button onclick="stockLineFontUp()" title="Aumentar rótulos da linha"
                                     class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
                             </div>
@@ -645,7 +645,7 @@
                             <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                                 <button onclick="stockXFontDown()" title="Diminuir meses do eixo X"
                                     class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
-                                <span id="stock-x-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">10</span>
+                                <span id="stock-x-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">14</span>
                                 <button onclick="stockXFontUp()" title="Aumentar meses do eixo X"
                                     class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
                             </div>
@@ -656,7 +656,7 @@
                             <div class="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                                 <button onclick="stockLegendFontDown()" title="Diminuir legenda"
                                     class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-r border-gray-200">A−</button>
-                                <span id="stock-legend-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">11</span>
+                                <span id="stock-legend-font-label" class="px-1.5 text-[10px] font-bold text-gray-400">13</span>
                                 <button onclick="stockLegendFontUp()" title="Aumentar legenda"
                                     class="px-2 py-1.5 text-xs font-black text-gray-500 hover:bg-gray-100 transition-all border-l border-gray-200">A+</button>
                             </div>
@@ -680,19 +680,19 @@
                             <div class="divide-y divide-gray-100">
                                 <div class="flex items-center justify-between px-3 py-2.5">
                                     <span class="text-[11px] font-semibold text-gray-500">Smart</span>
-                                    <span id="stock-cd-smart" class="text-base font-black text-gray-800">–</span>
+                                    <span id="stock-cd-smart" class="text-sm font-bold text-gray-600">–</span>
                                 </div>
                                 <div class="flex items-center justify-between px-3 py-2.5">
                                     <span class="text-[11px] font-semibold text-gray-500">Pro</span>
-                                    <span id="stock-cd-pro" class="text-base font-black text-gray-800">–</span>
+                                    <span id="stock-cd-pro" class="text-sm font-bold text-gray-600">–</span>
                                 </div>
                                 <div class="flex items-center justify-between px-3 py-2.5">
                                     <span class="text-[11px] font-semibold text-gray-500">Air</span>
-                                    <span id="stock-cd-air" class="text-base font-black text-gray-800">–</span>
+                                    <span id="stock-cd-air" class="text-sm font-bold text-gray-600">–</span>
                                 </div>
                                 <div class="flex items-center justify-between px-3 py-2.5">
                                     <span class="text-[11px] font-semibold text-gray-500">Mini</span>
-                                    <span id="stock-cd-mini" class="text-base font-black text-gray-800">–</span>
+                                    <span id="stock-cd-mini" class="text-sm font-bold text-gray-600">–</span>
                                 </div>
                             </div>
                         </div>
@@ -2209,11 +2209,11 @@
         /* ══════════════════════════════════════════════════════
            ESTOQUE TAB — render
         ══════════════════════════════════════════════════════ */
-        let stockLabelFontSize = 10;   // barras
-        let stockLineFontSize  = 11;   // rótulos da linha Cover Days
-        let stockXFontSize     = 10;   // eixo X (meses)
-        let stockLegendFontSize = 11;  // legenda
-        let stockChartWidth = 100;
+        let stockLabelFontSize  = 12;  // barras
+        let stockLineFontSize   = 22;  // rótulos da linha Cover Days
+        let stockXFontSize      = 14;  // eixo X (meses)
+        let stockLegendFontSize = 13;  // legenda
+        let stockChartWidth     = 60;  // largura % do chart wrap
 
         function stockFontUp()   { stockLabelFontSize = Math.min(stockLabelFontSize + 1, 22); document.getElementById('stock-font-size-label').textContent = stockLabelFontSize; renderEstoqueTab(); }
         function stockFontDown() { stockLabelFontSize = Math.max(stockLabelFontSize - 1, 7);  document.getElementById('stock-font-size-label').textContent = stockLabelFontSize; renderEstoqueTab(); }
@@ -2376,6 +2376,10 @@
             document.getElementById('stock-cd-air').textContent   = fmt(rDevData.Air[idx]);
             document.getElementById('stock-cd-mini').textContent  = fmt(rDevData.Mini[idx]);
 
+            // ── aplicar largura atual ─────────────────────────────────────
+            const wrap = document.getElementById('stock-chart-wrap');
+            if (wrap) wrap.style.maxWidth = stockChartWidth < 100 ? stockChartWidth + '%' : '';
+
             // ── gráfico ───────────────────────────────────────────────────
             const ctx = document.getElementById('stockChart').getContext('2d');
             if (stockChart) stockChart.destroy();
@@ -2444,7 +2448,7 @@
                                 align: 'top',
                                 offset: 4,
                                 color: '#333',
-                                font: { weight: 'black', size: stockLineFontSize },
+                                font: { weight: 'bold', size: stockLineFontSize },
                                 // Mostra o valor REAL (não o escalado)
                                 formatter: (_, c) => {
                                     const real = c.dataset.originalData?.[c.dataIndex];
