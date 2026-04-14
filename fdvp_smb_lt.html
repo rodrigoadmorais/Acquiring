@@ -28,6 +28,12 @@
   .ctrl-btn:hover { background: #f5f5f5; }
   .ctrl-btn.active { background: #FFE600; border-color: #bba000; font-weight: bold; }
   .ctrl-label { font-size: 11px; color: #888; margin-right: 2px; }
+  .ctrl-select {
+    border: 1.5px solid #aaa; border-radius: 6px; background: #fff;
+    color: #333; font-family: Arial, sans-serif; font-size: 12px;
+    padding: 4px 7px; cursor: pointer; outline: none;
+  }
+  .ctrl-select:hover { background: #f5f5f5; }
 
   /* Section header */
   .section-header {
@@ -71,6 +77,10 @@
     </div>
     <div class="header-right">
       <div class="controls">
+        <span class="ctrl-label">De:</span>
+        <select class="ctrl-select" id="startMonthSelect" onchange="setStartMonth(this.value)"></select>
+      </div>
+      <div class="controls">
         <span class="ctrl-label">Rótulos:</span>
         <button class="ctrl-btn" onclick="changeSize(-1)" title="Diminuir fonte">A−</button>
         <button class="ctrl-btn" onclick="changeSize(1)"  title="Aumentar fonte">A+</button>
@@ -109,6 +119,7 @@ let LABEL_SIZE  = 9;
 let LEGEND_SIZE = 10;
 let LABEL_BOLD  = false;
 let currentData = null;
+let _lastRows = null;
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
 const YELLOW  = '#FFE600';
@@ -121,8 +132,30 @@ const MONTH_LABELS = {
   '202601':'Jan/26','202602':'Fev/26','202603':'Mar/26','202604':'Abr/26'
 };
 
-const MONTHS = ['202502','202503','202504','202505','202506','202507',
-                '202508','202509','202510','202511','202512','202601','202602','202603'];
+const ALL_MONTHS = [
+  '202501','202502','202503','202504','202505','202506','202507',
+  '202508','202509','202510','202511','202512',
+  '202601','202602','202603','202604'
+];
+let MONTHS = ALL_MONTHS.slice(ALL_MONTHS.indexOf('202502')); // default: Fev/25
+
+function setStartMonth(code) {
+  const idx = ALL_MONTHS.indexOf(code);
+  if (idx < 0) return;
+  MONTHS = ALL_MONTHS.slice(idx);
+  if (currentData) { currentData = compute(_lastRows); renderCharts(currentData); }
+}
+
+function buildMonthSelect() {
+  const sel = document.getElementById('startMonthSelect');
+  ALL_MONTHS.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = MONTH_LABELS[m];
+    if (m === '202502') opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
 
 // ─── CONTROLS ───────────────────────────────────────────────────────────────
 function changeSize(d) {
@@ -427,7 +460,9 @@ const DEFAULT_ROWS = [
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 async function init() {
-  currentData = compute(DEFAULT_ROWS);
+  buildMonthSelect();
+  _lastRows = DEFAULT_ROWS;
+  currentData = compute(_lastRows);
   renderCharts(currentData);
   document.getElementById('lastUpdate').textContent = 'Dados embutidos';
 
@@ -438,7 +473,8 @@ async function init() {
     if (!Array.isArray(raw) || !raw.length) return;
     let rows = raw[0].metric !== undefined ? raw : parseRaw(raw);
     if (rows && rows.length >= 4) {
-      currentData = compute(rows);
+      _lastRows = rows;
+      currentData = compute(_lastRows);
       renderCharts(currentData);
       const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
       document.getElementById('lastUpdate').textContent = 'Atualizado: ' + now;
