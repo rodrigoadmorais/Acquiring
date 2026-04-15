@@ -2257,7 +2257,7 @@ const CPA_DEFAULT_ORDER = [
 ];
 const MPOS_BLOCKS_DEF = [
   { key:'Sales',    label:'Sales MPOS', defOrder:['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
-  { key:'PointCogs',label:'MPOS COGS',  defOrder:['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs','Previsión Costo MPOS','Telemetría'] },
+  { key:'PointCogs',label:'MPOS COGS',  defOrder:['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs','Previsión Costo MPOS','Telemetría','S&W Fixed'] },
 ];
 
 let cpaLineOrder  = [...CPA_DEFAULT_ORDER];
@@ -2478,7 +2478,7 @@ function sumItems(itemsMap, keys) {
 // ── MPOS Light Tab renderer ───────────────────────────────
 const MPOS_LIGHT_SALES_NET_KEYS   = ['Sales MPOS Gross','Descuentos MPOS','Bad Debt MPOS','Alquiler MPOS'];
 const MPOS_LIGHT_CMV_KEYS         = ['Cost of Product Sold','Previsión Costo MPOS'];
-const MPOS_LIGHT_OTHERS_COST_KEYS = ['Telemetría','Reacondicionamiento','Other MPOS Cogs','Insumos Point','Warehousing Point','Shipping Costs Point'];
+const MPOS_LIGHT_OTHERS_COST_KEYS = ['Telemetría','Reacondicionamiento','Other MPOS Cogs','Insumos Point','Warehousing Point','Shipping Costs Point','S&W Fixed'];
 const EMPTY_VALS = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
 
 function renderMposLightTab() {
