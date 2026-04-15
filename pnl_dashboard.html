@@ -272,83 +272,115 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .cpa-tbl-wrap .tbl-outer{border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-top:16px}
 
 /* ── CPA/MPOS Table ── */
-.cpa-table{border-collapse:collapse;width:100%;font-size:12px;border-radius:10px;overflow:hidden}
+.cpa-table{border-collapse:collapse;width:100%;font-size:12px}
+.cpa-tbl-wrap .tbl-outer{border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.09);
+                         border:1px solid #E8E8E8;margin-top:16px}
+/* Shrink container when table is in density mode so no white gap shows on right */
+.cpa-tbl-wrap:has(.cpa-table[data-density]) .tbl-outer{width:fit-content;min-width:0}
+/* MPOS Light footnote */
+.mpos-light-footnote{font-size:10.5px;color:var(--muted);padding:8px 4px 4px;line-height:1.6}
+.mpos-light-footnote b{color:var(--text)}
 .cpa-table th{padding:9px 12px;text-align:right;white-space:nowrap;
-              font-size:11px;font-weight:600;position:sticky;top:0;z-index:100;
-              border-bottom:2px solid #0a1220;letter-spacing:.3px}
+              font-size:11px;font-weight:700;position:sticky;top:0;z-index:100;
+              border-bottom:1px solid rgba(0,0,0,.15);letter-spacing:.3px}
 .cpa-table th.cpa-name-hdr{text-align:left;position:sticky;left:0;z-index:200;
-                            background:#111d36;color:#c8d4e8;
+                            background:#1a2740;color:#fff;
                             min-width:240px;max-width:360px;font-size:12px}
-/* Monthly columns (Realizado, Plan, PM): golden yellow */
-.cpa-hdr-monthly{background:#D4910F;color:#1a0a00;font-weight:700}
-/* Realizado: same yellow family, slightly richer */
-.cpa-hdr-real{background:#E8A020;color:#1a0a00;font-weight:700}
-/* YTD columns: medium blue */
+/* Monthly columns */
+.cpa-hdr-monthly{background:#C8860A;color:#fff;font-weight:700}
+.cpa-hdr-real{background:#E8A020;color:#fff;font-weight:700}
+/* YTD columns */
 .cpa-hdr-ytd{background:#1565C0;color:#fff;font-weight:700}
 /* Gap column */
-.cpa-hdr-sep{background:#e8e8ee;width:10px;padding:0;border:none}
-/* Delta columns: blue-gray */
-.cpa-hdr-delta{background:#546E7A;color:#fff;font-weight:700;border-left:1px solid #455A64;font-size:10px}
+.cpa-hdr-sep{background:#F2F2F2;width:8px;padding:0;border:none}
+/* Delta columns */
+.cpa-hdr-delta{background:#546E7A;color:#fff;font-weight:700;border-left:1px solid #607D8B;font-size:10px}
 /* Group sub-header row */
-.cpa-table tr.cpa-grp-hdr th{background:#0a1220;color:#6080a0;font-size:10px;
-                               padding:4px 12px;border-bottom:1px solid #0a1220}
-.cpa-table tr.cpa-grp-hdr th.cpa-name-hdr{background:#0a1220;color:#6080a0}
+.cpa-table tr.cpa-grp-hdr th{background:#1a2740;color:#8aa0c0;font-size:10px;
+                               padding:4px 12px;border-bottom:1px solid #0d1a30}
+.cpa-table tr.cpa-grp-hdr th.cpa-name-hdr{background:#1a2740;color:#8aa0c0}
 /* Dark theme overrides for column headers */
 [data-theme=dark] .cpa-hdr-real{background:#b87418;color:#fff9e6}
 [data-theme=dark] .cpa-hdr-monthly{background:#9e6a0c;color:#fff9e6}
 [data-theme=dark] .cpa-hdr-ytd{background:#0d47a1;color:#c8deff}
-[data-theme=dark] .cpa-hdr-sep{background:#1a2030}
+[data-theme=dark] .cpa-hdr-sep{background:#1e2533}
 [data-theme=dark] .cpa-hdr-delta{background:#37474F;color:#cfd8dc}
 
 /* ── CPA/MPOS Table rows ── */
-.cpa-table td{padding:5px 12px;border-bottom:1px solid var(--border);
-              white-space:nowrap;text-align:right}
+.cpa-table td{padding:5px 12px;border-bottom:1px solid #F0F0F0;
+              white-space:nowrap;text-align:right;color:#333}
 .cpa-table td.cpa-name-cell{text-align:left;position:sticky;left:0;
-                             background:var(--sticky);z-index:50;
+                             background:#fff;z-index:50;
                              min-width:240px;max-width:360px}
-/* Block header row (like L1) */
-.cpa-row-block td{background:#1e2d4e;color:#e8ecf5;font-weight:700;font-size:11px;
-                  letter-spacing:.6px;text-transform:uppercase;
-                  border-top:3px solid #111d36;border-bottom:1px solid #111d36;
-                  padding-top:7px;padding-bottom:7px}
-.cpa-row-block td.cpa-name-cell{background:#1e2d4e;color:#e8ecf5}
+/* Block header row — dark navy divider */
+.cpa-row-block td{background:#1a2740;color:#fff;font-weight:700;font-size:11px;
+                  letter-spacing:.5px;text-transform:uppercase;
+                  border-top:6px solid var(--bg);border-bottom:none;
+                  padding-top:8px;padding-bottom:8px}
+.cpa-row-block td.cpa-name-cell{background:#1a2740;color:#fff}
 [data-theme=dark] .cpa-row-block td{background:#0d1a30;color:#c5cfe0}
 [data-theme=dark] .cpa-row-block td.cpa-name-cell{background:#0d1a30}
-/* Total row */
-.cpa-row-total td{background:#f0f4fb;font-weight:700;font-size:12.5px;color:#1a2a4a;
-                  border-top:2px solid #4a7fc1;border-bottom:3px solid #1e2d4e;
+/* Total row — amber accent */
+.cpa-row-total td{background:#FFFBF0;font-weight:700;font-size:12.5px;color:#1a1a1a;
+                  border-top:2px solid #E8A020;border-bottom:2px solid #E8A020;
                   padding-top:6px;padding-bottom:6px}
-.cpa-row-total td.cpa-name-cell{background:#dce7f5;border-left:4px solid #1e2d4e}
-[data-theme=dark] .cpa-row-total td{background:#142340;color:#c0d4f0;border-color:#2a4a80}
-[data-theme=dark] .cpa-row-total td.cpa-name-cell{background:#142340;border-left-color:#4a7fc1}
+.cpa-row-total td.cpa-name-cell{background:#FFFBF0;border-left:4px solid #E8A020;color:#1a1a1a}
+[data-theme=dark] .cpa-row-total td{background:#1e1800;color:#f5d98a;border-color:#a06800}
+[data-theme=dark] .cpa-row-total td.cpa-name-cell{background:#1e1800;border-left-color:#c8860a}
 /* Item row */
-.cpa-row-item td{background:#fff;font-weight:400;color:#333;border-bottom:1px solid #eaeef5}
-.cpa-row-item td.cpa-name-cell{background:#fff;padding-left:30px!important}
+.cpa-row-item td{background:#fff;font-weight:400;color:#333;border-bottom:1px solid #F0F0F0}
+.cpa-row-item td.cpa-name-cell{background:#fff;padding-left:28px!important}
 [data-theme=dark] .cpa-row-item td{background:#1f2937;color:#d1d9e0;border-color:#2a3545}
 [data-theme=dark] .cpa-row-item td.cpa-name-cell{background:#1f2937}
 /* Gap between blocks */
-tr.cpa-gap td{height:8px;background:var(--bg);border:none;padding:0}
+tr.cpa-gap td{height:6px;background:var(--bg);border:none;padding:0}
 /* Delta cell colors */
-td.cpa-delta-cell{background:rgba(26,26,46,.04)}
-td.cpa-delta-cell.vpos{background:rgba(46,125,50,.08);color:var(--green);font-weight:600}
-td.cpa-delta-cell.vneg{background:rgba(198,40,40,.07);color:var(--red);font-weight:600}
-[data-theme=dark] td.cpa-delta-cell{background:rgba(26,46,94,.2)}
-[data-theme=dark] td.cpa-delta-cell.vpos{background:rgba(46,125,50,.2)}
-[data-theme=dark] td.cpa-delta-cell.vneg{background:rgba(198,40,40,.18)}
-/* Realizado cell highlight */
-td.cpa-real-cell{background:rgba(26,46,94,.07);font-weight:700;border-left:2px solid rgba(42,95,160,.3)}
+td.cpa-delta-cell.vpos{color:var(--green);font-weight:600}
+td.cpa-delta-cell.vneg{color:var(--red);font-weight:600}
+[data-theme=dark] td.cpa-delta-cell.vpos{color:#86efac}
+[data-theme=dark] td.cpa-delta-cell.vneg{color:#fca5a5}
+/* Realizado cell */
+td.cpa-real-cell{font-weight:700}
 /* YTD cell */
-td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
-[data-theme=dark] td.cpa-ytd-cell{background:rgba(0,80,40,.2)}
+td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
+[data-theme=dark] td.cpa-ytd-cell{color:#93c5fd}
 /* Hover */
-.cpa-row-item:hover td,.cpa-row-total:hover td{filter:brightness(.97)}
-.cpa-row-block:hover td{filter:brightness(1.08)}
+.cpa-row-item:hover td{background:#FAFAFA!important}
+.cpa-row-item:hover td.cpa-name-cell{background:#FAFAFA!important}
+.cpa-row-total:hover td{filter:brightness(.97)}
+.cpa-row-block:hover td{filter:brightness(1.06)}
 
-/* ── Compact mode ── */
-.cpa-table.compact th{padding:5px 7px;font-size:10px}
-.cpa-table.compact td{padding:3px 7px;font-size:11px}
-.cpa-table.compact th.cpa-name-hdr,.cpa-table.compact td.cpa-name-cell{min-width:190px;max-width:260px}
-.cpa-table.compact .cpa-row-item td.cpa-name-cell{padding-left:22px!important}
+/* ── Density levels (data-density="1|2|3") ── */
+/* Level 1 — Compact */
+.cpa-table[data-density="1"]{width:auto!important}
+.cpa-table[data-density="1"] th{padding:6px 7px;font-size:10.5px}
+.cpa-table[data-density="1"] td{padding:4px 7px;font-size:11.5px}
+.cpa-table[data-density="1"] th.cpa-name-hdr,
+.cpa-table[data-density="1"] td.cpa-name-cell{min-width:185px!important;max-width:240px}
+.cpa-table[data-density="1"] th[style*="min-width"]{min-width:72px!important}
+.cpa-table[data-density="1"] .cpa-row-item td.cpa-name-cell{padding-left:22px!important}
+.cpa-table[data-density="1"] .cpa-hdr-sep{width:5px!important}
+.cpa-table[data-density="1"] .cpa-td-sep{width:5px!important}
+/* Level 2 — Dense */
+.cpa-table[data-density="2"]{width:auto!important}
+.cpa-table[data-density="2"] th{padding:5px 5px;font-size:10px}
+.cpa-table[data-density="2"] td{padding:3px 5px;font-size:10.5px}
+.cpa-table[data-density="2"] th.cpa-name-hdr,
+.cpa-table[data-density="2"] td.cpa-name-cell{min-width:150px!important;max-width:200px}
+.cpa-table[data-density="2"] th[style*="min-width"]{min-width:58px!important}
+.cpa-table[data-density="2"] .cpa-row-item td.cpa-name-cell{padding-left:18px!important}
+.cpa-table[data-density="2"] .cpa-hdr-sep{width:3px!important}
+.cpa-table[data-density="2"] .cpa-td-sep{width:3px!important}
+/* Level 3 — Ultra (print-ready) */
+.cpa-table[data-density="3"]{width:auto!important}
+.cpa-table[data-density="3"] th{padding:3px 4px;font-size:9px;letter-spacing:0}
+.cpa-table[data-density="3"] td{padding:2px 4px;font-size:10px}
+.cpa-table[data-density="3"] th.cpa-name-hdr,
+.cpa-table[data-density="3"] td.cpa-name-cell{min-width:120px!important;max-width:160px}
+.cpa-table[data-density="3"] th[style*="min-width"]{min-width:46px!important}
+.cpa-table[data-density="3"] .cpa-row-item td.cpa-name-cell{padding-left:14px!important}
+.cpa-table[data-density="3"] .cpa-hdr-sep{width:2px!important;padding:0!important}
+.cpa-table[data-density="3"] .cpa-td-sep{width:2px!important;padding:0!important}
 
 /* ── Config / compact buttons in filter bar ── */
 .cpa-cfg-btn{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;
@@ -416,6 +448,7 @@ td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
   <button class="tab-btn on" data-tab="pnl" onclick="switchTab(this)">P&amp;L</button>
   <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">Point &amp; MPOS</button>
+  <button class="tab-btn" data-tab="mposlight" onclick="switchTab(this)">MPOS Light</button>
 </nav>
 
 <!-- ── Filters ── -->
@@ -588,14 +621,26 @@ td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
         <button class="on" data-u="1000000" onclick="setCpaUnit(this)">R$ M</button>
       </div>
     </div>
+    <div>
+      <label>Macro BU</label>
+      <select id="cpaMacroBUSel" onchange="cpaMacroBU=this.value;renderCpaTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;min-width:110px;cursor:pointer"></select>
+    </div>
     <div style="margin-left:auto;display:flex;align-items:flex-end;gap:8px">
       <div>
-        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Colunas</label>
-        <button class="cpa-cfg-btn" id="cpaCompactBtn" onclick="toggleCpaCompact()">⊟ Compacto</button>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Largura</label>
+        <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:7px;overflow:hidden">
+          <button class="cpa-cfg-btn" id="cpaWidenBtn" onclick="stepDensity('cpa',-1)"
+            style="border:none;border-radius:0;padding:4px 9px;font-size:13px;line-height:1" title="Aumentar largura">+</button>
+          <span id="cpaDensityLbl" style="font-size:10px;font-weight:700;color:var(--muted);padding:0 6px;white-space:nowrap;min-width:52px;text-align:center">Normal</span>
+          <button class="cpa-cfg-btn" id="cpaNarrowBtn" onclick="stepDensity('cpa',1)"
+            style="border:none;border-radius:0;padding:4px 9px;font-size:13px;line-height:1" title="Diminuir largura">−</button>
+        </div>
       </div>
       <div>
-        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Linhas</label>
-        <button class="cpa-cfg-btn" onclick="openLcm('cpa')">⚙ Editar linhas</button>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">P&amp;L</label>
+        <button class="cpa-cfg-btn" onclick="openLcm('cpa')">⚙ Editar P&amp;L</button>
       </div>
     </div>
   </div>
@@ -626,14 +671,26 @@ td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
         <button class="on" data-u="1000000" onclick="setMposUnit(this)">R$ M</button>
       </div>
     </div>
+    <div>
+      <label>Macro BU</label>
+      <select id="mposMacroBUSel" onchange="mposMacroBU=this.value;renderMposTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;min-width:110px;cursor:pointer"></select>
+    </div>
     <div style="margin-left:auto;display:flex;align-items:flex-end;gap:8px">
       <div>
-        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Colunas</label>
-        <button class="cpa-cfg-btn" id="mposCompactBtn" onclick="toggleMposCompact()">⊟ Compacto</button>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Largura</label>
+        <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:7px;overflow:hidden">
+          <button class="cpa-cfg-btn" id="mposWidenBtn" onclick="stepDensity('mpos',-1)"
+            style="border:none;border-radius:0;padding:4px 9px;font-size:13px;line-height:1" title="Aumentar largura">+</button>
+          <span id="mposDensityLbl" style="font-size:10px;font-weight:700;color:var(--muted);padding:0 6px;white-space:nowrap;min-width:52px;text-align:center">Normal</span>
+          <button class="cpa-cfg-btn" id="mposNarrowBtn" onclick="stepDensity('mpos',1)"
+            style="border:none;border-radius:0;padding:4px 9px;font-size:13px;line-height:1" title="Diminuir largura">−</button>
+        </div>
       </div>
       <div>
-        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Linhas</label>
-        <button class="cpa-cfg-btn" onclick="openLcm('mpos')">⚙ Editar linhas</button>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">P&amp;L</label>
+        <button class="cpa-cfg-btn" onclick="openLcm('mpos')">⚙ Editar P&amp;L</button>
       </div>
     </div>
   </div>
@@ -644,6 +701,53 @@ td.cpa-ytd-cell{background:rgba(0,80,40,.05)}
         <tbody id="mposBody"><tr><td colspan="12" class="empty">⏳ Carregando...</td></tr></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- ── MPOS Light Panel ── -->
+<div id="mposLightPanel" class="cpa-panel" style="display:none">
+  <div class="cpa-filter-bar">
+    <div>
+      <label>Mês</label>
+      <select id="mposLightMesSel" onchange="renderMposLightTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
+    </div>
+    <div>
+      <label>Unidade</label>
+      <div class="bg" id="mposLightUnitGrp">
+        <button data-u="1" onclick="setMposLightUnit(this)">R$</button>
+        <button data-u="1000" onclick="setMposLightUnit(this)">R$ mil</button>
+        <button class="on" data-u="1000000" onclick="setMposLightUnit(this)">R$ M</button>
+      </div>
+    </div>
+    <div>
+      <label>Macro BU</label>
+      <select id="mposLightMacroBUSel" onchange="mposLightMacroBU=this.value;renderMposLightTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;min-width:110px;cursor:pointer"></select>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:flex-end;gap:8px">
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Largura</label>
+        <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:7px;overflow:hidden">
+          <button class="cpa-cfg-btn" id="mposLightWidenBtn" onclick="stepDensity('mposlight',-1)"
+            style="border:none;border-radius:0;padding:4px 9px;font-size:13px;line-height:1" title="Aumentar largura">+</button>
+          <span id="mposLightDensityLbl" style="font-size:10px;font-weight:700;color:var(--muted);padding:0 6px;white-space:nowrap;min-width:52px;text-align:center">Normal</span>
+          <button class="cpa-cfg-btn" id="mposLightNarrowBtn" onclick="stepDensity('mposlight',1)"
+            style="border:none;border-radius:0;padding:4px 9px;font-size:13px;line-height:1" title="Diminuir largura">−</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cpa-tbl-wrap">
+    <div class="tbl-outer">
+      <table class="cpa-table" id="mposLightTable">
+        <thead id="mposLightHead"></thead>
+        <tbody id="mposLightBody"><tr><td colspan="12" class="empty">⏳ Carregando...</td></tr></tbody>
+      </table>
+    </div>
+    <div id="mposLightFootnote" class="mpos-light-footnote"></div>
   </div>
 </div>
 
@@ -1939,25 +2043,33 @@ function fmt(v) {
 // ═══════════════════════════════════════════════════════════
 //  TAB SYSTEM
 // ═══════════════════════════════════════════════════════════
-let currentTab  = 'pnl';
-let cpaUnitDiv  = 1_000_000;
-let mposUnitDiv = 1_000_000;
+let currentTab       = 'pnl';
+let cpaUnitDiv       = 1_000_000;
+let mposUnitDiv      = 1_000_000;
+let mposLightUnitDiv = 1_000_000;
+
+let cpaMacroBU       = 'Acquiring';
+let mposMacroBU      = 'Acquiring';
+let mposLightMacroBU = 'Acquiring';
 
 function switchTab(btn) {
   currentTab = btn.dataset.tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b===btn));
 
-  const isPnl  = currentTab === 'pnl';
-  const isCpa  = currentTab === 'cpa';
-  const isMpos = currentTab === 'mpos';
+  const isPnl       = currentTab === 'pnl';
+  const isCpa       = currentTab === 'cpa';
+  const isMpos      = currentTab === 'mpos';
+  const isMposLight = currentTab === 'mposlight';
 
-  document.getElementById('filterBar').style.display  = isPnl  ? '' : 'none';
-  document.querySelector('.tbl-wrap').style.display   = isPnl  ? '' : 'none';
-  document.getElementById('cpaPanel').style.display   = isCpa  ? '' : 'none';
-  document.getElementById('mposPanel').style.display  = isMpos ? '' : 'none';
+  document.getElementById('filterBar').style.display       = isPnl       ? '' : 'none';
+  document.querySelector('.tbl-wrap').style.display        = isPnl       ? '' : 'none';
+  document.getElementById('cpaPanel').style.display        = isCpa       ? '' : 'none';
+  document.getElementById('mposPanel').style.display       = isMpos      ? '' : 'none';
+  document.getElementById('mposLightPanel').style.display  = isMposLight ? '' : 'none';
 
-  if(isCpa)  renderCpaTab();
-  if(isMpos) renderMposTab();
+  if(isCpa)       renderCpaTab();
+  if(isMpos)      renderMposTab();
+  if(isMposLight) renderMposLightTab();
 }
 
 function setCpaUnit(btn) {
@@ -1970,6 +2082,11 @@ function setMposUnit(btn) {
   document.querySelectorAll('#mposUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
   renderMposTab();
 }
+function setMposLightUnit(btn) {
+  mposLightUnitDiv = parseFloat(btn.dataset.u);
+  document.querySelectorAll('#mposLightUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  renderMposLightTab();
+}
 
 // ── Build month selectors for CPA/MPOS tabs ─────────────────
 function buildCpaMonthSelectors() {
@@ -1980,7 +2097,7 @@ function buildCpaMonthSelectors() {
       .map(d => d.MES)
   )].sort((a,b) => a-b);
 
-  ['cpaMesSel','mposMesSel'].forEach(id => {
+  ['cpaMesSel','mposMesSel','mposLightMesSel'].forEach(id => {
     const sel = document.getElementById(id);
     sel.innerHTML = '';
     cpaMeses.forEach(m => {
@@ -1992,6 +2109,24 @@ function buildCpaMonthSelectors() {
       sel.appendChild(opt);
     });
     if(cpaMeses.length) sel.value = cpaMeses[cpaMeses.length-1];
+  });
+  populateMacroBUSelects();
+}
+
+// ── Populate Macro BU selects for CPA/MPOS/Light tabs ────
+function populateMacroBUSelects() {
+  const vals = ['', ...([...new Set(allData.map(d => d.Macro_BU).filter(Boolean))].sort())];
+  const selCfg = [
+    { id:'cpaMacroBUSel',       current:()=>cpaMacroBU },
+    { id:'mposMacroBUSel',      current:()=>mposMacroBU },
+    { id:'mposLightMacroBUSel', current:()=>mposLightMacroBU },
+  ];
+  selCfg.forEach(({id, current}) => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    sel.innerHTML = vals.map(v =>
+      `<option value="${v}" ${v===current()?'selected':''}>${v||'Todos'}</option>`
+    ).join('');
   });
 }
 
@@ -2033,7 +2168,8 @@ function aggregateLines(filterFn, mes) {
 // ── Data filters per section ──────────────────────────────
 const CPA_FILTER = d =>
   (d.MNG_2==='Customer Acquisition Cost' && d.MNG_3==='CPA') ||
-  (d.MNG_2==='Direct Variable Costs'     && d.MNG_4==='Consultor Certificado');
+  (d.MNG_2==='Direct Variable Costs'     && d.MNG_4==='Consultor Certificado') ||
+  (d.MNG_2==='Direct Variable Costs'     && d.MNG_4==='Cashbacks');
 
 const MPOS_FILTERS = {
   'Sales':    d => d.MNG_2==='Customer Acquisition Cost' && d.MNG_3==='Sales MPOS',
@@ -2074,7 +2210,7 @@ function buildCpaHead(mes, ud, tableId) {
   const ytdLbl = 'YTD ' + year;
 
   return `<tr>
-    <th class="cpa-name-hdr" style="background:#111d36;color:#c8d4e8">Linha</th>
+    <th class="cpa-name-hdr" style="background:#1a2740;color:#fff">P&amp;L</th>
     <th class="cpa-hdr-real" style="min-width:90px">Realizado<br><span style="font-size:10px;font-weight:400">${mesLbl} · ${unitLbl}</span></th>
     <th class="cpa-hdr-monthly" style="min-width:90px">Plan<br><span style="font-size:10px;font-weight:400">${mesLbl}</span></th>
     <th class="cpa-hdr-monthly" style="min-width:90px">Prior Month<br><span style="font-size:10px;font-weight:400">${pmLbl}</span></th>
@@ -2103,7 +2239,7 @@ function buildCpaRow(label, data, ud, rowClass, isNameOnly) {
     <td class="${pm<0?'neg':''}">${fmtCpa(pm,ud)}</td>
     <td class="cpa-ytd-cell ${ytdReal<0?'neg':''}">${fmtCpa(ytdReal,ud)}</td>
     <td class="cpa-ytd-cell ${ytdPlan<0?'neg':''}">${fmtCpa(ytdPlan,ud)}</td>
-    <td style="background:#e8e8ee;padding:0;width:10px"></td>
+    <td class="cpa-td-sep" style="background:#e8e8ee;padding:0;width:10px"></td>
     ${deltaCell(real-plan, ud)}
     ${deltaCell(real-pm, ud)}
     ${deltaCell(ytdReal-ytdPlan, ud)}
@@ -2117,11 +2253,11 @@ const CPA_DEFAULT_ORDER = [
   'Paid On Media','MGM','Fuerza de Venta Propia Point',
   'Fuerza de Venta de Terceros Point','Comisiones a Resellers Point',
   'Televentas','Venta en pagina web de terceros','Other Sales Expenses Point',
-  'Consultor Certificado'
+  'Consultor Certificado','Cashbacks'
 ];
 const MPOS_BLOCKS_DEF = [
-  { key:'Sales',    label:'Sales',      defOrder:['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
-  { key:'PointCogs',label:'Point COGS', defOrder:['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs','Previsión Costo MPOS','Telemetría'] },
+  { key:'Sales',    label:'Sales MPOS', defOrder:['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
+  { key:'PointCogs',label:'MPOS COGS',  defOrder:['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs','Previsión Costo MPOS','Telemetría'] },
 ];
 
 let cpaLineOrder  = [...CPA_DEFAULT_ORDER];
@@ -2129,8 +2265,12 @@ let cpaLineHidden = new Set();
 let mposLineCfg   = {};
 MPOS_BLOCKS_DEF.forEach(b => { mposLineCfg[b.key] = { order:[...b.defOrder], hidden:new Set() }; });
 
-let cpaCompact  = false;
-let mposCompact = false;
+let cpaDensity       = 0;   // 0=Normal 1=Compact 2=Dense 3=Ultra
+let mposDensity      = 0;
+let mposLightDensity = 0;
+
+const DENSITY_LABELS = ['Normal','Compact','Dense','Ultra'];
+const MAX_DENSITY = 3;
 
 // Load persisted config
 (function loadLineCfg(){
@@ -2140,7 +2280,7 @@ let mposCompact = false;
     const m = localStorage.getItem('acq_mpos_cfg');
     if(m){ const p=JSON.parse(m); for(const[k,v] of Object.entries(p)) if(mposLineCfg[k]){ mposLineCfg[k].order=v.order||mposLineCfg[k].order; mposLineCfg[k].hidden=new Set(v.hidden||[]); } }
     const cp = localStorage.getItem('acq_compact');
-    if(cp){ const p=JSON.parse(cp); cpaCompact=!!p.cpa; mposCompact=!!p.mpos; }
+    if(cp){ const p=JSON.parse(cp); cpaDensity=Math.min(MAX_DENSITY,Math.max(0,parseInt(p.cpa)||0)); mposDensity=Math.min(MAX_DENSITY,Math.max(0,parseInt(p.mpos)||0)); }
   } catch(e){}
 })();
 
@@ -2148,28 +2288,69 @@ function persistLineCfg(tab){
   try{
     if(tab==='cpa') localStorage.setItem('acq_cpa_cfg', JSON.stringify({order:cpaLineOrder,hidden:[...cpaLineHidden]}));
     else { const obj={}; for(const[k,v] of Object.entries(mposLineCfg)) obj[k]={order:v.order,hidden:[...v.hidden]}; localStorage.setItem('acq_mpos_cfg',JSON.stringify(obj)); }
-    localStorage.setItem('acq_compact',JSON.stringify({cpa:cpaCompact,mpos:mposCompact}));
+    localStorage.setItem('acq_compact',JSON.stringify({cpa:cpaDensity,mpos:mposDensity}));
   } catch(e){}
 }
 
-// ── Compact toggle ────────────────────────────────────────
-function toggleCpaCompact(){
-  cpaCompact=!cpaCompact;
-  document.getElementById('cpaCompactBtn').classList.toggle('on',cpaCompact);
-  document.getElementById('cpaTable').classList.toggle('compact',cpaCompact);
-  persistLineCfg('cpa');
+// ── Density stepper ────────────────────────────────────────
+function stepDensity(tab, dir){
+  if(tab==='cpa'){
+    cpaDensity = Math.max(0, Math.min(MAX_DENSITY, cpaDensity + dir));
+    const tbl = document.getElementById('cpaTable');
+    if(tbl){ if(cpaDensity===0) tbl.removeAttribute('data-density'); else tbl.dataset.density=cpaDensity; }
+    const lbl = document.getElementById('cpaDensityLbl');
+    if(lbl) lbl.textContent = DENSITY_LABELS[cpaDensity];
+    const wb = document.getElementById('cpaWidenBtn');
+    const nb = document.getElementById('cpaNarrowBtn');
+    if(wb) wb.disabled = cpaDensity===0;
+    if(nb) nb.disabled = cpaDensity===MAX_DENSITY;
+    persistLineCfg('cpa');
+  } else if(tab==='mpos') {
+    mposDensity = Math.max(0, Math.min(MAX_DENSITY, mposDensity + dir));
+    const tbl = document.getElementById('mposTable');
+    if(tbl){ if(mposDensity===0) tbl.removeAttribute('data-density'); else tbl.dataset.density=mposDensity; }
+    const lbl = document.getElementById('mposDensityLbl');
+    if(lbl) lbl.textContent = DENSITY_LABELS[mposDensity];
+    const wb = document.getElementById('mposWidenBtn');
+    const nb = document.getElementById('mposNarrowBtn');
+    if(wb) wb.disabled = mposDensity===0;
+    if(nb) nb.disabled = mposDensity===MAX_DENSITY;
+    persistLineCfg('mpos');
+  } else {
+    mposLightDensity = Math.max(0, Math.min(MAX_DENSITY, mposLightDensity + dir));
+    const tbl = document.getElementById('mposLightTable');
+    if(tbl){ if(mposLightDensity===0) tbl.removeAttribute('data-density'); else tbl.dataset.density=mposLightDensity; }
+    const lbl = document.getElementById('mposLightDensityLbl');
+    if(lbl) lbl.textContent = DENSITY_LABELS[mposLightDensity];
+    const wb = document.getElementById('mposLightWidenBtn');
+    const nb = document.getElementById('mposLightNarrowBtn');
+    if(wb) wb.disabled = mposLightDensity===0;
+    if(nb) nb.disabled = mposLightDensity===MAX_DENSITY;
+  }
 }
-function toggleMposCompact(){
-  mposCompact=!mposCompact;
-  document.getElementById('mposCompactBtn').classList.toggle('on',mposCompact);
-  document.getElementById('mposTable').classList.toggle('compact',mposCompact);
-  persistLineCfg('mpos');
-}
-function syncCompactButtons(){
-  document.getElementById('cpaCompactBtn')?.classList.toggle('on',cpaCompact);
-  document.getElementById('mposCompactBtn')?.classList.toggle('on',mposCompact);
-  document.getElementById('cpaTable')?.classList.toggle('compact',cpaCompact);
-  document.getElementById('mposTable')?.classList.toggle('compact',mposCompact);
+
+function syncDensity(){
+  // CPA
+  const ct = document.getElementById('cpaTable');
+  if(ct){ if(cpaDensity===0) ct.removeAttribute('data-density'); else ct.dataset.density=cpaDensity; }
+  const cl = document.getElementById('cpaDensityLbl');
+  if(cl) cl.textContent = DENSITY_LABELS[cpaDensity];
+  const cw = document.getElementById('cpaWidenBtn');  if(cw) cw.disabled = cpaDensity===0;
+  const cn = document.getElementById('cpaNarrowBtn'); if(cn) cn.disabled = cpaDensity===MAX_DENSITY;
+  // MPOS
+  const mt = document.getElementById('mposTable');
+  if(mt){ if(mposDensity===0) mt.removeAttribute('data-density'); else mt.dataset.density=mposDensity; }
+  const ml = document.getElementById('mposDensityLbl');
+  if(ml) ml.textContent = DENSITY_LABELS[mposDensity];
+  const mw = document.getElementById('mposWidenBtn');  if(mw) mw.disabled = mposDensity===0;
+  const mn = document.getElementById('mposNarrowBtn'); if(mn) mn.disabled = mposDensity===MAX_DENSITY;
+  // MPOS Light
+  const mlt = document.getElementById('mposLightTable');
+  if(mlt){ if(mposLightDensity===0) mlt.removeAttribute('data-density'); else mlt.dataset.density=mposLightDensity; }
+  const mll = document.getElementById('mposLightDensityLbl');
+  if(mll) mll.textContent = DENSITY_LABELS[mposLightDensity];
+  const mlw = document.getElementById('mposLightWidenBtn');  if(mlw) mlw.disabled = mposLightDensity===0;
+  const mln = document.getElementById('mposLightNarrowBtn'); if(mln) mln.disabled = mposLightDensity===MAX_DENSITY;
 }
 
 // ── CPA Tab renderer (uses line config) ──────────────────
@@ -2178,23 +2359,32 @@ function renderCpaTab() {
   if(!mes || !allData.length) return;
   const ud = cpaUnitDiv;
 
-  const data = aggregateLines(CPA_FILTER, mes);
+  const macroBuFnCpa = d => !cpaMacroBU || d.Macro_BU === cpaMacroBU;
+  const data = aggregateLines(d => CPA_FILTER(d) && macroBuFnCpa(d), mes);
   if(!data) return;
 
   document.getElementById('cpaHead').innerHTML = buildCpaHead(mes, ud, 'cpaTable');
 
-  let html = '';
-  html += buildCpaRow('CPA Total', data.total, ud, 'cpa-row-total', false);
-
-  // Merge config order with any new lines from data
+  // Merge config order with any new lines from data, sort by |real| descending
   const dataKeys = [...data.items.keys()];
   const allKeys  = [...new Set([...cpaLineOrder, ...dataKeys])];
 
-  for(const k4 of allKeys) {
-    if(cpaLineHidden.has(k4)) continue;
-    const vals = data.items.get(k4);
-    if(!vals) continue;
-    html += buildCpaRow(k4, vals, ud, 'cpa-row-item', false);
+  const sortedCpaKeys = allKeys
+    .filter(k => !cpaLineHidden.has(k) && data.items.has(k))
+    .sort((a, b) => Math.abs(data.items.get(b).real) - Math.abs(data.items.get(a).real));
+
+  // Visible total: only sum non-hidden lines
+  const cpaVisTotal = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+  for(const k of sortedCpaKeys) {
+    const v = data.items.get(k);
+    if(v){ cpaVisTotal.real+=v.real; cpaVisTotal.plan+=v.plan; cpaVisTotal.pm+=v.pm; cpaVisTotal.ytdReal+=v.ytdReal; cpaVisTotal.ytdPlan+=v.ytdPlan; }
+  }
+
+  let html = '';
+  html += buildCpaRow('CPA Total', cpaVisTotal, ud, 'cpa-row-total', false);
+
+  for(const k4 of sortedCpaKeys) {
+    html += buildCpaRow(k4, data.items.get(k4), ud, 'cpa-row-item', false);
   }
 
   if(!data.items.size)
@@ -2203,7 +2393,7 @@ function renderCpaTab() {
   document.getElementById('cpaBody').innerHTML = html;
   requestAnimationFrame(() => {
     document.querySelectorAll('#cpaTable thead tr th').forEach(th => th.style.top='0px');
-    syncCompactButtons();
+    syncDensity();
   });
 }
 
@@ -2213,28 +2403,57 @@ function renderMposTab() {
   if(!mes || !allData.length) return;
   const ud = mposUnitDiv;
 
+  const macroBuFnMpos = d => !mposMacroBU || d.Macro_BU === mposMacroBU;
+
   document.getElementById('mposHead').innerHTML = buildCpaHead(mes, ud, 'mposTable');
 
-  let html = '';
-
+  // Pre-compute all block data
+  const blockDataMap = {};
   for(const blockDef of MPOS_BLOCKS_DEF) {
     const filterFn = MPOS_FILTERS[blockDef.key];
     if(!filterFn) continue;
-    const data = aggregateLines(filterFn, mes);
+    blockDataMap[blockDef.key] = aggregateLines(d => filterFn(d) && macroBuFnMpos(d), mes);
+  }
 
+  // Build visible keys per block, compute visible block totals
+  const mposNet = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+  const blockVisKeys = {};
+  const blockVisTotals = {};
+
+  for(const blockDef of MPOS_BLOCKS_DEF) {
+    const data = blockDataMap[blockDef.key];
+    if(!data) continue;
     const cfg = mposLineCfg[blockDef.key] || { order: blockDef.defOrder, hidden: new Set() };
     const dataKeys = [...data.items.keys()];
     const allKeys  = [...new Set([...cfg.order, ...dataKeys])];
+    const visKeys = allKeys
+      .filter(k => !(cfg.hidden && cfg.hidden.has(k)) && data.items.has(k))
+      .sort((a, b) => Math.abs(data.items.get(b).real) - Math.abs(data.items.get(a).real));
+    blockVisKeys[blockDef.key] = visKeys;
+
+    const bt = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+    for(const k of visKeys) {
+      const v = data.items.get(k);
+      if(v){ bt.real+=v.real; bt.plan+=v.plan; bt.pm+=v.pm; bt.ytdReal+=v.ytdReal; bt.ytdPlan+=v.ytdPlan; }
+    }
+    blockVisTotals[blockDef.key] = bt;
+    mposNet.real+=bt.real; mposNet.plan+=bt.plan; mposNet.pm+=bt.pm;
+    mposNet.ytdReal+=bt.ytdReal; mposNet.ytdPlan+=bt.ytdPlan;
+  }
+
+  let html = '';
+  html += buildCpaRow('MPOS NET', mposNet, ud, 'cpa-row-total', false);
+
+  for(const blockDef of MPOS_BLOCKS_DEF) {
+    const data = blockDataMap[blockDef.key];
+    if(!data) continue;
+    const visKeys = blockVisKeys[blockDef.key] || [];
 
     html += '<tr class="cpa-gap"><td colspan="10"></td></tr>';
-    html += buildCpaRow(blockDef.label, null, ud, 'cpa-row-block', true);
-    html += buildCpaRow(blockDef.label + ' Total', data.total, ud, 'cpa-row-total', false);
+    html += buildCpaRow(blockDef.label + ' Total', blockVisTotals[blockDef.key], ud, 'cpa-row-total', false);
 
-    for(const k4 of allKeys) {
-      if(cfg.hidden && cfg.hidden.has(k4)) continue;
-      const vals = data.items.get(k4);
-      if(!vals) continue;
-      html += buildCpaRow(k4, vals, ud, 'cpa-row-item', false);
+    for(const k4 of visKeys) {
+      html += buildCpaRow(k4, data.items.get(k4), ud, 'cpa-row-item', false);
     }
   }
 
@@ -2242,7 +2461,81 @@ function renderMposTab() {
   document.getElementById('mposBody').innerHTML = html;
   requestAnimationFrame(() => {
     document.querySelectorAll('#mposTable thead tr th').forEach(th => th.style.top='0px');
-    syncCompactButtons();
+    syncDensity();
+  });
+}
+
+// ── Sum specific items from aggregated items Map ──────────
+function sumItems(itemsMap, keys) {
+  const r = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+  for(const k of keys) {
+    const v = itemsMap.get(k);
+    if(v){ r.real+=v.real; r.plan+=v.plan; r.pm+=v.pm; r.ytdReal+=v.ytdReal; r.ytdPlan+=v.ytdPlan; }
+  }
+  return r;
+}
+
+// ── MPOS Light Tab renderer ───────────────────────────────
+const MPOS_LIGHT_SALES_NET_KEYS   = ['Sales MPOS Gross','Descuentos MPOS','Bad Debt MPOS','Alquiler MPOS'];
+const MPOS_LIGHT_CMV_KEYS         = ['Cost of Product Sold','Previsión Costo MPOS'];
+const MPOS_LIGHT_OTHERS_COST_KEYS = ['Telemetría','Reacondicionamiento','Other MPOS Cogs','Insumos Point','Warehousing Point','Shipping Costs Point'];
+const EMPTY_VALS = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+
+function renderMposLightTab() {
+  const mes = parseInt(document.getElementById('mposLightMesSel').value || 0);
+  if(!mes || !allData.length) return;
+  const ud = mposLightUnitDiv;
+  const macroFn = d => !mposLightMacroBU || d.Macro_BU === mposLightMacroBU;
+
+  const salesData = aggregateLines(d => MPOS_FILTERS.Sales(d)     && macroFn(d), mes);
+  const cogsData  = aggregateLines(d => MPOS_FILTERS.PointCogs(d) && macroFn(d), mes);
+
+  // MPOS NET
+  const mposNet = {
+    real:    salesData.total.real    + cogsData.total.real,
+    plan:    salesData.total.plan    + cogsData.total.plan,
+    pm:      salesData.total.pm      + cogsData.total.pm,
+    ytdReal: salesData.total.ytdReal + cogsData.total.ytdReal,
+    ytdPlan: salesData.total.ytdPlan + cogsData.total.ytdPlan,
+  };
+
+  // Grouped lines
+  const salesNetVals   = sumItems(salesData.items, MPOS_LIGHT_SALES_NET_KEYS);
+  const cmvVals        = sumItems(cogsData.items,  MPOS_LIGHT_CMV_KEYS);
+  const othersCostVals = sumItems(cogsData.items,  MPOS_LIGHT_OTHERS_COST_KEYS);
+
+  let html = '';
+  html += buildCpaRow('MPOS NET', mposNet, ud, 'cpa-row-total', false);
+
+  // Sales MPOS block — fixed order
+  html += '<tr class="cpa-gap"><td colspan="10"></td></tr>';
+  html += buildCpaRow('Sales MPOS Total', salesData.total, ud, 'cpa-row-total', false);
+  html += buildCpaRow('Sales MPOS Net', salesNetVals, ud, 'cpa-row-item', false);
+  const salesTaxVals = salesData.items.get('Sales Tax MPOS') || {...EMPTY_VALS};
+  html += buildCpaRow('Sales Tax MPOS', salesTaxVals, ud, 'cpa-row-item', false);
+
+  // MPOS COGS block — sorted by |real| descending
+  html += '<tr class="cpa-gap"><td colspan="10"></td></tr>';
+  html += buildCpaRow('MPOS COGS Total', cogsData.total, ud, 'cpa-row-total', false);
+
+  const cogsLines = [
+    { label:'CMV MPOS',          vals: cmvVals },
+    { label:'Others MPOS Costs', vals: othersCostVals },
+  ].sort((a,b) => Math.abs(b.vals.real) - Math.abs(a.vals.real));
+  for(const {label, vals} of cogsLines)
+    html += buildCpaRow(label, vals, ud, 'cpa-row-item', false);
+
+  if(!html) html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
+  document.getElementById('mposLightHead').innerHTML = buildCpaHead(mes, ud, 'mposLightTable');
+  document.getElementById('mposLightBody').innerHTML = html;
+
+  const fn = document.getElementById('mposLightFootnote');
+  if(fn) fn.innerHTML =
+    '<b>Others MPOS Costs</b> = Telemetría + Shipping Costs Point + Reacondicionamiento + Other MPOS Cogs + Insumos Point + Warehousing Point';
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#mposLightTable thead tr th').forEach(th => th.style.top='0px');
+    syncDensity();
   });
 }
 
