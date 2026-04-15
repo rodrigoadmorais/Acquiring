@@ -2176,7 +2176,8 @@ const MPOS_FILTERS = {
   'PointCogs': d =>
     (d.MNG_2==='Customer Acquisition Cost' && d.MNG_3==='Point COGS') ||
     (d.MNG_2==='Customer Acquisition Cost' && d.MNG_3 && d.MNG_3.includes('MPOS Cost')) ||
-    (d.MNG_2==='Direct Variable Costs'     && d.MNG_3 && d.MNG_3.includes('Telemet'))
+    (d.MNG_2==='Direct Variable Costs'     && d.MNG_3 && d.MNG_3.includes('Telemet')) ||
+    (d.MNG_2==='Shipping Ops Fixed'        && d.MNG_3==='S&W Fixed')
 };
 
 // ── Format value for CPA/MPOS tables ──────────────────────
