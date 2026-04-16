@@ -291,13 +291,13 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-table th{background:#FFE600;color:#1a1a1a;padding:9px 16px;text-align:center;white-space:nowrap;font-size:12px;font-weight:700;border:none}
 .kn-table th.kn-bu-hdr{text-align:left;background:#fff;color:#1a1a1a;min-width:165px;border-right:1px solid #ddd}
 .kn-table th.kn-grp-hdr{background:#FFE600;color:#1a1a1a;border-left:3px solid #fff}
-.kn-table th.kn-grp-adj{background:#FFB800;color:#1a1a1a;border-left:3px solid #fff}
+.kn-table th.kn-grp-adj{background:#FFE600;color:#1a1a1a;border-left:3px solid #fff}
 .kn-table th.kn-grp-ytd{background:#FFE600;color:#1a1a1a;border-left:4px solid #bbb}
-.kn-table th.kn-grp-ytdadj{background:#FFB800;color:#1a1a1a;border-left:3px solid #fff}
+.kn-table th.kn-grp-ytdadj{background:#FFE600;color:#1a1a1a;border-left:3px solid #fff}
 .kn-table th.kn-sub-hdr{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)}
-.kn-table th.kn-sub-adj{background:#FFB800;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)}
+.kn-table th.kn-sub-adj{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)}
 .kn-table th.kn-sub-ytd{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08);border-left:3px solid #bbb}
-.kn-table th.kn-sub-ytdadj{background:#FFB800;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)}
+.kn-table th.kn-sub-ytdadj{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)}
 /* ── Data cells (default) ── */
 .kn-table td{padding:8px 16px;text-align:right;white-space:nowrap;border:none;font-size:13px}
 .kn-table td.kn-bu-cell{text-align:left;padding-left:16px;padding-right:16px;border-right:1px solid rgba(255,255,255,.12)}
@@ -324,7 +324,7 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-oneoff-inputs select,.kn-oneoff-inputs input{padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:12px}
 .kn-oneoff-inputs input[type=number]{width:120px}
 .kn-oneoff-inputs input[type=text]{width:140px}
-.kn-add-btn{padding:5px 14px;background:#FFB800;color:#1a1a1a;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer}
+.kn-add-btn{padding:5px 14px;background:#FFE600;color:#1a1a1a;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer}
 .kn-add-btn:hover{background:#e0a000}
 .kn-oneoff-list{margin-top:10px;display:flex;flex-direction:column;gap:4px}
 .kn-oneoff-item{display:flex;align-items:center;gap:10px;font-size:11px;background:var(--bg);border-radius:5px;padding:4px 10px}
@@ -2922,40 +2922,28 @@ function renderKeyNumTab() {
 
   // Header
   const head = document.getElementById('knHead');
+  const ytdLbl = `YTD '${String(yr).slice(2)} (Jan–${mesLbl})`;
   head.innerHTML = `
     <tr>
       <th class="kn-bu-hdr" rowspan="2"></th>
-      <th class="kn-grp-hdr" colspan="2">${mesLbl}</th>
-      <th class="kn-grp-adj" colspan="2">${mesLbl}* Adj</th>
-      <th class="kn-grp-ytd" colspan="2">YTD</th>
-      <th class="kn-grp-ytdadj" colspan="2">YTD'${String(yr).slice(2)}* Adj</th>
+      <th class="kn-grp-hdr" colspan="2">${ytdLbl}</th>
+      <th class="kn-grp-adj" colspan="2">${ytdLbl}* Adj</th>
     </tr>
     <tr>
       <th class="kn-sub-hdr">Actual</th>
       <th class="kn-sub-hdr">Δ$ Plan</th>
       <th class="kn-sub-adj">Actual* Adj</th>
       <th class="kn-sub-adj">Δ$ Plan*</th>
-      <th class="kn-sub-ytd">Actual</th>
-      <th class="kn-sub-hdr">Δ$ Plan</th>
-      <th class="kn-sub-ytdadj">Actual* Adj</th>
-      <th class="kn-sub-ytdadj">Δ$ Plan*</th>
     </tr>`;
 
   let html = '';
   for(const row of KN_ROWS) {
-    const act    = knGetVal(row.buKey, mes, 'Realizado');
-    const plan   = knGetVal(row.buKey, mes, 'Plan');
+    const act    = knGetYTD(row.buKey, mes, 'Realizado');
+    const plan   = knGetYTD(row.buKey, mes, 'Plan');
     const delta  = act - plan;
-    const ooM    = knOneoffSum(row.buKey, mes);
-    const actAdj = act - ooM;
+    const ooYTD  = knOneoffYTD(row.buKey, mes);
+    const actAdj = act - ooYTD;
     const deltaAdj = actAdj - plan;
-
-    const ytdAct   = knGetYTD(row.buKey, mes, 'Realizado');
-    const ytdPlan  = knGetYTD(row.buKey, mes, 'Plan');
-    const ytdDelta = ytdAct - ytdPlan;
-    const ooYTD    = knOneoffYTD(row.buKey, mes);
-    const ytdAdj   = ytdAct - ooYTD;
-    const ytdDeltaAdj = ytdAdj - ytdPlan;
 
     const lv   = `kn-row-l${row.level}`;
     const dPos = v => v > 0 ? 'kn-delta-pos' : v < 0 ? 'kn-delta-neg' : '';
@@ -2969,10 +2957,6 @@ function renderKeyNumTab() {
       <td class="${dPos(delta)}">${knFmt(delta, ud)}</td>
       <td class="kn-adj-cell">${knFmt(actAdj, ud)}</td>
       <td class="kn-adj-cell ${dPos(deltaAdj)}">${knFmt(deltaAdj, ud)}</td>
-      <td class="kn-ytd-sep">${knFmt(ytdAct, ud)}</td>
-      <td class="${dPos(ytdDelta)}">${knFmt(ytdDelta, ud)}</td>
-      <td class="kn-adj-cell">${knFmt(ytdAdj, ud)}</td>
-      <td class="kn-adj-cell ${dPos(ytdDeltaAdj)}">${knFmt(ytdDeltaAdj, ud)}</td>
     </tr>`;
   }
   document.getElementById('knBody').innerHTML = html;
