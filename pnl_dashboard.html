@@ -2828,11 +2828,26 @@ const KN_ROWS = [
   { label:'Insurtech',         level:2, buKey:'Insurtech' },
 ];
 
+// P&L sections that accumulate — same order as MNG1_ORDER (excluding Metrics)
+const KN_PNL_ORDER = [
+  'Product Monetization','Net Monetization','Variable Contribution',
+  'Direct Contribution','Business Contribution','Business Margin',
+  'EBIT','Below EBIT','Bundle'
+];
+
+// Returns the set of MNG_1 sections to sum for a given metric (cumulative P&L)
+function knCumSections(metric) {
+  const idx = KN_PNL_ORDER.indexOf(metric);
+  if(idx === -1) return new Set([metric]); // fallback: only that metric
+  return new Set(KN_PNL_ORDER.slice(0, idx + 1));
+}
+
 function knGetVal(buKey, mes, cenario) {
   const buses = KN_BU_MAP[buKey] || [buKey];
+  const sections = knCumSections(knMetric);
   let sum = 0;
   for(const d of allData) {
-    if(d.MES === mes && d.Cenario === cenario && buses.includes(d.Product) && d.MNG_1 === knMetric)
+    if(d.MES === mes && d.Cenario === cenario && buses.includes(d.Product) && sections.has(d.MNG_1))
       sum += d.Value;
   }
   return sum;
@@ -2840,10 +2855,11 @@ function knGetVal(buKey, mes, cenario) {
 
 function knGetYTD(buKey, upToMes, cenario) {
   const buses = KN_BU_MAP[buKey] || [buKey];
+  const sections = knCumSections(knMetric);
   const yr = Math.floor(upToMes / 100);
   let sum = 0;
   for(const d of allData) {
-    if(d.ANO === yr && d.MES <= upToMes && d.Cenario === cenario && buses.includes(d.Product) && d.MNG_1 === knMetric)
+    if(d.ANO === yr && d.MES <= upToMes && d.Cenario === cenario && buses.includes(d.Product) && sections.has(d.MNG_1))
       sum += d.Value;
   }
   return sum;
@@ -2922,11 +2938,13 @@ function renderKeyNumTab() {
 
   // Header
   const head = document.getElementById('knHead');
-  const ytdLbl = `YTD '${String(yr).slice(2)} (Jan–${mesLbl})`;
+  const ytdLbl = `YTD'${String(yr).slice(2)}`;
   head.innerHTML = `
     <tr>
       <th class="kn-bu-hdr" rowspan="2"></th>
-      <th class="kn-grp-hdr" colspan="2">${ytdLbl}</th>
+      <th class="kn-grp-hdr" colspan="2">${mesLbl}</th>
+      <th class="kn-grp-adj" colspan="2">${mesLbl}* Adj</th>
+      <th class="kn-grp-hdr" colspan="2" style="border-left:3px solid #ccc">${ytdLbl}</th>
       <th class="kn-grp-adj" colspan="2">${ytdLbl}* Adj</th>
     </tr>
     <tr>
@@ -2934,16 +2952,27 @@ function renderKeyNumTab() {
       <th class="kn-sub-hdr">Δ$ Plan</th>
       <th class="kn-sub-adj">Actual* Adj</th>
       <th class="kn-sub-adj">Δ$ Plan*</th>
+      <th class="kn-sub-ytd">Actual</th>
+      <th class="kn-sub-hdr">Δ$ Plan</th>
+      <th class="kn-sub-adj">Actual* Adj</th>
+      <th class="kn-sub-adj">Δ$ Plan*</th>
     </tr>`;
 
   let html = '';
   for(const row of KN_ROWS) {
-    const act    = knGetYTD(row.buKey, mes, 'Realizado');
-    const plan   = knGetYTD(row.buKey, mes, 'Plan');
-    const delta  = act - plan;
-    const ooYTD  = knOneoffYTD(row.buKey, mes);
-    const actAdj = act - ooYTD;
+    const act      = knGetVal(row.buKey, mes, 'Realizado');
+    const plan     = knGetVal(row.buKey, mes, 'Plan');
+    const delta    = act - plan;
+    const ooM      = knOneoffSum(row.buKey, mes);
+    const actAdj   = act - ooM;
     const deltaAdj = actAdj - plan;
+
+    const ytdAct      = knGetYTD(row.buKey, mes, 'Realizado');
+    const ytdPlan     = knGetYTD(row.buKey, mes, 'Plan');
+    const ytdDelta    = ytdAct - ytdPlan;
+    const ooYTD       = knOneoffYTD(row.buKey, mes);
+    const ytdAdj      = ytdAct - ooYTD;
+    const ytdDeltaAdj = ytdAdj - ytdPlan;
 
     const lv   = `kn-row-l${row.level}`;
     const dPos = v => v > 0 ? 'kn-delta-pos' : v < 0 ? 'kn-delta-neg' : '';
@@ -2957,6 +2986,10 @@ function renderKeyNumTab() {
       <td class="${dPos(delta)}">${knFmt(delta, ud)}</td>
       <td class="kn-adj-cell">${knFmt(actAdj, ud)}</td>
       <td class="kn-adj-cell ${dPos(deltaAdj)}">${knFmt(deltaAdj, ud)}</td>
+      <td class="kn-ytd-sep">${knFmt(ytdAct, ud)}</td>
+      <td class="${dPos(ytdDelta)}">${knFmt(ytdDelta, ud)}</td>
+      <td class="kn-adj-cell">${knFmt(ytdAdj, ud)}</td>
+      <td class="kn-adj-cell ${dPos(ytdDeltaAdj)}">${knFmt(ytdDeltaAdj, ud)}</td>
     </tr>`;
   }
   document.getElementById('knBody').innerHTML = html;
