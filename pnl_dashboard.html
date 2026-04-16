@@ -332,6 +332,12 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-oneoff-item .kn-del{cursor:pointer;color:var(--red);font-weight:700;font-size:13px;line-height:1;background:none;border:none;padding:0 4px}
 .kn-delta-pos{color:#1a1a1a;font-weight:700}
 .kn-delta-neg{color:#CC0000;font-weight:700}
+/* hide adj columns (3rd and 4th, 7th and 8th data cols) */
+.kn-table.kn-hide-adj th.kn-grp-adj,
+.kn-table.kn-hide-adj th.kn-grp-ytdadj,
+.kn-table.kn-hide-adj th.kn-sub-adj,
+.kn-table.kn-hide-adj th.kn-sub-ytdadj,
+.kn-table.kn-hide-adj td.kn-adj-cell{display:none}
 .cpa-table th{padding:9px 12px;text-align:right;white-space:nowrap;
               font-size:11px;font-weight:700;position:sticky;top:0;z-index:100;
               border-bottom:1px solid rgba(0,0,0,.15);letter-spacing:.3px}
@@ -830,6 +836,11 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
         <button data-u="1000" onclick="setKnUnit(this)">R$ mil</button>
         <button class="on" data-u="1000000" onclick="setKnUnit(this)">R$ M</button>
       </div>
+    </div>
+    <div>
+      <label>Ajustado</label>
+      <button id="knAdjToggle" class="cpa-cfg-btn" onclick="toggleKnAdj()"
+        style="padding:4px 12px;font-weight:700">Ocultar Adj</button>
     </div>
   </div>
 
@@ -2802,6 +2813,7 @@ let knOneoffs  = [
   {mes:202603, bu:'Point',            valor:18.0,  desc:'Sales Taxes'},
 ];
 let knOneoffOpen = false;
+let knShowAdj    = true;
 
 // BU display → actual BU keys in data
 const KN_BU_MAP = {
@@ -2995,6 +3007,12 @@ function renderKeyNumTab() {
   }
   document.getElementById('knBody').innerHTML = html;
   renderKnOneoffList();
+}
+
+function toggleKnAdj() {
+  knShowAdj = !knShowAdj;
+  document.getElementById('knTable').classList.toggle('kn-hide-adj', !knShowAdj);
+  document.getElementById('knAdjToggle').textContent = knShowAdj ? 'Ocultar Adj' : 'Mostrar Adj';
 }
 
 function setKnUnit(btn) {
