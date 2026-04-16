@@ -815,12 +815,12 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
       <label>Métrica</label>
       <select id="knMetricSel" onchange="knMetric=this.value;renderKeyNumTab()"
         style="min-width:180px">
-        <option value="EBIT">EBIT</option>
-        <option value="Business Contribution">Business Contribution</option>
-        <option value="Business Margin">Business Margin</option>
-        <option value="Direct Contribution">Direct Contribution</option>
         <option value="Net Monetization">Net Monetization</option>
         <option value="Variable Contribution">Variable Contribution</option>
+        <option value="Direct Contribution">Direct Contribution</option>
+        <option value="Business Contribution">Business Contribution</option>
+        <option value="Business Margin" selected>Business Margin</option>
+        <option value="EBIT">EBIT</option>
       </select>
     </div>
     <div>
@@ -2777,7 +2777,7 @@ function applyLcm() {
 //  KEY-NUMBERS TAB
 // ═══════════════════════════════════════════════════════════
 let knMes      = 0;       // selected month (YYYYMM), 0 = latest
-let knMetric   = 'EBIT';
+let knMetric   = 'Business Margin';
 let knUnitDiv  = 1_000_000;
 let knOneoffs  = [
   {mes:202601, bu:'Point',            valor:-17.0, desc:'MKT'},
