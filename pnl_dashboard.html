@@ -2778,7 +2778,28 @@ function applyLcm() {
 let knMes      = 0;       // selected month (YYYYMM), 0 = latest
 let knMetric   = 'EBIT';
 let knUnitDiv  = 1_000_000;
-let knOneoffs  = [];      // [{mes, bu, valor, desc}]
+let knOneoffs  = [
+  {mes:202601, bu:'Point',            valor:-17.0, desc:'MKT'},
+  {mes:202601, bu:'OP',               valor:-4.9,  desc:'MKT'},
+  {mes:202601, bu:'QR',               valor:-0.3,  desc:'MKT'},
+  {mes:202601, bu:'Credits',          valor:6.3,   desc:'MKT'},
+  {mes:202601, bu:'DA & Investments', valor:14.8,  desc:'MKT'},
+  {mes:202601, bu:'Insurtech',        valor:1.1,   desc:'MKT'},
+  {mes:202601, bu:'Credits',          valor:1.1,   desc:'Corp'},
+  {mes:202601, bu:'Credits',          valor:14.2,  desc:'Hosting'},
+  {mes:202601, bu:'DA & Investments', valor:0.8,   desc:'Hosting'},
+  {mes:202602, bu:'Credits',          valor:-16.6, desc:'Corp'},
+  {mes:202602, bu:'DA & Investments', valor:-13.0, desc:'Corp'},
+  {mes:202602, bu:'Credits',          valor:-24.4, desc:'Legal Fees'},
+  {mes:202602, bu:'DA & Investments', valor:-1.3,  desc:'Legal Fees'},
+  {mes:202602, bu:'DA & Investments', valor:-15.0, desc:'Hosting'},
+  {mes:202602, bu:'DA & Investments', valor:-0.8,  desc:'Hosting'},
+  {mes:202602, bu:'Credits',          valor:38.0,  desc:'Legal Fees'},
+  {mes:202602, bu:'DA & Investments', valor:2.0,   desc:'Legal Fees'},
+  {mes:202603, bu:'Point',            valor:-8.0,  desc:'Sales Taxes MPOS'},
+  {mes:202603, bu:'Point',            valor:-12.0, desc:'Shipping MPOS'},
+  {mes:202603, bu:'Point',            valor:18.0,  desc:'Sales Taxes'},
+];
 let knOneoffOpen = false;
 
 // BU display → actual BU keys in data
