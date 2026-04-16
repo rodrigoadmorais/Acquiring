@@ -285,26 +285,38 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-filter-bar{background:var(--card);border-bottom:1px solid var(--border);padding:10px 0 10px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:0;position:sticky;top:0;z-index:50}
 .kn-filter-bar label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
 .kn-filter-bar select{padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:12px;cursor:pointer}
-.kn-tbl-outer{border-radius:8px;box-shadow:0 1px 8px rgba(0,0,0,.09);border:1px solid #E8E8E8;margin-top:16px;overflow:hidden}
-.kn-table{border-collapse:collapse;width:100%;font-size:12px}
-.kn-table th{background:#1a2740;color:#fff;padding:7px 12px;text-align:right;white-space:nowrap;font-size:11px;font-weight:600;border-bottom:2px solid #0a1220}
-.kn-table th.kn-bu-hdr{text-align:left;min-width:160px}
-.kn-table th.kn-grp-hdr{background:#E8A020;color:#fff;text-align:center;border-left:2px solid #fff}
-.kn-table th.kn-adj-hdr{background:#b07010;color:#fff}
-.kn-table th.kn-sub-hdr{background:#243050;border-top:none}
-.kn-table th.kn-sub-adj{background:#1a3060;border-top:none}
-.kn-table td{padding:6px 12px;border-bottom:1px solid #F0F0F0;text-align:right;white-space:nowrap}
-.kn-table td.kn-bu-cell{text-align:left;font-weight:500}
-.kn-table td.kn-adj-cell{background:#FFFBF0}
-.kn-row-l0 td{background:#1a2740;color:#fff;font-weight:700;font-size:12px;border-top:2px solid #0a1220;border-bottom:2px solid #0a1220}
-.kn-row-l0 td.kn-bu-cell{background:#1a2740;color:#fff}
-.kn-row-l0 td.kn-adj-cell{background:#243050}
-.kn-row-l1 td{background:#FFFBF0;font-weight:700;border-top:2px solid #E8A020;border-bottom:1px solid #E8E8E8}
-.kn-row-l1 td.kn-bu-cell{border-left:4px solid #E8A020}
-.kn-row-l1 td.kn-adj-cell{background:#FFF5E0}
-.kn-row-l2 td{background:#fff;font-weight:400;color:#333}
-.kn-row-l2 td.kn-bu-cell{padding-left:28px;color:#555}
-.kn-row-l2 td.kn-adj-cell{background:#FEFCF5}
+.kn-tbl-outer{border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);overflow:hidden;margin-top:16px;display:inline-block}
+.kn-table{border-collapse:collapse;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;width:auto}
+/* ── Headers ── */
+.kn-table th{background:#FFE600;color:#1a1a1a;padding:9px 16px;text-align:center;white-space:nowrap;font-size:12px;font-weight:700;border:none}
+.kn-table th.kn-bu-hdr{text-align:left;background:#fff;color:#1a1a1a;min-width:165px;border-right:1px solid #ddd}
+.kn-table th.kn-grp-hdr{background:#FFE600;color:#1a1a1a;border-left:3px solid #fff}
+.kn-table th.kn-grp-adj{background:#FFB800;color:#1a1a1a;border-left:3px solid #fff}
+.kn-table th.kn-grp-ytd{background:#FFE600;color:#1a1a1a;border-left:4px solid #bbb}
+.kn-table th.kn-grp-ytdadj{background:#FFB800;color:#1a1a1a;border-left:3px solid #fff}
+.kn-table th.kn-sub-hdr{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)}
+.kn-table th.kn-sub-adj{background:#FFB800;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)}
+.kn-table th.kn-sub-ytd{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08);border-left:3px solid #bbb}
+.kn-table th.kn-sub-ytdadj{background:#FFB800;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.08);border-right:1px solid rgba(0,0,0,.08)}
+/* ── Data cells (default) ── */
+.kn-table td{padding:8px 16px;text-align:right;white-space:nowrap;border:none;font-size:13px}
+.kn-table td.kn-bu-cell{text-align:left;padding-left:16px;padding-right:16px;border-right:1px solid rgba(255,255,255,.12)}
+/* ── L0: Fintech ── */
+.kn-row-l0 td{background:#5a5a5a;color:#fff;font-weight:700;border-bottom:2px solid #444}
+.kn-row-l0 td.kn-adj-cell{background:#484848}
+.kn-row-l0 td.kn-ytd-sep{border-left:3px solid #888}
+/* ── L1: Acquiring / Fintech Services ── */
+.kn-row-l1 td{background:#333333;color:#fff;font-weight:700;border-bottom:1px solid #222}
+.kn-row-l1 td.kn-adj-cell{background:#252525}
+.kn-row-l1 td.kn-ytd-sep{border-left:3px solid #555}
+/* ── L2: sub-BUs ── */
+.kn-row-l2 td{background:#fff;color:#222;font-weight:500;border-bottom:1px solid #EBEBEB}
+.kn-row-l2 td.kn-bu-cell{background:#fff;padding:6px 16px}
+.kn-row-l2 td.kn-adj-cell{background:#FFF8E8}
+.kn-row-l2 td.kn-ytd-sep{border-left:3px solid #ddd}
+/* pill inside L2 BU cell */
+.kn-pill{display:inline-block;background:#E2E2E2;color:#333;border-radius:20px;padding:4px 14px;font-weight:500;font-size:12px;line-height:1.3}
+/* ── One-offs section ── */
 .kn-oneoff-section{margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 16px}
 .kn-oneoff-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
 .kn-oneoff-inputs{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
@@ -312,13 +324,13 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-oneoff-inputs select,.kn-oneoff-inputs input{padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:12px}
 .kn-oneoff-inputs input[type=number]{width:120px}
 .kn-oneoff-inputs input[type=text]{width:140px}
-.kn-add-btn{padding:5px 14px;background:#E8A020;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer}
-.kn-add-btn:hover{background:#c88010}
+.kn-add-btn{padding:5px 14px;background:#FFB800;color:#1a1a1a;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer}
+.kn-add-btn:hover{background:#e0a000}
 .kn-oneoff-list{margin-top:10px;display:flex;flex-direction:column;gap:4px}
 .kn-oneoff-item{display:flex;align-items:center;gap:10px;font-size:11px;background:var(--bg);border-radius:5px;padding:4px 10px}
 .kn-oneoff-item .kn-del{cursor:pointer;color:var(--red);font-weight:700;font-size:13px;line-height:1;background:none;border:none;padding:0 4px}
-.kn-delta-pos{color:#2E7D32;font-weight:600}
-.kn-delta-neg{color:#C62828;font-weight:600}
+.kn-delta-pos{color:#1a1a1a;font-weight:700}
+.kn-delta-neg{color:#CC0000;font-weight:700}
 .cpa-table th{padding:9px 12px;text-align:right;white-space:nowrap;
               font-size:11px;font-weight:700;position:sticky;top:0;z-index:100;
               border-bottom:1px solid rgba(0,0,0,.15);letter-spacing:.3px}
@@ -2891,21 +2903,21 @@ function renderKeyNumTab() {
   const head = document.getElementById('knHead');
   head.innerHTML = `
     <tr>
-      <th class="kn-bu-hdr" rowspan="2" style="background:#1a2740">P&L</th>
+      <th class="kn-bu-hdr" rowspan="2"></th>
       <th class="kn-grp-hdr" colspan="2">${mesLbl}</th>
-      <th class="kn-grp-hdr" colspan="2" style="background:#b07010">${mesLbl}* Adj</th>
-      <th class="kn-grp-hdr" colspan="2" style="background:#1a2740;border-left:3px solid #fff">YTD</th>
-      <th class="kn-grp-hdr" colspan="2" style="background:#b07010">YTD'${String(yr).slice(2)}* Adj</th>
+      <th class="kn-grp-adj" colspan="2">${mesLbl}* Adj</th>
+      <th class="kn-grp-ytd" colspan="2">YTD</th>
+      <th class="kn-grp-ytdadj" colspan="2">YTD'${String(yr).slice(2)}* Adj</th>
     </tr>
     <tr>
       <th class="kn-sub-hdr">Actual</th>
       <th class="kn-sub-hdr">Δ$ Plan</th>
       <th class="kn-sub-adj">Actual* Adj</th>
       <th class="kn-sub-adj">Δ$ Plan*</th>
-      <th class="kn-sub-hdr" style="border-left:3px solid #0a1220">Actual</th>
+      <th class="kn-sub-ytd">Actual</th>
       <th class="kn-sub-hdr">Δ$ Plan</th>
-      <th class="kn-sub-adj">Actual* Adj</th>
-      <th class="kn-sub-adj">Δ$ Plan*</th>
+      <th class="kn-sub-ytdadj">Actual* Adj</th>
+      <th class="kn-sub-ytdadj">Δ$ Plan*</th>
     </tr>`;
 
   let html = '';
@@ -2926,14 +2938,17 @@ function renderKeyNumTab() {
 
     const lv   = `kn-row-l${row.level}`;
     const dPos = v => v > 0 ? 'kn-delta-pos' : v < 0 ? 'kn-delta-neg' : '';
+    const buLabel = row.level === 2
+      ? `<span class="kn-pill">${row.label}</span>`
+      : row.label;
 
     html += `<tr class="${lv}">
-      <td class="kn-bu-cell">${row.label}</td>
+      <td class="kn-bu-cell">${buLabel}</td>
       <td>${knFmt(act, ud)}</td>
       <td class="${dPos(delta)}">${knFmt(delta, ud)}</td>
       <td class="kn-adj-cell">${knFmt(actAdj, ud)}</td>
       <td class="kn-adj-cell ${dPos(deltaAdj)}">${knFmt(deltaAdj, ud)}</td>
-      <td style="border-left:2px solid #E8E8E8">${knFmt(ytdAct, ud)}</td>
+      <td class="kn-ytd-sep">${knFmt(ytdAct, ud)}</td>
       <td class="${dPos(ytdDelta)}">${knFmt(ytdDelta, ud)}</td>
       <td class="kn-adj-cell">${knFmt(ytdAdj, ud)}</td>
       <td class="kn-adj-cell ${dPos(ytdDeltaAdj)}">${knFmt(ytdDeltaAdj, ud)}</td>
