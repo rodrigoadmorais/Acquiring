@@ -2540,7 +2540,12 @@ function renderCpaTab() {
   const allKeys  = [...new Set([...cpaLineOrder, ...dataKeys])];
 
   // Label overrides for CPA tab only
-  const CPA_LABELS = { 'Consultor Certificado': 'Consultor Certificado e Virtual' };
+  const CPA_LABELS = {
+    'Consultor Certificado'           : 'Consultor Certificado e Virtual',
+    'Fuerza de Venta Propia Point'    : 'FDVP',
+    'Paid On Media'                   : 'POM',
+    'Fuerza de Venta de Terceros Point': 'FDVT',
+  };
 
   const sortedCpaKeys = allKeys
     .filter(k => !cpaLineHidden.has(k) && data.items.has(k))
