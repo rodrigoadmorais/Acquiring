@@ -17,37 +17,56 @@
 </script>
 <style>
   body { font-family: 'Inter', sans-serif; }
-  .seg-active { background: white !important; color: #2563eb !important; box-shadow: 0 1px 3px rgba(0,0,0,.10); border-radius: 6px; }
+  /* ML Yellow active state */
+  .seg-active { background: #FFE600 !important; color: #003087 !important; box-shadow: 0 1px 3px rgba(0,0,0,.12); border-radius: 6px; font-weight: 900 !important; }
   .ch-row { display: none; }
   .ch-row.vis { display: table-row; }
+  /* ML brand tokens */
+  :root {
+    --ml-yellow: #FFE600;
+    --ml-blue:   #009EE3;
+    --ml-navy:   #003087;
+    --ml-green:  #00A650;
+    --ml-red:    #E03131;
+  }
 </style>
 </head>
 <body class="bg-white min-h-screen">
 
 <!-- ── HEADER ─────────────────────────────────────────────────────────────── -->
-<header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
-  <div>
-    <h1 class="text-base font-black text-gray-900 uppercase tracking-tight">Dashboard Headcount — FDVP &amp; Big Sellers</h1>
-    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-0.5">Plano vs Realizado · Budget 2025 &amp; 2026 · Atualizado março/2026</p>
-  </div>
-  <div class="flex items-center gap-3">
-    <!-- Unit toggle -->
-    <div class="flex bg-gray-100 rounded-lg p-1 shadow-inner" id="unitSeg">
-      <button id="btnU1" onclick="setUnit(1,'','btnU1')" class="seg-active px-3 py-1.5 text-xs font-semibold transition-all duration-150 cursor-pointer">1</button>
-      <button id="btnUk" onclick="setUnit(1000,'k','btnUk')" class="px-3 py-1.5 text-xs font-semibold text-gray-500 transition-all duration-150 cursor-pointer rounded-md">k</button>
+<header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+  <!-- ML yellow stripe topo -->
+  <div class="h-1 w-full" style="background:#FFE600"></div>
+  <div class="px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <!-- ML badge -->
+      <div class="rounded-lg px-3 py-1.5 flex items-center justify-center" style="background:#FFE600">
+        <span class="text-[13px] font-black tracking-tight" style="color:#003087">ML</span>
+      </div>
+      <div>
+        <h1 class="text-base font-black uppercase tracking-tight" style="color:#003087">Dashboard Headcount — FDVP &amp; Big Sellers</h1>
+        <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-0.5">Plano vs Realizado · Budget 2025 &amp; 2026 · Atualizado março/2026</p>
+      </div>
     </div>
-    <!-- Eixo Y -->
-    <button id="btnY" onclick="toggleYAxis()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-all active:scale-95">
-      <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i> Eixo Y
-    </button>
-    <!-- Rótulos -->
-    <button id="btnL" onclick="toggleLabels()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-all active:scale-95">
-      <i data-lucide="tag" class="w-3.5 h-3.5"></i> Rótulos
-    </button>
-    <!-- Exportar -->
-    <button onclick="exportExcel()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all active:scale-95">
-      <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar Excel
-    </button>
+    <div class="flex items-center gap-3">
+      <!-- Unit toggle -->
+      <div class="flex bg-gray-100 rounded-lg p-1 shadow-inner" id="unitSeg">
+        <button id="btnU1" onclick="setUnit(1,'','btnU1')" class="seg-active px-3 py-1.5 text-xs font-semibold transition-all duration-150 cursor-pointer">1</button>
+        <button id="btnUk" onclick="setUnit(1000,'k','btnUk')" class="px-3 py-1.5 text-xs font-semibold text-gray-500 transition-all duration-150 cursor-pointer rounded-md">k</button>
+      </div>
+      <!-- Eixo Y -->
+      <button id="btnY" onclick="toggleYAxis()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95" style="border-color:#009EE3;background:rgba(0,158,227,0.08);color:#009EE3">
+        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i> Eixo Y
+      </button>
+      <!-- Rótulos -->
+      <button id="btnL" onclick="toggleLabels()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95" style="border-color:#009EE3;background:rgba(0,158,227,0.08);color:#009EE3">
+        <i data-lucide="tag" class="w-3.5 h-3.5"></i> Rótulos
+      </button>
+      <!-- Exportar -->
+      <button onclick="exportExcel()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all active:scale-95" style="background:#003087;color:#FFE600">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar Excel
+      </button>
+    </div>
   </div>
 </header>
 
@@ -66,7 +85,7 @@
   <!-- Canal -->
   <div class="flex items-center gap-2">
     <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">CANAL</span>
-    <select id="fCanal" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+    <select id="fCanal" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
       <option value="all">Todos</option>
       <option value="BIG SELLERS">Big Sellers</option>
       <option value="FDVP" selected>FDVP</option>
@@ -77,7 +96,7 @@
   <!-- Sub-BU -->
   <div class="flex items-center gap-2">
     <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">SUB-BU</span>
-    <select id="fSubBu" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+    <select id="fSubBu" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
       <option value="all">Todas</option>
       <option value="Cross">Cross (E&amp;G)</option>
       <option value="Instore">Instore</option>
@@ -90,7 +109,7 @@
   <!-- Role -->
   <div class="flex items-center gap-2">
     <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">ROLE</span>
-    <select id="fRole" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+    <select id="fRole" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
       <option value="all">Todos</option>
       <option value="Analistas">Analistas</option>
       <option value="Lideres">Líderes</option>
@@ -100,7 +119,7 @@
   <!-- RV -->
   <div class="flex items-center gap-2">
     <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">RV</span>
-    <select id="fRV" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+    <select id="fRV" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
       <option value="all">Todos</option>
       <option value="Sim">Com RV</option>
       <option value="Não">Sem RV</option>
@@ -110,14 +129,14 @@
   <div id="fPer26Wrap" style="display:flex" class="items-center gap-2">
     <div class="h-6 w-px bg-gray-200"></div>
     <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">PERÍODO</span>
-    <select id="fMesIni" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+    <select id="fMesIni" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
       <option value="0" selected>Jan</option><option value="1">Fev</option><option value="2">Mar</option>
       <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
       <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
       <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
     </select>
     <span class="text-gray-400 text-xs font-bold">→</span>
-    <select id="fMesFim" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+    <select id="fMesFim" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
       <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
       <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
       <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
@@ -427,39 +446,38 @@ function setAno(ano){
 function renderKPIs(pm,rm,d){
   const n=d.months.length;
   const avgP=avg(pm),avgR=avg(rm);
-  const achPct=pct(avgR,avgP);
-  const lastP=pm[n-1]||0,lastR=rm[n-1]||0;
-  const lastAch=pct(lastR,lastP);
+  const achPct=pct(avgR,avgP);          // atingimento médio do período
   const gaps=pm.map((p,i)=>(rm[i]||0)-p);
   const avgGap=avg(gaps);
   const periodLabel=n>1?d.months[0]+' – '+d.months[n-1]:d.months[0];
 
   function deltaTag(val,label){
-    if(val>=95)return`<div class="flex items-center gap-1 mt-2"><span class="text-xs font-semibold text-green-600">↑ ${label}</span></div>`;
+    if(val>=95)return`<div class="flex items-center gap-1 mt-2"><span class="text-xs font-semibold" style="color:#00A650">↑ ${label}</span></div>`;
     if(val>=80)return`<div class="mt-2"><span class="text-xs font-semibold text-amber-600">${label}</span></div>`;
-    return`<div class="flex items-center gap-1 mt-2"><span class="text-xs font-semibold text-red-600">↓ ${label}</span></div>`;
+    return`<div class="flex items-center gap-1 mt-2"><span class="text-xs font-semibold" style="color:#E03131">↓ ${label}</span></div>`;
   }
 
-  const lastBorder=lastAch>=95?'border-l-green-500':lastAch>=80?'border-l-amber-500':'border-l-red-500';
-  const gapBorder=avgGap>=0?'border-l-green-500':'border-l-red-500';
-  const gapColor=avgGap>=0?'text-green-600':'text-red-600';
-  const gapSign=avgGap>=0?'+':'';
+  // Card 3: atingimento médio do período (não mais último mês)
+  const achBorderColor = achPct>=95?'#00A650':achPct>=80?'#F59F00':'#E03131';
+  const gapBorderColor = avgGap>=0?'#00A650':'#E03131';
+  const gapColor       = avgGap>=0?'color:#00A650':'color:#E03131';
+  const gapSign        = avgGap>=0?'+':'';
 
   const cards=[
-    {border:'border-l-blue-500',label:'HEADCOUNT MÉDIO — PLANO',value:fmt(avgP),
+    {borderColor:'#FFE600',label:'HEADCOUNT MÉDIO — PLANO',value:fmt(avgP),
      extra:`<div class="mt-2"><span class="text-xs font-semibold text-gray-400">Período: ${periodLabel}</span></div>`},
-    {border:'border-l-indigo-500',label:'HEADCOUNT MÉDIO — REALIZADO',value:fmt(avgR),
-     extra:deltaTag(achPct,`${achPct}% atingimento`)},
-    {border:lastBorder,label:'ATINGIMENTO — ÚLTIMO MÊS',value:`${lastAch}%`,
-     extra:deltaTag(lastAch,`Real: ${fmt(lastR)} · Plano: ${fmt(lastP)} (${d.months[n-1]})`)},
-    {border:gapBorder,label:'GAP MÉDIO VS PLANO',value:`${gapSign}${fmt(avgGap)}`,
-     extra:`<div class="mt-2"><span class="text-xs font-semibold ${gapColor}">${avgGap>=0?'Acima':'Abaixo'} do plano</span></div>`}
+    {borderColor:'#009EE3',label:'HEADCOUNT MÉDIO — REALIZADO',value:fmt(avgR),
+     extra:deltaTag(achPct,`${achPct}% atingimento médio`)},
+    {borderColor:achBorderColor,label:'ATINGIMENTO MÉDIO DO PERÍODO',value:`${achPct}%`,
+     extra:deltaTag(achPct,`Real: ${fmt(Math.round(avgR))} · Plano: ${fmt(Math.round(avgP))} (${periodLabel})`)},
+    {borderColor:gapBorderColor,label:'GAP MÉDIO VS PLANO',value:`${gapSign}${fmt(avgGap)}`,
+     extra:`<div class="mt-2"><span class="text-xs font-semibold" style="${gapColor}">${avgGap>=0?'Acima':'Abaixo'} do plano</span></div>`}
   ];
 
   document.getElementById('kpiGrid').innerHTML=cards.map(c=>`
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-6 border-l-4 ${c.border}">
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-6" style="border-left:4px solid ${c.borderColor}">
       <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">${c.label}</p>
-      <p class="text-3xl font-black text-gray-800">${c.value}</p>
+      <p class="text-3xl font-black" style="color:#003087">${c.value}</p>
       ${c.extra}
     </div>`).join('');
 }
@@ -492,25 +510,76 @@ function renderEvol(pm,rm,d){
   ST.charts.evol=new Chart(ctx,{
     type:'line',
     data:{labels:d.months,datasets:[
+      // Plano: ML yellow dashed — rótulos ACIMA da linha
       {label:'Plano',data:pm,
-       borderColor:'#93c5fd',backgroundColor:'transparent',
-       borderWidth:2,borderDash:[5,4],tension:0.3,
-       pointRadius:3,pointBackgroundColor:'#fff',pointBorderColor:'#93c5fd',pointBorderWidth:2,
-       order:2,datalabels:{display:false}},
+       borderColor:'#FFE600',backgroundColor:'transparent',
+       borderWidth:2.5,borderDash:[6,4],tension:0.3,
+       pointRadius:4,pointBackgroundColor:'#fff',pointBorderColor:'#FFE600',pointBorderWidth:2,
+       order:2,
+       datalabels:{
+         display:ST.showL,
+         anchor:'end',align:'top',offset:4,
+         color:'#003087',
+         font:{size:9,weight:'900',family:'Inter'},
+         formatter:v=>fmtDL(v),
+         backgroundColor:'rgba(255,230,0,0.15)',
+         borderRadius:3,
+         padding:{left:3,right:3,top:1,bottom:1}
+       }},
+      // Real/FCST: ML blue sólido — rótulos ABAIXO da linha
       {label:d.lbl,data:rm,
-       borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.05)',
+       borderColor:'#009EE3',backgroundColor:'rgba(0,158,227,0.06)',
        borderWidth:3,tension:0.3,fill:false,
-       pointRadius:4,pointBackgroundColor:'#fff',pointBorderColor:'#2563eb',pointBorderWidth:2,
-       order:1,datalabels:{display:ST.showL,anchor:'end',align:'top',
-         color:'#9ca3af',font:{size:9,weight:'700',family:'Inter'},formatter:v=>fmtDL(v)}}
+       pointRadius:4,pointBackgroundColor:'#fff',pointBorderColor:'#009EE3',pointBorderWidth:2,
+       order:1,
+       datalabels:{
+         display:ST.showL,
+         anchor:'start',align:'bottom',offset:4,
+         color:'#009EE3',
+         font:{size:9,weight:'900',family:'Inter'},
+         formatter:v=>fmtDL(v),
+         backgroundColor:'rgba(0,158,227,0.08)',
+         borderRadius:3,
+         padding:{left:3,right:3,top:1,bottom:1}
+       }}
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{position:'top',labels:{color:'#9ca3af',font:{size:11,weight:'600',family:'Inter'},boxWidth:12,padding:14}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}},
-        datalabels:{display:false}
+        legend:{position:'top',labels:{
+          color:'#546e7a',font:{size:11,weight:'600',family:'Inter'},
+          boxWidth:14,padding:14,
+          generateLabels:chart=>chart.data.datasets.map((ds,i)=>({
+            text:ds.label,
+            fillStyle:ds.borderColor,
+            strokeStyle:ds.borderColor,
+            lineWidth:ds.borderDash?2:0,
+            lineDash:ds.borderDash||[],
+            hidden:false,
+            datasetIndex:i
+          }))
+        }},
+        tooltip:{
+          callbacks:{
+            // Mostra Plano, Real e % atingimento do mês
+            afterBody:items=>{
+              const planIdx=items.findIndex(i=>i.dataset.label==='Plano');
+              const realIdx=items.findIndex(i=>i.dataset.label!=='Plano');
+              if(planIdx<0||realIdx<0)return[];
+              const p=items[planIdx].raw||0;
+              const r=items[realIdx].raw||0;
+              const a=p>0?Math.round(r/p*100):0;
+              const sign=a>=95?'✅':a>=80?'⚠️':'❌';
+              return[`${sign} Atingimento: ${a}%`];
+            },
+            label:c=>{
+              const v=fmt(c.raw);
+              return ` ${c.dataset.label}: ${v}`;
+            }
+          }
+        },
+        datalabels:{display:false}   // override global; cada dataset tem o seu
       },
       scales:{
         x:{grid:{display:false},ticks:{color:'#9ca3af',font:{size:9,family:'Inter'}},border:{display:false}},
@@ -531,8 +600,8 @@ function renderGap(pm,rm,d){
     type:'bar',
     data:{labels:d.months,datasets:[{
       label:'Gap (Real − Plano)',data:gaps,
-      backgroundColor:gaps.map(g=>g>=0?'rgba(22,163,74,0.15)':'rgba(220,38,38,0.15)'),
-      borderColor:gaps.map(g=>g>=0?'#16a34a':'#dc2626'),
+      backgroundColor:gaps.map(g=>g>=0?'rgba(0,166,80,0.20)':'rgba(224,49,49,0.20)'),
+      borderColor:gaps.map(g=>g>=0?'#00A650':'#E03131'),
       borderWidth:2,borderRadius:4,borderSkipped:false
     }]},
     options:{
@@ -570,10 +639,10 @@ function renderCanal(d){
   ST.charts.canal=new Chart(ctx,{
     type:'bar',
     data:{labels:lbls,datasets:[
-      {label:'Plano',data:avgPlan,backgroundColor:'rgba(37,99,235,0.15)',borderColor:'#2563eb',borderWidth:2,borderRadius:4,
-       datalabels:{display:ST.showL,anchor:'end',align:'top',color:'#9ca3af',font:{size:9,weight:'700',family:'Inter'},formatter:v=>fmtDL(v)}},
-      {label:d.lbl,data:avgReal,backgroundColor:'rgba(79,70,229,0.15)',borderColor:'#4f46e5',borderWidth:2,borderRadius:4,
-       datalabels:{display:ST.showL,anchor:'end',align:'top',color:'#9ca3af',font:{size:9,weight:'700',family:'Inter'},formatter:v=>fmtDL(v)}}
+      {label:'Plano',data:avgPlan,backgroundColor:'rgba(255,230,0,0.25)',borderColor:'#FFE600',borderWidth:2,borderRadius:4,
+       datalabels:{display:ST.showL,anchor:'end',align:'top',color:'#003087',font:{size:9,weight:'900',family:'Inter'},formatter:v=>fmtDL(v)}},
+      {label:d.lbl,data:avgReal,backgroundColor:'rgba(0,158,227,0.18)',borderColor:'#009EE3',borderWidth:2,borderRadius:4,
+       datalabels:{display:ST.showL,anchor:'end',align:'top',color:'#009EE3',font:{size:9,weight:'900',family:'Inter'},formatter:v=>fmtDL(v)}}
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
@@ -606,8 +675,8 @@ function renderSubBu(d){
     type:'bar',
     data:{labels:subbus,datasets:[{
       label:'Atingimento %',data:ach,
-      backgroundColor:ach.map(v=>v>=95?'rgba(22,163,74,0.15)':v>=80?'rgba(245,158,11,0.15)':'rgba(220,38,38,0.15)'),
-      borderColor:ach.map(v=>v>=95?'#16a34a':v>=80?'#d97706':'#dc2626'),
+      backgroundColor:ach.map(v=>v>=95?'rgba(0,166,80,0.20)':v>=80?'rgba(245,158,11,0.20)':'rgba(224,49,49,0.20)'),
+      borderColor:ach.map(v=>v>=95?'#00A650':v>=80?'#F59F00':'#E03131'),
       borderWidth:2,borderRadius:4,
       datalabels:{display:ST.showL,anchor:'end',align:'top',color:'#9ca3af',font:{size:9,weight:'700',family:'Inter'},formatter:v=>v+'%'}
     }]},
@@ -636,17 +705,18 @@ function renderRankings(real,d){
   const sorted=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxVal=sorted.length>0?sorted[0][1]:1;
   document.getElementById('rankSub').textContent='Por headcount em '+d.months[lastIdx];
-  const medals=['bg-yellow-400 text-yellow-900','bg-gray-300 text-gray-700','bg-orange-400 text-white','bg-gray-100 text-gray-500','bg-gray-100 text-gray-500'];
+  const medals=['text-[#003087] font-black','bg-gray-300 text-gray-700','bg-orange-400 text-white','bg-gray-100 text-gray-500','bg-gray-100 text-gray-500'];
+  const medalStyles=['background:#FFE600','','','',''];
   document.getElementById('rankList').innerHTML=sorted.map(([name,val],i)=>`
     <div class="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-0">
-      <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 ${medals[i]}">${i+1}</div>
+      <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 ${medals[i]}" style="${medalStyles[i]}">${i+1}</div>
       <div class="flex-1 min-w-0">
         <p class="text-[11px] font-semibold text-gray-800 truncate">${name}</p>
         <div class="mt-1.5 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-          <div class="h-full bg-blue-500 rounded-full" style="width:${Math.round(val/maxVal*100)}%"></div>
+          <div class="h-full rounded-full" style="width:${Math.round(val/maxVal*100)}%;background:#009EE3"></div>
         </div>
       </div>
-      <span class="text-sm font-black text-blue-600 whitespace-nowrap">${fmt(val)}</span>
+      <span class="text-sm font-black whitespace-nowrap" style="color:#009EE3">${fmt(val)}</span>
     </div>`).join('');
 }
 
@@ -673,9 +743,9 @@ function renderTable(plan,real,d){
     const cP=plan.filter(r=>r.canal===canal),cR=real.filter(r=>r.canal===canal);
     const pm=monthlyTotals(cP,n),rm=monthlyTotals(cR,n);
     const ap=avg(pm),ar=avg(rm),ach=pct(ar,ap);
-    html+=`<tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb;cursor:pointer" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='#f9fafb'" onclick="toggleGroup(${ci})">
-      <td style="padding:10px 16px 10px 0" class="text-[11px] font-black text-gray-800">
-        <span id="ico${ci}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#dbeafe;color:#1d4ed8;border-radius:4px;font-size:9px;font-weight:900;margin-right:8px">+</span>${canal}
+    html+=`<tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb;cursor:pointer" onmouseover="this.style.background='rgba(0,158,227,0.06)'" onmouseout="this.style.background='#f9fafb'" onclick="toggleGroup(${ci})">
+      <td style="padding:10px 16px 10px 0" class="text-[11px] font-black" style="color:#003087">
+        <span id="ico${ci}" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#FFE600;color:#003087;border-radius:4px;font-size:9px;font-weight:900;margin-right:8px">+</span>${canal}
       </td>`
       +pm.map(v=>`<td style="text-align:right;padding:10px 8px" class="text-[11px] text-gray-600">${fmt(v)}</td>`).join('')
       +`<td style="text-align:right;padding:10px 8px" class="text-[11px] font-semibold text-gray-700">${fmt(ap)}</td>`
@@ -722,18 +792,25 @@ function render(){
 }
 
 // ── UI CONTROLS ────────────────────────────────────────────────────────────────
+function _mlBtnStyle(on){
+  return on
+    ?'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95'
+    :'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-400 transition-all active:scale-95';
+}
 function toggleYAxis(){
   ST.showY=!ST.showY;
-  const on='flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-all active:scale-95';
-  const off='flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-400 transition-all active:scale-95';
-  document.getElementById('btnY').className=ST.showY?on:off;
+  const b=document.getElementById('btnY');
+  b.className=_mlBtnStyle(ST.showY);
+  if(ST.showY){b.style.borderColor='#009EE3';b.style.background='rgba(0,158,227,0.08)';b.style.color='#009EE3';}
+  else{b.style.borderColor='';b.style.background='';b.style.color='';}
   render();
 }
 function toggleLabels(){
   ST.showL=!ST.showL;
-  const on='flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-all active:scale-95';
-  const off='flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-400 transition-all active:scale-95';
-  document.getElementById('btnL').className=ST.showL?on:off;
+  const b=document.getElementById('btnL');
+  b.className=_mlBtnStyle(ST.showL);
+  if(ST.showL){b.style.borderColor='#009EE3';b.style.background='rgba(0,158,227,0.08)';b.style.color='#009EE3';}
+  else{b.style.borderColor='';b.style.background='';b.style.color='';}
   render();
 }
 function setUnit(u,l,btnId){
