@@ -711,6 +711,7 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
       </table>
     </div>
   </div>
+  <div id="cpaFootnote" class="mpos-light-footnote"></div>
 </div>
 
 <!-- ── Point & MPOS Panel ── -->
@@ -2509,11 +2510,37 @@ function renderCpaTab() {
   const data = aggregateLines(d => CPA_FILTER(d) && macroBuFnCpa(d), mes);
   if(!data) return;
 
+  // ── CPA Plan adjustments (display only, P&L tab unchanged) ──────────────
+  const mo = mes % 100; // number of months Jan→mes
+  const ADJ_CONSULTOR = 2.6e6; // 2.6M/month moved from Other Sales Expenses Point
+
+  // 1. Move MGM plan → Cashbacks (MGM has no Realizado, only Plan)
+  const mgmItem = data.items.get('MGM');
+  const cashbacksItem = data.items.get('Cashbacks');
+  if(mgmItem && cashbacksItem) {
+    cashbacksItem.plan    += mgmItem.plan;
+    cashbacksItem.ytdPlan += mgmItem.ytdPlan;
+    data.items.delete('MGM');
+  }
+
+  // 2. Move 2.6M/month from Other Sales Expenses Point plan → Consultor Certificado
+  const otherItem     = data.items.get('Other Sales Expenses Point');
+  const consultorItem = data.items.get('Consultor Certificado');
+  if(otherItem && consultorItem) {
+    otherItem.plan        += ADJ_CONSULTOR;          // cost is negative, +2.6M reduces it
+    otherItem.ytdPlan     += ADJ_CONSULTOR * mo;
+    consultorItem.plan    -= ADJ_CONSULTOR;          // add 2.6M cost to Consultor
+    consultorItem.ytdPlan -= ADJ_CONSULTOR * mo;
+  }
+
   document.getElementById('cpaHead').innerHTML = buildCpaHead(mes, ud, 'cpaTable');
 
   // Merge config order with any new lines from data, sort by |real| descending
   const dataKeys = [...data.items.keys()];
   const allKeys  = [...new Set([...cpaLineOrder, ...dataKeys])];
+
+  // Label overrides for CPA tab only
+  const CPA_LABELS = { 'Consultor Certificado': 'Consultor Certificado e Virtual' };
 
   const sortedCpaKeys = allKeys
     .filter(k => !cpaLineHidden.has(k) && data.items.has(k))
@@ -2530,8 +2557,16 @@ function renderCpaTab() {
   html += buildCpaRow('CPA Total', cpaVisTotal, ud, 'cpa-row-total', false);
 
   for(const k4 of sortedCpaKeys) {
-    html += buildCpaRow(k4, data.items.get(k4), ud, 'cpa-row-item', false);
+    const label = CPA_LABELS[k4] || k4;
+    html += buildCpaRow(label, data.items.get(k4), ud, 'cpa-row-item', false);
   }
+
+  // Footnote
+  document.getElementById('cpaFootnote').innerHTML =
+    '<b>Ajustes no plano (visão CPA):</b> ' +
+    '① MGM incorporado ao Cashbacks (plan only). ' +
+    '② R$ 2,6M/mês realocados de Other Sales Expenses Point para Consultor Certificado e Virtual (plan only). ' +
+    'Valores do Realizado e da aba P&L não foram alterados.';
 
   if(!data.items.size)
     html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
