@@ -854,6 +854,9 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
     </table>
   </div>
 
+  <!-- Footnote one-offs -->
+  <div id="knFootnote" class="mpos-light-footnote" style="margin-top:14px"></div>
+
   <!-- One-offs section -->
   <div class="kn-oneoff-section">
     <div class="kn-oneoff-title" onclick="toggleKnOneoffs()">
@@ -3085,11 +3088,20 @@ function removeKnOneoff(idx) {
 }
 
 function renderKnOneoffList() {
-  const listEl = document.getElementById('knOneoffList');
+  const listEl  = document.getElementById('knOneoffList');
   const countEl = document.getElementById('knOneoffCount');
+  const noteEl  = document.getElementById('knFootnote');
   if(!listEl) return;
+
   countEl.textContent = knOneoffs.length ? `(${knOneoffs.length} ajuste${knOneoffs.length>1?'s':''})` : '';
-  if(!knOneoffs.length) { listEl.innerHTML = '<div style="font-size:11px;color:var(--muted)">Nenhum ajuste adicionado.</div>'; return; }
+
+  if(!knOneoffs.length) {
+    listEl.innerHTML = '<div style="font-size:11px;color:var(--muted)">Nenhum ajuste adicionado.</div>';
+    if(noteEl) noteEl.innerHTML = '';
+    return;
+  }
+
+  // ── lista editável ──
   listEl.innerHTML = knOneoffs.map((oo,i) => {
     const yr = Math.floor(oo.mes/100), mo = oo.mes%100;
     const mesLbl = new Date(yr,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace(' de ','\'').replace('.','').toUpperCase();
@@ -3101,6 +3113,30 @@ function renderKnOneoffList() {
       ${oo.desc ? `<span style="color:var(--muted)">${oo.desc}</span>` : ''}
     </div>`;
   }).join('');
+
+  // ── nota de rodapé dinâmica agrupada por mês ──
+  if(noteEl) {
+    // agrupar por mês
+    const byMes = new Map();
+    knOneoffs.forEach(oo => {
+      if(!byMes.has(oo.mes)) byMes.set(oo.mes, []);
+      byMes.get(oo.mes).push(oo);
+    });
+    const mesKeys = [...byMes.keys()].sort((a,b) => a-b);
+    const parts = mesKeys.map(mes => {
+      const yr = Math.floor(mes/100), mo = mes%100;
+      const mesLbl = new Date(yr,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace(' de ','\'').replace('.','').toUpperCase();
+      const entries = byMes.get(mes).map(oo => {
+        const sign = oo.valor > 0 ? '+' : '';
+        const v = sign + oo.valor.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+        const col = oo.valor > 0 ? '#2E7D32' : '#C62828';
+        const desc = oo.desc ? ` ${oo.desc}` : '';
+        return `${oo.bu}<span style="color:${col};font-weight:600"> ${v}</span>${desc}`;
+      }).join(' · ');
+      return `<b>${mesLbl}:</b> ${entries}`;
+    }).join(' &nbsp;|&nbsp; ');
+    noteEl.innerHTML = `<b>One-offs aplicados (Adj):</b> ${parts}`;
+  }
 }
 </script>
 </body>
