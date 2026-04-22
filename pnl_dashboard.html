@@ -315,6 +315,11 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-row-l2 td.kn-adj-cell{background:#FAFAFA}
 .kn-row-l2 td.kn-ytd-sep{border-left:14px solid #fff}
 .kn-row-l2:not(:last-child) td{border-bottom:1px solid #F2F2F2}
+/* ── Δ$ Plan columns — sombreado cinza ── */
+.kn-table th.kn-plan-col{background:#EDD800}
+.kn-row-l0 td.kn-plan-col{background:#F0D900}
+.kn-row-l1 td.kn-plan-col{background:#E4E4DE}
+.kn-row-l2 td.kn-plan-col{background:#EFEFEF}
 /* pill inside L2 BU cell */
 .kn-pill{display:inline-block;background:#EBEBEB;color:#444;border-radius:20px;padding:4px 14px;font-weight:500;font-size:12px;line-height:1.3}
 /* ── One-offs section ── */
@@ -3005,13 +3010,13 @@ function renderKeyNumTab() {
     </tr>
     <tr>
       <th class="kn-sub-hdr">Actual</th>
-      <th class="kn-sub-hdr">Δ$ Plan</th>
+      <th class="kn-sub-hdr kn-plan-col">Δ$ Plan</th>
       <th class="kn-sub-adj">Actual* Adj</th>
-      <th class="kn-sub-adj">Δ$ Plan*</th>
+      <th class="kn-sub-adj kn-plan-col">Δ$ Plan*</th>
       <th class="kn-sub-ytd">Actual</th>
-      <th class="kn-sub-hdr">Δ$ Plan</th>
+      <th class="kn-sub-hdr kn-plan-col">Δ$ Plan</th>
       <th class="kn-sub-adj">Actual* Adj</th>
-      <th class="kn-sub-adj">Δ$ Plan*</th>
+      <th class="kn-sub-adj kn-plan-col">Δ$ Plan*</th>
     </tr>`;
 
   let html = '';
@@ -3039,13 +3044,13 @@ function renderKeyNumTab() {
     html += `<tr class="${lv}">
       <td class="kn-bu-cell">${buLabel}</td>
       <td>${knFmt(act, ud)}</td>
-      <td class="${dCls(delta)}">${knFmt(delta, ud)}</td>
+      <td class="kn-plan-col ${dCls(delta)}">${knFmt(delta, ud)}</td>
       <td class="kn-adj-cell">${knFmt(actAdj, ud)}</td>
-      <td class="kn-adj-cell ${dCls(deltaAdj)}">${knFmt(deltaAdj, ud)}</td>
+      <td class="kn-adj-cell kn-plan-col ${dCls(deltaAdj)}">${knFmt(deltaAdj, ud)}</td>
       <td class="kn-ytd-sep">${knFmt(ytdAct, ud)}</td>
-      <td class="${dCls(ytdDelta)}">${knFmt(ytdDelta, ud)}</td>
+      <td class="kn-plan-col ${dCls(ytdDelta)}">${knFmt(ytdDelta, ud)}</td>
       <td class="kn-adj-cell">${knFmt(ytdAdj, ud)}</td>
-      <td class="kn-adj-cell ${dCls(ytdDeltaAdj)}">${knFmt(ytdDeltaAdj, ud)}</td>
+      <td class="kn-adj-cell kn-plan-col ${dCls(ytdDeltaAdj)}">${knFmt(ytdDeltaAdj, ud)}</td>
     </tr>`;
   }
   document.getElementById('knBody').innerHTML = html;
