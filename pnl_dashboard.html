@@ -285,18 +285,18 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-filter-bar{background:var(--card);border-bottom:1px solid var(--border);padding:10px 0 10px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:0;position:sticky;top:0;z-index:50}
 .kn-filter-bar label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
 .kn-filter-bar select{padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:12px;cursor:pointer}
-.kn-tbl-outer{border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;margin-top:16px;display:inline-block}
+.kn-tbl-outer{overflow:hidden;margin-top:16px;display:inline-block}
 .kn-table{border-collapse:collapse;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;width:auto}
 /* ── Headers ── */
 .kn-table th{background:#FFE600;color:#1a1a1a;padding:9px 16px;text-align:center;white-space:nowrap;font-size:12px;font-weight:700;border:none}
-.kn-table th.kn-bu-hdr{text-align:left;background:var(--card);color:var(--muted);min-width:165px;font-weight:600;font-size:11px;letter-spacing:.4px;text-transform:uppercase;border-bottom:2px solid #FFE600}
+.kn-table th.kn-bu-hdr{text-align:left;background:#fff;color:transparent;min-width:165px;border:none}
 .kn-table th.kn-grp-hdr{background:#FFE600;color:#1a1a1a;border-left:2px solid rgba(0,0,0,.1)}
 .kn-table th.kn-grp-adj{background:#FFE600;color:#1a1a1a;border-left:2px solid rgba(0,0,0,.08)}
-.kn-table th.kn-grp-ytd{background:#FFE600;color:#1a1a1a;border-left:2px solid rgba(0,0,0,.15)}
+.kn-table th.kn-grp-ytd{background:#FFE600;color:#1a1a1a;border-left:14px solid #fff}
 .kn-table th.kn-grp-ytdadj{background:#FFE600;color:#1a1a1a;border-left:2px solid rgba(0,0,0,.08)}
 .kn-table th.kn-sub-hdr{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.1)}
 .kn-table th.kn-sub-adj{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.1)}
-.kn-table th.kn-sub-ytd{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.1);border-left:2px solid rgba(0,0,0,.15)}
+.kn-table th.kn-sub-ytd{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.1);border-left:14px solid #fff}
 .kn-table th.kn-sub-ytdadj{background:#FFE600;color:#1a1a1a;font-size:11px;border-top:1px solid rgba(0,0,0,.1)}
 /* ── Data cells (default) ── */
 .kn-table td{padding:9px 16px;text-align:right;white-space:nowrap;border:none;font-size:13px}
@@ -304,16 +304,16 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 /* ── L0: Fintech — amarelo, linha Total ── */
 .kn-row-l0 td{background:#FFE600;color:#1a1a1a;font-weight:800;font-size:13px}
 .kn-row-l0 td.kn-adj-cell{background:#FFE600}
-.kn-row-l0 td.kn-ytd-sep{border-left:2px solid rgba(0,0,0,.12)}
+.kn-row-l0 td.kn-ytd-sep{border-left:14px solid #fff}
 /* ── L1: Acquiring / Fintech Services — cinza-claro, linhas de grupo ── */
 .kn-row-l1 td{background:#F0F0EA;color:#1a1a1a;font-weight:700}
 .kn-row-l1 td.kn-adj-cell{background:#EAEAE4}
-.kn-row-l1 td.kn-ytd-sep{border-left:2px solid rgba(0,0,0,.08)}
+.kn-row-l1 td.kn-ytd-sep{border-left:14px solid #fff}
 /* ── L2: sub-BUs — branco ── */
 .kn-row-l2 td{background:#fff;color:#333;font-weight:400}
 .kn-row-l2 td.kn-bu-cell{background:#fff;padding:6px 16px}
 .kn-row-l2 td.kn-adj-cell{background:#FAFAFA}
-.kn-row-l2 td.kn-ytd-sep{border-left:2px solid rgba(0,0,0,.04)}
+.kn-row-l2 td.kn-ytd-sep{border-left:14px solid #fff}
 .kn-row-l2:not(:last-child) td{border-bottom:1px solid #F2F2F2}
 /* pill inside L2 BU cell */
 .kn-pill{display:inline-block;background:#EBEBEB;color:#444;border-radius:20px;padding:4px 14px;font-weight:500;font-size:12px;line-height:1.3}
@@ -2997,10 +2997,10 @@ function renderKeyNumTab() {
   const ytdLbl = `YTD'${String(yr).slice(2)}`;
   head.innerHTML = `
     <tr>
-      <th class="kn-bu-hdr" rowspan="2">BU</th>
+      <th class="kn-bu-hdr" rowspan="2"></th>
       <th class="kn-grp-hdr" colspan="2">${mesLbl}</th>
       <th class="kn-grp-adj" colspan="2">${mesLbl}* Adj</th>
-      <th class="kn-grp-hdr" colspan="2" style="border-left:3px solid #ccc">${ytdLbl}</th>
+      <th class="kn-grp-ytd" colspan="2">${ytdLbl}</th>
       <th class="kn-grp-adj" colspan="2">${ytdLbl}* Adj</th>
     </tr>
     <tr>
@@ -3134,7 +3134,7 @@ function renderKnOneoffList() {
       const descParts = [...byDesc.entries()].map(([desc, oos]) => {
         const buParts = oos.map(oo => {
           const sign = oo.valor > 0 ? '+' : '';
-          const v = sign + oo.valor.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+          const v = sign + Math.round(oo.valor).toLocaleString('pt-BR');
           const col = oo.valor > 0 ? '#2E7D32' : '#C62828';
           return `${oo.bu} <span style="color:${col};font-weight:600">${v}</span>`;
         }).join(', ');
@@ -3143,7 +3143,7 @@ function renderKnOneoffList() {
       return `<b>${mesLbl}</b> — ${descParts}`;
     }).join(' &nbsp;&nbsp;|&nbsp;&nbsp; ');
 
-    noteEl.innerHTML = `<b>One-offs aplicados (Adj):</b> ${mesParts}`;
+    noteEl.innerHTML = `<b>One-offs aplicados:</b> ${mesParts}`;
   }
 }
 </script>
