@@ -2946,8 +2946,7 @@ function knFmt(v, ud) {
   if(v === 0) return '—';
   const neg = v < 0;
   const abs = Math.abs(v) / ud;
-  const dec = ud >= 1_000_000 ? 1 : 0;
-  const str = abs.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  const str = abs.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
   return neg ? `(${str})` : str;
 }
 
