@@ -3114,28 +3114,36 @@ function renderKnOneoffList() {
     </div>`;
   }).join('');
 
-  // ── nota de rodapé dinâmica agrupada por mês ──
+  // ── nota de rodapé: mês → comentário → BUs ──
   if(noteEl) {
-    // agrupar por mês
+    // 1. agrupar por mês
     const byMes = new Map();
     knOneoffs.forEach(oo => {
-      if(!byMes.has(oo.mes)) byMes.set(oo.mes, []);
-      byMes.get(oo.mes).push(oo);
+      if(!byMes.has(oo.mes)) byMes.set(oo.mes, new Map());
+      const desc = oo.desc || '(sem descrição)';
+      if(!byMes.get(oo.mes).has(desc)) byMes.get(oo.mes).set(desc, []);
+      byMes.get(oo.mes).get(desc).push(oo);
     });
+
     const mesKeys = [...byMes.keys()].sort((a,b) => a-b);
-    const parts = mesKeys.map(mes => {
+    const mesParts = mesKeys.map(mes => {
       const yr = Math.floor(mes/100), mo = mes%100;
       const mesLbl = new Date(yr,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace(' de ','\'').replace('.','').toUpperCase();
-      const entries = byMes.get(mes).map(oo => {
-        const sign = oo.valor > 0 ? '+' : '';
-        const v = sign + oo.valor.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
-        const col = oo.valor > 0 ? '#2E7D32' : '#C62828';
-        const desc = oo.desc ? ` ${oo.desc}` : '';
-        return `${oo.bu}<span style="color:${col};font-weight:600"> ${v}</span>${desc}`;
+      const byDesc = byMes.get(mes);
+      // 2. dentro de cada mês, agrupar por comentário
+      const descParts = [...byDesc.entries()].map(([desc, oos]) => {
+        const buParts = oos.map(oo => {
+          const sign = oo.valor > 0 ? '+' : '';
+          const v = sign + oo.valor.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+          const col = oo.valor > 0 ? '#2E7D32' : '#C62828';
+          return `${oo.bu} <span style="color:${col};font-weight:600">${v}</span>`;
+        }).join(', ');
+        return `<i>${desc}:</i> ${buParts}`;
       }).join(' · ');
-      return `<b>${mesLbl}:</b> ${entries}`;
-    }).join(' &nbsp;|&nbsp; ');
-    noteEl.innerHTML = `<b>One-offs aplicados (Adj):</b> ${parts}`;
+      return `<b>${mesLbl}</b> — ${descParts}`;
+    }).join(' &nbsp;&nbsp;|&nbsp;&nbsp; ');
+
+    noteEl.innerHTML = `<b>One-offs aplicados (Adj):</b> ${mesParts}`;
   }
 }
 </script>
