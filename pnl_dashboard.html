@@ -704,6 +704,14 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
         style="min-width:150px"></select>
     </div>
     <div>
+      <label>Granularidade</label>
+      <div id="evoGranGrp" style="display:flex;gap:4px">
+        <button class="btn-hdr on" data-g="monthly"   onclick="setEvoGran(this)">Mensal</button>
+        <button class="btn-hdr"    data-g="quarterly" onclick="setEvoGran(this)">Trimestral</button>
+        <button class="btn-hdr"    data-g="annual"    onclick="setEvoGran(this)">Anual</button>
+      </div>
+    </div>
+    <div>
       <label>Unidade</label>
       <div id="evoUnitGrp" style="display:flex;gap:4px">
         <button class="btn-hdr on" data-u="1000000" onclick="setEvoUnit(this)">R$ M</button>
@@ -3219,7 +3227,8 @@ function renderKnOneoffList() {
 // ═══════════════════════════════════════════════════════════
 let evoBU      = 'Fintech';
 let evoUnitDiv = 1_000_000;
-let _evoCharts = {};   // Chart instances keyed by abbr
+let evoGran    = 'monthly';   // 'monthly' | 'quarterly' | 'annual'
+let _evoCharts = {};          // Chart instances keyed by abbr
 
 const EVO_METRICS = [
   { key:'Product Monetization',  abbr:'PM'   },
@@ -3261,6 +3270,38 @@ function setEvoUnit(btn) {
   renderEvoTab();
 }
 
+function setEvoGran(btn) {
+  evoGran = btn.dataset.g;
+  document.querySelectorAll('#evoGranGrp button').forEach(b=>b.classList.toggle('on',b===btn));
+  renderEvoTab();
+}
+
+// Aggregate monthly values into period buckets (quarterly / annual)
+function evoBucketize(meses, cenario, metric) {
+  const result = new Map(); // periodKey → {sum, count}
+  for(const m of meses) {
+    const v = evoGetVal(evoBU, m, cenario, metric);
+    if(v === 0 && cenario === 'Realizado') continue; // skip empty real months
+    const yr = Math.floor(m/100), mo = m%100;
+    let key;
+    if(evoGran === 'quarterly') key = `${yr}Q${Math.ceil(mo/3)}`;
+    else if(evoGran === 'annual') key = String(yr);
+    else key = m;
+    if(!result.has(key)) result.set(key, 0);
+    result.set(key, result.get(key) + v);
+  }
+  return result;
+}
+
+function evoPeriodLabel(key) {
+  if(evoGran === 'monthly') return mesLabel(key);
+  if(evoGran === 'quarterly') {
+    const yr = String(key).slice(2,4), q = String(key).slice(5);
+    return `Q${q}'${yr}`;
+  }
+  return String(key);
+}
+
 function renderEvoTab() {
   if(!allData || !allData.length) return;
   buildEvoBUSel();
@@ -3269,7 +3310,6 @@ function renderEvoTab() {
   const udLbl = ud >= 1e6 ? 'R$ M' : 'R$ K';
   const buses = KN_BU_MAP[evoBU] || [evoBU];
 
-  // All months present in data for this BU
   const realMeses = [...new Set(
     allData.filter(d=>d.Cenario==='Realizado'&&buses.includes(d.Product)).map(d=>d.MES)
   )].sort();
@@ -3277,7 +3317,16 @@ function renderEvoTab() {
     allData.filter(d=>d.Cenario==='Plan'&&buses.includes(d.Product)).map(d=>d.MES)
   )].sort();
   const allMeses = [...new Set([...realMeses,...planMeses])].sort();
-  const labels   = allMeses.map(mesLabel);
+
+  // Build period keys (respects granularity)
+  function toPeriodKey(m) {
+    const yr=Math.floor(m/100), mo=m%100;
+    if(evoGran==='quarterly') return `${yr}Q${Math.ceil(mo/3)}`;
+    if(evoGran==='annual')    return String(yr);
+    return m;
+  }
+  const allPeriods = [...new Set(allMeses.map(toPeriodKey))];
+  const labels = allPeriods.map(evoPeriodLabel);
 
   // Destroy old charts
   Object.values(_evoCharts).forEach(c=>{ try{c.destroy()}catch(e){} });
@@ -3287,12 +3336,27 @@ function renderEvoTab() {
   grid.innerHTML = '';
 
   EVO_METRICS.forEach(({key, abbr}) => {
-    const realVals = allMeses.map(m =>
-      realMeses.includes(m) ? evoGetVal(evoBU,m,'Realizado',key)/ud : null
-    );
-    const planVals = allMeses.map(m => evoGetVal(evoBU,m,'Plan',key)/ud);
+    // Aggregate by period
+    const realByPeriod = new Map();
+    const planByPeriod = new Map();
+    allPeriods.forEach(p => { realByPeriod.set(p, null); planByPeriod.set(p, 0); });
 
-    // Skip if truly no data
+    for(const m of allMeses) {
+      const p = toPeriodKey(m);
+      if(realMeses.includes(m)) {
+        const v = evoGetVal(evoBU, m, 'Realizado', key);
+        realByPeriod.set(p, (realByPeriod.get(p) || 0) + v);
+      }
+      const vp = evoGetVal(evoBU, m, 'Plan', key);
+      planByPeriod.set(p, (planByPeriod.get(p) || 0) + vp);
+    }
+
+    const realVals = allPeriods.map(p => {
+      const v = realByPeriod.get(p);
+      return v === null ? null : v / ud;
+    });
+    const planVals = allPeriods.map(p => planByPeriod.get(p) / ud);
+
     if(realVals.every(v=>v===null||v===0) && planVals.every(v=>v===0)) return;
 
     const card = document.createElement('div');
