@@ -979,6 +979,7 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
           style="padding:4px 10px;font-weight:700">Ocultar Adj Mês</button>
         <button id="knAdjYtdToggle" class="cpa-cfg-btn" onclick="toggleKnAdjYtd()"
           style="padding:4px 10px;font-weight:700">Ocultar Adj YTD</button>
+
       </div>
     </div>
   </div>
@@ -3302,7 +3303,7 @@ function renderKeyNumTab() {
       <th class="kn-grp-hdr" colspan="2">${mesLbl}</th>
       <th class="kn-grp-adj" colspan="2">${mesLbl}* Adj</th>
       <th class="kn-grp-ytd" colspan="2">${ytdLbl}</th>
-      <th class="kn-grp-adj" colspan="2">${ytdLbl}* Adj</th>
+      <th class="kn-grp-ytdadj" colspan="2">${ytdLbl}* Adj</th>
     </tr>
     <tr>
       <th class="kn-sub-hdr kn-actual-col">Actual</th>
@@ -3311,8 +3312,8 @@ function renderKeyNumTab() {
       <th class="kn-sub-adj">Δ$ Plan*</th>
       <th class="kn-sub-ytd kn-actual-col">Actual</th>
       <th class="kn-sub-hdr">Δ$ Plan</th>
-      <th class="kn-sub-adj kn-actual-col">Actual* Adj</th>
-      <th class="kn-sub-adj">Δ$ Plan*</th>
+      <th class="kn-sub-ytdadj kn-actual-col">Actual* Adj</th>
+      <th class="kn-sub-ytdadj">Δ$ Plan*</th>
     </tr>`;
 
   let html = '';
