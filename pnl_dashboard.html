@@ -667,6 +667,17 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
     </div>
   </div>
 
+  <!-- Meses filtro (Período Total) -->
+  <div class="fg" id="mesTotalGroup" style="display:none">
+    <label>Meses</label>
+    <div class="ms-wrap">
+      <div class="ms-trig" onclick="toggleMs(event,'mestotal')">
+        <span id="mestotalLabel">Todos</span><span class="caret">▼</span>
+      </div>
+      <div class="ms-panel" id="mestotalPanel"></div>
+    </div>
+  </div>
+
   <div class="sep"></div>
 
   <!-- Ano -->
@@ -1068,6 +1079,8 @@ let selAnos  = [];   // selected anos (strings)
 let selMacro = [];
 let selProd  = [];
 let selSecao = [];   // selected MNG_1 sections
+let selMesTotal = []; // selected months for Período Total view
+let optMesTotal = []; // available months for Período Total multi-select
 
 let viewMode    = 'evolutivo';   // 'evolutivo' | 'total' | 'comparacao'
 let granMode    = 'anual';       // 'mensal' | 'trimestral' | 'anual' | 'ytdfy'
@@ -1259,10 +1272,15 @@ function initFilters() {
     pillsDiv.appendChild(el);
   });
 
+  // Período Total month options (YYYYMM as numbers)
+  optMesTotal = uniq(allData.map(d => d.MES)).sort((a,b) => a-b);
+  selMesTotal = [...optMesTotal];
+
   buildMsPanel('ano',   optAnos,  selAnos,  v => { selAnos  = v; cascadeMonths(); });
   buildMsPanel('secao', optSecao, selSecao, v => { selSecao = v; });
   buildMsPanel('macro', optMacro, selMacro, v => { selMacro = v; cascadeBU(); });
   buildMsPanel('prod',  optProd,  selProd,  v => { selProd  = v; });
+  buildMesTotalPanel();
   buildMesSelects();
   buildMesRefSel();
   buildCenRefSel();
@@ -1436,6 +1454,48 @@ function buildMsPanel(id, options, selected, setter) {
   updateMsLabel(id, selected, options);
 }
 
+function buildMesTotalPanel() {
+  const panel = document.getElementById('mestotalPanel');
+  if(!panel) return;
+  panel.innerHTML = '';
+
+  const acts = document.createElement('div');
+  acts.className = 'ms-actions';
+  acts.innerHTML = `<button onclick="msAll('mestotal',true)">Todos</button>
+                    <button onclick="msAll('mestotal',false)">Nenhum</button>`;
+  panel.appendChild(acts);
+
+  optMesTotal.forEach(m => {
+    const lbl = document.createElement('label');
+    lbl.className = 'ms-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = selMesTotal.includes(m);
+    cb.dataset.opt = m;
+    cb.onchange = () => {
+      selMesTotal = [...panel.querySelectorAll('input')]
+                     .filter(c => c.checked).map(c => Number(c.dataset.opt));
+      updateMesTotalLabel();
+      render();
+    };
+    const sp = document.createElement('span');
+    sp.textContent = mesLabel(m);
+    lbl.appendChild(cb); lbl.appendChild(sp);
+    panel.appendChild(lbl);
+  });
+
+  updateMesTotalLabel();
+}
+
+function updateMesTotalLabel() {
+  const el = document.getElementById('mestotalLabel');
+  if(!el) return;
+  if(!selMesTotal.length)                      el.textContent = 'Nenhum';
+  else if(selMesTotal.length === optMesTotal.length) el.textContent = 'Todos';
+  else if(selMesTotal.length === 1)            el.textContent = mesLabel(selMesTotal[0]);
+  else                                         el.textContent = selMesTotal.length + ' meses';
+}
+
 function updateMsLabel(id, sel, opts) {
   const el = document.getElementById(id+'Label');
   if(!el) return;
@@ -1450,17 +1510,18 @@ function msAll(id, all) {
   const cbs = [...panel.querySelectorAll('input')];
   cbs.forEach(c => c.checked = all);
   const vals = all ? cbs.map(c => c.dataset.opt) : [];
-  if(id==='ano')   { selAnos  = vals; updateMsLabel('ano',  vals, optAnos);  cascadeMonths(); }
-  if(id==='secao') { selSecao = vals; updateMsLabel('secao',vals, optSecao); }
-  if(id==='macro') { selMacro = vals; updateMsLabel('macro',vals, optMacro); cascadeBU(); }
-  if(id==='prod')  { selProd  = vals; updateMsLabel('prod', vals, optProd); }
+  if(id==='ano')      { selAnos  = vals; updateMsLabel('ano',  vals, optAnos);  cascadeMonths(); }
+  if(id==='secao')    { selSecao = vals; updateMsLabel('secao',vals, optSecao); }
+  if(id==='macro')    { selMacro = vals; updateMsLabel('macro',vals, optMacro); cascadeBU(); }
+  if(id==='prod')     { selProd  = vals; updateMsLabel('prod', vals, optProd); }
+  if(id==='mestotal') { selMesTotal = all ? [...optMesTotal] : []; updateMesTotalLabel(); }
   render();
 }
 
 function toggleMs(e, id) {
   e.stopPropagation();
-  ['ano','secao','macro','prod'].forEach(x => {
-    if(x!==id) document.getElementById(x+'Panel').classList.remove('open');
+  ['ano','secao','macro','prod','mestotal'].forEach(x => {
+    if(x!==id) document.getElementById(x+'Panel')?.classList.remove('open');
   });
   document.getElementById(id+'Panel').classList.toggle('open');
 }
@@ -1474,6 +1535,7 @@ document.addEventListener('click', () => {
 function updateGranVisibility() {
   const ev   = viewMode === 'evolutivo';
   const comp = viewMode === 'comparacao';
+  const tot  = viewMode === 'total';
   const pt   = compPeriodType;
   document.getElementById('granWrap').style.display          = ev ? '' : 'none';
   document.getElementById('mesGroup').style.display          = (ev && granMode==='mensal') ? '' : 'none';
@@ -1484,6 +1546,7 @@ function updateGranVisibility() {
   document.getElementById('compQuarterGroup').style.display  = (comp && pt==='trimestral') ? '' : 'none';
   document.getElementById('compYearGroup').style.display     = (comp && (pt==='trimestral'||pt==='anual')) ? '' : 'none';
   document.getElementById('compCustomGroup').style.display   = (comp && pt==='personalizado') ? '' : 'none';
+  document.getElementById('mesTotalGroup').style.display     = tot ? '' : 'none';
 }
 
 function setView(btn) {
@@ -1643,12 +1706,16 @@ function getFiltered() {
     );
   }
   const [mf, mt] = getMesRange();
+  // In Período Total mode, apply the month multi-select if not all selected
+  const mesTotalSet = (viewMode === 'total' && selMesTotal.length < optMesTotal.length)
+    ? new Set(selMesTotal) : null;
   const baseFilter = d =>
     (selAnos.length===0  || selAnos.includes(String(d.ANO))) &&
     (selSecao.length===0 || selSecao.includes(d.MNG_1)) &&
     (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
     (selProd.length===0  || selProd.includes(d.Product)) &&
-    d.MES >= mf && d.MES <= mt;
+    d.MES >= mf && d.MES <= mt &&
+    (!mesTotalSet || mesTotalSet.has(d.MES));
 
   const filtered = allData.filter(d => selCen.includes(d.Cenario) && baseFilter(d));
 
