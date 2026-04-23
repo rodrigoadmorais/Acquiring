@@ -291,12 +291,31 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-filter-bar select{padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:12px;cursor:pointer}
 .kn-tbl-outer{margin-top:16px;display:inline-block}
 .kn-table{border-collapse:separate;border-spacing:0;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;width:auto}
-/* arredondar cantos do cabeçalho amarelo */
+/* ── Cantos arredondados ── */
+/* header: topo-esquerdo do primeiro amarelo, topo-direito do último */
 .kn-table thead tr:first-child th:nth-child(2){border-radius:12px 0 0 0}
 .kn-table thead tr:first-child th:last-child{border-radius:0 12px 0 0}
-/* arredondar cantos inferiores da última linha */
+/* cantos internos à barra branca MAR↔YTD */
+.kn-table th.kn-grp-adj{border-radius:0 10px 0 0}
+.kn-table th.kn-grp-ytd{border-radius:10px 0 0 0}
+/* Fintech (L0): cantos inferiores — separa o amarelo do bege */
+.kn-row-l0 td:first-child{border-radius:0 0 0 12px}
+.kn-row-l0 td:last-child{border-radius:0 0 12px 0}
+/* última linha: cantos inferiores */
 .kn-table tbody tr:last-child td:first-child{border-radius:0 0 0 12px}
 .kn-table tbody tr:last-child td:last-child{border-radius:0 0 12px 0}
+/* ── quando Adj está oculto, reposiciona cantos direitos ── */
+/* header: remove do 5º (oculto), adiciona ao 4º (kn-grp-ytd) */
+.kn-table.kn-hide-adj thead tr:first-child th:last-child{border-radius:0}
+.kn-table.kn-hide-adj thead tr:first-child th:nth-child(4){border-radius:0 12px 0 0}
+/* cantos internos: kn-grp-adj oculto → kn-grp-hdr vira último antes do ytd */
+.kn-table.kn-hide-adj th.kn-grp-adj{border-radius:0}
+.kn-table.kn-hide-adj th.kn-grp-hdr{border-radius:0 10px 0 0}
+/* L0 e última linha: remove do 9º (adj oculto), adiciona ao 7º */
+.kn-table.kn-hide-adj .kn-row-l0 td:last-child{border-radius:0}
+.kn-table.kn-hide-adj .kn-row-l0 td:nth-child(7){border-radius:0 0 12px 0}
+.kn-table.kn-hide-adj tbody tr:last-child td:last-child{border-radius:0}
+.kn-table.kn-hide-adj tbody tr:last-child td:nth-child(7){border-radius:0 0 12px 0}
 /* ── Headers ── */
 .kn-table th{background:#FFE600;color:#1a1a1a;padding:9px 16px;text-align:center;white-space:nowrap;font-size:12px;font-weight:700;border:none}
 .kn-table th.kn-bu-hdr{text-align:left;background:#fff;color:transparent;min-width:165px;border:none}
