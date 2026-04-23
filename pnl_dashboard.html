@@ -291,11 +291,11 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-tbl-outer{margin-top:16px;display:inline-block}
 .kn-table{border-collapse:separate;border-spacing:0;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;width:auto}
 /* ── Cantos arredondados ── */
-/* Group headers — todas as 4 pontas arredondadas (pills flutuantes) */
-.kn-table th.kn-grp-hdr    { border-radius:10px; }
-.kn-table th.kn-grp-adj    { border-radius:10px; }
-.kn-table th.kn-grp-ytd    { border-radius:10px; }
-.kn-table th.kn-grp-ytdadj { border-radius:10px; }
+/* Group headers — apenas pontas superiores arredondadas */
+.kn-table th.kn-grp-hdr    { border-radius:10px 10px 0 0; }
+.kn-table th.kn-grp-adj    { border-radius:10px 10px 0 0; }
+.kn-table th.kn-grp-ytd    { border-radius:10px 10px 0 0; }
+.kn-table th.kn-grp-ytdadj { border-radius:10px 10px 0 0; }
 /* Fintech (L0): cantos inferiores — separa o amarelo do bege */
 .kn-row-l0 td:first-child{border-radius:0 0 0 12px}
 .kn-row-l0 td:last-child{border-radius:0 0 12px 0}
