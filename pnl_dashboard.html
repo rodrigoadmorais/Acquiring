@@ -291,30 +291,20 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-tbl-outer{margin-top:16px;display:inline-block}
 .kn-table{border-collapse:separate;border-spacing:0;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;width:auto}
 /* ── Cantos arredondados ── */
-/* header: topo-esquerdo do primeiro amarelo, topo-direito do último */
-.kn-table thead tr:first-child th:nth-child(2){border-radius:12px 0 0 0}
-.kn-table thead tr:first-child th:last-child{border-radius:0 12px 0 0}
-/* cantos internos à barra branca MAR↔YTD */
-.kn-table th.kn-grp-adj{border-radius:0 10px 0 0}
-.kn-table th.kn-grp-ytd{border-radius:10px 0 0 0}
+/* Group headers — todas as 4 pontas arredondadas (pills flutuantes) */
+.kn-table th.kn-grp-hdr    { border-radius:10px; }
+.kn-table th.kn-grp-adj    { border-radius:10px; }
+.kn-table th.kn-grp-ytd    { border-radius:10px; }
+.kn-table th.kn-grp-ytdadj { border-radius:10px; }
 /* Fintech (L0): cantos inferiores — separa o amarelo do bege */
 .kn-row-l0 td:first-child{border-radius:0 0 0 12px}
 .kn-row-l0 td:last-child{border-radius:0 0 12px 0}
 /* última linha: cantos inferiores */
 .kn-table tbody tr:last-child td:first-child{border-radius:0 0 0 12px}
 .kn-table tbody tr:last-child td:last-child{border-radius:0 0 12px 0}
-/* ── quando Adj está oculto, reposiciona cantos direitos ── */
-/* header: remove do 5º (oculto), adiciona ao 4º (kn-grp-ytd) */
-.kn-table.kn-hide-adj thead tr:first-child th:last-child{border-radius:0}
-.kn-table.kn-hide-adj thead tr:first-child th:nth-child(4){border-radius:0 12px 0 0}
-/* cantos internos: kn-grp-adj oculto → kn-grp-hdr vira último antes do ytd */
-.kn-table.kn-hide-adj th.kn-grp-adj{border-radius:0}
-.kn-table.kn-hide-adj th.kn-grp-hdr{border-radius:0 10px 0 0}
-/* L0 e última linha: remove do 9º (adj oculto), adiciona ao 7º */
-.kn-table.kn-hide-adj .kn-row-l0 td:last-child{border-radius:0}
-.kn-table.kn-hide-adj .kn-row-l0 td:nth-child(7){border-radius:0 0 12px 0}
-.kn-table.kn-hide-adj tbody tr:last-child td:last-child{border-radius:0}
-.kn-table.kn-hide-adj tbody tr:last-child td:nth-child(7){border-radius:0 0 12px 0}
+/* quando Adj YTD oculto: col 7 vira canto direito */
+.kn-table.kn-hide-adj-ytd .kn-row-l0 td:nth-child(7){border-radius:0 0 12px 0}
+.kn-table.kn-hide-adj-ytd tbody tr:last-child td:nth-child(7){border-radius:0 0 12px 0}
 /* ── Headers ── */
 .kn-table th{background:#FFE600;color:#1a1a1a;padding:9px 16px;text-align:center;white-space:nowrap;font-size:12px;font-weight:700;border:none}
 .kn-table th.kn-bu-hdr{text-align:left;background:#fff;color:transparent;min-width:165px;border:none}
@@ -371,12 +361,14 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-table td.kn-delta-pos{color:#2E7D32!important}
 .kn-table td.kn-delta-neg{color:#CC0000!important}
 /* totals (L0/L1) keep their row weight; L2 BUs inherit weight:400 = não-bold */
-/* hide adj columns (3rd and 4th, 7th and 8th data cols) */
-.kn-table.kn-hide-adj th.kn-grp-adj,
-.kn-table.kn-hide-adj th.kn-grp-ytdadj,
-.kn-table.kn-hide-adj th.kn-sub-adj,
-.kn-table.kn-hide-adj th.kn-sub-ytdadj,
-.kn-table.kn-hide-adj td.kn-adj-cell{display:none}
+/* Ocultar Adj Mês */
+.kn-table.kn-hide-adj-mes th.kn-grp-adj,
+.kn-table.kn-hide-adj-mes th.kn-sub-adj,
+.kn-table.kn-hide-adj-mes td.kn-adj-mes{display:none}
+/* Ocultar Adj YTD */
+.kn-table.kn-hide-adj-ytd th.kn-grp-ytdadj,
+.kn-table.kn-hide-adj-ytd th.kn-sub-ytdadj,
+.kn-table.kn-hide-adj-ytd td.kn-adj-ytd{display:none}
 /* ── Evolutivos tab ── */
 .evo-panel{flex:1 1 0;min-height:0;overflow-y:auto;padding:0 20px 28px;background:var(--card)}
 .evo-filter-bar{background:var(--card);border-bottom:1px solid var(--border);padding:10px 0;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;position:sticky;top:0;z-index:50}
@@ -982,8 +974,12 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
     </div>
     <div>
       <label>Ajustado</label>
-      <button id="knAdjToggle" class="cpa-cfg-btn" onclick="toggleKnAdj()"
-        style="padding:4px 12px;font-weight:700">Ocultar Adj</button>
+      <div style="display:flex;gap:5px">
+        <button id="knAdjMesToggle" class="cpa-cfg-btn" onclick="toggleKnAdjMes()"
+          style="padding:4px 10px;font-weight:700">Ocultar Adj Mês</button>
+        <button id="knAdjYtdToggle" class="cpa-cfg-btn" onclick="toggleKnAdjYtd()"
+          style="padding:4px 10px;font-weight:700">Ocultar Adj YTD</button>
+      </div>
     </div>
   </div>
 
@@ -3161,7 +3157,8 @@ let knOneoffs  = [
   {mes:202603, bu:'Point',            valor:18.0,  desc:'Sales Taxes'},
 ];
 let knOneoffOpen = false;
-let knShowAdj    = true;
+let knShowAdjMes = true;
+let knShowAdjYtd = true;
 
 // BU display → actual BU keys in data
 const KN_BU_MAP = {
@@ -3344,22 +3341,27 @@ function renderKeyNumTab() {
       <td class="kn-bu-cell">${buLabel}</td>
       <td class="kn-actual-col">${knFmt(act, ud)}</td>
       <td class="${dCls(delta)}">${knFmt(delta, ud)}</td>
-      <td class="kn-adj-cell kn-actual-col">${knFmt(actAdj, ud)}</td>
-      <td class="kn-adj-cell ${dCls(deltaAdj)}">${knFmt(deltaAdj, ud)}</td>
+      <td class="kn-adj-cell kn-adj-mes kn-actual-col">${knFmt(actAdj, ud)}</td>
+      <td class="kn-adj-cell kn-adj-mes ${dCls(deltaAdj)}">${knFmt(deltaAdj, ud)}</td>
       <td class="kn-ytd-sep kn-actual-col">${knFmt(ytdAct, ud)}</td>
       <td class="${dCls(ytdDelta)}">${knFmt(ytdDelta, ud)}</td>
-      <td class="kn-adj-cell kn-actual-col">${knFmt(ytdAdj, ud)}</td>
-      <td class="kn-adj-cell ${dCls(ytdDeltaAdj)}">${knFmt(ytdDeltaAdj, ud)}</td>
+      <td class="kn-adj-cell kn-adj-ytd kn-actual-col">${knFmt(ytdAdj, ud)}</td>
+      <td class="kn-adj-cell kn-adj-ytd ${dCls(ytdDeltaAdj)}">${knFmt(ytdDeltaAdj, ud)}</td>
     </tr>`;
   }
   document.getElementById('knBody').innerHTML = html;
   renderKnOneoffList();
 }
 
-function toggleKnAdj() {
-  knShowAdj = !knShowAdj;
-  document.getElementById('knTable').classList.toggle('kn-hide-adj', !knShowAdj);
-  document.getElementById('knAdjToggle').textContent = knShowAdj ? 'Ocultar Adj' : 'Mostrar Adj';
+function toggleKnAdjMes() {
+  knShowAdjMes = !knShowAdjMes;
+  document.getElementById('knTable').classList.toggle('kn-hide-adj-mes', !knShowAdjMes);
+  document.getElementById('knAdjMesToggle').textContent = knShowAdjMes ? 'Ocultar Adj Mês' : 'Mostrar Adj Mês';
+}
+function toggleKnAdjYtd() {
+  knShowAdjYtd = !knShowAdjYtd;
+  document.getElementById('knTable').classList.toggle('kn-hide-adj-ytd', !knShowAdjYtd);
+  document.getElementById('knAdjYtdToggle').textContent = knShowAdjYtd ? 'Ocultar Adj YTD' : 'Mostrar Adj YTD';
 }
 
 function setKnUnit(btn) {
