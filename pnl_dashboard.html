@@ -294,7 +294,7 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 /* Group headers — apenas pontas superiores arredondadas */
 .kn-table th.kn-grp-hdr    { border-radius:10px 10px 0 0; }
 .kn-table th.kn-grp-adj    { border-radius:10px 10px 0 0; }
-.kn-table th.kn-grp-ytd    { border-radius:10px 10px 0 0;border-left:none;box-shadow:-14px 0 0 0 #fff; }
+.kn-table th.kn-grp-ytd    { border-radius:10px 10px 0 0; }
 .kn-table th.kn-grp-ytdadj { border-radius:10px 10px 0 0; }
 /* Fintech (L0): cantos inferiores — separa o amarelo do bege */
 .kn-row-l0 td:first-child{border-radius:0 0 0 12px}
@@ -302,19 +302,21 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 /* última linha: cantos inferiores */
 .kn-table tbody tr:last-child td:first-child{border-radius:0 0 0 12px}
 .kn-table tbody tr:last-child td:last-child{border-radius:0 0 12px 0}
-/* quando Adj YTD oculto: col 7 vira canto direito */
-.kn-table.kn-hide-adj-ytd .kn-row-l0 td:nth-child(7){border-radius:0 0 12px 0}
-.kn-table.kn-hide-adj-ytd tbody tr:last-child td:nth-child(7){border-radius:0 0 12px 0}
+/* coluna separadora branca entre MAR adj e YTD */
+.kn-table th.kn-sep,.kn-table td.kn-sep{background:#fff;width:10px;min-width:10px;max-width:10px;padding:0;border:none}
+/* quando Adj YTD oculto: col 8 (ytd delta, após kn-sep) vira canto direito */
+.kn-table.kn-hide-adj-ytd .kn-row-l0 td:nth-child(8){border-radius:0 0 12px 0}
+.kn-table.kn-hide-adj-ytd tbody tr:last-child td:nth-child(8){border-radius:0 0 12px 0}
 /* ── Headers ── */
 .kn-table th{background:#FFE600;color:#1a1a1a;padding:9px 16px;text-align:center;white-space:nowrap;font-size:12px;font-weight:700;border:none}
 .kn-table th.kn-bu-hdr{text-align:left;background:#fff;color:transparent;min-width:165px;border:none}
 .kn-table th.kn-grp-hdr{background:#FFE600;color:#1a1a1a}
 .kn-table th.kn-grp-adj{background:#FFE600;color:#1a1a1a}
-.kn-table th.kn-grp-ytd{background:#FFE600;color:#1a1a1a;border-left:14px solid #fff}
+.kn-table th.kn-grp-ytd{background:#FFE600;color:#1a1a1a}
 .kn-table th.kn-grp-ytdadj{background:#FFE600;color:#1a1a1a}
 .kn-table th.kn-sub-hdr{background:#FFE600;color:#1a1a1a;font-size:11px}
 .kn-table th.kn-sub-adj{background:#FFE600;color:#1a1a1a;font-size:11px}
-.kn-table th.kn-sub-ytd{background:#FFE600;color:#1a1a1a;font-size:11px;border-left:14px solid #fff}
+.kn-table th.kn-sub-ytd{background:#FFE600;color:#1a1a1a;font-size:11px}
 .kn-table th.kn-sub-ytdadj{background:#FFE600;color:#1a1a1a;font-size:11px}
 /* ── Data cells (default) ── */
 .kn-table td{padding:9px 16px;text-align:right;white-space:nowrap;border:none;font-size:13px}
@@ -322,16 +324,16 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 /* ── L0: Fintech — amarelo, linha Total ── */
 .kn-row-l0 td{background:#FFE600;color:#1a1a1a;font-weight:800;font-size:13px}
 .kn-row-l0 td.kn-adj-cell{background:#FFE600}
-.kn-row-l0 td.kn-ytd-sep{border-left:14px solid #fff}
+.kn-row-l0 td.kn-ytd-sep{}
 /* ── L1: Acquiring / Fintech Services — cinza-claro, linhas de grupo ── */
 .kn-row-l1 td{background:#F0F0EA;color:#1a1a1a;font-weight:700}
 .kn-row-l1 td.kn-adj-cell{background:#EAEAE4}
-.kn-row-l1 td.kn-ytd-sep{border-left:14px solid #fff}
+.kn-row-l1 td.kn-ytd-sep{}
 /* ── L2: sub-BUs — branco ── */
 .kn-row-l2 td{background:#fff;color:#333;font-weight:400}
 .kn-row-l2 td.kn-bu-cell{background:#fff;padding:6px 16px}
 .kn-row-l2 td.kn-adj-cell{background:#FAFAFA}
-.kn-row-l2 td.kn-ytd-sep{border-left:14px solid #fff}
+.kn-row-l2 td.kn-ytd-sep{}
 .kn-row-l2:not(:last-child) td{border-bottom:1px solid #F2F2F2}
 /* ── Actual columns — sombreado cinza; Δ$ Plan fica no fundo normal ── */
 .kn-table th.kn-plan-col{background:#FFE600}
@@ -3302,6 +3304,7 @@ function renderKeyNumTab() {
       <th class="kn-bu-hdr" rowspan="2"></th>
       <th class="kn-grp-hdr" colspan="2">${mesLbl}</th>
       <th class="kn-grp-adj" colspan="2">${mesLbl}* Adj</th>
+      <th class="kn-sep" rowspan="2"></th>
       <th class="kn-grp-ytd" colspan="2">${ytdLbl}</th>
       <th class="kn-grp-ytdadj" colspan="2">${ytdLbl}* Adj</th>
     </tr>
@@ -3344,6 +3347,7 @@ function renderKeyNumTab() {
       <td class="${dCls(delta)}">${knFmt(delta, ud)}</td>
       <td class="kn-adj-cell kn-adj-mes kn-actual-col">${knFmt(actAdj, ud)}</td>
       <td class="kn-adj-cell kn-adj-mes ${dCls(deltaAdj)}">${knFmt(deltaAdj, ud)}</td>
+      <td class="kn-sep"></td>
       <td class="kn-ytd-sep kn-actual-col">${knFmt(ytdAct, ud)}</td>
       <td class="${dCls(ytdDelta)}">${knFmt(ytdDelta, ud)}</td>
       <td class="kn-adj-cell kn-adj-ytd kn-actual-col">${knFmt(ytdAdj, ud)}</td>
