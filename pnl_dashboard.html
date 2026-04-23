@@ -1471,14 +1471,24 @@ function getFiltered() {
     );
   }
   const [mf, mt] = getMesRange();
-  return allData.filter(d =>
-    selCen.includes(d.Cenario) &&
+  const baseFilter = d =>
     (selAnos.length===0  || selAnos.includes(String(d.ANO))) &&
     (selSecao.length===0 || selSecao.includes(d.MNG_1)) &&
     (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
     (selProd.length===0  || selProd.includes(d.Product)) &&
-    d.MES >= mf && d.MES <= mt
-  );
+    d.MES >= mf && d.MES <= mt;
+
+  const filtered = allData.filter(d => selCen.includes(d.Cenario) && baseFilter(d));
+
+  // Forecast fill: meses sem dados de Forecast → usar Realizado relabelado
+  if(selCen.includes('Forecast')) {
+    const fcstMeses = new Set(filtered.filter(d => d.Cenario==='Forecast').map(d => d.MES));
+    const fill = allData
+      .filter(d => d.Cenario==='Realizado' && !fcstMeses.has(d.MES) && baseFilter(d))
+      .map(d => ({...d, Cenario:'Forecast'}));
+    if(fill.length) return [...filtered, ...fill];
+  }
+  return filtered;
 }
 
 // ═══════════════════════════════════════════════════════════
