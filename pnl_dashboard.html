@@ -103,7 +103,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .tbl-outer{border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
 
 /* ── P&L Table ── */
-#pnlTable{border-collapse:collapse;width:100%;font-size:12px}
+#pnlTable{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+#pnlTable thead tr:first-child th:first-child{border-radius:10px 0 0 0}
+#pnlTable thead tr:first-child th:last-child{border-radius:0 10px 0 0}
+#pnlTable tbody tr:last-child td:first-child{border-radius:0 0 0 10px}
+#pnlTable tbody tr:last-child td:last-child{border-radius:0 0 10px 0}
 #pnlTable th{background:#111d36;color:#c8d4e8;padding:9px 12px;
              text-align:right;white-space:nowrap;font-size:11px;font-weight:600;
              position:sticky;top:0;z-index:100;
@@ -271,7 +275,11 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .cpa-tbl-wrap .tbl-outer{border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-top:16px}
 
 /* ── CPA/MPOS Table ── */
-.cpa-table{border-collapse:collapse;width:100%;font-size:12px}
+.cpa-table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+.cpa-table thead tr:first-child th:first-child{border-radius:10px 0 0 0}
+.cpa-table thead tr:first-child th:last-child{border-radius:0 10px 0 0}
+.cpa-table tbody tr:last-child td:first-child{border-radius:0 0 0 10px}
+.cpa-table tbody tr:last-child td:last-child{border-radius:0 0 10px 0}
 .cpa-tbl-wrap .tbl-outer{border-radius:6px;box-shadow:0 1px 8px rgba(0,0,0,.09);
                          border:1px solid #E8E8E8;margin-top:16px}
 /* Shrink container when table is in density mode so no white gap shows on right */
@@ -327,6 +335,8 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-row-l0 td.kn-ytd-sep{}
 /* ── L1: Acquiring / Fintech Services — cinza-claro, linhas de grupo ── */
 .kn-row-l1 td{background:#F0F0EA;color:#1a1a1a;font-weight:700}
+.kn-row-l1 td:first-child{border-radius:8px 0 0 8px}
+.kn-row-l1 td:last-child{border-radius:0 8px 8px 0}
 .kn-row-l1 td.kn-adj-cell{background:#EAEAE4}
 .kn-row-l1 td.kn-ytd-sep{}
 /* ── L2: sub-BUs — branco ── */
