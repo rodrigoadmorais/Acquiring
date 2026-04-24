@@ -3422,14 +3422,21 @@ function renderMbuTab() {
       c += `<td class="mbu-sub-first">${mbuFmt(a)}</td>`;
       c += `<td>${mbuFmt(b)}</td>`;
       c += `<td class="${dcls}">${mbuFmt(delta)}</td>`;
-      if(hasPct && vol) {
-        const ap  = mbuPct(a, vol.aVol);
-        const bp  = mbuPct(b, vol.bVol);
-        const dpp = (ap!=null&&bp!=null) ? bp-ap : null;
-        const dppcls = dpp==null?'':(dpp>=0?'mbu-dpos':'mbu-dneg');
-        c += `<td class="mbu-pct-col">${ap==null?'—':ap.toFixed(1)+'%'}</td>`;
-        c += `<td class="mbu-pct-col">${bp==null?'—':bp.toFixed(1)+'%'}</td>`;
-        c += `<td class="mbu-pct-col ${dppcls}">${dpp==null?'—':(dpp>=0?'+':'')+dpp.toFixed(1)+'pp'}</td>`;
+      if(hasPct) {
+        if(vol) {
+          const ap  = mbuPct(a, vol.aVol);
+          const bp  = mbuPct(b, vol.bVol);
+          const dpp = (ap!=null&&bp!=null) ? bp-ap : null;
+          const dppcls = dpp==null?'':(dpp>=0?'mbu-dpos':'mbu-dneg');
+          c += `<td class="mbu-pct-col">${ap==null?'—':ap.toFixed(1)+'%'}</td>`;
+          c += `<td class="mbu-pct-col">${bp==null?'—':bp.toFixed(1)+'%'}</td>`;
+          c += `<td class="mbu-pct-col ${dppcls}">${dpp==null?'—':(dpp>=0?'+':'')+dpp.toFixed(1)+'pp'}</td>`;
+        } else {
+          // Volume row itself: keep column count aligned with blank cells
+          c += `<td class="mbu-pct-col" style="color:var(--muted)">—</td>`;
+          c += `<td class="mbu-pct-col" style="color:var(--muted)">—</td>`;
+          c += `<td class="mbu-pct-col" style="color:var(--muted)">—</td>`;
+        }
       }
     });
     return c;
