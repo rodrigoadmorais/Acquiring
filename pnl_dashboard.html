@@ -1280,6 +1280,14 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <button            data-u="pct_tpv" onclick="setBridgeUnit(this)">% TPV</button>
       </div>
     </div>
+    <div style="margin-left:auto;display:flex;align-items:flex-end;padding-bottom:4px">
+      <button onclick="exportBridgeImage()" style="
+        display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;
+        border:1px solid var(--border);background:var(--card);color:var(--text);
+        font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">
+        ⬇ Exportar imagem
+      </button>
+    </div>
   </div>
   <!-- AI Summary (above chart) -->
   <div id="bridgesAISummary" style="display:none"></div>
@@ -4792,7 +4800,7 @@ const BRIDGE_DEPARA = (() => {
   // Business Contribution
   m['G&A BC']='CX, Hosting, PF e OPEX'; m['G&A Bu / Local']='CX, Hosting, PF e OPEX'; m['G&A Bu/Local']='CX, Hosting, PF e OPEX';
   m['PD BC']='CX, Hosting, PF e OPEX'; m['Product Development']='CX, Hosting, PF e OPEX'; m['S&M BC']='CX, Hosting, PF e OPEX';
-  m['Marketing Branding']='Branding';
+  m['Marketing Branding']='MKT and Branding';
   // Business Margin
   m['G&A BM']='CX, Hosting, PF e OPEX'; m['PD BM']='CX, Hosting, PF e OPEX'; m['S&M BM']='CX, Hosting, PF e OPEX';
   // Direct Contribution — simple
@@ -4800,7 +4808,7 @@ const BRIDGE_DEPARA = (() => {
   m['Fraud Prevention']='CX, Hosting, PF e OPEX'; m['Fraud Prevention Fixed']='CX, Hosting, PF e OPEX';
   m['Hosting Fixed']='CX, Hosting, PF e OPEX';
   m['Loyalty Content']='Other DC Costs';
-  m['Marketing Fixed']='Mkt Fixed';
+  m['Marketing Fixed']='MKT and Branding';
   m['Other Fixed Costs']='Other DC Costs';
   m['S&M Local DC']='S&M Local DC'; m['S&M Local Dc']='S&M Local DC';
   m['Sales Expenses']='Sales Expenses';
@@ -4869,9 +4877,9 @@ const BRIDGE_DEPARA = (() => {
 // Logical display order for consolidated bridge groups under each P&L level
 const BRIDGE_BELOW_ORDER = {
   'Variable Contribution': ['CX, Hosting, PF e OPEX','POM','Chargebacks','Other VC Costs'],
-  'Direct Contribution':   ['CPA','MPOS','Sales Expenses','S&M Local DC','Mkt Fixed',
+  'Direct Contribution':   ['CPA','MPOS','Sales Expenses','S&M Local DC','MKT and Branding',
                              'CX, Hosting, PF e OPEX','Other DC Costs','DC Costs'],
-  'Business Contribution': ['CX, Hosting, PF e OPEX','Branding'],
+  'Business Contribution': ['CX, Hosting, PF e OPEX','MKT and Branding'],
   'Business Margin':       ['CX, Hosting, PF e OPEX'],
 };
 
@@ -4939,6 +4947,7 @@ function buildBridgeBUSel() {
     html += `<optgroup label="▸ ${mbu}">`;
     html += `<option value="${mbu}">${mbu} (total)</option>`;
     const buProds = products.filter(p =>
+      p !== mbu && // skip product that shares name with its Macro BU (redundant with "(total)")
       allData.some(d => d.Macro_BU === mbu && d.Product === p)
     );
     for(const prod of buProds) {
@@ -5097,7 +5106,7 @@ function buildBridgeSegments(dataA, dataB, metric) {
   const volEffect  = rateA * tpvDelta;                  // ΔTPV × rate_A
   const trEffect   = trDelta - volEffect;               // TPV_B × (rate_B − rate_A)
 
-  if(Math.abs(volEffect) > 0.01)
+  if(Math.abs(volEffect) > 0.01 && !bridgeDisplayPct)
     segments.push({ label: 'Volume (TPV)', value: volEffect, type: 'effect', group: 'vol',
       meta: { tpvDelta, rateA: rateA * 100 } });
   if(Math.abs(trEffect) > 0.01)
@@ -5149,7 +5158,13 @@ function buildBridgeSegments(dataA, dataB, metric) {
       }
     }
 
-    for(const k2 of labOrder) {
+    // Always push "CX, Hosting, PF e OPEX" last so it sits just before Others
+    const CX_LAST = 'CX, Hosting, PF e OPEX';
+    const orderedLabs = [
+      ...labOrder.filter(k => k !== CX_LAST),
+      ...labOrder.filter(k => k === CX_LAST),
+    ];
+    for(const k2 of orderedLabs) {
       const { vA, vB, segK1, segK2 } = labMap.get(k2);
       const delta = vB - vA;
       if(Math.abs(delta) < 0.01) continue;
@@ -5244,16 +5259,104 @@ function generateBridgeSummary(segments, tpvA, tpvB, fmtFn, udLbl, metricLabel, 
   if(driverParts.length)
     lines.push('Dos drivers de monetização: ' + driverParts.join('; ') + '.');
 
-  // Top contributors — inline running text, no list, no percentage
+  // Top contributors — inline running text, clickable to open drill-down
   if(top80.length) {
     const itemStrs = top80.map(s => {
       const dir = s.value >= 0 ? '↑' : '↓';
-      return `${dir} ${s.label}: ${numSpan(s.value, fmtFn(s.value, true))}`;
+      const val = numSpan(s.value, fmtFn(s.value, true));
+      if(s.segK2) {
+        const dk = encodeURIComponent((s.segK1 || '') + '||' + s.segK2);
+        return `<span onclick="toggleBridgeDrill('${dk}')"
+          style="cursor:pointer;border-bottom:1px dotted currentColor"
+          title="Clique para expandir detalhes">${dir} ${s.label}: ${val}</span>`;
+      }
+      return `${dir} ${s.label}: ${val}`;
     });
     lines.push(`As linhas com maiores variações são: ${itemStrs.join(' &nbsp;·&nbsp; ')}.`);
   }
 
   return lines.join('<br>');
+}
+
+function exportBridgeImage() {
+  const chartCanvas = document.getElementById('bridgeChart');
+  const aiDiv       = document.getElementById('bridgesAISummary');
+  if(!chartCanvas) return;
+
+  // Resolve summary plain text (strip HTML tags)
+  const summaryText = aiDiv && aiDiv.style.display !== 'none'
+    ? (aiDiv.innerText || '').trim()
+    : '';
+
+  const DPR     = window.devicePixelRatio || 1;
+  const cW      = chartCanvas.offsetWidth  || 900;
+  const cH      = chartCanvas.offsetHeight || 400;
+  const PAD     = 20;
+  const FS      = 13;
+  const LH      = 20;
+
+  // Wrap summary text into lines that fit cW
+  const tmpCtx  = document.createElement('canvas').getContext('2d');
+  tmpCtx.font   = `${FS}px system-ui,sans-serif`;
+  const maxW    = cW - PAD * 2;
+  const words   = summaryText.replace(/\n+/g,' ').split(' ');
+  const textLines = [];
+  let cur = '';
+  for(const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if(tmpCtx.measureText(test).width > maxW && cur) { textLines.push(cur); cur = w; }
+    else cur = test;
+  }
+  if(cur) textLines.push(cur);
+
+  const sumH = textLines.length ? textLines.length * LH + PAD * 2 + 10 : 0;
+  const totalH = sumH + cH + PAD;
+
+  const out  = document.createElement('canvas');
+  out.width  = cW  * DPR;
+  out.height = totalH * DPR;
+  const ctx  = out.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  // Background
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  ctx.fillStyle = isDark ? '#1a1a1a' : '#ffffff';
+  ctx.fillRect(0, 0, cW, totalH);
+
+  // Summary card
+  if(textLines.length) {
+    ctx.fillStyle = isDark ? '#2a2410' : '#fffde7';
+    ctx.strokeStyle = '#FFE600';
+    ctx.lineWidth   = 1;
+    const cardH = textLines.length * LH + PAD * 2;
+    roundRect(ctx, PAD, PAD, cW - PAD * 2, cardH, 10);
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = isDark ? '#f5f0d0' : '#1a1a1a';
+    ctx.font      = `${FS}px system-ui,sans-serif`;
+    textLines.forEach((ln, i) => ctx.fillText(ln, PAD * 2, PAD * 2 + i * LH + FS));
+  }
+
+  // Draw chart
+  ctx.drawImage(chartCanvas, 0, sumH, cW, cH);
+
+  // Helper: rounded rect path
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.arcTo(x+w,y,x+w,y+r,r);
+    c.lineTo(x+w,y+h-r); c.arcTo(x+w,y+h,x+w-r,y+h,r);
+    c.lineTo(x+r,y+h); c.arcTo(x,y+h,x,y+h-r,r);
+    c.lineTo(x,y+r); c.arcTo(x,y,x+r,y,r);
+    c.closePath();
+  }
+
+  // Download
+  const a = document.createElement('a');
+  const cenA = bridgeCenA || 'A';
+  const cenB = bridgeCenB || 'B';
+  a.download = `bridge_${bridgeMetric}_${cenA}_vs_${cenB}.png`;
+  a.href = out.toDataURL('image/png');
+  a.click();
 }
 
 function renderBridgesTab() {
@@ -5486,8 +5589,12 @@ function renderBridgesTab() {
       maintainAspectRatio: false,
       layout: { padding: { top: 30, left: 8, right: 8 } },
       onClick: (event, elements) => {
-        if(!elements.length) return;
-        const seg = segRefs[elements[0].index];
+        // Fallback to nearest element if click missed the bar exactly
+        const els = elements.length
+          ? elements
+          : _bridgeChart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
+        if(!els.length) return;
+        const seg = segRefs[els[0].index];
         if(!seg || !seg.segK2) return;
         toggleBridgeDrill(encodeURIComponent((seg.segK1 || '') + '||' + seg.segK2));
       },
