@@ -1206,16 +1206,16 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <div class="fg">
       <label>Bridge de</label>
       <div class="bg" id="bridgeMetricGrp">
-        <button class="on" data-m="Take Rate" onclick="setBridgeMetric(this)">Take Rate</button>
+        <button            data-m="Take Rate" onclick="setBridgeMetric(this)">Take Rate</button>
         <button            data-m="VC"        onclick="setBridgeMetric(this)">VC</button>
         <button            data-m="DC"        onclick="setBridgeMetric(this)">DC</button>
-        <button            data-m="BM"        onclick="setBridgeMetric(this)">BM</button>
+        <button class="on" data-m="BM"        onclick="setBridgeMetric(this)">BM</button>
       </div>
     </div>
     <!-- Macro BU -->
     <div class="fg">
       <label>BU</label>
-      <select id="bridgeMacroBUSel" onchange="bridgeMacro=this.value;renderBridgesTab()"
+      <select id="bridgeMacroBUSel" onchange="bridgeMacro=this.value;bridgeDrillKey=null;renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:140px">
       </select>
@@ -1233,13 +1233,13 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <!-- Period A -->
     <div class="fg">
       <label>De (período A)</label>
-      <select id="bridgePeriodASel" onchange="bridgePeriodA=this.value;renderBridgesTab()"
+      <select id="bridgePeriodASel" onchange="bridgePeriodA=this.value;bridgeDrillKey=null;renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
     </div>
     <div class="fg">
       <label>Cenário A</label>
-      <select id="bridgeCenASel" onchange="bridgeCenA=this.value;renderBridgesTab()"
+      <select id="bridgeCenASel" onchange="bridgeCenA=this.value;bridgeDrillKey=null;renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:100px"></select>
     </div>
@@ -1251,13 +1251,13 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <!-- Period B -->
     <div class="fg">
       <label>Para (período B)</label>
-      <select id="bridgePeriodBSel" onchange="bridgePeriodB=this.value;renderBridgesTab()"
+      <select id="bridgePeriodBSel" onchange="bridgePeriodB=this.value;bridgeDrillKey=null;renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
     </div>
     <div class="fg">
       <label>Cenário B</label>
-      <select id="bridgeCenBSel" onchange="bridgeCenB=this.value;renderBridgesTab()"
+      <select id="bridgeCenBSel" onchange="bridgeCenB=this.value;bridgeDrillKey=null;renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:100px"></select>
     </div>
@@ -3204,7 +3204,7 @@ let mbuExpanded      = new Set(); // expanded MNG_1 sections in MBU tab
 let mbuExpandedK2    = new Set(); // expanded MNG_2 rows (key = k1+'|||'+k2)
 
 // ── Bridges tab state ──
-let bridgeMetric  = 'Take Rate';  // 'Take Rate' | 'VC' | 'DC' | 'BM'
+let bridgeMetric  = 'BM';  // 'Take Rate' | 'VC' | 'DC' | 'BM'
 let bridgeType    = 'mes';        // 'mes' | 'quarter' | 'ano'
 let bridgePeriodA = null;
 let bridgePeriodB = null;
@@ -3213,6 +3213,7 @@ let bridgeCenB    = null;
 let bridgeMacro   = 'Acquiring';
 let bridgeUnitDiv = 1_000_000;
 let _bridgeChart  = null;
+let bridgeDrillKey = null; // "k1||k2" of the currently expanded drill-down row
 
 // Preferred BU order per Macro BU (others appended alphabetically)
 const MBU_BU_ORDER = {
@@ -4740,6 +4741,7 @@ function evoPeriodLabel(key) {
 
 function setBridgeMetric(btn) {
   bridgeMetric = btn.dataset.m;
+  bridgeDrillKey = null;
   document.querySelectorAll('#bridgeMetricGrp button').forEach(b => b.classList.toggle('on', b===btn));
   renderBridgesTab();
 }
@@ -4747,6 +4749,7 @@ function setBridgeType(btn) {
   bridgeType = btn.dataset.t;
   bridgePeriodA = null;
   bridgePeriodB = null;
+  bridgeDrillKey = null;
   document.querySelectorAll('#bridgeTypeGrp button').forEach(b => b.classList.toggle('on', b===btn));
   buildBridgeSelects();
   renderBridgesTab();
@@ -4860,6 +4863,37 @@ function getDeParaK2(mng2, mng3, mng4) {
   return mng2; // passthrough — raw MNG_2 if no mapping found
 }
 
+// Toggle drill-down for a bridge segment (called from onclick)
+function toggleBridgeDrill(encodedKey) {
+  const key = decodeURIComponent(encodedKey);
+  bridgeDrillKey = (bridgeDrillKey === key) ? null : key;
+  renderBridgesTab();
+}
+
+// Return individual MNG_3 lines composing a DE-PARA group, with A / B / delta values
+function getBridgeDrillDownData(mesSetA, cenA, mesSetB, cenB, buSel, k1Group, k2Group) {
+  const isProd   = buSel && buSel.startsWith('__prod__');
+  const prodName = isProd ? buSel.slice(8) : null;
+  const byLabel  = new Map();
+  for(const d of allData) {
+    if(d.MNG_1 !== k1Group) continue;
+    if(getDeParaK2(d.MNG_2||'', d.MNG_3||'', d.MNG_4||'') !== k2Group) continue;
+    if(buSel) {
+      if(isProd  && d.Product  !== prodName) continue;
+      if(!isProd && d.Macro_BU !== buSel)    continue;
+    }
+    const label = d.MNG_3 || d.MNG_2 || '(s/ label)';
+    if(!byLabel.has(label)) byLabel.set(label, {a:0, b:0});
+    const entry = byLabel.get(label);
+    if(mesSetA && mesSetA.has(d.MES) && d.Cenario === cenA) entry.a += d.Value||0;
+    if(mesSetB && mesSetB.has(d.MES) && d.Cenario === cenB) entry.b += d.Value||0;
+  }
+  return [...byLabel.entries()]
+    .map(([label,{a,b}]) => ({label, vA:a, vB:b, delta:b-a}))
+    .filter(r => Math.abs(r.vA)>0.01 || Math.abs(r.vB)>0.01)
+    .sort((a,b) => Math.abs(b.delta)-Math.abs(a.delta));
+}
+
 function buildBridgeBUSel() {
   const sel = document.getElementById('bridgeMacroBUSel');
   if(!sel || !allData.length) return;
@@ -4906,8 +4940,9 @@ function buildBridgeSelects() {
     const el = document.getElementById(id);
     if(!el) return;
     el.innerHTML = cenOpts;
-    const def = i === 0 ? (cens.find(c => c==='Plan') || cens[0])
-                        : (cens.find(c => c==='Realizado') || cens[cens.length-1]);
+    // Default: A = Plan, B = Forecast (first cen containing 'forecast'/'FC', else last)
+    const defForecast = cens.find(c => /forecast/i.test(c) || c==='FC') || cens[cens.length-1];
+    const def = i === 0 ? (cens.find(c => c==='Plan') || cens[0]) : defForecast;
     if(i === 0 && !bridgeCenA) bridgeCenA = def;
     if(i === 1 && !bridgeCenB) bridgeCenB = def;
     el.value = i === 0 ? bridgeCenA : bridgeCenB;
@@ -4936,8 +4971,9 @@ function buildBridgeSelects() {
   ['bridgePeriodASel','bridgePeriodBSel'].forEach((id, i) => {
     const el = document.getElementById(id);
     if(!el) return;
-    const defA = periods.length >= 2 ? periods[periods.length-2] : periods[0];
-    const defB = periods.length >= 1 ? periods[periods.length-1] : periods[0];
+    // Default: both A and B on same most-recent period (comparing scenarios, not periods)
+    const defPeriod = periods.length >= 1 ? periods[periods.length-1] : periods[0];
+    const defA = defPeriod, defB = defPeriod;
     if(i === 0 && !bridgePeriodA) bridgePeriodA = defA || null;
     if(i === 1 && !bridgePeriodB) bridgePeriodB = defB || null;
     const curVal = i === 0 ? bridgePeriodA : bridgePeriodB;
@@ -5064,7 +5100,7 @@ function buildBridgeSegments(dataA, dataB, metric) {
       const vB    = k2mapB.get(k2) || 0;
       const delta = vB - vA;
       if(Math.abs(delta) < 0.01) continue;
-      segments.push({ label: k2, value: delta, type: 'effect', group: k1 });
+      segments.push({ label: k2, value: delta, type: 'effect', group: k1, segK1: k1, segK2: k2 });
     }
   }
 
@@ -5293,6 +5329,12 @@ function renderBridgesTab() {
       responsive: true,
       maintainAspectRatio: false,
       layout: { padding: { top: 30, left: 8, right: 8 } },
+      onClick: (event, elements) => {
+        if(!elements.length) return;
+        const seg = segRefs[elements[0].index];
+        if(!seg || !seg.segK1 || !seg.segK2) return;
+        toggleBridgeDrill(encodeURIComponent(seg.segK1 + '||' + seg.segK2));
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -5301,7 +5343,8 @@ function renderBridgesTab() {
               const seg = segRefs[c.dataIndex];
               const v   = seg.value;
               const isAnchored = seg.type === 'start' || seg.type === 'end';
-              return `${isAnchored ? '' : v >= 0 ? '+' : ''}${bridgeFmt(v)} ${udLbl}`;
+              const drillHint = seg.segK1 ? '  🔍' : '';
+              return `${isAnchored ? '' : v >= 0 ? '+' : ''}${bridgeFmt(v)} ${udLbl}${drillHint}`;
             }
           }
         }
@@ -5331,6 +5374,14 @@ function renderBridgesTab() {
   const tpvA  = dataA.tpv, tpvB = dataB.tpv;
   const baseA = getBridgeMetricTotal(dataA, bridgeMetric);
 
+  // A / B context labels for table header
+  const lA = format1x1PeriodLabel(bridgePeriodA, bridgeType);
+  const lB = format1x1PeriodLabel(bridgePeriodB, bridgeType);
+  const ctxA = `${lA} · ${shortCen(bridgeCenA)}`;
+  const ctxB = `${lB} · ${shortCen(bridgeCenB)}`;
+
+  const COL_G = '#2E7D32', COL_R = '#C62828';
+
   let rows = '';
   for(const seg of segments) {
     const v   = seg.value;
@@ -5344,27 +5395,70 @@ function renderBridgesTab() {
               : seg.group === 'tr'   ? 'bsm-tr'
               : v >= 0              ? 'bsm-pos' : 'bsm-neg';
 
-    // Build contextual subtitle for vol/rate segments
+    // Color positive / negative on value and delta cells
+    const numColor = isAnchored ? '' : (v >= 0 ? COL_G : COL_R);
+    const numStyle = numColor ? `style="color:${numColor};font-weight:700"` : '';
+
+    // Contextual subtitle for vol/rate segments
     let sub = '';
     if(seg.meta && seg.group === 'vol') {
       const sign = seg.meta.tpvDelta >= 0 ? '+' : '';
       sub = `ΔTPV: ${sign}${bridgeFmt(seg.meta.tpvDelta)} ${udLbl} × ${seg.meta.rateA.toFixed(2)}%`;
     } else if(seg.meta && seg.group === 'tr') {
-      const rA = seg.meta.rateA   != null ? seg.meta.rateA.toFixed(2)   + '%' : '—';
-      const rB = seg.meta.rateB   != null ? seg.meta.rateB.toFixed(2)   + '%' : '—';
-      const pp = (seg.meta.rateA != null && seg.meta.rateB != null)
-        ? ` (${(seg.meta.rateB - seg.meta.rateA) >= 0 ? '+' : ''}${(seg.meta.rateB - seg.meta.rateA).toFixed(2)}pp)`
+      const rA = seg.meta.rateA != null ? seg.meta.rateA.toFixed(2)+'%' : '—';
+      const rB = seg.meta.rateB != null ? seg.meta.rateB.toFixed(2)+'%' : '—';
+      const pp = (seg.meta.rateA!=null && seg.meta.rateB!=null)
+        ? ` (${(seg.meta.rateB-seg.meta.rateA)>=0?'+':''}${(seg.meta.rateB-seg.meta.rateA).toFixed(2)}pp)`
         : '';
       sub = `${rA} → ${rB}${pp}`;
     }
-    const labelHtml = sub
-      ? `${seg.label}<br><span style="font-size:10px;color:var(--muted);font-weight:400">${sub}</span>`
-      : seg.label;
 
-    rows += `<tr class="${rc}"><td>${labelHtml}</td><td>${fv}</td><td class="bsm-delta">${dPctStr}</td></tr>`;
+    // Drill-down affordance for below-TR effect segments
+    const isDrillable = !!(seg.segK1 && seg.segK2);
+    const drillKey    = isDrillable ? seg.segK1 + '||' + seg.segK2 : null;
+    const isExpanded  = isDrillable && bridgeDrillKey === drillKey;
+    const drillIcon   = isDrillable ? `<span style="float:right;opacity:.5;font-size:10px">${isExpanded?'▼':'▶'}</span>` : '';
+    const drillAttr   = isDrillable
+      ? `onclick="toggleBridgeDrill('${encodeURIComponent(drillKey)}')" style="cursor:pointer"`
+      : '';
+
+    const labelHtml = (sub
+      ? `${seg.label}<br><span style="font-size:10px;color:var(--muted);font-weight:400">${sub}</span>`
+      : seg.label) + drillIcon;
+
+    rows += `<tr class="${rc}" ${drillAttr}>
+      <td>${labelHtml}</td>
+      <td ${numStyle}>${fv}</td>
+      <td class="bsm-delta" ${numStyle}>${dPctStr}</td>
+    </tr>`;
+
+    // Drill-down sub-rows
+    if(isExpanded) {
+      const details = getBridgeDrillDownData(mesSetA, bridgeCenA, mesSetB, bridgeCenB, bridgeMacro, seg.segK1, seg.segK2);
+      if(details.length === 0) {
+        rows += `<tr><td colspan="3" style="padding:6px 24px;font-size:11px;color:var(--muted)">Sem detalhes disponíveis</td></tr>`;
+      } else {
+        // Sub-header
+        rows += `<tr style="background:var(--bg)">
+          <td style="padding:4px 14px 4px 28px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Linha</td>
+          <td style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Δ ${udLbl}</td>
+          <td style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">A · B</td>
+        </tr>`;
+        for(const {label, vA, vB, delta} of details) {
+          const dc = delta >= 0 ? COL_G : COL_R;
+          const dStr = (delta >= 0 ? '+' : '') + bridgeFmt(delta);
+          const abStr = `${bridgeFmt(vA)} · ${bridgeFmt(vB)}`;
+          rows += `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:5px 14px 5px 28px;font-size:11px">${label}</td>
+            <td style="font-size:11px;color:${dc};font-weight:700">${dStr}</td>
+            <td style="font-size:11px;color:var(--muted)">${abStr}</td>
+          </tr>`;
+        }
+      }
+    }
   }
 
-  // TPV context footer (rate info is now embedded in the TR segment row)
+  // TPV context footer
   const tpvRow = (tpvA || tpvB) ? `
     <tr style="border-top:2px solid var(--border)">
       <td style="color:var(--muted)">TPV A → B</td>
@@ -5374,11 +5468,24 @@ function renderBridgesTab() {
 
   summaryEl.innerHTML = `
     <table>
-      <thead><tr>
-        <th style="text-align:left">Componente</th>
-        <th>${udLbl}</th>
-        <th>% de A</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th colspan="3" style="text-align:left;background:var(--bg);padding:6px 14px 4px;
+            font-size:10px;font-weight:400;color:var(--muted);letter-spacing:.3px;border-bottom:none">
+            <span style="display:inline-flex;gap:16px">
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+                background:#1a1a1a;vertical-align:middle;margin-right:4px"></span>A: ${ctxA}</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+                background:#4a7fc1;vertical-align:middle;margin-right:4px"></span>B: ${ctxB}</span>
+            </span>
+          </th>
+        </tr>
+        <tr>
+          <th style="text-align:left">Componente</th>
+          <th>${udLbl}</th>
+          <th>% de A</th>
+        </tr>
+      </thead>
       <tbody>${rows}${tpvRow}</tbody>
     </table>`;
 }
