@@ -1056,16 +1056,29 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       </div>
     </div>
     <div class="fg">
+      <label>Ano</label>
+      <div class="bg" id="mbuAnoGrp"><!-- populated by buildMbuFilters --></div>
+    </div>
+    <!-- Custom range (shown only when Ano = Custom) -->
+    <div class="fg" id="mbuFromWrap" style="display:none">
       <label>De</label>
       <select id="mbuFromSel" onchange="renderMbuTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
     </div>
-    <div class="fg">
+    <div class="fg" id="mbuToWrap" style="display:none">
       <label>Até</label>
       <select id="mbuToSel" onchange="renderMbuTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
+    </div>
+    <div class="fg">
+      <label>Comparar</label>
+      <div class="bg" id="mbuCompGrp">
+        <button class="on" data-comp="plan_fcast" onclick="setMbuComp(this)">Plan / Fcast</button>
+        <button            data-comp="plan_real"  onclick="setMbuComp(this)">Plan / Real</button>
+        <button            data-comp="fcast_real" onclick="setMbuComp(this)">Fcast / Real</button>
+      </div>
     </div>
     <div class="fg">
       <label>Unidade</label>
@@ -2822,7 +2835,16 @@ let cpaMacroBU       = 'Acquiring';
 let mposMacroBU      = 'Acquiring';
 let mposLightMacroBU = 'Acquiring';
 let mbuMacro         = 'Acquiring';
+let mbuAno           = null;   // null = auto (latest year); 'custom' = use De/Até
+let mbuComp          = 'plan_fcast'; // 'plan_fcast' | 'plan_real' | 'fcast_real'
 let mbuExpanded      = new Set(); // expanded MNG_1 sections in MBU tab
+
+// Preferred BU order per Macro BU (others appended alphabetically)
+const MBU_BU_ORDER = {
+  'Acquiring':        ['Point', 'Online Payments', 'QR'],
+  'Commerce':         [],
+  'Fintech Services': []
+};
 
 function switchTab(btn) {
   currentTab = btn.dataset.tab;
@@ -2925,6 +2947,20 @@ function setMbuUnit(btn) {
   document.querySelectorAll('#mbuUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
   renderMbuTab();
 }
+function setMbuComp(btn) {
+  mbuComp = btn.dataset.comp;
+  document.querySelectorAll('#mbuCompGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  renderMbuTab();
+}
+function setMbuAno(btn) {
+  mbuAno = btn.dataset.ano;
+  document.querySelectorAll('#mbuAnoGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  // Show/hide custom range selects
+  const isCustom = mbuAno === 'custom';
+  document.getElementById('mbuFromWrap').style.display = isCustom ? '' : 'none';
+  document.getElementById('mbuToWrap').style.display   = isCustom ? '' : 'none';
+  renderMbuTab();
+}
 function mbuFmt(v) {
   if(v == null) return '—';
   const scaled = v / mbuUnitDiv;
@@ -2935,13 +2971,24 @@ function mbuPct(v, base) {
   if(!base || base === 0) return null;
   return v / Math.abs(base) * 100;
 }
-function mbuPctStr(v, base) {
-  const p = mbuPct(v, base);
-  return p == null ? '—' : p.toFixed(1) + '%';
-}
 
-function buildMbuSelects() {
-  const meses = [...new Set(allData.map(d => d.MES))].sort((a,b) => a-b);
+function buildMbuFilters() {
+  // Populate Ano buttons from available years
+  const anos = [...new Set(allData.map(d => d.ANO))].filter(Boolean).sort((a,b)=>a-b);
+  const grp  = document.getElementById('mbuAnoGrp');
+  if(!grp) return;
+
+  // Default = latest year with Forecast or Plan data
+  const latestYear = anos[anos.length-1] || new Date().getFullYear();
+  if(!mbuAno) mbuAno = String(latestYear);
+
+  grp.innerHTML = anos.map(y =>
+    `<button data-ano="${y}" onclick="setMbuAno(this)"${String(y)===String(mbuAno)?' class="on"':''}>${y}</button>`
+  ).join('') +
+  `<button data-ano="custom" onclick="setMbuAno(this)"${mbuAno==='custom'?' class="on"':''}>Custom</button>`;
+
+  // Populate De/Até selects (used in custom mode)
+  const meses = [...new Set(allData.map(d => d.MES))].sort((a,b)=>a-b);
   ['mbuFromSel','mbuToSel'].forEach((id, i) => {
     const sel = document.getElementById(id);
     if(!sel) return;
@@ -2954,6 +3001,9 @@ function buildMbuSelects() {
   });
 }
 
+// Keep old name as alias for initFilters call
+function buildMbuSelects() { buildMbuFilters(); }
+
 function mbuToggleSec(tr) {
   const k1 = tr.dataset.k1;
   if(mbuExpanded.has(k1)) mbuExpanded.delete(k1);
@@ -2962,13 +3012,34 @@ function mbuToggleSec(tr) {
 }
 
 function renderMbuTab() {
-  const fromMes = parseInt(document.getElementById('mbuFromSel')?.value || 0);
-  const toMes   = parseInt(document.getElementById('mbuToSel')?.value   || 999999);
+  // Resolve date range from mbuAno or custom selects
+  let fromMes, toMes;
+  if(mbuAno === 'custom') {
+    fromMes = parseInt(document.getElementById('mbuFromSel')?.value || 0);
+    toMes   = parseInt(document.getElementById('mbuToSel')?.value   || 999999);
+  } else {
+    const yr = parseInt(mbuAno) || new Date().getFullYear();
+    fromMes  = yr * 100 + 1;
+    toMes    = yr * 100 + 12;
+  }
 
-  // Collect BUs under the selected Macro BU
-  const bus = [...new Set(
+  // Resolve scenario labels from mbuComp
+  const compMap = {
+    plan_fcast:  { cenA:'Plan', cenAFill:null,        cenB:'Forecast', cenBFill:'Realizado', lblA:'Plan', lblB:'Fcast' },
+    plan_real:   { cenA:'Plan', cenAFill:null,        cenB:'Realizado',cenBFill:null,        lblA:'Plan', lblB:'Real'  },
+    fcast_real:  { cenA:'Forecast', cenAFill:'Realizado', cenB:'Realizado',cenBFill:null,    lblA:'Fcast',lblB:'Real'  },
+  };
+  const comp = compMap[mbuComp] || compMap.plan_fcast;
+
+  // Ordered BUs within this Macro BU
+  // Exclude any product whose name === mbuMacro (it's the aggregate — becomes the Total col)
+  const allBus = [...new Set(
     allData.filter(d => d.Macro_BU === mbuMacro).map(d => d.Product)
-  )].filter(Boolean).sort();
+  )].filter(b => b && b !== mbuMacro);
+  const preferred = MBU_BU_ORDER[mbuMacro] || [];
+  const inOrder   = preferred.filter(b => allBus.includes(b));
+  const rest      = allBus.filter(b => !preferred.includes(b)).sort();
+  const bus       = [...inOrder, ...rest]; // individual BUs (no Total yet)
 
   const headEl = document.getElementById('mbuHead');
   const bodyEl = document.getElementById('mbuBody');
@@ -2978,73 +3049,147 @@ function renderMbuTab() {
     return;
   }
 
-  // Metric used for % columns
+  // Metric for % columns
   const pctMetric = mbuMacro === 'Commerce' ? 'NMV'
                   : mbuMacro === 'Acquiring' ? 'TPV' : null;
   const hasPct    = pctMetric !== null;
-  const pLabel    = hasPct ? (mbuMacro === 'Commerce' ? 'P/NMV%' : 'P/TPV%') : '';
-  const fLabel    = hasPct ? (mbuMacro === 'Commerce' ? 'F/NMV%' : 'F/TPV%') : '';
+  const pLabel    = hasPct ? `${comp.lblA}/${pctMetric}%` : '';
+  const fLabel    = hasPct ? `${comp.lblB}/${pctMetric}%` : '';
   const colsPerBU = hasPct ? 6 : 3;
 
-  // ── Aggregate data ──
-  // buData[bu][k1][k2] = {plan, fcast}
-  const buData  = new Map(); // BU → Map<k1, Map<k2, {plan,fcast}>>
-  const buVol   = new Map(); // BU → {planVol, fcastVol}  (volume metric)
-  const buL1    = new Map(); // BU → Map<k1, {plan,fcast}>
+  // ── Aggregate ──
+  const buData = new Map(); // BU → Map<k1, Map<k2, {a,b}>>
+  const buVol  = new Map(); // BU → {aVol, bVol}
+  const buL1   = new Map(); // BU → Map<k1, {a,b}>
+
+  // Helper: does cenario match A or B?
+  function cenSlot(cen) {
+    if(cen === comp.cenA || (comp.cenAFill && cen === comp.cenAFill)) {
+      // For fill: only use fill if primary not present (handled below)
+      return cen === comp.cenA ? 'A' : 'Afill';
+    }
+    if(cen === comp.cenB || (comp.cenBFill && cen === comp.cenBFill)) {
+      return cen === comp.cenB ? 'B' : 'Bfill';
+    }
+    return null;
+  }
+
+  // Two passes: primary then fill (fill only for months without primary)
+  const mesHasA = new Set(); // (bu+'|'+mes) that have primary A
+  const mesHasB = new Set();
 
   const data = allData.filter(d =>
-    d.Macro_BU === mbuMacro &&
-    d.MES >= fromMes && d.MES <= toMes
+    d.Macro_BU === mbuMacro && d.MES >= fromMes && d.MES <= toMes
   );
 
+  // Pass 1: primary scenarios
   for(const d of data) {
-    const bu  = d.Product || '';
-    const k1  = d.MNG_1   || '';
-    const k2  = d.MNG_2   || '';
-    const cen = d.Cenario;
-    const v   = d.Value   || 0;
-    if(!bu) continue;
+    const slot = cenSlot(d.Cenario);
+    if(!slot) continue;
+    if(slot !== 'A' && slot !== 'B') continue; // fills done in pass 2
+    const bu = d.Product || ''; if(!bu) continue;
+    const k  = bu+'|'+d.MES;
+    if(slot==='A') mesHasA.add(k);
+    if(slot==='B') mesHasB.add(k);
 
     if(!buData.has(bu)) buData.set(bu, new Map());
     const buMap = buData.get(bu);
-    if(!buMap.has(k1)) buMap.set(k1, new Map());
-    const k1map = buMap.get(k1);
-    if(!k1map.has(k2)) k1map.set(k2, {plan:0,fcast:0});
-    const cell = k1map.get(k2);
-    if(cen==='Plan')                              cell.plan  += v;
-    else if(cen==='Forecast'||cen==='Realizado')  cell.fcast += v;
+    if(!buMap.has(d.MNG_1||'')) buMap.set(d.MNG_1||'', new Map());
+    const k1map = buMap.get(d.MNG_1||'');
+    if(!k1map.has(d.MNG_2||'')) k1map.set(d.MNG_2||'', {a:0,b:0});
+    const cell = k1map.get(d.MNG_2||'');
+    if(slot==='A') cell.a += (d.Value||0);
+    if(slot==='B') cell.b += (d.Value||0);
 
-    // Volume metric for % computation
-    if(hasPct && k1==='Metrics' && k2===pctMetric) {
-      if(!buVol.has(bu)) buVol.set(bu,{planVol:0,fcastVol:0});
+    if(hasPct && d.MNG_1==='Metrics' && d.MNG_2===pctMetric) {
+      if(!buVol.has(bu)) buVol.set(bu,{aVol:0,bVol:0});
       const bv = buVol.get(bu);
-      if(cen==='Plan')                             bv.planVol  += v;
-      else if(cen==='Forecast'||cen==='Realizado') bv.fcastVol += v;
+      if(slot==='A') bv.aVol += (d.Value||0);
+      if(slot==='B') bv.bVol += (d.Value||0);
+    }
+  }
+  // Pass 2: fill scenarios (for months without primary)
+  for(const d of data) {
+    const slot = cenSlot(d.Cenario);
+    if(slot !== 'Afill' && slot !== 'Bfill') continue;
+    const bu = d.Product || ''; if(!bu) continue;
+    const k  = bu+'|'+d.MES;
+    if(slot==='Afill' && mesHasA.has(k)) continue; // primary exists
+    if(slot==='Bfill' && mesHasB.has(k)) continue;
+
+    if(!buData.has(bu)) buData.set(bu, new Map());
+    const buMap = buData.get(bu);
+    if(!buMap.has(d.MNG_1||'')) buMap.set(d.MNG_1||'', new Map());
+    const k1map = buMap.get(d.MNG_1||'');
+    if(!k1map.has(d.MNG_2||'')) k1map.set(d.MNG_2||'', {a:0,b:0});
+    const cell = k1map.get(d.MNG_2||'');
+    if(slot==='Afill') cell.a += (d.Value||0);
+    if(slot==='Bfill') cell.b += (d.Value||0);
+
+    if(hasPct && d.MNG_1==='Metrics' && d.MNG_2===pctMetric) {
+      if(!buVol.has(bu)) buVol.set(bu,{aVol:0,bVol:0});
+      const bv = buVol.get(bu);
+      if(slot==='Afill') bv.aVol += (d.Value||0);
+      if(slot==='Bfill') bv.bVol += (d.Value||0);
     }
   }
 
-  // Roll up MNG_1 totals
+  // Roll up MNG_1 totals per BU
   for(const [bu, k1map] of buData) {
     if(!buL1.has(bu)) buL1.set(bu, new Map());
     const l1 = buL1.get(bu);
     for(const [k1, k2map] of k1map) {
-      let p=0, f=0;
-      for(const [, v] of k2map) { p+=v.plan; f+=v.fcast; }
-      l1.set(k1, {plan:p,fcast:f});
+      let a=0, b=0;
+      for(const [, v] of k2map) { a+=v.a; b+=v.b; }
+      l1.set(k1, {a,b});
     }
   }
 
+  // ── Compute Total column (sum of all BUs) ──
+  const TOTAL = '__total__';
+  const totData  = new Map(); // k1 → Map<k2, {a,b}>
+  const totL1    = new Map(); // k1 → {a,b}
+  const totVol   = {aVol:0, bVol:0};
+  for(const bu of bus) {
+    const k1map = buData.get(bu);
+    if(!k1map) continue;
+    for(const [k1, k2map] of k1map) {
+      if(!totData.has(k1)) totData.set(k1, new Map());
+      const tk1 = totData.get(k1);
+      if(!totL1.has(k1)) totL1.set(k1, {a:0,b:0});
+      const tl = totL1.get(k1);
+      for(const [k2, v] of k2map) {
+        if(!tk1.has(k2)) tk1.set(k2, {a:0,b:0});
+        const tc = tk1.get(k2); tc.a+=v.a; tc.b+=v.b;
+        tl.a+=v.a; tl.b+=v.b;
+      }
+    }
+    const vol = buVol.get(bu)||{aVol:0,bVol:0};
+    totVol.aVol += vol.aVol;
+    totVol.bVol += vol.bVol;
+  }
+  // Inject total into buData/buVol/buL1 with key TOTAL
+  buData.set(TOTAL, totData);
+  buVol.set(TOTAL,  totVol);
+  buL1.set(TOTAL,   totL1);
+
+  // Column order: Total first, then ordered BUs
+  const colBus = [TOTAL, ...bus];
+  const colLabels = {[TOTAL]: mbuMacro};
+  bus.forEach(b => colLabels[b] = b);
+
   // ── Build thead ──
   let h = `<tr><th class="mbu-desc-hdr">Linha P&L</th>`;
-  bus.forEach((bu, bi) => {
-    if(bi>0) h += `<th class="mbu-sep"></th>`;
-    h += `<th class="mbu-grp-hdr" colspan="${colsPerBU}">${bu}</th>`;
+  colBus.forEach((bu, bi) => {
+    if(bi > 0) h += `<th class="mbu-sep"></th>`;
+    const isTot = bu === TOTAL;
+    h += `<th class="${isTot?'mbu-grp-total':'mbu-grp-hdr'}" colspan="${colsPerBU}">${colLabels[bu]}</th>`;
   });
   h += `</tr><tr><th class="mbu-desc-hdr"></th>`;
-  bus.forEach((_, bi) => {
-    if(bi>0) h += `<th class="mbu-sep"></th>`;
-    h += `<th class="mbu-sub-hdr mbu-sub-first">Plan</th>`;
-    h += `<th class="mbu-sub-hdr">Fcast</th>`;
+  colBus.forEach((_, bi) => {
+    if(bi > 0) h += `<th class="mbu-sep"></th>`;
+    h += `<th class="mbu-sub-hdr mbu-sub-first">${comp.lblA}</th>`;
+    h += `<th class="mbu-sub-hdr">${comp.lblB}</th>`;
     h += `<th class="mbu-sub-hdr">Δ</th>`;
     if(hasPct) {
       h += `<th class="mbu-sub-hdr mbu-pct-col">${pLabel}</th>`;
@@ -3055,25 +3200,25 @@ function renderMbuTab() {
   h += `</tr>`;
   headEl.innerHTML = h;
 
-  // ── Helper: build data cells for a given {plan,fcast} per BU ──
-  function buCells(bus, getVals, volForPct) {
+  // ── Helper: render value cells for one BU (or total) ──
+  function buCells(colBuList, getVals, getVol) {
     let c = '';
-    bus.forEach((bu, bi) => {
-      const {plan,fcast} = getVals(bu);
-      const delta = fcast - plan;
-      const dcls  = delta >= 0 ? 'mbu-dpos' : 'mbu-dneg';
-      const vol   = volForPct ? (volForPct.get(bu)||{planVol:0,fcastVol:0}) : null;
-      if(bi>0) c += `<td class="mbu-sep"></td>`;
-      c += `<td class="mbu-sub-first">${mbuFmt(plan)}</td>`;
-      c += `<td>${mbuFmt(fcast)}</td>`;
+    colBuList.forEach((bu, bi) => {
+      const {a,b}   = getVals(bu);
+      const delta   = b - a;
+      const dcls    = delta >= 0 ? 'mbu-dpos' : 'mbu-dneg';
+      const vol     = getVol ? getVol(bu) : null;
+      if(bi > 0) c += `<td class="mbu-sep"></td>`;
+      c += `<td class="mbu-sub-first">${mbuFmt(a)}</td>`;
+      c += `<td>${mbuFmt(b)}</td>`;
       c += `<td class="${dcls}">${mbuFmt(delta)}</td>`;
       if(hasPct && vol) {
-        const pp  = mbuPct(plan,  vol.planVol);
-        const fp  = mbuPct(fcast, vol.fcastVol);
-        const dpp = (pp!=null&&fp!=null) ? fp-pp : null;
-        const dppcls = dpp==null ? '' : (dpp>=0 ? 'mbu-dpos' : 'mbu-dneg');
-        c += `<td class="mbu-pct-col">${pp==null?'—':pp.toFixed(1)+'%'}</td>`;
-        c += `<td class="mbu-pct-col">${fp==null?'—':fp.toFixed(1)+'%'}</td>`;
+        const ap  = mbuPct(a, vol.aVol);
+        const bp  = mbuPct(b, vol.bVol);
+        const dpp = (ap!=null&&bp!=null) ? bp-ap : null;
+        const dppcls = dpp==null?'':(dpp>=0?'mbu-dpos':'mbu-dneg');
+        c += `<td class="mbu-pct-col">${ap==null?'—':ap.toFixed(1)+'%'}</td>`;
+        c += `<td class="mbu-pct-col">${bp==null?'—':bp.toFixed(1)+'%'}</td>`;
         c += `<td class="mbu-pct-col ${dppcls}">${dpp==null?'—':(dpp>=0?'+':'')+dpp.toFixed(1)+'pp'}</td>`;
       }
     });
@@ -3083,27 +3228,20 @@ function renderMbuTab() {
   // ── Build tbody ──
   let bHtml = '';
 
-  // Volume metric row (top)
+  // Volume metric row
   if(hasPct) {
-    bHtml += `<tr class="mbu-row-vol">`;
-    bHtml += `<td class="mbu-desc-cell">${pctMetric}</td>`;
-    bus.forEach((bu, bi) => {
-      const vol = buVol.get(bu)||{planVol:0,fcastVol:0};
-      const delta = vol.fcastVol - vol.planVol;
-      const dcls  = delta>=0 ? 'mbu-dpos' : 'mbu-dneg';
-      if(bi>0) bHtml += `<td class="mbu-sep"></td>`;
-      bHtml += `<td class="mbu-sub-first">${mbuFmt(vol.planVol)}</td>`;
-      bHtml += `<td>${mbuFmt(vol.fcastVol)}</td>`;
-      bHtml += `<td class="${dcls}">${mbuFmt(delta)}</td>`;
-      if(hasPct) bHtml += `<td class="mbu-pct-col">—</td><td class="mbu-pct-col">—</td><td class="mbu-pct-col">—</td>`;
-    });
+    bHtml += `<tr class="mbu-row-vol"><td class="mbu-desc-cell">${pctMetric}</td>`;
+    bHtml += buCells(colBus,
+      bu => { const v=buVol.get(bu)||{aVol:0,bVol:0}; return {a:v.aVol,b:v.bVol}; },
+      null // no % for the volume row itself
+    );
     bHtml += `</tr>`;
   }
 
   // P&L sections (skip Metrics)
   const k1s = MNG1_ORDER.filter(k1 =>
     k1 !== 'Metrics' &&
-    bus.some(bu => buData.get(bu)?.has(k1))
+    colBus.some(bu => buData.get(bu)?.has(k1))
   );
 
   for(const k1 of k1s) {
@@ -3111,23 +3249,21 @@ function renderMbuTab() {
     bHtml += `<tr class="mbu-gap"><td colspan="99"></td></tr>`;
     bHtml += `<tr class="mbu-row-sec" data-k1="${escAttr(k1)}" onclick="mbuToggleSec(this)">`;
     bHtml += `<td class="mbu-desc-cell"><span style="margin-right:5px">${isOpen?'▼':'▶'}</span>${k1}</td>`;
-    bHtml += buCells(bus,
-      bu => buL1.get(bu)?.get(k1)||{plan:0,fcast:0},
-      hasPct ? buVol : null
+    bHtml += buCells(colBus,
+      bu => buL1.get(bu)?.get(k1)||{a:0,b:0},
+      hasPct ? bu => { const v=buVol.get(bu)||{aVol:0,bVol:0}; return {aVol:v.aVol,bVol:v.bVol}; } : null
     );
     bHtml += `</tr>`;
 
     if(isOpen) {
       const k2s = MNG2_ORDER[k1] ||
-        [...new Set(bus.flatMap(bu => [...(buData.get(bu)?.get(k1)?.keys()||[])]))].filter(Boolean);
-
+        [...new Set(colBus.flatMap(bu => [...(buData.get(bu)?.get(k1)?.keys()||[])]))].filter(Boolean);
       for(const k2 of k2s) {
-        if(!bus.some(bu => buData.get(bu)?.get(k1)?.has(k2))) continue;
-        bHtml += `<tr class="mbu-row-item">`;
-        bHtml += `<td class="mbu-desc-cell">${k2}</td>`;
-        bHtml += buCells(bus,
-          bu => buData.get(bu)?.get(k1)?.get(k2)||{plan:0,fcast:0},
-          hasPct ? buVol : null
+        if(!colBus.some(bu => buData.get(bu)?.get(k1)?.has(k2))) continue;
+        bHtml += `<tr class="mbu-row-item"><td class="mbu-desc-cell">${k2}</td>`;
+        bHtml += buCells(colBus,
+          bu => buData.get(bu)?.get(k1)?.get(k2)||{a:0,b:0},
+          hasPct ? bu => { const v=buVol.get(bu)||{aVol:0,bVol:0}; return {aVol:v.aVol,bVol:v.bVol}; } : null
         );
         bHtml += `</tr>`;
       }
@@ -3135,7 +3271,7 @@ function renderMbuTab() {
   }
 
   bodyEl.innerHTML = bHtml ||
-    '<tr><td colspan="20" class="empty">Sem dados para o período selecionado.</td></tr>';
+    '<tr><td colspan="30" class="empty">Sem dados para o período selecionado.</td></tr>';
 }
 
 // ── Normalize MNG names with encoding issues ─────────────
