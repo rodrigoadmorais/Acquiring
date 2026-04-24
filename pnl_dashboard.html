@@ -5374,9 +5374,7 @@ function renderBridgesTab() {
   const tpvA  = dataA.tpv, tpvB = dataB.tpv;
   const baseA = getBridgeMetricTotal(dataA, bridgeMetric);
 
-  // A / B context labels for table header
-  const lA = format1x1PeriodLabel(bridgePeriodA, bridgeType);
-  const lB = format1x1PeriodLabel(bridgePeriodB, bridgeType);
+  // A / B context labels for table header (lA / lB already declared above for legend)
   const ctxA = `${lA} · ${shortCen(bridgeCenA)}`;
   const ctxB = `${lB} · ${shortCen(bridgeCenB)}`;
 
