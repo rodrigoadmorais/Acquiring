@@ -1269,6 +1269,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <button            data-u="1"       onclick="setBridgeUnit(this)">R$</button>
         <button            data-u="1000"    onclick="setBridgeUnit(this)">R$ mil</button>
         <button class="on" data-u="1000000" onclick="setBridgeUnit(this)">R$ M</button>
+        <button            data-u="pct_tpv" onclick="setBridgeUnit(this)">% TPV</button>
       </div>
     </div>
   </div>
@@ -3210,10 +3211,11 @@ let bridgePeriodA = null;
 let bridgePeriodB = null;
 let bridgeCenA    = null;
 let bridgeCenB    = null;
-let bridgeMacro   = 'Acquiring';
-let bridgeUnitDiv = 1_000_000;
-let _bridgeChart  = null;
-let bridgeDrillKey = null; // "k1||k2" of the currently expanded drill-down row
+let bridgeMacro      = 'Acquiring';
+let bridgeUnitDiv    = 1_000_000;
+let bridgeDisplayPct = false;   // true = show bridge in % of TPV (pp)
+let _bridgeChart     = null;
+let bridgeDrillKey   = null; // "k1||k2" of the currently expanded drill-down row
 
 // Preferred BU order per Macro BU (others appended alphabetically)
 const MBU_BU_ORDER = {
@@ -4755,8 +4757,17 @@ function setBridgeType(btn) {
   renderBridgesTab();
 }
 function setBridgeUnit(btn) {
-  bridgeUnitDiv = parseFloat(btn.dataset.u);
-  document.querySelectorAll('#bridgeUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  if(btn.dataset.u === 'pct_tpv') {
+    bridgeDisplayPct = !bridgeDisplayPct;
+    btn.classList.toggle('on', bridgeDisplayPct);
+    // keep the active R$/K/M button highlighted too
+  } else {
+    bridgeDisplayPct = false;
+    bridgeUnitDiv = parseFloat(btn.dataset.u);
+    document.querySelectorAll('#bridgeUnitGrp button').forEach(b =>
+      b.classList.toggle('on', b === btn || (b.dataset.u === 'pct_tpv' && bridgeDisplayPct))
+    );
+  }
   renderBridgesTab();
 }
 
@@ -4870,11 +4881,11 @@ function toggleBridgeDrill(encodedKey) {
   renderBridgesTab();
 }
 
-// Return individual MNG_3 lines composing a DE-PARA group, with A / B / delta values
+// Return MNG_3 groups → MNG_4 items composing a DE-PARA bridge segment
 function getBridgeDrillDownData(mesSetA, cenA, mesSetB, cenB, buSel, k1Group, k2Group) {
   const isProd   = buSel && buSel.startsWith('__prod__');
   const prodName = isProd ? buSel.slice(8) : null;
-  const byLabel  = new Map();
+  const byMNG3   = new Map(); // mng3 → Map<mng4, {a,b}>
   for(const d of allData) {
     if(d.MNG_1 !== k1Group) continue;
     if(getDeParaK2(d.MNG_2||'', d.MNG_3||'', d.MNG_4||'') !== k2Group) continue;
@@ -4882,16 +4893,27 @@ function getBridgeDrillDownData(mesSetA, cenA, mesSetB, cenB, buSel, k1Group, k2
       if(isProd  && d.Product  !== prodName) continue;
       if(!isProd && d.Macro_BU !== buSel)    continue;
     }
-    const label = d.MNG_3 || d.MNG_2 || '(s/ label)';
-    if(!byLabel.has(label)) byLabel.set(label, {a:0, b:0});
-    const entry = byLabel.get(label);
-    if(mesSetA && mesSetA.has(d.MES) && d.Cenario === cenA) entry.a += d.Value||0;
-    if(mesSetB && mesSetB.has(d.MES) && d.Cenario === cenB) entry.b += d.Value||0;
+    const mng3 = d.MNG_3 || d.MNG_2 || '';
+    const mng4 = d.MNG_4 || mng3;
+    if(!byMNG3.has(mng3)) byMNG3.set(mng3, new Map());
+    const m = byMNG3.get(mng3);
+    if(!m.has(mng4)) m.set(mng4, {a:0, b:0});
+    const e = m.get(mng4);
+    if(mesSetA && mesSetA.has(d.MES) && d.Cenario === cenA) e.a += d.Value||0;
+    if(mesSetB && mesSetB.has(d.MES) && d.Cenario === cenB) e.b += d.Value||0;
   }
-  return [...byLabel.entries()]
-    .map(([label,{a,b}]) => ({label, vA:a, vB:b, delta:b-a}))
-    .filter(r => Math.abs(r.vA)>0.01 || Math.abs(r.vB)>0.01)
-    .sort((a,b) => Math.abs(b.delta)-Math.abs(a.delta));
+  const groups = [];
+  for(const [mng3, mng4map] of byMNG3) {
+    const items = [...mng4map.entries()]
+      .map(([lbl,{a,b}]) => ({label:lbl, vA:a, vB:b, delta:b-a}))
+      .filter(r => Math.abs(r.vA)>0.01 || Math.abs(r.vB)>0.01)
+      .sort((a,b) => Math.abs(b.delta)-Math.abs(a.delta));
+    if(!items.length) continue;
+    const totA = items.reduce((s,i)=>s+i.vA, 0);
+    const totB = items.reduce((s,i)=>s+i.vB, 0);
+    groups.push({mng3, items, totA, totB, delta: totB-totA});
+  }
+  return groups.sort((a,b) => Math.abs(b.delta)-Math.abs(a.delta));
 }
 
 function buildBridgeBUSel() {
@@ -5121,10 +5143,11 @@ function renderBridgesTab() {
   if(!allData || !allData.length) return;
   buildBridgeSelects();
 
-  const mesSetA = get1x1MesSet(bridgePeriodA, bridgeType);
-  const mesSetB = get1x1MesSet(bridgePeriodB, bridgeType);
-  const ud      = bridgeUnitDiv;
-  const udLbl   = ud >= 1e6 ? 'R$ M' : ud >= 1e3 ? 'R$ mil' : 'R$';
+  const mesSetA  = get1x1MesSet(bridgePeriodA, bridgeType);
+  const mesSetB  = get1x1MesSet(bridgePeriodB, bridgeType);
+
+  // ud / udLbl resolved after dataA/dataB so %TPV can use actual TPV; use placeholders now
+  // (real ud computed below after data is loaded)
 
   const summaryEl = document.getElementById('bridgesSummary');
   const legendEl  = document.getElementById('bridgesLegend');
@@ -5161,6 +5184,22 @@ function renderBridgesTab() {
     const who = (!hasDataA && !hasDataB) ? 'A e B' : !hasDataA ? 'A' : 'B';
     clearChart(`⚠️ Sem dados para o período ${who}.\nVerifique se o período e cenário existem na base.`);
     return;
+  }
+
+  // ── ud / udLbl — depends on %TPV mode which needs TPV from data ──
+  const refTPV = (dataA.tpv || dataB.tpv || 1);
+  const ud    = bridgeDisplayPct ? (refTPV / 100) : bridgeUnitDiv;
+  const udLbl = bridgeDisplayPct ? 'pp' : (bridgeUnitDiv >= 1e6 ? 'R$ M' : bridgeUnitDiv >= 1e3 ? 'R$ mil' : 'R$');
+  // Formatter for %TPV mode (2 decimal places, sign preserved)
+  function fmtVal(v, signed) {
+    if(v === 0 || v == null) return '—';
+    const scaled = v / ud;
+    const neg = scaled < 0;
+    const abs = Math.abs(scaled);
+    const dec = bridgeDisplayPct ? 2 : (bridgeUnitDiv >= 1e6 ? 1 : 0);
+    const str = abs.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+    const formatted = neg ? `(${str})` : str;
+    return signed && !neg ? `+${formatted}` : formatted;
   }
 
   showCanvas();
@@ -5295,7 +5334,7 @@ function renderBridgesTab() {
         const v   = seg.value;
         if(Math.abs(v) < 0.005 * ud) return;
         const isAnchored = seg.type === 'start' || seg.type === 'end';
-        const lbl = isAnchored ? bridgeFmt(v) : (v >= 0 ? '+' : '') + bridgeFmt(v);
+        const lbl = fmtVal(v, !isAnchored);
         ctx.fillStyle = isAnchored ? '#1a1a1a'
                       : v < 0     ? '#B71C1C' : '#1B5E20';
         // Position label above the bar's top edge
@@ -5344,7 +5383,7 @@ function renderBridgesTab() {
               const v   = seg.value;
               const isAnchored = seg.type === 'start' || seg.type === 'end';
               const drillHint = seg.segK1 ? '  🔍' : '';
-              return `${isAnchored ? '' : v >= 0 ? '+' : ''}${bridgeFmt(v)} ${udLbl}${drillHint}`;
+              return `${fmtVal(v, !isAnchored)} ${udLbl}${drillHint}`;
             }
           }
         }
@@ -5386,7 +5425,7 @@ function renderBridgesTab() {
     const isAnchored = seg.type === 'start' || seg.type === 'end';
     const dPct = (!isAnchored && baseA !== 0) ? (v / Math.abs(baseA) * 100) : null;
     const dPctStr = dPct != null ? `${dPct >= 0 ? '+' : ''}${dPct.toFixed(1)}%` : '—';
-    const fv  = isAnchored ? bridgeFmt(v) : (v >= 0 ? '+' : '') + bridgeFmt(v);
+    const fv  = fmtVal(v, !isAnchored);
     const rc  = seg.type === 'start' ? 'bsm-start'
               : seg.type === 'end'   ? 'bsm-end'
               : seg.group === 'vol'  ? 'bsm-vol'
@@ -5401,7 +5440,7 @@ function renderBridgesTab() {
     let sub = '';
     if(seg.meta && seg.group === 'vol') {
       const sign = seg.meta.tpvDelta >= 0 ? '+' : '';
-      sub = `ΔTPV: ${sign}${bridgeFmt(seg.meta.tpvDelta)} ${udLbl} × ${seg.meta.rateA.toFixed(2)}%`;
+      sub = `ΔTPV: ${sign}${bridgeFmt(seg.meta.tpvDelta)} R$ M × ${seg.meta.rateA.toFixed(2)}%`;
     } else if(seg.meta && seg.group === 'tr') {
       const rA = seg.meta.rateA != null ? seg.meta.rateA.toFixed(2)+'%' : '—';
       const rB = seg.meta.rateB != null ? seg.meta.rateB.toFixed(2)+'%' : '—';
@@ -5430,37 +5469,47 @@ function renderBridgesTab() {
       <td class="bsm-delta" ${numStyle}>${dPctStr}</td>
     </tr>`;
 
-    // Drill-down sub-rows
+    // Drill-down sub-rows (MNG_3 groups → MNG_4 items)
     if(isExpanded) {
-      const details = getBridgeDrillDownData(mesSetA, bridgeCenA, mesSetB, bridgeCenB, bridgeMacro, seg.segK1, seg.segK2);
-      if(details.length === 0) {
+      const groups = getBridgeDrillDownData(mesSetA, bridgeCenA, mesSetB, bridgeCenB, bridgeMacro, seg.segK1, seg.segK2);
+      if(groups.length === 0) {
         rows += `<tr><td colspan="3" style="padding:6px 24px;font-size:11px;color:var(--muted)">Sem detalhes disponíveis</td></tr>`;
       } else {
-        // Sub-header
         rows += `<tr style="background:var(--bg)">
           <td style="padding:4px 14px 4px 28px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Linha</td>
           <td style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Δ ${udLbl}</td>
           <td style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">A · B</td>
         </tr>`;
-        for(const {label, vA, vB, delta} of details) {
-          const dc = delta >= 0 ? COL_G : COL_R;
-          const dStr = (delta >= 0 ? '+' : '') + bridgeFmt(delta);
-          const abStr = `${bridgeFmt(vA)} · ${bridgeFmt(vB)}`;
-          rows += `<tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:5px 14px 5px 28px;font-size:11px">${label}</td>
-            <td style="font-size:11px;color:${dc};font-weight:700">${dStr}</td>
-            <td style="font-size:11px;color:var(--muted)">${abStr}</td>
-          </tr>`;
+        for(const {mng3, items, delta: gDelta} of groups) {
+          // Show MNG_3 group header only if there are multiple MNG_4 items or MNG_4 ≠ MNG_3
+          const showGrpHdr = items.length > 1 || (items.length === 1 && items[0].label !== mng3);
+          if(showGrpHdr) {
+            const gc = gDelta >= 0 ? COL_G : COL_R;
+            rows += `<tr style="background:var(--bg);border-top:1px solid var(--border)">
+              <td style="padding:5px 14px 5px 24px;font-size:11px;font-weight:700">${mng3}</td>
+              <td style="font-size:11px;font-weight:700;color:${gc}">${fmtVal(gDelta,true)}</td>
+              <td></td>
+            </tr>`;
+          }
+          for(const {label, vA, vB, delta: d} of items) {
+            const dc = d >= 0 ? COL_G : COL_R;
+            const indent = showGrpHdr ? '36px' : '28px';
+            rows += `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:4px 14px 4px ${indent};font-size:11px">${label}</td>
+              <td style="font-size:11px;color:${dc};font-weight:700">${fmtVal(d,true)}</td>
+              <td style="font-size:11px;color:var(--muted)">${fmtVal(vA,false)} · ${fmtVal(vB,false)}</td>
+            </tr>`;
+          }
         }
       }
     }
   }
 
-  // TPV context footer
+  // TPV context footer (always in absolute R$ M regardless of display mode)
   const tpvRow = (tpvA || tpvB) ? `
     <tr style="border-top:2px solid var(--border)">
       <td style="color:var(--muted)">TPV A → B</td>
-      <td style="color:var(--muted)">${bridgeFmt(tpvA)} → ${bridgeFmt(tpvB)} ${udLbl}</td>
+      <td style="color:var(--muted)">${bridgeFmt(tpvA)} → ${bridgeFmt(tpvB)} R$ M</td>
       <td style="color:var(--muted)">${tpvA ? ((tpvB-tpvA)/Math.abs(tpvA)*100).toFixed(1)+'%' : '—'}</td>
     </tr>` : '';
 
