@@ -621,8 +621,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 .bridges-body{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:16px;
   padding:20px 24px;overflow-y:auto}
 .bridges-chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;
-  padding:20px 24px;flex:1 1 0;min-height:0;max-height:520px;position:relative}
-.bridges-chart-wrap canvas{width:100%!important;height:100%!important}
+  padding:20px 24px 16px;height:460px;flex-shrink:0;position:relative}
+.bridges-chart-wrap canvas{display:block}
 .bridges-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
 .bridges-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
 .bridges-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
@@ -4944,22 +4944,35 @@ function renderBridgesTab() {
   const summaryEl = document.getElementById('bridgesSummary');
   const legendEl  = document.getElementById('bridgesLegend');
 
-  if(!bridgePeriodA || !bridgePeriodB || !bridgeCenA || !bridgeCenB) {
+  function clearChart(msg) {
     if(_bridgeChart) { try{_bridgeChart.destroy()}catch(e){} _bridgeChart = null; }
-    summaryEl.innerHTML = '<div class="bridges-empty">Selecione os períodos e cenários para gerar a bridge.</div>';
     legendEl.innerHTML  = '';
+    summaryEl.innerHTML = `<div class="bridges-empty">${msg}</div>`;
+  }
+
+  if(!bridgePeriodA || !bridgePeriodB || !bridgeCenA || !bridgeCenB) {
+    clearChart('Selecione os períodos e cenários para gerar a bridge.');
     return;
   }
 
-  const dataA    = getBridgePeriodData(mesSetA, bridgeCenA, bridgeMacro);
-  const dataB    = getBridgePeriodData(mesSetB, bridgeCenB, bridgeMacro);
+  const dataA = getBridgePeriodData(mesSetA, bridgeCenA, bridgeMacro);
+  const dataB = getBridgePeriodData(mesSetB, bridgeCenB, bridgeMacro);
+
+  const hasDataA = dataA.byK1K2.size > 0 || dataA.tpv > 0;
+  const hasDataB = dataB.byK1K2.size > 0 || dataB.tpv > 0;
+  if(!hasDataA || !hasDataB) {
+    const who = (!hasDataA && !hasDataB) ? 'A e B' : !hasDataA ? 'A' : 'B';
+    clearChart(`⚠️ Sem dados para o período ${who}. Verifique período e cenário selecionados.`);
+    return;
+  }
+
   const segments = buildBridgeSegments(dataA, dataB, bridgeMetric);
 
-  // ── Waterfall chart data ──
-  const labels = [];
+  // ── Build waterfall float-bar data ──
+  const labels   = [];
   const chartData = [];
-  const colors  = [];
-  const segRefs = []; // keep segment ref for tooltip
+  const colors   = [];
+  const segRefs  = [];
   let running = 0;
 
   const DARK_A  = '#1a1a1a';
@@ -4984,71 +4997,66 @@ function renderBridgesTab() {
       const base = running;
       const next = running + v;
       chartData.push([Math.min(base, next), Math.max(base, next)]);
-      if(seg.group === 'vol')       colors.push(COL_VOL);
-      else if(seg.group === 'tr')   colors.push(COL_TR);
-      else if(v >= 0)               colors.push(COL_POS);
-      else                          colors.push(COL_NEG);
+      colors.push(seg.group === 'vol' ? COL_VOL
+                : seg.group === 'tr'  ? COL_TR
+                : v >= 0              ? COL_POS : COL_NEG);
       running = next;
     }
   }
 
-  // Connector line plugin (draws horizontal lines at bar top/bottom to connect bars)
+  // ── Connector line plugin ──
   const connectorPlugin = {
     id: 'bridgeConnectors',
     afterDatasetsDraw(chart) {
-      const { ctx, data } = chart;
       const meta = chart.getDatasetMeta(0);
       if(!meta || !meta.data.length) return;
+      const { ctx } = chart;
       ctx.save();
-      ctx.strokeStyle = 'rgba(128,128,128,0.4)';
+      ctx.strokeStyle = 'rgba(128,128,128,0.35)';
       ctx.lineWidth   = 1;
-      ctx.setLineDash([3,3]);
+      ctx.setLineDash([4,3]);
       for(let i = 0; i < meta.data.length - 1; i++) {
-        const seg = segRefs[i];
-        const nextSeg = segRefs[i+1];
+        const seg  = segRefs[i];
         if(seg.type === 'end') continue;
         const bar  = meta.data[i];
         const barN = meta.data[i+1];
-        // connector at the "landing" y of current bar
-        let y;
-        if(seg.type === 'start') y = chart.scales.y.getPixelForValue(chartData[i][1]);
-        else y = chart.scales.y.getPixelForValue(
-          seg.value >= 0 ? chartData[i][1] : chartData[i][0]
-        );
+        const hw   = (bar.width  || 20) / 2;
+        const hwN  = (barN.width || 20) / 2;
+        // y = the "top" of the running stack after this bar
+        const landingVal = seg.type === 'start'
+          ? chartData[i][1]
+          : seg.value >= 0 ? chartData[i][1] : chartData[i][0];
+        const y = chart.scales.y.getPixelForValue(landingVal);
         ctx.beginPath();
-        ctx.moveTo(bar.x + bar.width/2, y);
-        ctx.lineTo(barN.x - barN.width/2, y);
+        ctx.moveTo(bar.x  + hw,  y);
+        ctx.lineTo(barN.x - hwN, y);
         ctx.stroke();
       }
       ctx.restore();
     }
   };
 
-  // Value labels on bars
+  // ── Value label plugin ──
   const valueLabelPlugin = {
     id: 'bridgeValueLabels',
     afterDatasetsDraw(chart) {
       const { ctx } = chart;
       const meta = chart.getDatasetMeta(0);
       ctx.save();
-      ctx.font = '600 10px system-ui,sans-serif';
+      ctx.font      = '700 10px system-ui,sans-serif';
       ctx.textAlign = 'center';
       meta.data.forEach((bar, i) => {
         const seg = segRefs[i];
         const v   = seg.value;
-        if(v === 0) return;
-        const lbl = seg.type === 'start' || seg.type === 'end'
-          ? bridgeFmt(v) : (v >= 0 ? '+' : '') + bridgeFmt(v);
-        ctx.fillStyle = v < 0 ? '#C62828' : '#1a1a1a';
-        const yPos = seg.type === 'start' || seg.type === 'end'
-          ? bar.y - 5
-          : (v >= 0 ? chartData[i][1] * ud / ud : chartData[i][0] * ud / ud);
-        // Use chart scale for y position
-        const pxY = seg.type === 'start' || seg.type === 'end'
-          ? chart.scales.y.getPixelForValue(chartData[i][1]) - 6
-          : v >= 0
-            ? chart.scales.y.getPixelForValue(chartData[i][1]) - 6
-            : chart.scales.y.getPixelForValue(chartData[i][0]) + 14;
+        if(Math.abs(v) < 0.005 * ud) return;
+        const isAnchored = seg.type === 'start' || seg.type === 'end';
+        const lbl = isAnchored ? bridgeFmt(v) : (v >= 0 ? '+' : '') + bridgeFmt(v);
+        ctx.fillStyle = isAnchored ? '#1a1a1a'
+                      : v < 0     ? '#B71C1C' : '#1B5E20';
+        // Position label above the bar's top edge
+        const topVal = isAnchored ? chartData[i][1]
+                                  : Math.max(chartData[i][0], chartData[i][1]);
+        const pxY = chart.scales.y.getPixelForValue(topVal) - 5;
         ctx.fillText(lbl, bar.x, pxY);
       });
       ctx.restore();
@@ -5068,87 +5076,79 @@ function renderBridgesTab() {
         data:  chartData,
         backgroundColor: colors,
         borderRadius: 3,
-        barPercentage: 0.65,
-        categoryPercentage: 0.8,
+        barPercentage: 0.6,
+        categoryPercentage: 0.75,
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { top: 28 } },
+      layout: { padding: { top: 30, left: 8, right: 8 } },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => {
-              const seg = segRefs[ctx.dataIndex];
+            label: c => {
+              const seg = segRefs[c.dataIndex];
               const v   = seg.value;
-              if(seg.type === 'start' || seg.type === 'end') {
-                return `${bridgeFmt(v)} ${udLbl}`;
-              }
-              return `${v >= 0 ? '+' : ''}${bridgeFmt(v)} ${udLbl}`;
+              const isAnchored = seg.type === 'start' || seg.type === 'end';
+              return `${isAnchored ? '' : v >= 0 ? '+' : ''}${bridgeFmt(v)} ${udLbl}`;
             }
           }
         }
       },
       scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#888',
-          maxRotation: 30, minRotation: 0 } },
+        x: { grid:{ display:false }, ticks:{ font:{size:10}, color:'#888', maxRotation:30, minRotation:0 } },
         y: {
-          grid: { color: 'rgba(128,128,128,0.1)' },
-          ticks: { callback: v => bridgeFmt(v * ud), font: { size: 10 } }
+          grid: { color:'rgba(128,128,128,0.1)' },
+          ticks: { callback: v => bridgeFmt(v * ud), font:{size:10} }
         }
       }
     }
   });
 
   // ── Legend ──
-  const lPeriodA = format1x1PeriodLabel(bridgePeriodA, bridgeType);
-  const lPeriodB = format1x1PeriodLabel(bridgePeriodB, bridgeType);
+  const lA = format1x1PeriodLabel(bridgePeriodA, bridgeType);
+  const lB = format1x1PeriodLabel(bridgePeriodB, bridgeType);
   legendEl.innerHTML = `
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_A}"></span>A: ${lPeriodA} / ${shortCen(bridgeCenA)}</span>
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_B}"></span>B: ${lPeriodB} / ${shortCen(bridgeCenB)}</span>
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_A}"></span>A: ${lA} / ${shortCen(bridgeCenA)}</span>
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_B}"></span>B: ${lB} / ${shortCen(bridgeCenB)}</span>
     <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_VOL}"></span>Efeito Volume</span>
     <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_TR}"></span>Efeito Take Rate %</span>
     <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_POS}"></span>Absoluto +</span>
     <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_NEG}"></span>Absoluto −</span>`;
 
   // ── Summary table ──
-  const totalDelta = (getBridgeMetricTotal(dataB, bridgeMetric) - getBridgeMetricTotal(dataA, bridgeMetric));
-  const tpvA = dataA.tpv, tpvB = dataB.tpv;
-  const trA  = getTRFromK1K2(dataA.byK1K2);
-  const trB  = getTRFromK1K2(dataB.byK1K2);
-  const rateA = tpvA !== 0 ? (trA / tpvA * 100) : null;
-  const rateB = tpvB !== 0 ? (trB / tpvB * 100) : null;
+  const tpvA  = dataA.tpv, tpvB = dataB.tpv;
+  const trA   = getTRFromK1K2(dataA.byK1K2);
+  const trB   = getTRFromK1K2(dataB.byK1K2);
+  const rateA = tpvA ? (trA / tpvA * 100) : null;
+  const rateB = tpvB ? (trB / tpvB * 100) : null;
+  const baseA = getBridgeMetricTotal(dataA, bridgeMetric);
 
   let rows = '';
   for(const seg of segments) {
-    const v = seg.value;
-    const dPct = getBridgeMetricTotal(dataA, bridgeMetric) !== 0
-      ? (v / Math.abs(getBridgeMetricTotal(dataA, bridgeMetric)) * 100) : null;
+    const v   = seg.value;
+    const isAnchored = seg.type === 'start' || seg.type === 'end';
+    const dPct = (!isAnchored && baseA !== 0) ? (v / Math.abs(baseA) * 100) : null;
     const dPctStr = dPct != null ? `${dPct >= 0 ? '+' : ''}${dPct.toFixed(2)}%` : '—';
-    const fv = (seg.type === 'start' || seg.type === 'end') ? bridgeFmt(v)
-                : (v >= 0 ? '+' : '') + bridgeFmt(v);
-    const rowClass = seg.type === 'start' ? 'bsm-start'
-                   : seg.type === 'end'   ? 'bsm-end'
-                   : seg.group === 'vol'  ? 'bsm-vol'
-                   : seg.group === 'tr'   ? 'bsm-tr'
-                   : v >= 0              ? 'bsm-pos' : 'bsm-neg';
-    rows += `<tr class="${rowClass}">
-      <td>${seg.label}</td>
-      <td>${fv}</td>
-      <td class="bsm-delta">${seg.type==='start'||seg.type==='end' ? '—' : dPctStr}</td>
-    </tr>`;
+    const fv  = isAnchored ? bridgeFmt(v) : (v >= 0 ? '+' : '') + bridgeFmt(v);
+    const rc  = seg.type === 'start' ? 'bsm-start'
+              : seg.type === 'end'   ? 'bsm-end'
+              : seg.group === 'vol'  ? 'bsm-vol'
+              : seg.group === 'tr'   ? 'bsm-tr'
+              : v >= 0              ? 'bsm-pos' : 'bsm-neg';
+    rows += `<tr class="${rc}"><td>${seg.label}</td><td>${fv}</td><td class="bsm-delta">${dPctStr}</td></tr>`;
   }
 
-  const tpvRow = tpvA || tpvB ? `
+  const tpvRow = (tpvA || tpvB) ? `
     <tr style="border-top:2px solid var(--border)">
       <td style="color:var(--muted)">TPV A → B</td>
       <td style="color:var(--muted)">${bridgeFmt(tpvA)} → ${bridgeFmt(tpvB)}</td>
       <td style="color:var(--muted)">${tpvA ? ((tpvB-tpvA)/Math.abs(tpvA)*100).toFixed(2)+'%' : '—'}</td>
     </tr>` : '';
 
-  const rateRow = rateA != null || rateB != null ? `
+  const rateRow = (rateA != null || rateB != null) ? `
     <tr>
       <td style="color:var(--muted)">Take Rate % A → B</td>
       <td style="color:var(--muted)">${rateA != null ? rateA.toFixed(2)+'%' : '—'} → ${rateB != null ? rateB.toFixed(2)+'%' : '—'}</td>
