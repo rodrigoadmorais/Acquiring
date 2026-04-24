@@ -620,8 +620,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;white-space:nowrap}
 .bridges-filter-sep{width:1px;background:var(--border);margin:0 4px;align-self:stretch}
 .bridges-chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;
-  margin:20px 24px 0;padding:20px 24px 16px;height:460px;position:relative}
-.bridges-chart-wrap canvas{display:block}
+  margin:20px 24px 0;padding:20px 24px 16px;height:460px;position:relative;overflow:hidden}
+.bridges-chart-wrap canvas{display:block;width:100%!important;height:calc(100% - 44px)!important}
 .bridges-chart-msg{height:calc(100% - 32px);display:flex;align-items:center;
   justify-content:center;font-size:14px;color:var(--muted);text-align:center;padding:20px}
 .bridges-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
@@ -637,10 +637,6 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 #bridgesAISummary .ai-header{font-size:10px;font-weight:700;text-transform:uppercase;
   letter-spacing:.8px;color:#8a7000;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 [data-theme=dark] #bridgesAISummary .ai-header{color:#c9a800}
-#bridgesAISummary .ai-bullets{margin-top:10px;padding-left:0;list-style:none;display:flex;
-  flex-direction:column;gap:4px}
-#bridgesAISummary .ai-bullets li::before{content:'›';margin-right:6px;color:#8a7000;font-weight:700}
-[data-theme=dark] #bridgesAISummary .ai-bullets li::before{color:#c9a800}
 .bridges-summary table{border-collapse:collapse;width:100%;font-size:12px}
 .bridges-summary th{padding:6px 14px;text-align:right;background:var(--bg);font-size:10px;
   font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
@@ -5248,14 +5244,13 @@ function generateBridgeSummary(segments, tpvA, tpvB, fmtFn, udLbl, metricLabel, 
   if(driverParts.length)
     lines.push('Dos drivers de monetização: ' + driverParts.join('; ') + '.');
 
-  // Top contributors — no label bold, no percentage, colored numbers
+  // Top contributors — inline running text, no list, no percentage
   if(top80.length) {
     const itemStrs = top80.map(s => {
       const dir = s.value >= 0 ? '↑' : '↓';
-      return `<li>${dir} ${s.label}: ${numSpan(s.value, fmtFn(s.value, true))}</li>`;
+      return `${dir} ${s.label}: ${numSpan(s.value, fmtFn(s.value, true))}`;
     });
-    lines.push(`As linhas com maiores variações são:`);
-    lines.push(`<ul class="ai-bullets">${itemStrs.join('')}</ul>`);
+    lines.push(`As linhas com maiores variações são: ${itemStrs.join(' &nbsp;·&nbsp; ')}.`);
   }
 
   return lines.join('<br>');
