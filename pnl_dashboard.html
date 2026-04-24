@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>P&L Brasil</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root {
   --yellow:#FFE600; --bg:#F0F2F5; --card:#fff; --border:#E0E0E0;
@@ -548,6 +547,82 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 .lcm-btn:hover{background:var(--bg)}
 .lcm-btn.primary{background:#FFE600;color:#1a1a1a;border-color:#FFE600}
 .lcm-btn.primary:hover{background:#E0C000}
+
+/* ── Macro BU Overview ── */
+.mbu-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.mbu-filter-bar{background:var(--card);border-bottom:1px solid var(--border);
+  padding:10px 20px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;flex-shrink:0}
+.mbu-filter-bar label{font-size:10px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
+.mbu-tbl-wrap{flex:1 1 0;min-height:0;overflow:auto;padding:0 20px 20px}
+.mbu-table{border-collapse:separate;border-spacing:0;font-size:11.5px;white-space:nowrap}
+.mbu-table thead tr:first-child th:first-child{border-radius:10px 0 0 0}
+.mbu-table thead tr:first-child th:last-child{border-radius:0 10px 0 0}
+.mbu-table tbody tr:last-child td:first-child{border-radius:0 0 0 10px}
+.mbu-table tbody tr:last-child td:last-child{border-radius:0 0 10px 0}
+.mbu-table th{background:#FFE600;color:#1a1a1a;padding:8px 10px;text-align:right;
+  font-size:10px;font-weight:700;border:none;letter-spacing:.3px;
+  position:sticky;top:0;z-index:100}
+.mbu-table th.mbu-desc-hdr{text-align:left;position:sticky;left:0;z-index:201;
+  min-width:200px;background:#FFE600;font-size:11px}
+.mbu-table th.mbu-grp-hdr{text-align:center;font-size:11px;border-left:3px solid #1a1a1a}
+.mbu-table th.mbu-grp-total{background:#E8D000;border-left:3px solid #1a1a1a}
+.mbu-table th.mbu-sub-hdr{font-size:10px}
+.mbu-table th.mbu-sub-first{border-left:3px solid #1a1a1a}
+.mbu-table th.mbu-sep,.mbu-table td.mbu-sep{width:7px;min-width:7px;background:var(--bg);padding:0;border:none}
+.mbu-table td{padding:5px 10px;text-align:right;border-bottom:1px solid var(--border)}
+.mbu-table td.mbu-desc-cell{text-align:left;position:sticky;left:0;
+  background:var(--sticky);z-index:50;min-width:200px}
+.mbu-table td.mbu-sub-first{border-left:3px solid var(--border)}
+.mbu-row-vol td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:12px;border-bottom:2px solid #E0C800}
+.mbu-row-vol td.mbu-desc-cell{background:#FFE600;color:#1a1a1a}
+.mbu-row-sec td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.5px;border-top:3px solid #E0C800;cursor:pointer}
+.mbu-row-sec td.mbu-desc-cell{background:#FFE600;color:#1a1a1a}
+.mbu-row-sec:hover td{filter:brightness(.96)}
+.mbu-row-item td{background:#fff;color:#333;font-size:11px}
+.mbu-row-item td.mbu-desc-cell{background:#fff;padding-left:32px!important}
+.mbu-row-item:hover td{background:#FAFAFA!important}
+.mbu-row-total td{background:#FFFDE7;color:#1a1a1a;font-weight:700;
+  border-top:2px solid #1a1a1a;border-bottom:3px solid #FFE600}
+.mbu-row-total td.mbu-desc-cell{background:#FFFDE7;border-left:4px solid #FFE600}
+.mbu-pct-col{color:#666;font-size:10.5px}
+.mbu-dpos{color:#2E7D32!important;font-weight:600}
+.mbu-dneg{color:#C62828!important;font-weight:600}
+tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
+[data-theme=dark] .mbu-row-sec td,.mbu-row-sec td.mbu-desc-cell,[data-theme=dark] .mbu-row-vol td,.mbu-row-vol td.mbu-desc-cell{background:#111;color:#FFE600}
+
+/* ── YoY Growth row ── */
+.row-yoy td{background:#fff;color:#888;font-size:10.5px;font-style:italic;
+  border-bottom:1px solid #f0f3f8;padding:3px 12px}
+.row-yoy td.sticky-col{background:#fff;padding-left:52px!important}
+[data-theme=dark] .row-yoy td{background:#1f2937;color:#6b7280;border-color:#2a3545}
+[data-theme=dark] .row-yoy td.sticky-col{background:#1f2937}
+
+/* ── Selection Summary Bar ── */
+#selectionBar{background:#fff8c5;border-top:2px solid #f0c000;
+  padding:8px 20px;display:flex;gap:12px;align-items:center;font-size:11.5px;
+  flex-wrap:wrap;flex-shrink:0;z-index:10}
+#selectionBar .sel-label{font-weight:700;color:#7a6000;font-size:10px;
+  text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+#selectionBar .sel-items{flex:1;color:#444;display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+#selectionBar .sel-chip{background:#fff3a8;border:1px solid #e8c600;border-radius:12px;
+  padding:2px 9px;font-size:10.5px;color:#333;white-space:nowrap}
+#selectionBar .sel-sum-grp{display:flex;gap:14px;flex-shrink:0;align-items:center}
+#selectionBar .sel-sum-item{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+#selectionBar .sel-sum-cen{font-size:9px;font-weight:700;color:#7a6000;
+  text-transform:uppercase;letter-spacing:.3px}
+#selectionBar .sel-sum-val{font-size:12px;font-weight:700;color:#1a1a1a}
+#selectionBar .sel-clear{padding:3px 10px;border:1px solid #c8a800;border-radius:12px;
+  background:transparent;cursor:pointer;font-size:11px;font-weight:700;
+  color:#7a6000;flex-shrink:0;transition:.15s}
+#selectionBar .sel-clear:hover{background:#f0c000;color:#1a1a1a}
+[data-theme=dark] #selectionBar{background:#3a3000;border-top-color:#f0c000}
+[data-theme=dark] #selectionBar .sel-chip{background:#2a2400;border-color:#c8a800;color:#e5d680}
+[data-theme=dark] #selectionBar .sel-sum-val{color:#FFE600}
+[data-theme=dark] #selectionBar .sel-label,
+[data-theme=dark] #selectionBar .sel-sum-cen,
+[data-theme=dark] #selectionBar .sel-clear{color:#e5d680}
 </style>
 </head>
 <body>
@@ -569,6 +644,7 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
   <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">Point &amp; MPOS</button>
   <button class="tab-btn" data-tab="mposlight" onclick="switchTab(this)">MPOS Light</button>
+  <button class="tab-btn" data-tab="mbu" onclick="switchTab(this)">Macro BU Overview</button>
 </nav>
 
 <!-- ── Filters ── -->
@@ -671,12 +747,16 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
     </div>
   </div>
 
-  <!-- Meses filtro (Período Total) — pills por Ano + Mês -->
-  <div class="fg" id="mesTotalGroup" style="display:none">
-    <label>Ano &nbsp;<button onclick="mesTotalAnoAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalAnoAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
-    <div id="mesTotalAnoPills" class="pills"></div>
-    <label style="margin-top:5px">Mês &nbsp;<button onclick="mesTotalMesAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalMesAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
-    <div id="mesTotalMesPills" class="pills"></div>
+  <!-- Meses filtro (Período Total) — pills Ano + Mês lado a lado -->
+  <div id="mesTotalGroup" style="display:none;flex-direction:row;gap:14px;align-items:flex-start">
+    <div class="fg">
+      <label>Ano &nbsp;<button onclick="mesTotalAnoAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalAnoAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
+      <div id="mesTotalAnoPills" class="pills"></div>
+    </div>
+    <div class="fg">
+      <label>Mês &nbsp;<button onclick="mesTotalMesAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalMesAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
+      <div id="mesTotalMesPills" class="pills"></div>
+    </div>
   </div>
 
   <div class="sep"></div>
@@ -775,6 +855,14 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
       </tbody>
     </table>
   </div>
+</div>
+
+<!-- ── Selection Summary Bar ── -->
+<div id="selectionBar" style="display:none">
+  <span class="sel-label">Selecionados</span>
+  <div class="sel-items" id="selChips"></div>
+  <div class="sel-sum-grp" id="selSums"></div>
+  <button class="sel-clear" onclick="clearSelection()">✕ Limpar</button>
 </div>
 
 <!-- ── Evolutivos Panel ── -->
@@ -953,6 +1041,48 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
       </table>
     </div>
     <div id="mposLightFootnote" class="mpos-light-footnote"></div>
+  </div>
+</div>
+
+<!-- ── Macro BU Overview Panel ── -->
+<div id="mbuPanel" class="mbu-panel" style="display:none">
+  <div class="mbu-filter-bar">
+    <div class="fg">
+      <label>Macro BU</label>
+      <div class="bg" id="mbuMacroGrp">
+        <button class="on" data-mbu="Acquiring"       onclick="setMbuMacro(this)">Acquiring</button>
+        <button            data-mbu="Commerce"         onclick="setMbuMacro(this)">Commerce</button>
+        <button            data-mbu="Fintech Services" onclick="setMbuMacro(this)">Fintech Services</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>De</label>
+      <select id="mbuFromSel" onchange="renderMbuTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
+    </div>
+    <div class="fg">
+      <label>Até</label>
+      <select id="mbuToSel" onchange="renderMbuTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
+    </div>
+    <div class="fg">
+      <label>Unidade</label>
+      <div class="bg" id="mbuUnitGrp">
+        <button data-u="1"       onclick="setMbuUnit(this)">R$</button>
+        <button data-u="1000"    onclick="setMbuUnit(this)">R$ mil</button>
+        <button class="on" data-u="1000000" onclick="setMbuUnit(this)">R$ M</button>
+      </div>
+    </div>
+  </div>
+  <div class="mbu-tbl-wrap">
+    <div class="tbl-outer">
+      <table class="mbu-table" id="mbuTable">
+        <thead id="mbuHead"></thead>
+        <tbody id="mbuBody"><tr><td colspan="20" class="empty">⏳ Carregando...</td></tr></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -1295,6 +1425,7 @@ function initFilters() {
   buildCenRefSel();
   buildCutoffSel();
   buildCpaMonthSelectors();
+  buildMbuSelects();
   // Apply initial granularity state (default=anual: hide mesGroup)
   updateGranVisibility();
 }
@@ -1958,9 +2089,9 @@ function renderHead(cols, cens) {
     let h = `<tr>`;
     h += `<th class="sticky-col">Conta</th>`;
     // ── Reference value column (highlighted) ──
-    h += `<th class="col-total-hdr" style="border-left:3px solid #4a7fc1;min-width:100px">${shortCen(cenRef)}<br><span style="font-size:10px;font-weight:400">${refLbl}</span></th>`;
+    h += `<th class="col-total-hdr" style="border-left:3px solid #1a1a1a;min-width:100px">${shortCen(cenRef)}<br><span style="font-size:10px;font-weight:400">${refLbl}</span></th>`;
     // ── Separator ──
-    h += `<th style="background:#0a1220;width:6px;padding:0;border:none"></th>`;
+    h += `<th style="background:var(--bg);width:6px;padding:0;border:none"></th>`;
     // Δ vs Plan
     h += `<th class="col-var-hdr">Δ vs Plan<br><span style="font-size:10px;font-weight:400">${refLbl}</span></th>`;
     h += `<th class="col-var-hdr" style="font-size:10px">%</th>`;
@@ -2013,7 +2144,7 @@ function renderHead(cols, cens) {
     cols.forEach(k => {
       const total = k==='__total__';
       h1 += `<th colspan="${cens.length}"${total?' class="col-total-hdr grp-hdr"':' class="grp-hdr"'}>${colLabel(k)}</th>`;
-      cens.forEach(c => h2 += `<th style="font-size:10px;background:#252540">${shortCen(c)}</th>`);
+      cens.forEach(c => h2 += `<th style="font-size:10px;background:#E8D000;color:#1a1a1a">${shortCen(c)}</th>`);
     });
     if(!hasTotal && granMode !== 'anual'){
       const extra = cens.length + (cens.length===2 ? 2 : 0);
@@ -2274,6 +2405,13 @@ function renderBody(l1map, cols, cens) {
           chartData.set(chartKey2, n2.byCen);
           html += `<tr class="row-l3" data-rk="${escAttr(chartKey2)}" ${chartClickAttr(chartKey2)}>
             <td class="sticky-col i2">${k2}</td>${cells(n2.byCen, true)}</tr>`;
+          // YoY Growth row for TPV and NMV
+          if((k2 === 'TPV' || k2 === 'NMV') && !isComp && !isTotal) {
+            const yoyMap = computeYoYMap(k2, cols);
+            html += `<tr class="row-yoy">
+              <td class="sticky-col i3">↳ YoY Realizado</td>
+              ${yoyCells(yoyMap, cols, cens, addGrand)}</tr>`;
+          }
         }
       }
     } else {
@@ -2333,6 +2471,93 @@ function renderBody(l1map, cols, cens) {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  YoY GROWTH  — computes Realizado YoY% per column key
+// ═══════════════════════════════════════════════════════════
+function computeYoYMap(metricKey, cols) {
+  // Returns Map<colKey, pct_or_null>
+  // Queries allData Realizado regardless of year filter so prior-year is always available
+  const realByMes = new Map();
+  for(const d of allData) {
+    if(d.Cenario !== 'Realizado') continue;
+    if(d.MNG_1   !== 'Metrics')  continue;
+    if(d.MNG_2   !== metricKey)  continue;
+    if(selMacro.length>0 && !selMacro.includes(d.Macro_BU)) continue;
+    if(selProd.length>0  && !selProd.includes(d.Product))   continue;
+    const mes = d.MES;
+    realByMes.set(mes, (realByMes.get(mes)||0) + (d.Value||0));
+  }
+  const result = new Map();
+  for(const col of cols) {
+    let cur = 0, py = 0;
+    if(/^\d{6}$/.test(col)) {
+      const m   = parseInt(col);
+      const yr  = Math.floor(m/100);
+      const mon = m % 100;
+      cur = realByMes.get(m)||0;
+      py  = realByMes.get((yr-1)*100+mon)||0;
+    } else if(/^Q\d\/\d{2}$/.test(col)) {
+      const qn   = parseInt(col[1]);
+      const yr   = 2000 + parseInt(col.slice(3));
+      const pyYr = yr - 1;
+      const start = (qn-1)*3+1;
+      for(let mi=0; mi<3; mi++) {
+        cur += realByMes.get(yr  *100+start+mi)||0;
+        py  += realByMes.get(pyYr*100+start+mi)||0;
+      }
+    } else if(/^\d{4}$/.test(col)) {
+      const yr   = parseInt(col);
+      const pyYr = yr - 1;
+      for(let m=1; m<=12; m++) {
+        cur += realByMes.get(yr  *100+m)||0;
+        py  += realByMes.get(pyYr*100+m)||0;
+      }
+    } else if(col === 'ytd') {
+      const cut = cutoffMes || getAutoCutoff();
+      if(cut) {
+        const cutYr = Math.floor(cut/100);
+        const cutMn = cut % 100;
+        const pyYr  = cutYr - 1;
+        for(let m=1; m<=cutMn; m++) {
+          cur += realByMes.get(cutYr*100+m)||0;
+          py  += realByMes.get(pyYr *100+m)||0;
+        }
+      }
+    } else {
+      result.set(col, null);
+      continue;
+    }
+    result.set(col, py !== 0 ? (cur-py)/Math.abs(py)*100 : null);
+  }
+  return result;
+}
+
+function yoyCells(yoyMap, cols, cens, addGrand) {
+  let c = '';
+  const multi   = cens.length >= 2;
+
+  function yoyTd(pct, colSpan) {
+    const sp = colSpan > 1 ? ` colspan="${colSpan}"` : '';
+    if(pct == null)
+      return `<td${sp} style="text-align:center;color:var(--muted);font-style:italic">—</td>`;
+    const cls  = pct >= 0 ? 'vpos' : 'vneg';
+    const sign = pct >= 0 ? '+' : '';
+    return `<td${sp} class="${cls}" style="text-align:center;font-style:italic">${sign}${pct.toFixed(1)}%</td>`;
+  }
+
+  if(!multi) {
+    cols.forEach(col => { c += yoyTd(yoyMap.get(col)??null, 1); });
+    if(addGrand) c += yoyTd(null, 1);
+  } else {
+    cols.forEach(col => { c += yoyTd(yoyMap.get(col)??null, cens.length); });
+    if(addGrand) {
+      c += yoyTd(null, cens.length);
+      if(cens.length === 2) c += `<td></td><td></td>`;
+    }
+  }
+  return c;
+}
+
+// ═══════════════════════════════════════════════════════════
 //  HTML ATTRIBUTE ESCAPING  (fixes drill-down onclick bug)
 // ═══════════════════════════════════════════════════════════
 function escAttr(s) {
@@ -2384,6 +2609,63 @@ function handleRowClick(e, chartKey) {
     selectedRows.add(rk);
     tr.classList.add('row-selected');
   }
+  updateSelectionBar();
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selectionBar');
+  if(!bar) return;
+  if(selectedRows.size === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+
+  // Build name chips
+  const chipsDiv = document.getElementById('selChips');
+  if(chipsDiv) {
+    chipsDiv.innerHTML = '';
+    for(const rk of selectedRows) {
+      const parts = rk.replace(/^__cum__/,'').split('|||');
+      const name  = parts[parts.length-1];
+      const chip  = document.createElement('span');
+      chip.className   = 'sel-chip';
+      chip.textContent = name;
+      chipsDiv.appendChild(chip);
+    }
+  }
+
+  // Aggregate sums per scenario
+  const sumsDiv = document.getElementById('selSums');
+  if(sumsDiv) {
+    sumsDiv.innerHTML = '';
+    const sumByCen = new Map();
+    for(const rk of selectedRows) {
+      const byCen = chartData.get(rk);
+      if(!byCen) continue;
+      for(const [cen, colMap] of byCen) {
+        let s = 0;
+        for(const [, v] of colMap) s += v;
+        sumByCen.set(cen, (sumByCen.get(cen)||0) + s);
+      }
+    }
+    const displayedCens = selCen.filter(c => sumByCen.has(c));
+    for(const cen of displayedCens) {
+      const v    = sumByCen.get(cen)||0;
+      const item = document.createElement('div');
+      item.className = 'sel-sum-item';
+      const cls = v < 0 ? ' class="vneg"' : '';
+      item.innerHTML  =
+        `<span class="sel-sum-cen">${shortCen(cen)}</span>` +
+        `<span class="sel-sum-val"${cls}>${fmt(v)}</span>`;
+      sumsDiv.appendChild(item);
+    }
+  }
+}
+
+function clearSelection() {
+  selectedRows.clear();
+  document.querySelectorAll('#pnlBody tr.row-selected')
+    .forEach(tr => tr.classList.remove('row-selected'));
+  const bar = document.getElementById('selectionBar');
+  if(bar) bar.style.display = 'none';
 }
 
 function handleRowDblClick(e, chartKey) {
@@ -2525,10 +2807,13 @@ let currentTab       = 'pnl';
 let cpaUnitDiv       = 1_000_000;
 let mposUnitDiv      = 1_000_000;
 let mposLightUnitDiv = 1_000_000;
+let mbuUnitDiv       = 1_000_000;
 
 let cpaMacroBU       = 'Acquiring';
 let mposMacroBU      = 'Acquiring';
 let mposLightMacroBU = 'Acquiring';
+let mbuMacro         = 'Acquiring';
+let mbuExpanded      = new Set(); // expanded MNG_1 sections in MBU tab
 
 function switchTab(btn) {
   currentTab = btn.dataset.tab;
@@ -2540,12 +2825,15 @@ function switchTab(btn) {
   const isMposLight = currentTab === 'mposlight';
   const isKeyNums   = currentTab === 'keynums';
   const isEvo       = currentTab === 'evo';
+  const isMbu       = currentTab === 'mbu';
 
   document.getElementById('filterBar').style.display       = isPnl       ? '' : 'none';
   document.querySelector('.tbl-wrap').style.display        = isPnl       ? '' : 'none';
+  document.getElementById('selectionBar').style.display    = (isPnl && selectedRows.size > 0) ? '' : 'none';
   document.getElementById('cpaPanel').style.display        = isCpa       ? '' : 'none';
   document.getElementById('mposPanel').style.display       = isMpos      ? '' : 'none';
   document.getElementById('mposLightPanel').style.display  = isMposLight ? '' : 'none';
+  document.getElementById('mbuPanel').style.display        = isMbu       ? '' : 'none';
   document.getElementById('keyNumPanel').style.display     = isKeyNums   ? '' : 'none';
   document.getElementById('evoPanel').style.display        = isEvo       ? '' : 'none';
 
@@ -2554,6 +2842,7 @@ function switchTab(btn) {
   if(isMposLight) renderMposLightTab();
   if(isKeyNums)   renderKeyNumTab();
   if(isEvo)       renderEvoTab();
+  if(isMbu)       renderMbuTab();
 }
 
 function setCpaUnit(btn) {
@@ -2612,6 +2901,232 @@ function populateMacroBUSelects() {
       `<option value="${v}" ${v===current()?'selected':''}>${v||'Todos'}</option>`
     ).join('');
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MACRO BU OVERVIEW TAB
+// ═══════════════════════════════════════════════════════════
+function setMbuMacro(btn) {
+  mbuMacro = btn.dataset.mbu;
+  document.querySelectorAll('#mbuMacroGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  renderMbuTab();
+}
+function setMbuUnit(btn) {
+  mbuUnitDiv = parseFloat(btn.dataset.u);
+  document.querySelectorAll('#mbuUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  renderMbuTab();
+}
+function mbuFmt(v) {
+  if(v == null) return '—';
+  const scaled = v / mbuUnitDiv;
+  const dec = mbuUnitDiv >= 1000 ? 1 : 0;
+  return scaled.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function mbuPct(v, base) {
+  if(!base || base === 0) return null;
+  return v / Math.abs(base) * 100;
+}
+function mbuPctStr(v, base) {
+  const p = mbuPct(v, base);
+  return p == null ? '—' : p.toFixed(1) + '%';
+}
+
+function buildMbuSelects() {
+  const meses = [...new Set(allData.map(d => d.MES))].sort((a,b) => a-b);
+  ['mbuFromSel','mbuToSel'].forEach((id, i) => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    sel.innerHTML = meses.map(m => {
+      const mm = String(m).slice(4,6);
+      const yy = String(m).slice(2,4);
+      return `<option value="${m}">${(MN[mm]||mm)}/${yy}</option>`;
+    }).join('');
+    sel.value = i === 0 ? meses[0] : meses[meses.length-1];
+  });
+}
+
+function mbuToggleSec(tr) {
+  const k1 = tr.dataset.k1;
+  if(mbuExpanded.has(k1)) mbuExpanded.delete(k1);
+  else mbuExpanded.add(k1);
+  renderMbuTab();
+}
+
+function renderMbuTab() {
+  const fromMes = parseInt(document.getElementById('mbuFromSel')?.value || 0);
+  const toMes   = parseInt(document.getElementById('mbuToSel')?.value   || 999999);
+
+  // Collect BUs under the selected Macro BU
+  const bus = [...new Set(
+    allData.filter(d => d.Macro_BU === mbuMacro).map(d => d.Product)
+  )].filter(Boolean).sort();
+
+  const headEl = document.getElementById('mbuHead');
+  const bodyEl = document.getElementById('mbuBody');
+  if(!bus.length) {
+    headEl.innerHTML = '';
+    bodyEl.innerHTML = '<tr><td colspan="20" class="empty">Sem dados para o Macro BU selecionado.</td></tr>';
+    return;
+  }
+
+  // Metric used for % columns
+  const pctMetric = mbuMacro === 'Commerce' ? 'NMV'
+                  : mbuMacro === 'Acquiring' ? 'TPV' : null;
+  const hasPct    = pctMetric !== null;
+  const pLabel    = hasPct ? (mbuMacro === 'Commerce' ? 'P/NMV%' : 'P/TPV%') : '';
+  const fLabel    = hasPct ? (mbuMacro === 'Commerce' ? 'F/NMV%' : 'F/TPV%') : '';
+  const colsPerBU = hasPct ? 6 : 3;
+
+  // ── Aggregate data ──
+  // buData[bu][k1][k2] = {plan, fcast}
+  const buData  = new Map(); // BU → Map<k1, Map<k2, {plan,fcast}>>
+  const buVol   = new Map(); // BU → {planVol, fcastVol}  (volume metric)
+  const buL1    = new Map(); // BU → Map<k1, {plan,fcast}>
+
+  const data = allData.filter(d =>
+    d.Macro_BU === mbuMacro &&
+    d.MES >= fromMes && d.MES <= toMes
+  );
+
+  for(const d of data) {
+    const bu  = d.Product || '';
+    const k1  = d.MNG_1   || '';
+    const k2  = d.MNG_2   || '';
+    const cen = d.Cenario;
+    const v   = d.Value   || 0;
+    if(!bu) continue;
+
+    if(!buData.has(bu)) buData.set(bu, new Map());
+    const buMap = buData.get(bu);
+    if(!buMap.has(k1)) buMap.set(k1, new Map());
+    const k1map = buMap.get(k1);
+    if(!k1map.has(k2)) k1map.set(k2, {plan:0,fcast:0});
+    const cell = k1map.get(k2);
+    if(cen==='Plan')                              cell.plan  += v;
+    else if(cen==='Forecast'||cen==='Realizado')  cell.fcast += v;
+
+    // Volume metric for % computation
+    if(hasPct && k1==='Metrics' && k2===pctMetric) {
+      if(!buVol.has(bu)) buVol.set(bu,{planVol:0,fcastVol:0});
+      const bv = buVol.get(bu);
+      if(cen==='Plan')                             bv.planVol  += v;
+      else if(cen==='Forecast'||cen==='Realizado') bv.fcastVol += v;
+    }
+  }
+
+  // Roll up MNG_1 totals
+  for(const [bu, k1map] of buData) {
+    if(!buL1.has(bu)) buL1.set(bu, new Map());
+    const l1 = buL1.get(bu);
+    for(const [k1, k2map] of k1map) {
+      let p=0, f=0;
+      for(const [, v] of k2map) { p+=v.plan; f+=v.fcast; }
+      l1.set(k1, {plan:p,fcast:f});
+    }
+  }
+
+  // ── Build thead ──
+  let h = `<tr><th class="mbu-desc-hdr">Linha P&L</th>`;
+  bus.forEach((bu, bi) => {
+    if(bi>0) h += `<th class="mbu-sep"></th>`;
+    h += `<th class="mbu-grp-hdr" colspan="${colsPerBU}">${bu}</th>`;
+  });
+  h += `</tr><tr><th class="mbu-desc-hdr"></th>`;
+  bus.forEach((_, bi) => {
+    if(bi>0) h += `<th class="mbu-sep"></th>`;
+    h += `<th class="mbu-sub-hdr mbu-sub-first">Plan</th>`;
+    h += `<th class="mbu-sub-hdr">Fcast</th>`;
+    h += `<th class="mbu-sub-hdr">Δ</th>`;
+    if(hasPct) {
+      h += `<th class="mbu-sub-hdr mbu-pct-col">${pLabel}</th>`;
+      h += `<th class="mbu-sub-hdr mbu-pct-col">${fLabel}</th>`;
+      h += `<th class="mbu-sub-hdr mbu-pct-col">Δpp</th>`;
+    }
+  });
+  h += `</tr>`;
+  headEl.innerHTML = h;
+
+  // ── Helper: build data cells for a given {plan,fcast} per BU ──
+  function buCells(bus, getVals, volForPct) {
+    let c = '';
+    bus.forEach((bu, bi) => {
+      const {plan,fcast} = getVals(bu);
+      const delta = fcast - plan;
+      const dcls  = delta >= 0 ? 'mbu-dpos' : 'mbu-dneg';
+      const vol   = volForPct ? (volForPct.get(bu)||{planVol:0,fcastVol:0}) : null;
+      if(bi>0) c += `<td class="mbu-sep"></td>`;
+      c += `<td class="mbu-sub-first">${mbuFmt(plan)}</td>`;
+      c += `<td>${mbuFmt(fcast)}</td>`;
+      c += `<td class="${dcls}">${mbuFmt(delta)}</td>`;
+      if(hasPct && vol) {
+        const pp  = mbuPct(plan,  vol.planVol);
+        const fp  = mbuPct(fcast, vol.fcastVol);
+        const dpp = (pp!=null&&fp!=null) ? fp-pp : null;
+        const dppcls = dpp==null ? '' : (dpp>=0 ? 'mbu-dpos' : 'mbu-dneg');
+        c += `<td class="mbu-pct-col">${pp==null?'—':pp.toFixed(1)+'%'}</td>`;
+        c += `<td class="mbu-pct-col">${fp==null?'—':fp.toFixed(1)+'%'}</td>`;
+        c += `<td class="mbu-pct-col ${dppcls}">${dpp==null?'—':(dpp>=0?'+':'')+dpp.toFixed(1)+'pp'}</td>`;
+      }
+    });
+    return c;
+  }
+
+  // ── Build tbody ──
+  let bHtml = '';
+
+  // Volume metric row (top)
+  if(hasPct) {
+    bHtml += `<tr class="mbu-row-vol">`;
+    bHtml += `<td class="mbu-desc-cell">${pctMetric}</td>`;
+    bus.forEach((bu, bi) => {
+      const vol = buVol.get(bu)||{planVol:0,fcastVol:0};
+      const delta = vol.fcastVol - vol.planVol;
+      const dcls  = delta>=0 ? 'mbu-dpos' : 'mbu-dneg';
+      if(bi>0) bHtml += `<td class="mbu-sep"></td>`;
+      bHtml += `<td class="mbu-sub-first">${mbuFmt(vol.planVol)}</td>`;
+      bHtml += `<td>${mbuFmt(vol.fcastVol)}</td>`;
+      bHtml += `<td class="${dcls}">${mbuFmt(delta)}</td>`;
+      if(hasPct) bHtml += `<td class="mbu-pct-col">—</td><td class="mbu-pct-col">—</td><td class="mbu-pct-col">—</td>`;
+    });
+    bHtml += `</tr>`;
+  }
+
+  // P&L sections (skip Metrics)
+  const k1s = MNG1_ORDER.filter(k1 =>
+    k1 !== 'Metrics' &&
+    bus.some(bu => buData.get(bu)?.has(k1))
+  );
+
+  for(const k1 of k1s) {
+    const isOpen = mbuExpanded.has(k1);
+    bHtml += `<tr class="mbu-gap"><td colspan="99"></td></tr>`;
+    bHtml += `<tr class="mbu-row-sec" data-k1="${escAttr(k1)}" onclick="mbuToggleSec(this)">`;
+    bHtml += `<td class="mbu-desc-cell"><span style="margin-right:5px">${isOpen?'▼':'▶'}</span>${k1}</td>`;
+    bHtml += buCells(bus,
+      bu => buL1.get(bu)?.get(k1)||{plan:0,fcast:0},
+      hasPct ? buVol : null
+    );
+    bHtml += `</tr>`;
+
+    if(isOpen) {
+      const k2s = MNG2_ORDER[k1] ||
+        [...new Set(bus.flatMap(bu => [...(buData.get(bu)?.get(k1)?.keys()||[])]))].filter(Boolean);
+
+      for(const k2 of k2s) {
+        if(!bus.some(bu => buData.get(bu)?.get(k1)?.has(k2))) continue;
+        bHtml += `<tr class="mbu-row-item">`;
+        bHtml += `<td class="mbu-desc-cell">${k2}</td>`;
+        bHtml += buCells(bus,
+          bu => buData.get(bu)?.get(k1)?.get(k2)||{plan:0,fcast:0},
+          hasPct ? buVol : null
+        );
+        bHtml += `</tr>`;
+      }
+    }
+  }
+
+  bodyEl.innerHTML = bHtml ||
+    '<tr><td colspan="20" class="empty">Sem dados para o período selecionado.</td></tr>';
 }
 
 // ── Normalize MNG names with encoding issues ─────────────
@@ -3638,9 +4153,31 @@ function renderEvoTab() {
 
     const barColors = realVals.map(v => v===null ? 'transparent' : v>=0 ? '#1a1a1a' : '#C62828');
 
+    // Plugin inline: rótulos de dados acima das barras (sem dependência externa)
+    const barLabelPlugin = {
+      id:'barLabels',
+      afterDatasetsDraw(chart) {
+        const meta = chart.getDatasetMeta(0);
+        if(!meta || meta.type !== 'bar') return;
+        const { ctx } = chart;
+        ctx.save();
+        ctx.font = '600 9px system-ui,sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        meta.data.forEach((bar, i) => {
+          const v = chart.data.datasets[0].data[i];
+          if(v === null || v === undefined || v === 0) return;
+          const lbl = v.toLocaleString('pt-BR',{maximumFractionDigits:0});
+          ctx.fillStyle = v < 0 ? '#C62828' : '#444';
+          ctx.fillText(lbl, bar.x, bar.y - 2);
+        });
+        ctx.restore();
+      }
+    };
+
     _evoCharts[abbr] = new Chart(
       card.querySelector('canvas').getContext('2d'), {
-      plugins: [ChartDataLabels],
+      plugins: [barLabelPlugin],
       type: 'bar',
       data: {
         labels,
@@ -3651,11 +4188,12 @@ function renderEvoTab() {
             borderColor:'#FFE600', backgroundColor:'transparent',
             borderWidth:2, borderDash:[5,3],
             pointBackgroundColor:'#FFE600', pointRadius:3,
-            tension:0.25, order:1, datalabels:{display:false} }
+            tension:0.25, order:1 }
         ]
       },
       options: {
         responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ top:20 } },
         plugins: {
           legend:{ display:false },
           tooltip:{ callbacks:{
@@ -3664,16 +4202,8 @@ function renderEvoTab() {
               if(v===null) return null;
               return `${ctx.dataset.label}: ${v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} ${udLbl}`;
             }
-          }},
-          datalabels:{
-            anchor:'end', align:'end', offset:2,
-            color: ctx => ctx.parsed.y < 0 ? '#C62828' : '#333',
-            font:{size:9,weight:'600'},
-            formatter:(v) => v === null ? null
-              : v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})
-          }
+          }}
         },
-        layout:{ padding:{ top:18 } },
         scales: {
           x:{ grid:{display:false}, ticks:{font:{size:10}, color:'#888'} },
           y:{ display:false }
