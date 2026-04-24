@@ -670,15 +670,10 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
     </div>
   </div>
 
-  <!-- Meses filtro (Período Total) -->
+  <!-- Meses filtro (Período Total) — pills inline -->
   <div class="fg" id="mesTotalGroup" style="display:none">
-    <label>Meses</label>
-    <div class="ms-wrap">
-      <div class="ms-trig" onclick="toggleMs(event,'mestotal')">
-        <span id="mestotalLabel">Todos</span><span class="caret">▼</span>
-      </div>
-      <div class="ms-panel" id="mestotalPanel"></div>
-    </div>
+    <label>Meses &nbsp;<button onclick="mesTotalAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
+    <div id="mesTotalPills" class="pills" style="max-width:600px"></div>
   </div>
 
   <div class="sep"></div>
@@ -1288,7 +1283,7 @@ function initFilters() {
   buildMsPanel('secao', optSecao, selSecao, v => { selSecao = v; });
   buildMsPanel('macro', optMacro, selMacro, v => { selMacro = v; cascadeBU(); });
   buildMsPanel('prod',  optProd,  selProd,  v => { selProd  = v; });
-  buildMesTotalPanel();
+  buildMesTotalPills();
   buildMesSelects();
   buildMesRefSel();
   buildCenRefSel();
@@ -1462,46 +1457,32 @@ function buildMsPanel(id, options, selected, setter) {
   updateMsLabel(id, selected, options);
 }
 
-function buildMesTotalPanel() {
-  const panel = document.getElementById('mestotalPanel');
-  if(!panel) return;
-  panel.innerHTML = '';
-
-  const acts = document.createElement('div');
-  acts.className = 'ms-actions';
-  acts.innerHTML = `<button onclick="msAll('mestotal',true)">Todos</button>
-                    <button onclick="msAll('mestotal',false)">Nenhum</button>`;
-  panel.appendChild(acts);
-
+function buildMesTotalPills() {
+  const wrap = document.getElementById('mesTotalPills');
+  if(!wrap) return;
+  wrap.innerHTML = '';
   optMesTotal.forEach(m => {
-    const lbl = document.createElement('label');
-    lbl.className = 'ms-item';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = selMesTotal.includes(m);
-    cb.dataset.opt = m;
-    cb.onchange = () => {
-      selMesTotal = [...panel.querySelectorAll('input')]
-                     .filter(c => c.checked).map(c => Number(c.dataset.opt));
-      updateMesTotalLabel();
+    const el = document.createElement('span');
+    el.className = 'pill' + (selMesTotal.includes(m) ? ' on' : '');
+    el.textContent = mesLabel(m);
+    el.dataset.m = m;
+    el.onclick = () => {
+      const on = el.classList.toggle('on');
+      selMesTotal = on
+        ? [...selMesTotal, m]
+        : selMesTotal.filter(x => x !== m);
       render();
     };
-    const sp = document.createElement('span');
-    sp.textContent = mesLabel(m);
-    lbl.appendChild(cb); lbl.appendChild(sp);
-    panel.appendChild(lbl);
+    wrap.appendChild(el);
   });
-
-  updateMesTotalLabel();
 }
 
-function updateMesTotalLabel() {
-  const el = document.getElementById('mestotalLabel');
-  if(!el) return;
-  if(!selMesTotal.length)                      el.textContent = 'Nenhum';
-  else if(selMesTotal.length === optMesTotal.length) el.textContent = 'Todos';
-  else if(selMesTotal.length === 1)            el.textContent = mesLabel(selMesTotal[0]);
-  else                                         el.textContent = selMesTotal.length + ' meses';
+function mesTotalAll(all) {
+  selMesTotal = all ? [...optMesTotal] : [];
+  document.querySelectorAll('#mesTotalPills .pill').forEach(p => {
+    p.classList.toggle('on', all);
+  });
+  render();
 }
 
 function updateMsLabel(id, sel, opts) {
@@ -1522,13 +1503,12 @@ function msAll(id, all) {
   if(id==='secao')    { selSecao = vals; updateMsLabel('secao',vals, optSecao); }
   if(id==='macro')    { selMacro = vals; updateMsLabel('macro',vals, optMacro); cascadeBU(); }
   if(id==='prod')     { selProd  = vals; updateMsLabel('prod', vals, optProd); }
-  if(id==='mestotal') { selMesTotal = all ? [...optMesTotal] : []; updateMesTotalLabel(); }
   render();
 }
 
 function toggleMs(e, id) {
   e.stopPropagation();
-  ['ano','secao','macro','prod','mestotal'].forEach(x => {
+  ['ano','secao','macro','prod'].forEach(x => {
     if(x!==id) document.getElementById(x+'Panel')?.classList.remove('open');
   });
   document.getElementById(id+'Panel').classList.toggle('open');
