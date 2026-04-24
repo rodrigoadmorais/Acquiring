@@ -221,6 +221,15 @@ tr.row-selected td.sticky-col{
 .row-subtotal td.sticky-col{
   background:#FFFDE7;border-left:4px solid #FFE600}
 [data-theme=dark] .row-subtotal td{background:#2a2200;color:#FFE600;border-color:#FFE600}
+/* ── Take Rate row ── */
+.row-takerate td{
+  background:#E8F5E9;color:#1B5E20;
+  font-weight:700;font-size:12.5px;
+  border-top:2px solid #2E7D32;border-bottom:3px solid #81C784;
+  padding-top:6px;padding-bottom:6px}
+.row-takerate td.sticky-col{background:#E8F5E9;border-left:4px solid #2E7D32}
+[data-theme=dark] .row-takerate td{background:#143520;color:#86efac;border-color:#2E7D32}
+[data-theme=dark] .row-takerate td.sticky-col{background:#143520}
 [data-theme=dark] .row-subtotal td.sticky-col{background:#2a2200;border-left-color:#FFE600}
 
 /* Section gap before each MNG_1 block */
@@ -393,6 +402,10 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .evo-legend-line::after{content:'';position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:#FFE600}
 .evo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:20px;margin-top:16px}
 .evo-chart-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 22px 16px;height:320px;display:flex;flex-direction:column}
+.evo-chart-takerate{border:2px solid #2E7D32;background:#f6fff7}
+[data-theme=dark] .evo-chart-takerate{border-color:#2E7D32;background:#143520}
+.evo-chart-takerate .evo-chart-abbr{color:#1B5E20}
+[data-theme=dark] .evo-chart-takerate .evo-chart-abbr{color:#86efac}
 .evo-chart-header{display:flex;align-items:baseline;gap:6px;margin-bottom:10px}
 .evo-chart-abbr{font-size:14px;font-weight:800;color:var(--text)}
 .evo-chart-full{font-size:11px;font-weight:400;color:var(--muted)}
@@ -2690,6 +2703,20 @@ function renderBody(l1map, cols, cens) {
       chartData.set(chartKeyCum, cumSnapshot);
       html += `<tr class="row-subtotal" data-rk="${escAttr(chartKey1)}" ${chartClickAttr(chartKey1)}>
         <td class="sticky-col">${k1}</td>${cells(cumByCen, false)}</tr>`;
+
+      // ── Take Rate row (after Net Monetization, Acquiring-only) ──
+      if(k1 === 'Net Monetization') {
+        const acqOnly = selMacro.length > 0 && selMacro.every(m => m === 'Acquiring');
+        if(acqOnly) {
+          const cfByCen = l1map.get('Variable Contribution')?.children?.get('Collection Fees')?.byCen || new Map();
+          const trByCen = new Map();
+          addByCen(trByCen, cumByCen); // PM + NM accumulated so far
+          addByCen(trByCen, cfByCen); // + Collection Fees
+          chartData.set('__takerate__', trByCen);
+          html += `<tr class="row-takerate" data-rk="__takerate__" ${chartClickAttr('__takerate__')}>
+            <td class="sticky-col">Take Rate</td>${cells(trByCen, false)}</tr>`;
+        }
+      }
     }
   }
 
@@ -3581,6 +3608,21 @@ function renderMbuTab() {
           }
         }
       }
+    }
+    // ── Inject Take Rate after Net Monetization (Acquiring only) ──
+    if(k1 === 'Net Monetization' && mbuMacro === 'Acquiring') {
+      bHtml += `<tr class="mbu-gap"><td colspan="99"></td></tr>`;
+      bHtml += `<tr class="mbu-row-sec" style="background:#E8F5E9;color:#1B5E20;border-top:2px solid #2E7D32;border-bottom:3px solid #81C784">`;
+      bHtml += `<td class="mbu-desc-cell" style="background:#E8F5E9;color:#1B5E20;font-weight:700;border-left:4px solid #2E7D32">Take Rate</td>`;
+      bHtml += buCells(colBus,
+        bu => {
+          const nm = buCum.get(bu)?.get('Net Monetization')||{a:0,b:0};
+          const cf = buData.get(bu)?.get('Variable Contribution')?.get('Collection Fees')||{a:0,b:0};
+          return {a: nm.a + cf.a, b: nm.b + cf.b};
+        },
+        getVol
+      );
+      bHtml += `</tr>`;
     }
   }
 
@@ -4474,6 +4516,7 @@ let _evoCharts = {};          // Chart instances keyed by abbr
 const EVO_METRICS = [
   { key:'Product Monetization',  abbr:'PM'   },
   { key:'Net Monetization',      abbr:'NM'   },
+  { key:'__takerate__',          abbr:'TR',  label:'Take Rate', takerate:true },
   { key:'Variable Contribution', abbr:'VC'   },
   { key:'Direct Contribution',   abbr:'DC'   },
   { key:'Business Contribution', abbr:'BC'   },
@@ -4490,6 +4533,20 @@ function evoGetVal(buKey, mes, cenario, metric) {
       sum += d.Value;
   return sum;
 }
+
+// Take Rate = PM + NM (cumulative) + Collection Fees (inside VC)
+function evoGetTakeRate(buKey, mes, cenario) {
+  const buses = KN_BU_MAP[buKey] || [buKey];
+  let sum = 0;
+  for(const d of allData) {
+    if(d.MES !== mes || d.Cenario !== cenario || !buses.includes(d.Product)) continue;
+    if(d.MNG_1 === 'Product Monetization' || d.MNG_1 === 'Net Monetization') sum += d.Value;
+    if(d.MNG_1 === 'Variable Contribution' && d.MNG_2 === 'Collection Fees')  sum += d.Value;
+  }
+  return sum;
+}
+
+const EVO_ACQUIRING_BUS = new Set(['Acquiring','Point','OP','QR']);
 
 function mesLabel(m) {
   const yr=Math.floor(m/100), mo=m%100;
@@ -4576,7 +4633,10 @@ function renderEvoTab() {
   const grid = document.getElementById('evoGrid');
   grid.innerHTML = '';
 
-  EVO_METRICS.forEach(({key, abbr}) => {
+  EVO_METRICS.forEach(({key, abbr, label, takerate}) => {
+    // Take Rate: only show for Acquiring-related BUs
+    if(takerate && !EVO_ACQUIRING_BUS.has(evoBU)) return;
+
     // Aggregate by period
     const realByPeriod = new Map();
     const planByPeriod = new Map();
@@ -4585,10 +4645,10 @@ function renderEvoTab() {
     for(const m of allMeses) {
       const p = toPeriodKey(m);
       if(realMeses.includes(m)) {
-        const v = evoGetVal(evoBU, m, 'Realizado', key);
+        const v = takerate ? evoGetTakeRate(evoBU, m, 'Realizado') : evoGetVal(evoBU, m, 'Realizado', key);
         realByPeriod.set(p, (realByPeriod.get(p) || 0) + v);
       }
-      const vp = evoGetVal(evoBU, m, 'Plan', key);
+      const vp = takerate ? evoGetTakeRate(evoBU, m, 'Plan') : evoGetVal(evoBU, m, 'Plan', key);
       planByPeriod.set(p, (planByPeriod.get(p) || 0) + vp);
     }
 
@@ -4600,12 +4660,13 @@ function renderEvoTab() {
 
     if(realVals.every(v=>v===null||v===0) && planVals.every(v=>v===0)) return;
 
+    const displayLabel = label || key;
     const card = document.createElement('div');
-    card.className = 'evo-chart-card';
+    card.className = 'evo-chart-card' + (takerate ? ' evo-chart-takerate' : '');
     card.innerHTML = `
       <div class="evo-chart-header">
         <span class="evo-chart-abbr">${abbr}</span>
-        <span class="evo-chart-full">${key}</span>
+        <span class="evo-chart-full">${displayLabel}</span>
       </div>
       <canvas id="evoC_${abbr}"></canvas>`;
     grid.appendChild(card);
