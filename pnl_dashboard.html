@@ -5210,8 +5210,8 @@ function renderBridgesTab() {
         y: {
           min: yScaleMin,
           max: yScaleMax,
-          grid: { color:'rgba(128,128,128,0.1)' },
-          ticks: { callback: v => bridgeFmt(v * ud), font:{size:10} }
+          display: false,
+          grid: { display: false }
         }
       }
     }
