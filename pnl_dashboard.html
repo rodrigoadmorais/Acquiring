@@ -612,16 +612,15 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 [data-theme=dark] .mbu-row-sec td,.mbu-row-sec td.mbu-desc-cell,[data-theme=dark] .mbu-row-vol td,.mbu-row-vol td.mbu-desc-cell{background:#111;color:#FFE600}
 
 /* ── Bridges tab ── */
-.bridges-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.bridges-panel{flex:1 1 0;min-height:0;overflow-y:auto;background:var(--card)}
 .bridges-filter-bar{background:var(--card);border-bottom:1px solid var(--border);
-  padding:10px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;flex-shrink:0}
+  padding:10px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;
+  position:sticky;top:0;z-index:50}
 .bridges-filter-bar label{font-size:10px;font-weight:700;color:var(--muted);
   text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;white-space:nowrap}
 .bridges-filter-sep{width:1px;background:var(--border);margin:0 4px;align-self:stretch}
-.bridges-body{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:16px;
-  padding:20px 24px;overflow-y:auto}
 .bridges-chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;
-  padding:20px 24px 16px;height:460px;flex-shrink:0;position:relative}
+  margin:20px 24px 0;padding:20px 24px 16px;height:460px;position:relative}
 .bridges-chart-wrap canvas{display:block}
 .bridges-chart-msg{height:calc(100% - 32px);display:flex;align-items:center;
   justify-content:center;font-size:14px;color:var(--muted);text-align:center;padding:20px}
@@ -629,7 +628,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 .bridges-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
 .bridges-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
 .bridges-summary{background:var(--card);border:1px solid var(--border);border-radius:12px;
-  padding:16px 20px;overflow-x:auto}
+  margin:16px 24px 24px;padding:16px 20px;overflow-x:auto}
 .bridges-summary table{border-collapse:collapse;width:100%;font-size:12px}
 .bridges-summary th{padding:6px 14px;text-align:right;background:var(--bg);font-size:10px;
   font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
@@ -1274,14 +1273,12 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     </div>
   </div>
   <!-- Chart + summary -->
-  <div class="bridges-body">
-    <div class="bridges-chart-wrap">
-      <div class="bridges-legend" id="bridgesLegend"></div>
-      <div id="bridgesChartMsg" class="bridges-chart-msg" style="display:none"></div>
-      <canvas id="bridgeChart"></canvas>
-    </div>
-    <div class="bridges-summary" id="bridgesSummary"></div>
+  <div class="bridges-chart-wrap">
+    <div class="bridges-legend" id="bridgesLegend"></div>
+    <div id="bridgesChartMsg" class="bridges-chart-msg" style="display:none"></div>
+    <canvas id="bridgeChart"></canvas>
   </div>
+  <div class="bridges-summary" id="bridgesSummary"></div>
 </div>
 
 <!-- ── Key-numbers Panel ── -->
