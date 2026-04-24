@@ -2499,7 +2499,7 @@ function renderBody(l1map, cols, cens) {
       c += `<td class="col-total-cell ${aVal<0?'neg':''}" style="border-left:3px solid #1a1a1a">${fmtCell(aVal, comp1x1CenA, '1x1_a', isMetrics)}</td>`;
       c += `<td class="col-total-cell ${bVal<0?'neg':''}" style="border-left:3px solid #4a7fc1">${fmtCell(bVal, comp1x1CenB, '1x1_b', isMetrics)}</td>`;
       c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${fmt(delta)}</td>`;
-      c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${pct!=null?pct.toFixed(1)+'%':'—'}</td>`;
+      c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${pct!=null?pct.toFixed(2)+'%':'—'}</td>`;
       return c;
     }
     if(isComp) {
@@ -2527,7 +2527,7 @@ function renderBody(l1map, cols, cens) {
         const cls = d >= 0 ? 'vpos' : 'vneg';
         const pct = base !== 0 ? (d / Math.abs(base) * 100) : null;
         c += `<td class="col-var-cell ${cls}">${fmt(d)}</td>`;
-        c += `<td class="col-var-cell ${cls}">${pct != null ? pct.toFixed(1)+'%' : '—'}</td>`;
+        c += `<td class="col-var-cell ${cls}">${pct != null ? pct.toFixed(2)+'%' : '—'}</td>`;
       }
 
       // Δ vs Plan
@@ -2547,7 +2547,7 @@ function renderBody(l1map, cols, cens) {
         const vv = totals[1]-totals[0];
         const vp = totals[0] ? (vv/Math.abs(totals[0])*100) : null;
         c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${fmt(vv)}</td>`;
-        c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${vp!=null?vp.toFixed(1)+'%':'—'}</td>`;
+        c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${vp!=null?vp.toFixed(2)+'%':'—'}</td>`;
       }
     } else if(!multi) {
       const cen = cens[0];
@@ -2573,7 +2573,7 @@ function renderBody(l1map, cols, cens) {
           const vv = tots[1]-tots[0];
           const vp = tots[0] ? (vv/Math.abs(tots[0])*100) : null;
           c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${fmt(vv)}</td>`;
-          c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${vp!=null?vp.toFixed(1)+'%':'—'}</td>`;
+          c += `<td class="col-var-cell ${vv>=0?'vpos':'vneg'}">${vp!=null?vp.toFixed(2)+'%':'—'}</td>`;
         }
       }
     }
@@ -2773,7 +2773,7 @@ function yoyCells(yoyMap, cols, cens, addGrand) {
       return `<td${sp} style="text-align:center;color:var(--muted);font-style:italic">—</td>`;
     const cls  = pct >= 0 ? 'vpos' : 'vneg';
     const sign = pct >= 0 ? '+' : '';
-    return `<td${sp} class="${cls}" style="text-align:center;font-style:italic">${sign}${pct.toFixed(1)}%</td>`;
+    return `<td${sp} class="${cls}" style="text-align:center;font-style:italic">${sign}${pct.toFixed(2)}%</td>`;
   }
 
   if(!multi) {
@@ -3428,9 +3428,9 @@ function renderMbuTab() {
           const bp  = mbuPct(b, vol.bVol);
           const dpp = (ap!=null&&bp!=null) ? bp-ap : null;
           const dppcls = dpp==null?'':(dpp>=0?'mbu-dpos':'mbu-dneg');
-          c += `<td class="mbu-pct-col">${ap==null?'—':ap.toFixed(1)+'%'}</td>`;
-          c += `<td class="mbu-pct-col">${bp==null?'—':bp.toFixed(1)+'%'}</td>`;
-          c += `<td class="mbu-pct-col ${dppcls}">${dpp==null?'—':(dpp>=0?'+':'')+dpp.toFixed(1)+'pp'}</td>`;
+          c += `<td class="mbu-pct-col">${ap==null?'—':ap.toFixed(2)+'%'}</td>`;
+          c += `<td class="mbu-pct-col">${bp==null?'—':bp.toFixed(2)+'%'}</td>`;
+          c += `<td class="mbu-pct-col ${dppcls}">${dpp==null?'—':(dpp>=0?'+':'')+dpp.toFixed(2)+'pp'}</td>`;
         } else {
           // Volume row itself: keep column count aligned with blank cells
           c += `<td class="mbu-pct-col" style="color:var(--muted)">—</td>`;
