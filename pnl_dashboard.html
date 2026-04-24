@@ -8,7 +8,7 @@
 <style>
 :root {
   --yellow:#FFE600; --bg:#F0F2F5; --card:#fff; --border:#E0E0E0;
-  --text:#222; --muted:#777; --blue:#1565C0; --blue-lt:#E3F0FF;
+  --text:#222; --muted:#777; --blue:#1a1a1a; --blue-lt:#FFF9C4;
   --red:#C62828; --red-lt:#FFEBEE; --green:#2E7D32; --green-lt:#E8F5E9;
   --l1bg:#FFF9E0; --l2bg:#F7F7F7; --l3bg:#fff;
   --sticky:#fff; --hdr-text:#333;
@@ -16,7 +16,7 @@
 }
 [data-theme=dark] {
   --bg:#161b22; --card:#1f2937; --border:#374151; --text:#e5e7eb;
-  --muted:#9ca3af; --blue:#60a5fa; --blue-lt:#1e3a5f;
+  --muted:#9ca3af; --blue:#FFE600; --blue-lt:#2a2200;
   --red:#fca5a5; --red-lt:#3b1212; --green:#86efac; --green-lt:#14291a;
   --l1bg:#2a2416; --l2bg:#242a34; --l3bg:#1f2937;
   --sticky:#1f2937; --hdr-text:#f9fafb;
@@ -108,16 +108,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 #pnlTable thead tr:first-child th:last-child{border-radius:0 10px 0 0}
 #pnlTable tbody tr:last-child td:first-child{border-radius:0 0 0 10px}
 #pnlTable tbody tr:last-child td:last-child{border-radius:0 0 10px 0}
-#pnlTable th{background:#111d36;color:#c8d4e8;padding:9px 12px;
+#pnlTable th{background:#1a1a1a;color:#FFE600;padding:9px 12px;
              text-align:right;white-space:nowrap;font-size:11px;font-weight:600;
              position:sticky;top:0;z-index:100;
-             border-bottom:2px solid #0a1220;letter-spacing:.3px}
+             border-bottom:2px solid #000;letter-spacing:.3px}
 #pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
-                        background:#111d36;min-width:260px;max-width:340px;
+                        background:#1a1a1a;min-width:260px;max-width:340px;
                         font-size:12px;letter-spacing:.4px}
-#pnlTable th.grp-hdr{background:#0e1a30;border-left:2px solid #0a1220}
-#pnlTable th.col-total-hdr{background:#162444;border-left:2px solid #0a1220}
-#pnlTable th.col-var-hdr{background:#0f2218;border-left:1px solid #0a1220}
+#pnlTable th.grp-hdr{background:#111;border-left:2px solid #000}
+#pnlTable th.col-total-hdr{background:#2a2a2a;border-left:2px solid #000}
+#pnlTable th.col-var-hdr{background:#2a1a00;border-left:1px solid #000}
 
 #pnlTable td{padding:5px 12px;border-bottom:1px solid var(--border);
              white-space:nowrap;text-align:right}
@@ -128,26 +128,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 
 /* ── Row levels  (Tableau-inspired) ── */
 
-/* L1 = section header: dark navy, white text, uppercase */
+/* L1 = section header: charcoal ML, yellow text, uppercase */
 .row-l1 td{
-  background:#1e2d4e;color:#e8ecf5;
+  background:#1a1a1a;color:#FFE600;
   font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;
-  border-top:3px solid #111d36;border-bottom:1px solid #111d36;
+  border-top:3px solid #000;border-bottom:1px solid #000;
   padding-top:7px;padding-bottom:7px}
-.row-l1 td.sticky-col{background:#1e2d4e;color:#e8ecf5}
-[data-theme=dark] .row-l1 td{background:#0d1a30;color:#c5cfe0;border-color:#0a1220}
-[data-theme=dark] .row-l1 td.sticky-col{background:#0d1a30}
+.row-l1 td.sticky-col{background:#1a1a1a;color:#FFE600}
+[data-theme=dark] .row-l1 td{background:#111;color:#FFE600;border-color:#000}
+[data-theme=dark] .row-l1 td.sticky-col{background:#111}
 
-/* L1 arrow: lighter so it's visible on dark bg */
-.row-l1 .xarr{color:#7a9cc0}
+/* L1 arrow */
+.row-l1 .xarr{color:#FFE600}
 
-/* L2 = sub-total: white bg, bold, with left accent bar */
+/* L2 = sub-total: light yellow bg, bold */
 .row-l2 td{
-  background:#f0f4fb;font-weight:700;font-size:12px;color:#1a2a4a;
-  border-bottom:1px solid #d8e2f0}
-.row-l2 td.sticky-col{background:#f0f4fb;border-left:3px solid #4a7fc1}
-[data-theme=dark] .row-l2 td{background:#1a2540;color:#b8c9e0;border-color:#243050}
-[data-theme=dark] .row-l2 td.sticky-col{background:#1a2540;border-left-color:#3a6ba0}
+  background:#FFFDE7;font-weight:700;font-size:12px;color:#1a1a1a;
+  border-bottom:1px solid #F0E060}
+.row-l2 td.sticky-col{background:#FFFDE7;border-left:3px solid #FFE600}
+[data-theme=dark] .row-l2 td{background:#2a2200;color:#FFE600;border-color:#3a3000}
+[data-theme=dark] .row-l2 td.sticky-col{background:#2a2200;border-left-color:#FFE600}
 
 /* L3 = line item: clean white */
 .row-l3 td{
@@ -214,14 +214,14 @@ tr.row-selected td.sticky-col{
 
 /* ── Subtotal row (MNG_1 at bottom of each P&L section) ── */
 .row-subtotal td{
-  background:#dce7f5;color:#0f1e3a;
+  background:#FFFDE7;color:#1a1a1a;
   font-weight:700;font-size:12.5px;
-  border-top:2px solid #4a7fc1;border-bottom:3px solid #1e2d4e;
+  border-top:2px solid #FFE600;border-bottom:3px solid #1a1a1a;
   padding-top:6px;padding-bottom:6px}
 .row-subtotal td.sticky-col{
-  background:#dce7f5;border-left:4px solid #1e2d4e}
-[data-theme=dark] .row-subtotal td{background:#142340;color:#c0d4f0;border-color:#2a4a80}
-[data-theme=dark] .row-subtotal td.sticky-col{background:#142340;border-left-color:#4a7fc1}
+  background:#FFFDE7;border-left:4px solid #1a1a1a}
+[data-theme=dark] .row-subtotal td{background:#2a2200;color:#FFE600;border-color:#FFE600}
+[data-theme=dark] .row-subtotal td.sticky-col{background:#2a2200;border-left-color:#FFE600}
 
 /* Section gap before each MNG_1 block */
 tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
@@ -388,7 +388,7 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .evo-filter-bar select{padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:12px;cursor:pointer}
 .evo-legend{display:flex;gap:14px;align-items:center;margin-left:auto}
 .evo-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
-.evo-legend-bar{width:14px;height:10px;border-radius:3px;background:#1565C0}
+.evo-legend-bar{width:14px;height:10px;border-radius:3px;background:#1a1a1a}
 .evo-legend-line{width:20px;height:2px;background:#FFE600;position:relative}
 .evo-legend-line::after{content:'';position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:#FFE600}
 .evo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:20px;margin-top:16px}
@@ -401,21 +401,21 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
               font-size:11px;font-weight:700;position:sticky;top:0;z-index:100;
               border-bottom:1px solid rgba(0,0,0,.15);letter-spacing:.3px}
 .cpa-table th.cpa-name-hdr{text-align:left;position:sticky;left:0;z-index:200;
-                            background:#1a2740;color:#fff;
+                            background:#1a1a1a;color:#FFE600;
                             min-width:240px;max-width:360px;font-size:12px}
 /* Monthly columns */
 .cpa-hdr-monthly{background:#C8860A;color:#fff;font-weight:700}
 .cpa-hdr-real{background:#E8A020;color:#fff;font-weight:700}
 /* YTD columns */
-.cpa-hdr-ytd{background:#1565C0;color:#fff;font-weight:700}
+.cpa-hdr-ytd{background:#1a1a1a;color:#FFE600;font-weight:700}
 /* Gap column */
 .cpa-hdr-sep{background:#F2F2F2;width:8px;padding:0;border:none}
 /* Delta columns */
-.cpa-hdr-delta{background:#546E7A;color:#fff;font-weight:700;border-left:1px solid #607D8B;font-size:10px}
+.cpa-hdr-delta{background:#333;color:#FFE600;font-weight:700;border-left:1px solid #444;font-size:10px}
 /* Group sub-header row */
-.cpa-table tr.cpa-grp-hdr th{background:#1a2740;color:#8aa0c0;font-size:10px;
-                               padding:4px 12px;border-bottom:1px solid #0d1a30}
-.cpa-table tr.cpa-grp-hdr th.cpa-name-hdr{background:#1a2740;color:#8aa0c0}
+.cpa-table tr.cpa-grp-hdr th{background:#1a1a1a;color:#FFE600;font-size:10px;
+                               padding:4px 12px;border-bottom:1px solid #000}
+.cpa-table tr.cpa-grp-hdr th.cpa-name-hdr{background:#1a1a1a;color:#FFE600}
 /* Dark theme overrides for column headers */
 [data-theme=dark] .cpa-hdr-real{background:#b87418;color:#fff9e6}
 [data-theme=dark] .cpa-hdr-monthly{background:#9e6a0c;color:#fff9e6}
@@ -429,14 +429,14 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .cpa-table td.cpa-name-cell{text-align:left;position:sticky;left:0;
                              background:#fff;z-index:50;
                              min-width:240px;max-width:360px}
-/* Block header row — dark navy divider */
-.cpa-row-block td{background:#1a2740;color:#fff;font-weight:700;font-size:11px;
+/* Block header row — charcoal ML divider */
+.cpa-row-block td{background:#1a1a1a;color:#FFE600;font-weight:700;font-size:11px;
                   letter-spacing:.5px;text-transform:uppercase;
                   border-top:6px solid var(--bg);border-bottom:none;
                   padding-top:8px;padding-bottom:8px}
-.cpa-row-block td.cpa-name-cell{background:#1a2740;color:#fff}
-[data-theme=dark] .cpa-row-block td{background:#0d1a30;color:#c5cfe0}
-[data-theme=dark] .cpa-row-block td.cpa-name-cell{background:#0d1a30}
+.cpa-row-block td.cpa-name-cell{background:#1a1a1a;color:#FFE600}
+[data-theme=dark] .cpa-row-block td{background:#111;color:#FFE600}
+[data-theme=dark] .cpa-row-block td.cpa-name-cell{background:#111}
 /* Total row — amber accent */
 .cpa-row-total td{background:#FFFBF0;font-weight:700;font-size:12.5px;color:#1a1a1a;
                   border-top:2px solid #E8A020;border-bottom:2px solid #E8A020;
@@ -2674,7 +2674,7 @@ function buildCpaHead(mes, ud, tableId) {
   const ytdLbl = 'YTD ' + year;
 
   return `<tr>
-    <th class="cpa-name-hdr" style="background:#1a2740;color:#fff">P&amp;L</th>
+    <th class="cpa-name-hdr" style="background:#1a1a1a;color:#FFE600">P&amp;L</th>
     <th class="cpa-hdr-real" style="min-width:90px">Realizado<br><span style="font-size:10px;font-weight:400">${mesLbl} · ${unitLbl}</span></th>
     <th class="cpa-hdr-monthly" style="min-width:90px">Plan<br><span style="font-size:10px;font-weight:400">${mesLbl}</span></th>
     <th class="cpa-hdr-monthly" style="min-width:90px">Prior Month<br><span style="font-size:10px;font-weight:400">${pmLbl}</span></th>
@@ -3615,7 +3615,7 @@ function renderEvoTab() {
       <canvas id="evoC_${abbr}"></canvas>`;
     grid.appendChild(card);
 
-    const barColors = realVals.map(v => v===null ? 'transparent' : v>=0 ? '#1565C0' : '#C62828');
+    const barColors = realVals.map(v => v===null ? 'transparent' : v>=0 ? '#1a1a1a' : '#C62828');
 
     _evoCharts[abbr] = new Chart(
       card.querySelector('canvas').getContext('2d'), {
