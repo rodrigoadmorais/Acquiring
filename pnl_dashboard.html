@@ -5080,6 +5080,25 @@ function renderBridgesTab() {
     }
   };
 
+  // ── Compute focused Y scale (zoom in on the "interesting" range) ──
+  // Track all running intermediate values to find the visible window
+  const allRunning = [];
+  {
+    let r = 0;
+    for(const seg of segments) {
+      const v = seg.value / ud;
+      if(seg.type === 'start')     { allRunning.push(v); r = v; }
+      else if(seg.type === 'end')  { allRunning.push(v); }
+      else                          { r += v; allRunning.push(r); }
+    }
+  }
+  const yMin   = Math.min(...allRunning);
+  const yMax   = Math.max(...allRunning);
+  const yRange = Math.max(yMax - yMin, Math.abs(yMax) * 0.05, 1);
+  const yPad   = yRange * 0.18;
+  const yScaleMin = yMin - yPad;
+  const yScaleMax = yMax + yPad;
+
   if(_bridgeChart) { try{_bridgeChart.destroy()}catch(e){} _bridgeChart = null; }
 
   const ctx = document.getElementById('bridgeChart').getContext('2d');
@@ -5095,6 +5114,7 @@ function renderBridgesTab() {
         borderRadius: 3,
         barPercentage: 0.6,
         categoryPercentage: 0.75,
+        clip: false,
       }]
     },
     options: {
@@ -5117,6 +5137,8 @@ function renderBridgesTab() {
       scales: {
         x: { grid:{ display:false }, ticks:{ font:{size:10}, color:'#888', maxRotation:30, minRotation:0 } },
         y: {
+          min: yScaleMin,
+          max: yScaleMax,
           grid: { color:'rgba(128,128,128,0.1)' },
           ticks: { callback: v => bridgeFmt(v * ud), font:{size:10} }
         }
