@@ -5117,44 +5117,44 @@ function buildBridgeSegments(dataA, dataB, metric) {
     BELOW_TR.push({ k1: 'Business Margin',        excludeK2: null });
   }
 
-  for(const { k1, excludeK2 } of BELOW_TR) {
-    const k2mapA = k1k2A.get(k1) || new Map();
-    const k2mapB = k1k2B.get(k1) || new Map();
-    const allK2 = [...new Set([...k2mapA.keys(), ...k2mapB.keys()])].filter(Boolean);
-    // Use bridge-specific order (consolidated DE-PARA groups), fallback to raw order
-    const bOrder = BRIDGE_BELOW_ORDER[k1];
-    const orderedK2 = bOrder ? bOrder.filter(k2 => allK2.includes(k2))
-                                     .concat(allK2.filter(k2 => !bOrder.includes(k2)))
-                             : allK2;
-    for(const k2 of orderedK2) {
-      if(excludeK2 && k2 === excludeK2) continue;
-      const vA    = k2mapA.get(k2) || 0;
-      const vB    = k2mapB.get(k2) || 0;
-      const delta = vB - vA;
-      if(Math.abs(delta) < 0.01) continue;
-      segments.push({ label: k2, value: delta, type: 'effect', group: k1, segK1: k1, segK2: k2 });
-    }
-  }
-
-  // ── Merge same-label effect segments across P&L levels ──
-  // e.g. "CX, Hosting, PF e OPEX" can appear in VC, DC, BC, BM → collapse into one bar
+  // ── Below-TR effects: aggregate vA+vB per consolidated label across all P&L levels ──
+  // Building in one pass avoids duplicate bars when the same DE-PARA label
+  // (e.g. "CX, Hosting, PF e OPEX") maps to multiple k1 levels (VC, DC, BC, BM).
   {
-    const _order = [];
-    const _map   = new Map();
-    for(const seg of segments.slice(1)) { // skip 'start'
-      if(_map.has(seg.label)) {
-        const m = _map.get(seg.label);
-        m.value += seg.value;
-        m.segK1  = null; // cross-level merged → drill-down spans all MNG_1
-      } else {
-        _map.set(seg.label, { ...seg });
-        _order.push(seg.label);
+    const labOrder = []; // insertion-order → display order
+    const labMap   = new Map(); // label → { vA, vB, segK1, segK2 }
+
+    for(const { k1, excludeK2 } of BELOW_TR) {
+      const k2mapA = k1k2A.get(k1) || new Map();
+      const k2mapB = k1k2B.get(k1) || new Map();
+      const allK2  = [...new Set([...k2mapA.keys(), ...k2mapB.keys()])].filter(Boolean);
+      const bOrder = BRIDGE_BELOW_ORDER[k1];
+      const orderedK2 = bOrder
+        ? bOrder.filter(k2 => allK2.includes(k2)).concat(allK2.filter(k2 => !bOrder.includes(k2)))
+        : allK2;
+
+      for(const k2 of orderedK2) {
+        if(excludeK2 && k2 === excludeK2) continue;
+        const vA = k2mapA.get(k2) || 0;
+        const vB = k2mapB.get(k2) || 0;
+        if(labMap.has(k2)) {
+          const e  = labMap.get(k2);
+          e.vA    += vA;
+          e.vB    += vB;
+          e.segK1  = null; // cross-level: drill-down spans all MNG_1
+        } else {
+          labMap.set(k2, { vA, vB, segK1: k1, segK2: k2 });
+          labOrder.push(k2);
+        }
       }
     }
-    segments.length = 1; // keep only 'start'
-    for(const lbl of _order) {
-      const s = _map.get(lbl);
-      if(Math.abs(s.value) >= 0.01) segments.push(s);
+
+    for(const k2 of labOrder) {
+      const { vA, vB, segK1, segK2 } = labMap.get(k2);
+      const delta = vB - vA;
+      if(Math.abs(delta) < 0.01) continue;
+      segments.push({ label: k2, value: delta, type: 'effect',
+                      group: segK1 || 'mixed', segK1, segK2 });
     }
   }
 
