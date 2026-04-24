@@ -611,6 +611,41 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 [data-theme=dark] .mbu-row-sec td,.mbu-row-sec td.mbu-desc-cell,[data-theme=dark] .mbu-row-vol td,.mbu-row-vol td.mbu-desc-cell{background:#111;color:#FFE600}
 
+/* ── Bridges tab ── */
+.bridges-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.bridges-filter-bar{background:var(--card);border-bottom:1px solid var(--border);
+  padding:10px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;flex-shrink:0}
+.bridges-filter-bar label{font-size:10px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;white-space:nowrap}
+.bridges-filter-sep{width:1px;background:var(--border);margin:0 4px;align-self:stretch}
+.bridges-body{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:16px;
+  padding:20px 24px;overflow-y:auto}
+.bridges-chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:20px 24px;flex:1 1 0;min-height:0;max-height:520px;position:relative}
+.bridges-chart-wrap canvas{width:100%!important;height:100%!important}
+.bridges-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.bridges-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.bridges-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.bridges-summary{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;overflow-x:auto}
+.bridges-summary table{border-collapse:collapse;width:100%;font-size:12px}
+.bridges-summary th{padding:6px 14px;text-align:right;background:var(--bg);font-size:10px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
+  border-bottom:2px solid var(--border);white-space:nowrap}
+.bridges-summary th:first-child{text-align:left}
+.bridges-summary td{padding:5px 14px;text-align:right;border-bottom:1px solid var(--border)}
+.bridges-summary td:first-child{text-align:left;font-weight:600}
+.bridges-summary tr.bsm-start td,.bridges-summary tr.bsm-end td{
+  background:var(--l1bg);font-weight:700}
+.bridges-summary tr.bsm-vol td{background:#EFF8FF;color:#1565C0}
+.bridges-summary tr.bsm-tr td{background:#F3E5F5;color:#6A1B9A}
+.bridges-summary tr.bsm-pos td .bsm-delta{color:#2E7D32;font-weight:700}
+.bridges-summary tr.bsm-neg td .bsm-delta{color:#C62828;font-weight:700}
+[data-theme=dark] .bridges-summary tr.bsm-start td,[data-theme=dark] .bridges-summary tr.bsm-end td{background:#2a2416}
+[data-theme=dark] .bridges-summary tr.bsm-vol td{background:#0e1e33;color:#93c5fd}
+[data-theme=dark] .bridges-summary tr.bsm-tr td{background:#1e1030;color:#d8b4fe}
+.bridges-empty{padding:60px 0;text-align:center;color:var(--muted);font-size:13px}
+
 /* ── YoY Growth row ── */
 .row-yoy td{background:#fff;color:#888;font-size:10.5px;font-style:italic;
   border-bottom:1px solid #f0f3f8;padding:3px 12px}
@@ -664,6 +699,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">Point &amp; MPOS</button>
   <button class="tab-btn" data-tab="mposlight" onclick="switchTab(this)">MPOS Light</button>
   <button class="tab-btn" data-tab="mbu" onclick="switchTab(this)">Macro BU Overview</button>
+  <button class="tab-btn" data-tab="bridges" onclick="switchTab(this)">Bridges</button>
 </nav>
 
 <!-- ── Filters ── -->
@@ -1162,6 +1198,92 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   </div>
 </div>
 
+<!-- ── Bridges Panel ── -->
+<div id="bridgesPanel" class="bridges-panel" style="display:none">
+  <div class="bridges-filter-bar">
+    <!-- Bridge metric -->
+    <div class="fg">
+      <label>Bridge de</label>
+      <div class="bg" id="bridgeMetricGrp">
+        <button class="on" data-m="Take Rate" onclick="setBridgeMetric(this)">Take Rate</button>
+        <button            data-m="VC"        onclick="setBridgeMetric(this)">VC</button>
+        <button            data-m="DC"        onclick="setBridgeMetric(this)">DC</button>
+        <button            data-m="BM"        onclick="setBridgeMetric(this)">BM</button>
+      </div>
+    </div>
+    <!-- Macro BU -->
+    <div class="fg">
+      <label>Macro BU</label>
+      <select id="bridgeMacroBUSel" onchange="bridgeMacro=this.value;renderBridgesTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:110px">
+        <option value="Acquiring">Acquiring</option>
+        <option value="Commerce">Commerce</option>
+        <option value="Fintech Services">Fintech Services</option>
+      </select>
+    </div>
+    <div class="bridges-filter-sep"></div>
+    <!-- Period type -->
+    <div class="fg">
+      <label>Tipo</label>
+      <div class="bg" id="bridgeTypeGrp">
+        <button class="on" data-t="mes"     onclick="setBridgeType(this)">Mês</button>
+        <button            data-t="quarter" onclick="setBridgeType(this)">Quarter</button>
+        <button            data-t="ano"     onclick="setBridgeType(this)">Ano</button>
+      </div>
+    </div>
+    <!-- Period A -->
+    <div class="fg">
+      <label>De (período A)</label>
+      <select id="bridgePeriodASel" onchange="bridgePeriodA=this.value;renderBridgesTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
+    </div>
+    <div class="fg">
+      <label>Cenário A</label>
+      <select id="bridgeCenASel" onchange="bridgeCenA=this.value;renderBridgesTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:100px"></select>
+    </div>
+    <!-- Arrow separator -->
+    <div class="fg" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <span style="font-size:18px;font-weight:900;color:var(--muted);padding:2px 4px;line-height:1.6">→</span>
+    </div>
+    <!-- Period B -->
+    <div class="fg">
+      <label>Para (período B)</label>
+      <select id="bridgePeriodBSel" onchange="bridgePeriodB=this.value;renderBridgesTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
+    </div>
+    <div class="fg">
+      <label>Cenário B</label>
+      <select id="bridgeCenBSel" onchange="bridgeCenB=this.value;renderBridgesTab()"
+        style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:100px"></select>
+    </div>
+    <div class="bridges-filter-sep"></div>
+    <!-- Unit -->
+    <div class="fg">
+      <label>Unidade</label>
+      <div class="bg" id="bridgeUnitGrp">
+        <button            data-u="1"       onclick="setBridgeUnit(this)">R$</button>
+        <button            data-u="1000"    onclick="setBridgeUnit(this)">R$ mil</button>
+        <button class="on" data-u="1000000" onclick="setBridgeUnit(this)">R$ M</button>
+      </div>
+    </div>
+  </div>
+  <!-- Chart + summary -->
+  <div class="bridges-body">
+    <div class="bridges-chart-wrap">
+      <div class="bridges-legend" id="bridgesLegend"></div>
+      <canvas id="bridgeChart"></canvas>
+    </div>
+    <div class="bridges-summary" id="bridgesSummary"></div>
+  </div>
+</div>
+
 <!-- ── Key-numbers Panel ── -->
 <div id="keyNumPanel" class="kn-panel" style="display:none">
   <div class="kn-filter-bar">
@@ -1510,6 +1632,7 @@ function initFilters() {
   buildCpaMonthSelectors();
   buildMbuSelects();
   build1x1Selects();
+  buildBridgeSelects();
   // Apply initial granularity state (default=anual: hide mesGroup)
   updateGranVisibility();
 }
@@ -3083,6 +3206,17 @@ let mbuComp          = 'plan_fcast'; // 'plan_fcast' | 'plan_real' | 'fcast_real
 let mbuExpanded      = new Set(); // expanded MNG_1 sections in MBU tab
 let mbuExpandedK2    = new Set(); // expanded MNG_2 rows (key = k1+'|||'+k2)
 
+// ── Bridges tab state ──
+let bridgeMetric  = 'Take Rate';  // 'Take Rate' | 'VC' | 'DC' | 'BM'
+let bridgeType    = 'mes';        // 'mes' | 'quarter' | 'ano'
+let bridgePeriodA = null;
+let bridgePeriodB = null;
+let bridgeCenA    = null;
+let bridgeCenB    = null;
+let bridgeMacro   = 'Acquiring';
+let bridgeUnitDiv = 1_000_000;
+let _bridgeChart  = null;
+
 // Preferred BU order per Macro BU (others appended alphabetically)
 const MBU_BU_ORDER = {
   'Acquiring':        ['Point', 'Online Payments', 'QR'],
@@ -3101,6 +3235,7 @@ function switchTab(btn) {
   const isKeyNums   = currentTab === 'keynums';
   const isEvo       = currentTab === 'evo';
   const isMbu       = currentTab === 'mbu';
+  const isBridges   = currentTab === 'bridges';
 
   document.getElementById('filterBar').style.display       = isPnl       ? '' : 'none';
   document.querySelector('.tbl-wrap').style.display        = isPnl       ? '' : 'none';
@@ -3111,6 +3246,7 @@ function switchTab(btn) {
   document.getElementById('mbuPanel').style.display        = isMbu       ? '' : 'none';
   document.getElementById('keyNumPanel').style.display     = isKeyNums   ? '' : 'none';
   document.getElementById('evoPanel').style.display        = isEvo       ? '' : 'none';
+  document.getElementById('bridgesPanel').style.display    = isBridges   ? '' : 'none';
 
   if(isCpa)       renderCpaTab();
   if(isMpos)      renderMposTab();
@@ -3118,6 +3254,7 @@ function switchTab(btn) {
   if(isKeyNums)   renderKeyNumTab();
   if(isEvo)       renderEvoTab();
   if(isMbu)       renderMbuTab();
+  if(isBridges)   renderBridgesTab();
 }
 
 function setCpaUnit(btn) {
@@ -4598,6 +4735,435 @@ function evoPeriodLabel(key) {
     return `Q${q}'${yr}`;
   }
   return String(key);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BRIDGES TAB
+// ═══════════════════════════════════════════════════════════
+
+function setBridgeMetric(btn) {
+  bridgeMetric = btn.dataset.m;
+  document.querySelectorAll('#bridgeMetricGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  renderBridgesTab();
+}
+function setBridgeType(btn) {
+  bridgeType = btn.dataset.t;
+  bridgePeriodA = null;
+  bridgePeriodB = null;
+  document.querySelectorAll('#bridgeTypeGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  buildBridgeSelects();
+  renderBridgesTab();
+}
+function setBridgeUnit(btn) {
+  bridgeUnitDiv = parseFloat(btn.dataset.u);
+  document.querySelectorAll('#bridgeUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  renderBridgesTab();
+}
+
+function buildBridgeSelects() {
+  if(!allData || !allData.length) return;
+  const cens = optCen.length ? optCen : uniq(allData.map(d => d.Cenario)).sort();
+  const cenOpts = cens.map(c => `<option value="${c}">${shortCen(c)}</option>`).join('');
+
+  ['bridgeCenASel','bridgeCenBSel'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = cenOpts;
+    const def = i === 0 ? (cens.find(c => c==='Plan') || cens[0])
+                        : (cens.find(c => c==='Realizado') || cens[cens.length-1]);
+    if(i === 0 && !bridgeCenA) bridgeCenA = def;
+    if(i === 1 && !bridgeCenB) bridgeCenB = def;
+    el.value = i === 0 ? bridgeCenA : bridgeCenB;
+  });
+
+  // Period options (same logic as 1×1)
+  let periods = [];
+  if(bridgeType === 'mes') {
+    periods = uniq(allData.map(d => String(d.MES))).sort();
+  } else if(bridgeType === 'quarter') {
+    const qs = new Set();
+    allData.forEach(d => { if(d.QUARTER && d.ANO) qs.add(d.QUARTER + '/' + String(d.ANO).slice(2)); });
+    periods = [...qs].sort((a,b) => {
+      const [qa,ya] = a.split('/'); const [qb,yb] = b.split('/');
+      return (parseInt(ya)*10+parseInt(qa[1])) - (parseInt(yb)*10+parseInt(qb[1]));
+    });
+  } else if(bridgeType === 'ano') {
+    periods = uniq(allData.map(d => String(d.ANO))).sort();
+  }
+
+  const periodLbl = p => bridgeType === 'mes' ? mesLabel(parseInt(p)) : p;
+  const periodOptsFn = curVal => periods.map(p =>
+    `<option value="${p}"${p===curVal?' selected':''}>${periodLbl(p)}</option>`
+  ).join('');
+
+  ['bridgePeriodASel','bridgePeriodBSel'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const defA = periods.length >= 2 ? periods[periods.length-2] : periods[0];
+    const defB = periods.length >= 1 ? periods[periods.length-1] : periods[0];
+    if(i === 0 && !bridgePeriodA) bridgePeriodA = defA || null;
+    if(i === 1 && !bridgePeriodB) bridgePeriodB = defB || null;
+    const curVal = i === 0 ? bridgePeriodA : bridgePeriodB;
+    el.innerHTML = periodOptsFn(curVal);
+    if(curVal && periods.includes(curVal)) el.value = curVal;
+    else if(periods.length) {
+      const fb = i === 0 ? (defA||periods[0]) : (defB||periods[0]);
+      if(i === 0) bridgePeriodA = fb; else bridgePeriodB = fb;
+      el.value = fb;
+    }
+  });
+}
+
+// Aggregate all P&L data for a given set of months + scenario + macro BU
+function getBridgePeriodData(mesSet, cenario, macroBU) {
+  if(!mesSet || mesSet.size === 0) return { tpv:0, byK1K2: new Map() };
+  let tpv = 0;
+  const byK1K2 = new Map(); // k1 → Map<k2, value>
+  for(const d of allData) {
+    if(!mesSet.has(d.MES))           continue;
+    if(d.Cenario !== cenario)        continue;
+    if(macroBU && d.Macro_BU !== macroBU) continue;
+    const v = d.Value || 0;
+    if(d.MNG_1 === 'Metrics' && d.MNG_2 === 'TPV') { tpv += v; continue; }
+    if(d.MNG_1 === 'Metrics') continue; // skip NMV etc.
+    if(!byK1K2.has(d.MNG_1)) byK1K2.set(d.MNG_1, new Map());
+    const k2map = byK1K2.get(d.MNG_1);
+    const k2 = d.MNG_2 || '';
+    k2map.set(k2, (k2map.get(k2) || 0) + v);
+  }
+  return { tpv, byK1K2 };
+}
+
+// Sum Take Rate value from a k1k2 map: PM + NM + Collection Fees (from VC)
+function getTRFromK1K2(byK1K2) {
+  let tr = 0;
+  const pm = byK1K2.get('Product Monetization');
+  if(pm) pm.forEach(v => { tr += v; });
+  const nm = byK1K2.get('Net Monetization');
+  if(nm) nm.forEach(v => { tr += v; });
+  const vc = byK1K2.get('Variable Contribution');
+  if(vc) tr += (vc.get('Collection Fees') || 0);
+  return tr;
+}
+
+// Sum metric total (cumulative) from period data
+function getBridgeMetricTotal(data, metric) {
+  const { byK1K2 } = data;
+  if(metric === 'Take Rate') return getTRFromK1K2(byK1K2);
+  const LEVELS = {
+    'VC': ['Product Monetization','Net Monetization','Variable Contribution'],
+    'DC': ['Product Monetization','Net Monetization','Variable Contribution','Direct Contribution'],
+    'BM': ['Product Monetization','Net Monetization','Variable Contribution',
+           'Direct Contribution','Business Contribution','Business Margin'],
+  };
+  let total = 0;
+  for(const k1 of (LEVELS[metric] || [])) {
+    const k2map = byK1K2.get(k1);
+    if(k2map) k2map.forEach(v => { total += v; });
+  }
+  return total;
+}
+
+// Build waterfall segments for the bridge
+function buildBridgeSegments(dataA, dataB, metric) {
+  const { tpv: tpvA, byK1K2: k1k2A } = dataA;
+  const { tpv: tpvB, byK1K2: k1k2B } = dataB;
+  const startVal = getBridgeMetricTotal(dataA, metric);
+  const endVal   = getBridgeMetricTotal(dataB, metric);
+  const trA = getTRFromK1K2(k1k2A);
+  const trB = getTRFromK1K2(k1k2B);
+
+  const segments = [];
+  segments.push({ label: 'A', value: startVal, type: 'start' });
+
+  // Volume + TR rate effects on the Take Rate lines
+  const trDelta   = trB - trA;
+  const tpvDelta  = tpvB - tpvA;
+  const rateA     = tpvA !== 0 ? trA / tpvA : 0;
+  const volEffect = rateA * tpvDelta;
+  const trEffect  = trDelta - volEffect;
+
+  if(Math.abs(volEffect) > 0.01)
+    segments.push({ label: 'Volume (TPV)', value: volEffect, type: 'effect', group: 'vol' });
+  if(Math.abs(trEffect) > 0.01)
+    segments.push({ label: 'Take Rate %', value: trEffect,  type: 'effect', group: 'tr'  });
+
+  // Below-TR lines (absolute delta), depending on bridge metric
+  const BELOW_TR = [];
+  if(metric === 'VC' || metric === 'DC' || metric === 'BM') {
+    BELOW_TR.push({ k1: 'Variable Contribution', excludeK2: 'Collection Fees' });
+  }
+  if(metric === 'DC' || metric === 'BM') {
+    BELOW_TR.push({ k1: 'Direct Contribution', excludeK2: null });
+  }
+  if(metric === 'BM') {
+    BELOW_TR.push({ k1: 'Business Contribution', excludeK2: null });
+    BELOW_TR.push({ k1: 'Business Margin',        excludeK2: null });
+  }
+
+  for(const { k1, excludeK2 } of BELOW_TR) {
+    const k2mapA = k1k2A.get(k1) || new Map();
+    const k2mapB = k1k2B.get(k1) || new Map();
+    const allK2 = [...new Set([...k2mapA.keys(), ...k2mapB.keys()])].filter(Boolean);
+    // Use defined order if available
+    const orderedK2 = MNG2_ORDER[k1] ? MNG2_ORDER[k1].filter(k2 => allK2.includes(k2))
+                                      .concat(allK2.filter(k2 => !MNG2_ORDER[k1].includes(k2)))
+                    : allK2;
+    for(const k2 of orderedK2) {
+      if(excludeK2 && k2 === excludeK2) continue;
+      const vA    = k2mapA.get(k2) || 0;
+      const vB    = k2mapB.get(k2) || 0;
+      const delta = vB - vA;
+      if(Math.abs(delta) < 0.01) continue;
+      segments.push({ label: k2, value: delta, type: 'effect', group: k1 });
+    }
+  }
+
+  segments.push({ label: 'B', value: endVal, type: 'end' });
+  return segments;
+}
+
+function bridgeFmt(v) {
+  if(v === 0 || v == null) return '—';
+  const neg = v < 0;
+  const abs = Math.abs(v) / bridgeUnitDiv;
+  const dec = bridgeUnitDiv >= 1_000_000 ? 1 : 0;
+  const str = abs.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  return neg ? `(${str})` : str;
+}
+
+function renderBridgesTab() {
+  if(!allData || !allData.length) return;
+  buildBridgeSelects();
+
+  const mesSetA = get1x1MesSet(bridgePeriodA, bridgeType);
+  const mesSetB = get1x1MesSet(bridgePeriodB, bridgeType);
+  const ud      = bridgeUnitDiv;
+  const udLbl   = ud >= 1e6 ? 'R$ M' : ud >= 1e3 ? 'R$ mil' : 'R$';
+
+  const summaryEl = document.getElementById('bridgesSummary');
+  const legendEl  = document.getElementById('bridgesLegend');
+
+  if(!bridgePeriodA || !bridgePeriodB || !bridgeCenA || !bridgeCenB) {
+    if(_bridgeChart) { try{_bridgeChart.destroy()}catch(e){} _bridgeChart = null; }
+    summaryEl.innerHTML = '<div class="bridges-empty">Selecione os períodos e cenários para gerar a bridge.</div>';
+    legendEl.innerHTML  = '';
+    return;
+  }
+
+  const dataA    = getBridgePeriodData(mesSetA, bridgeCenA, bridgeMacro);
+  const dataB    = getBridgePeriodData(mesSetB, bridgeCenB, bridgeMacro);
+  const segments = buildBridgeSegments(dataA, dataB, bridgeMetric);
+
+  // ── Waterfall chart data ──
+  const labels = [];
+  const chartData = [];
+  const colors  = [];
+  const segRefs = []; // keep segment ref for tooltip
+  let running = 0;
+
+  const DARK_A  = '#1a1a1a';
+  const DARK_B  = '#4a7fc1';
+  const COL_VOL = 'rgba(21,101,192,0.85)';
+  const COL_TR  = 'rgba(106,27,154,0.85)';
+  const COL_POS = 'rgba(46,125,50,0.85)';
+  const COL_NEG = 'rgba(198,40,40,0.85)';
+
+  for(const seg of segments) {
+    labels.push(seg.label);
+    segRefs.push(seg);
+    const v = seg.value / ud;
+    if(seg.type === 'start') {
+      chartData.push([0, v]);
+      colors.push(DARK_A);
+      running = v;
+    } else if(seg.type === 'end') {
+      chartData.push([0, v]);
+      colors.push(DARK_B);
+    } else {
+      const base = running;
+      const next = running + v;
+      chartData.push([Math.min(base, next), Math.max(base, next)]);
+      if(seg.group === 'vol')       colors.push(COL_VOL);
+      else if(seg.group === 'tr')   colors.push(COL_TR);
+      else if(v >= 0)               colors.push(COL_POS);
+      else                          colors.push(COL_NEG);
+      running = next;
+    }
+  }
+
+  // Connector line plugin (draws horizontal lines at bar top/bottom to connect bars)
+  const connectorPlugin = {
+    id: 'bridgeConnectors',
+    afterDatasetsDraw(chart) {
+      const { ctx, data } = chart;
+      const meta = chart.getDatasetMeta(0);
+      if(!meta || !meta.data.length) return;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(128,128,128,0.4)';
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([3,3]);
+      for(let i = 0; i < meta.data.length - 1; i++) {
+        const seg = segRefs[i];
+        const nextSeg = segRefs[i+1];
+        if(seg.type === 'end') continue;
+        const bar  = meta.data[i];
+        const barN = meta.data[i+1];
+        // connector at the "landing" y of current bar
+        let y;
+        if(seg.type === 'start') y = chart.scales.y.getPixelForValue(chartData[i][1]);
+        else y = chart.scales.y.getPixelForValue(
+          seg.value >= 0 ? chartData[i][1] : chartData[i][0]
+        );
+        ctx.beginPath();
+        ctx.moveTo(bar.x + bar.width/2, y);
+        ctx.lineTo(barN.x - barN.width/2, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  };
+
+  // Value labels on bars
+  const valueLabelPlugin = {
+    id: 'bridgeValueLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      ctx.save();
+      ctx.font = '600 10px system-ui,sans-serif';
+      ctx.textAlign = 'center';
+      meta.data.forEach((bar, i) => {
+        const seg = segRefs[i];
+        const v   = seg.value;
+        if(v === 0) return;
+        const lbl = seg.type === 'start' || seg.type === 'end'
+          ? bridgeFmt(v) : (v >= 0 ? '+' : '') + bridgeFmt(v);
+        ctx.fillStyle = v < 0 ? '#C62828' : '#1a1a1a';
+        const yPos = seg.type === 'start' || seg.type === 'end'
+          ? bar.y - 5
+          : (v >= 0 ? chartData[i][1] * ud / ud : chartData[i][0] * ud / ud);
+        // Use chart scale for y position
+        const pxY = seg.type === 'start' || seg.type === 'end'
+          ? chart.scales.y.getPixelForValue(chartData[i][1]) - 6
+          : v >= 0
+            ? chart.scales.y.getPixelForValue(chartData[i][1]) - 6
+            : chart.scales.y.getPixelForValue(chartData[i][0]) + 14;
+        ctx.fillText(lbl, bar.x, pxY);
+      });
+      ctx.restore();
+    }
+  };
+
+  if(_bridgeChart) { try{_bridgeChart.destroy()}catch(e){} _bridgeChart = null; }
+
+  const ctx = document.getElementById('bridgeChart').getContext('2d');
+  _bridgeChart = new Chart(ctx, {
+    type: 'bar',
+    plugins: [connectorPlugin, valueLabelPlugin],
+    data: {
+      labels,
+      datasets: [{
+        label: bridgeMetric,
+        data:  chartData,
+        backgroundColor: colors,
+        borderRadius: 3,
+        barPercentage: 0.65,
+        categoryPercentage: 0.8,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 28 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const seg = segRefs[ctx.dataIndex];
+              const v   = seg.value;
+              if(seg.type === 'start' || seg.type === 'end') {
+                return `${bridgeFmt(v)} ${udLbl}`;
+              }
+              return `${v >= 0 ? '+' : ''}${bridgeFmt(v)} ${udLbl}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#888',
+          maxRotation: 30, minRotation: 0 } },
+        y: {
+          grid: { color: 'rgba(128,128,128,0.1)' },
+          ticks: { callback: v => bridgeFmt(v * ud), font: { size: 10 } }
+        }
+      }
+    }
+  });
+
+  // ── Legend ──
+  const lPeriodA = format1x1PeriodLabel(bridgePeriodA, bridgeType);
+  const lPeriodB = format1x1PeriodLabel(bridgePeriodB, bridgeType);
+  legendEl.innerHTML = `
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_A}"></span>A: ${lPeriodA} / ${shortCen(bridgeCenA)}</span>
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_B}"></span>B: ${lPeriodB} / ${shortCen(bridgeCenB)}</span>
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_VOL}"></span>Efeito Volume</span>
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_TR}"></span>Efeito Take Rate %</span>
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_POS}"></span>Absoluto +</span>
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_NEG}"></span>Absoluto −</span>`;
+
+  // ── Summary table ──
+  const totalDelta = (getBridgeMetricTotal(dataB, bridgeMetric) - getBridgeMetricTotal(dataA, bridgeMetric));
+  const tpvA = dataA.tpv, tpvB = dataB.tpv;
+  const trA  = getTRFromK1K2(dataA.byK1K2);
+  const trB  = getTRFromK1K2(dataB.byK1K2);
+  const rateA = tpvA !== 0 ? (trA / tpvA * 100) : null;
+  const rateB = tpvB !== 0 ? (trB / tpvB * 100) : null;
+
+  let rows = '';
+  for(const seg of segments) {
+    const v = seg.value;
+    const dPct = getBridgeMetricTotal(dataA, bridgeMetric) !== 0
+      ? (v / Math.abs(getBridgeMetricTotal(dataA, bridgeMetric)) * 100) : null;
+    const dPctStr = dPct != null ? `${dPct >= 0 ? '+' : ''}${dPct.toFixed(2)}%` : '—';
+    const fv = (seg.type === 'start' || seg.type === 'end') ? bridgeFmt(v)
+                : (v >= 0 ? '+' : '') + bridgeFmt(v);
+    const rowClass = seg.type === 'start' ? 'bsm-start'
+                   : seg.type === 'end'   ? 'bsm-end'
+                   : seg.group === 'vol'  ? 'bsm-vol'
+                   : seg.group === 'tr'   ? 'bsm-tr'
+                   : v >= 0              ? 'bsm-pos' : 'bsm-neg';
+    rows += `<tr class="${rowClass}">
+      <td>${seg.label}</td>
+      <td>${fv}</td>
+      <td class="bsm-delta">${seg.type==='start'||seg.type==='end' ? '—' : dPctStr}</td>
+    </tr>`;
+  }
+
+  const tpvRow = tpvA || tpvB ? `
+    <tr style="border-top:2px solid var(--border)">
+      <td style="color:var(--muted)">TPV A → B</td>
+      <td style="color:var(--muted)">${bridgeFmt(tpvA)} → ${bridgeFmt(tpvB)}</td>
+      <td style="color:var(--muted)">${tpvA ? ((tpvB-tpvA)/Math.abs(tpvA)*100).toFixed(2)+'%' : '—'}</td>
+    </tr>` : '';
+
+  const rateRow = rateA != null || rateB != null ? `
+    <tr>
+      <td style="color:var(--muted)">Take Rate % A → B</td>
+      <td style="color:var(--muted)">${rateA != null ? rateA.toFixed(2)+'%' : '—'} → ${rateB != null ? rateB.toFixed(2)+'%' : '—'}</td>
+      <td style="color:var(--muted)">${(rateA!=null&&rateB!=null) ? (rateB-rateA>=0?'+':'')+(rateB-rateA).toFixed(2)+'pp' : '—'}</td>
+    </tr>` : '';
+
+  summaryEl.innerHTML = `
+    <table>
+      <thead><tr>
+        <th style="text-align:left">Componente</th>
+        <th>${udLbl}</th>
+        <th>% de A</th>
+      </tr></thead>
+      <tbody>${rows}${tpvRow}${rateRow}</tbody>
+    </table>`;
 }
 
 function renderEvoTab() {
