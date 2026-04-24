@@ -4922,16 +4922,19 @@ function buildBridgeSegments(dataA, dataB, metric) {
   segments.push({ label: 'A', value: startVal, type: 'start' });
 
   // Volume + TR rate effects on the Take Rate lines
-  const trDelta   = trB - trA;
-  const tpvDelta  = tpvB - tpvA;
-  const rateA     = tpvA !== 0 ? trA / tpvA : 0;
-  const volEffect = rateA * tpvDelta;
-  const trEffect  = trDelta - volEffect;
+  const trDelta    = trB - trA;
+  const tpvDelta   = tpvB - tpvA;
+  const rateA      = tpvA !== 0 ? trA / tpvA : 0;      // e.g. 0.0159
+  const rateB      = tpvB !== 0 ? trB / tpvB : null;   // e.g. 0.0181
+  const volEffect  = rateA * tpvDelta;                  // ΔTPV × rate_A
+  const trEffect   = trDelta - volEffect;               // TPV_B × (rate_B − rate_A)
 
   if(Math.abs(volEffect) > 0.01)
-    segments.push({ label: 'Volume (TPV)', value: volEffect, type: 'effect', group: 'vol' });
+    segments.push({ label: 'Volume (TPV)', value: volEffect, type: 'effect', group: 'vol',
+      meta: { tpvDelta, rateA: rateA * 100 } });
   if(Math.abs(trEffect) > 0.01)
-    segments.push({ label: 'Take Rate %', value: trEffect,  type: 'effect', group: 'tr'  });
+    segments.push({ label: 'Take Rate %', value: trEffect,  type: 'effect', group: 'tr',
+      meta: { rateA: rateA * 100, rateB: rateB !== null ? rateB * 100 : null, tpvB } });
 
   // Below-TR lines (absolute delta), depending on bridge metric
   const BELOW_TR = [];
@@ -5225,10 +5228,6 @@ function renderBridgesTab() {
 
   // ── Summary table ──
   const tpvA  = dataA.tpv, tpvB = dataB.tpv;
-  const trA   = getTRFromK1K2(dataA.byK1K2);
-  const trB   = getTRFromK1K2(dataB.byK1K2);
-  const rateA = tpvA ? (trA / tpvA * 100) : null;
-  const rateB = tpvB ? (trB / tpvB * 100) : null;
   const baseA = getBridgeMetricTotal(dataA, bridgeMetric);
 
   let rows = '';
@@ -5236,28 +5235,40 @@ function renderBridgesTab() {
     const v   = seg.value;
     const isAnchored = seg.type === 'start' || seg.type === 'end';
     const dPct = (!isAnchored && baseA !== 0) ? (v / Math.abs(baseA) * 100) : null;
-    const dPctStr = dPct != null ? `${dPct >= 0 ? '+' : ''}${dPct.toFixed(2)}%` : '—';
+    const dPctStr = dPct != null ? `${dPct >= 0 ? '+' : ''}${dPct.toFixed(1)}%` : '—';
     const fv  = isAnchored ? bridgeFmt(v) : (v >= 0 ? '+' : '') + bridgeFmt(v);
     const rc  = seg.type === 'start' ? 'bsm-start'
               : seg.type === 'end'   ? 'bsm-end'
               : seg.group === 'vol'  ? 'bsm-vol'
               : seg.group === 'tr'   ? 'bsm-tr'
               : v >= 0              ? 'bsm-pos' : 'bsm-neg';
-    rows += `<tr class="${rc}"><td>${seg.label}</td><td>${fv}</td><td class="bsm-delta">${dPctStr}</td></tr>`;
+
+    // Build contextual subtitle for vol/rate segments
+    let sub = '';
+    if(seg.meta && seg.group === 'vol') {
+      const sign = seg.meta.tpvDelta >= 0 ? '+' : '';
+      sub = `ΔTPV: ${sign}${bridgeFmt(seg.meta.tpvDelta)} ${udLbl} × ${seg.meta.rateA.toFixed(2)}%`;
+    } else if(seg.meta && seg.group === 'tr') {
+      const rA = seg.meta.rateA   != null ? seg.meta.rateA.toFixed(2)   + '%' : '—';
+      const rB = seg.meta.rateB   != null ? seg.meta.rateB.toFixed(2)   + '%' : '—';
+      const pp = (seg.meta.rateA != null && seg.meta.rateB != null)
+        ? ` (${(seg.meta.rateB - seg.meta.rateA) >= 0 ? '+' : ''}${(seg.meta.rateB - seg.meta.rateA).toFixed(2)}pp)`
+        : '';
+      sub = `${rA} → ${rB}${pp}`;
+    }
+    const labelHtml = sub
+      ? `${seg.label}<br><span style="font-size:10px;color:var(--muted);font-weight:400">${sub}</span>`
+      : seg.label;
+
+    rows += `<tr class="${rc}"><td>${labelHtml}</td><td>${fv}</td><td class="bsm-delta">${dPctStr}</td></tr>`;
   }
 
+  // TPV context footer (rate info is now embedded in the TR segment row)
   const tpvRow = (tpvA || tpvB) ? `
     <tr style="border-top:2px solid var(--border)">
       <td style="color:var(--muted)">TPV A → B</td>
-      <td style="color:var(--muted)">${bridgeFmt(tpvA)} → ${bridgeFmt(tpvB)}</td>
-      <td style="color:var(--muted)">${tpvA ? ((tpvB-tpvA)/Math.abs(tpvA)*100).toFixed(2)+'%' : '—'}</td>
-    </tr>` : '';
-
-  const rateRow = (rateA != null || rateB != null) ? `
-    <tr>
-      <td style="color:var(--muted)">Take Rate % A → B</td>
-      <td style="color:var(--muted)">${rateA != null ? rateA.toFixed(2)+'%' : '—'} → ${rateB != null ? rateB.toFixed(2)+'%' : '—'}</td>
-      <td style="color:var(--muted)">${(rateA!=null&&rateB!=null) ? (rateB-rateA>=0?'+':'')+(rateB-rateA).toFixed(2)+'pp' : '—'}</td>
+      <td style="color:var(--muted)">${bridgeFmt(tpvA)} → ${bridgeFmt(tpvB)} ${udLbl}</td>
+      <td style="color:var(--muted)">${tpvA ? ((tpvB-tpvA)/Math.abs(tpvA)*100).toFixed(1)+'%' : '—'}</td>
     </tr>` : '';
 
   summaryEl.innerHTML = `
@@ -5267,7 +5278,7 @@ function renderBridgesTab() {
         <th>${udLbl}</th>
         <th>% de A</th>
       </tr></thead>
-      <tbody>${rows}${tpvRow}${rateRow}</tbody>
+      <tbody>${rows}${tpvRow}</tbody>
     </table>`;
 }
 
