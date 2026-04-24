@@ -5037,8 +5037,6 @@ function renderBridgesTab() {
   const segRefs  = [];
   const DARK_A  = '#1a1a1a';
   const DARK_B  = '#4a7fc1';
-  const COL_VOL = 'rgba(21,101,192,0.85)';
-  const COL_TR  = 'rgba(106,27,154,0.85)';
   const COL_POS = 'rgba(46,125,50,0.85)';
   const COL_NEG = 'rgba(198,40,40,0.85)';
 
@@ -5079,9 +5077,7 @@ function renderBridgesTab() {
       const base = running;
       const next = running + v;
       chartData.push([Math.min(base, next), Math.max(base, next)]);
-      colors.push(seg.group === 'vol' ? COL_VOL
-                : seg.group === 'tr'  ? COL_TR
-                : v >= 0              ? COL_POS : COL_NEG);
+      colors.push(v >= 0 ? COL_POS : COL_NEG);
       running = next;
     }
   }
@@ -5227,10 +5223,8 @@ function renderBridgesTab() {
   legendEl.innerHTML = `
     <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_A}"></span>A: ${lA} / ${shortCen(bridgeCenA)}</span>
     <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_B}"></span>B: ${lB} / ${shortCen(bridgeCenB)}</span>
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_VOL}"></span>Efeito Volume</span>
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_TR}"></span>Efeito Take Rate %</span>
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_POS}"></span>Absoluto +</span>
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_NEG}"></span>Absoluto −</span>`;
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_POS}"></span>Efeito positivo</span>
+    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_NEG}"></span>Efeito negativo</span>`;
 
   // ── Summary table ──
   const tpvA  = dataA.tpv, tpvB = dataB.tpv;
