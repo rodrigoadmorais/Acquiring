@@ -5035,8 +5035,6 @@ function renderBridgesTab() {
   const chartData = [];
   const colors   = [];
   const segRefs  = [];
-  let running = 0;
-
   const DARK_A  = '#1a1a1a';
   const DARK_B  = '#4a7fc1';
   const COL_VOL = 'rgba(21,101,192,0.85)';
@@ -5044,16 +5042,38 @@ function renderBridgesTab() {
   const COL_POS = 'rgba(46,125,50,0.85)';
   const COL_NEG = 'rgba(198,40,40,0.85)';
 
+  // ── Pass 1: compute running totals → Y scale ──
+  // (A and B values + all intermediate running totals)
+  const allRunning = [];
+  {
+    let r = 0;
+    for(const seg of segments) {
+      const v = seg.value / ud;
+      if(seg.type === 'start')    { allRunning.push(v); r = v; }
+      else if(seg.type === 'end') { allRunning.push(v); }
+      else                        { r += v; allRunning.push(r); }
+    }
+  }
+  const yMin      = Math.min(...allRunning);
+  const yMax      = Math.max(...allRunning);
+  const yRange    = Math.max(yMax - yMin, Math.abs(yMax) * 0.05, 1);
+  const yPad      = yRange * 0.18;
+  const yScaleMin = yMin - yPad;
+  const yScaleMax = yMax + yPad;
+
+  // ── Pass 2: build float-bar data ──
+  // A and B bars start at yScaleMin (fills chart bottom → value = "broken" visual)
+  let running = 0;
   for(const seg of segments) {
     labels.push(seg.label);
     segRefs.push(seg);
     const v = seg.value / ud;
     if(seg.type === 'start') {
-      chartData.push([0, v]);
+      chartData.push([yScaleMin, v]);   // ← base at axis min, not 0
       colors.push(DARK_A);
       running = v;
     } else if(seg.type === 'end') {
-      chartData.push([0, v]);
+      chartData.push([yScaleMin, v]);   // ← same for B
       colors.push(DARK_B);
     } else {
       const base = running;
@@ -5066,7 +5086,7 @@ function renderBridgesTab() {
     }
   }
 
-  // ── Connector line plugin ──
+  // ── Connector line plugin (+ break symbol on A/B bars) ──
   const connectorPlugin = {
     id: 'bridgeConnectors',
     afterDatasetsDraw(chart) {
@@ -5074,6 +5094,8 @@ function renderBridgesTab() {
       if(!meta || !meta.data.length) return;
       const { ctx } = chart;
       ctx.save();
+
+      // Dashed connectors between bars
       ctx.strokeStyle = 'rgba(128,128,128,0.35)';
       ctx.lineWidth   = 1;
       ctx.setLineDash([4,3]);
@@ -5084,16 +5106,44 @@ function renderBridgesTab() {
         const barN = meta.data[i+1];
         const hw   = (bar.width  || 20) / 2;
         const hwN  = (barN.width || 20) / 2;
-        // y = the "top" of the running stack after this bar
         const landingVal = seg.type === 'start'
           ? chartData[i][1]
           : seg.value >= 0 ? chartData[i][1] : chartData[i][0];
         const y = chart.scales.y.getPixelForValue(landingVal);
         ctx.beginPath();
-        ctx.moveTo(bar.x  + hw,  y);
+        ctx.moveTo(bar.x + hw,  y);
         ctx.lineTo(barN.x - hwN, y);
         ctx.stroke();
       }
+
+      // Break symbol (zigzag) near the bottom of A and B bars
+      ctx.setLineDash([]);
+      ctx.lineWidth = 2;
+      meta.data.forEach((bar, i) => {
+        const seg = segRefs[i];
+        if(seg.type !== 'start' && seg.type !== 'end') return;
+        const hw   = (bar.width || 20) / 2;
+        const yBot = chart.chartArea.bottom - 8; // near bottom of chart area
+        const amp  = 5;  // zigzag amplitude
+        const step = hw * 0.35;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth   = 3;
+        ctx.beginPath();
+        ctx.moveTo(bar.x - hw, yBot);
+        ctx.lineTo(bar.x - step, yBot - amp);
+        ctx.lineTo(bar.x + step, yBot + amp);
+        ctx.lineTo(bar.x + hw, yBot);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth   = 1;
+        ctx.beginPath();
+        ctx.moveTo(bar.x - hw, yBot);
+        ctx.lineTo(bar.x - step, yBot - amp);
+        ctx.lineTo(bar.x + step, yBot + amp);
+        ctx.lineTo(bar.x + hw, yBot);
+        ctx.stroke();
+      });
+
       ctx.restore();
     }
   };
@@ -5125,25 +5175,6 @@ function renderBridgesTab() {
     }
   };
 
-  // ── Compute focused Y scale (zoom in on the "interesting" range) ──
-  // Track all running intermediate values to find the visible window
-  const allRunning = [];
-  {
-    let r = 0;
-    for(const seg of segments) {
-      const v = seg.value / ud;
-      if(seg.type === 'start')     { allRunning.push(v); r = v; }
-      else if(seg.type === 'end')  { allRunning.push(v); }
-      else                          { r += v; allRunning.push(r); }
-    }
-  }
-  const yMin   = Math.min(...allRunning);
-  const yMax   = Math.max(...allRunning);
-  const yRange = Math.max(yMax - yMin, Math.abs(yMax) * 0.05, 1);
-  const yPad   = yRange * 0.18;
-  const yScaleMin = yMin - yPad;
-  const yScaleMax = yMax + yPad;
-
   if(_bridgeChart) { try{_bridgeChart.destroy()}catch(e){} _bridgeChart = null; }
 
   const ctx = document.getElementById('bridgeChart').getContext('2d');
@@ -5159,7 +5190,6 @@ function renderBridgesTab() {
         borderRadius: 3,
         barPercentage: 0.6,
         categoryPercentage: 0.75,
-        clip: false,
       }]
     },
     options: {
