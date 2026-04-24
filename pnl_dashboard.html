@@ -5426,6 +5426,16 @@ function renderBridgesTab() {
 
   const segments = buildBridgeSegments(dataA, dataB, bridgeMetric);
 
+  // ── Label A/B bars with actual period · scenario names ──
+  const _lA = format1x1PeriodLabel(bridgePeriodA, bridgeType);
+  const _lB = format1x1PeriodLabel(bridgePeriodB, bridgeType);
+  const _ctxA = `${_lA} · ${shortCen(bridgeCenA)}`;
+  const _ctxB = `${_lB} · ${shortCen(bridgeCenB)}`;
+  const _startSeg = segments.find(s => s.type === 'start');
+  const _endSeg   = segments.find(s => s.type === 'end');
+  if(_startSeg) _startSeg.label = _ctxA;
+  if(_endSeg)   _endSeg.label   = _ctxB;
+
   // ── Build waterfall float-bar data ──
   const labels   = [];
   const chartData = [];
