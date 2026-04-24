@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>P&L Brasil</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root {
   --yellow:#FFE600; --bg:#F0F2F5; --card:#fff; --border:#E0E0E0;
@@ -38,7 +39,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
          background:rgba(255,255,255,.6);cursor:pointer;font-size:11px;
          font-weight:700;color:#333;transition:.15s}
 .btn-hdr:hover{background:rgba(255,255,255,.95)}
-.btn-hdr.on{background:#333;color:var(--yellow);border-color:#333}
+.btn-hdr.on{background:#FFE600;color:#1a1a1a;border-color:#1a1a1a}
 
 /* ── Filters ── */
 .filters{background:var(--card);border-bottom:2px solid var(--border);
@@ -57,7 +58,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
       font-size:11px;font-weight:600;transition:.15s;white-space:nowrap;
       user-select:none}
 .pill:hover{border-color:var(--blue);color:var(--blue)}
-.pill.on{border-color:var(--blue);background:var(--blue);color:#fff}
+.pill.on{border-color:#FFE600;background:#FFE600;color:#1a1a1a}
 
 /* ── Btn group ── */
 .bg{display:flex;border:1.5px solid var(--border);border-radius:7px;overflow:hidden}
@@ -65,7 +66,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
            background:var(--card);color:var(--muted);cursor:pointer;
            font-size:11px;font-weight:600;transition:.15s;white-space:nowrap}
 .bg button:last-child{border-right:none}
-.bg button.on{background:var(--blue);color:#fff}
+.bg button.on{background:#FFE600;color:#1a1a1a}
 .bg button:hover:not(.on){background:var(--bg);color:var(--text)}
 
 /* ── Multi-select dropdown ── */
@@ -108,16 +109,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 #pnlTable thead tr:first-child th:last-child{border-radius:0 10px 0 0}
 #pnlTable tbody tr:last-child td:first-child{border-radius:0 0 0 10px}
 #pnlTable tbody tr:last-child td:last-child{border-radius:0 0 10px 0}
-#pnlTable th{background:#1a1a1a;color:#FFE600;padding:9px 12px;
+#pnlTable th{background:#FFE600;color:#1a1a1a;padding:9px 12px;
              text-align:right;white-space:nowrap;font-size:11px;font-weight:600;
              position:sticky;top:0;z-index:100;
-             border-bottom:2px solid #000;letter-spacing:.3px}
+             border-bottom:2px solid #1a1a1a;letter-spacing:.3px}
 #pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
-                        background:#1a1a1a;min-width:260px;max-width:340px;
+                        background:#FFE600;min-width:260px;max-width:340px;
                         font-size:12px;letter-spacing:.4px}
-#pnlTable th.grp-hdr{background:#111;border-left:2px solid #000}
-#pnlTable th.col-total-hdr{background:#2a2a2a;border-left:2px solid #000}
-#pnlTable th.col-var-hdr{background:#2a1a00;border-left:1px solid #000}
+#pnlTable th.grp-hdr{background:#E8D000;border-left:2px solid #1a1a1a}
+#pnlTable th.col-total-hdr{background:#F0DC00;border-left:2px solid #1a1a1a}
+#pnlTable th.col-var-hdr{background:#E0C800;border-left:1px solid #1a1a1a}
 
 #pnlTable td{padding:5px 12px;border-bottom:1px solid var(--border);
              white-space:nowrap;text-align:right}
@@ -128,24 +129,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 
 /* ── Row levels  (Tableau-inspired) ── */
 
-/* L1 = section header: charcoal ML, yellow text, uppercase */
+/* L1 = section header: yellow ML, dark text, uppercase */
 .row-l1 td{
-  background:#1a1a1a;color:#FFE600;
+  background:#FFE600;color:#1a1a1a;
   font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;
-  border-top:3px solid #000;border-bottom:1px solid #000;
+  border-top:3px solid #E0C800;border-bottom:1px solid #E0C800;
   padding-top:7px;padding-bottom:7px}
-.row-l1 td.sticky-col{background:#1a1a1a;color:#FFE600}
+.row-l1 td.sticky-col{background:#FFE600;color:#1a1a1a}
 [data-theme=dark] .row-l1 td{background:#111;color:#FFE600;border-color:#000}
 [data-theme=dark] .row-l1 td.sticky-col{background:#111}
 
 /* L1 arrow */
-.row-l1 .xarr{color:#FFE600}
+.row-l1 .xarr{color:#1a1a1a}
 
 /* L2 = sub-total: light yellow bg, bold */
 .row-l2 td{
   background:#FFFDE7;font-weight:700;font-size:12px;color:#1a1a1a;
   border-bottom:1px solid #F0E060}
-.row-l2 td.sticky-col{background:#FFFDE7;border-left:3px solid #FFE600}
+.row-l2 td.sticky-col{background:#FFFDE7;border-left:3px solid #1a1a1a}
 [data-theme=dark] .row-l2 td{background:#2a2200;color:#FFE600;border-color:#3a3000}
 [data-theme=dark] .row-l2 td.sticky-col{background:#2a2200;border-left-color:#FFE600}
 
@@ -216,10 +217,10 @@ tr.row-selected td.sticky-col{
 .row-subtotal td{
   background:#FFFDE7;color:#1a1a1a;
   font-weight:700;font-size:12.5px;
-  border-top:2px solid #FFE600;border-bottom:3px solid #1a1a1a;
+  border-top:2px solid #1a1a1a;border-bottom:3px solid #FFE600;
   padding-top:6px;padding-bottom:6px}
 .row-subtotal td.sticky-col{
-  background:#FFFDE7;border-left:4px solid #1a1a1a}
+  background:#FFFDE7;border-left:4px solid #FFE600}
 [data-theme=dark] .row-subtotal td{background:#2a2200;color:#FFE600;border-color:#FFE600}
 [data-theme=dark] .row-subtotal td.sticky-col{background:#2a2200;border-left-color:#FFE600}
 
@@ -258,7 +259,7 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
          font-weight:600;transition:.15s;white-space:nowrap;
          display:flex;align-items:center;margin-bottom:-2px}
 .tab-btn:hover{color:var(--text);background:var(--bg)}
-.tab-btn.on{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-btn.on{color:#1a1a1a;border-bottom-color:#FFE600;font-weight:700}
 
 /* ── CPA / MPOS panel ── */
 .cpa-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
@@ -401,21 +402,21 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
               font-size:11px;font-weight:700;position:sticky;top:0;z-index:100;
               border-bottom:1px solid rgba(0,0,0,.15);letter-spacing:.3px}
 .cpa-table th.cpa-name-hdr{text-align:left;position:sticky;left:0;z-index:200;
-                            background:#1a1a1a;color:#FFE600;
+                            background:#FFE600;color:#1a1a1a;
                             min-width:240px;max-width:360px;font-size:12px}
 /* Monthly columns */
 .cpa-hdr-monthly{background:#C8860A;color:#fff;font-weight:700}
 .cpa-hdr-real{background:#E8A020;color:#fff;font-weight:700}
 /* YTD columns */
-.cpa-hdr-ytd{background:#1a1a1a;color:#FFE600;font-weight:700}
+.cpa-hdr-ytd{background:#FFE600;color:#1a1a1a;font-weight:700}
 /* Gap column */
 .cpa-hdr-sep{background:#F2F2F2;width:8px;padding:0;border:none}
 /* Delta columns */
 .cpa-hdr-delta{background:#333;color:#FFE600;font-weight:700;border-left:1px solid #444;font-size:10px}
 /* Group sub-header row */
-.cpa-table tr.cpa-grp-hdr th{background:#1a1a1a;color:#FFE600;font-size:10px;
-                               padding:4px 12px;border-bottom:1px solid #000}
-.cpa-table tr.cpa-grp-hdr th.cpa-name-hdr{background:#1a1a1a;color:#FFE600}
+.cpa-table tr.cpa-grp-hdr th{background:#FFE600;color:#1a1a1a;font-size:10px;
+                               padding:4px 12px;border-bottom:1px solid #E0C800}
+.cpa-table tr.cpa-grp-hdr th.cpa-name-hdr{background:#FFE600;color:#1a1a1a}
 /* Dark theme overrides for column headers */
 [data-theme=dark] .cpa-hdr-real{background:#b87418;color:#fff9e6}
 [data-theme=dark] .cpa-hdr-monthly{background:#9e6a0c;color:#fff9e6}
@@ -429,12 +430,12 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .cpa-table td.cpa-name-cell{text-align:left;position:sticky;left:0;
                              background:#fff;z-index:50;
                              min-width:240px;max-width:360px}
-/* Block header row — charcoal ML divider */
-.cpa-row-block td{background:#1a1a1a;color:#FFE600;font-weight:700;font-size:11px;
+/* Block header row — yellow ML divider */
+.cpa-row-block td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:11px;
                   letter-spacing:.5px;text-transform:uppercase;
                   border-top:6px solid var(--bg);border-bottom:none;
                   padding-top:8px;padding-bottom:8px}
-.cpa-row-block td.cpa-name-cell{background:#1a1a1a;color:#FFE600}
+.cpa-row-block td.cpa-name-cell{background:#FFE600;color:#1a1a1a}
 [data-theme=dark] .cpa-row-block td{background:#111;color:#FFE600}
 [data-theme=dark] .cpa-row-block td.cpa-name-cell{background:#111}
 /* Total row — amber accent */
@@ -505,7 +506,7 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
              font-weight:700;transition:.15s;white-space:nowrap;display:flex;
              align-items:center;gap:5px;line-height:1.4}
 .cpa-cfg-btn:hover{border-color:var(--blue);color:var(--blue)}
-.cpa-cfg-btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.cpa-cfg-btn.on{background:#FFE600;color:#1a1a1a;border-color:#FFE600}
 
 /* ── Line Config Modal ── */
 #lineConfigModal{display:none;position:fixed;inset:0;z-index:1500;
@@ -545,8 +546,8 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
          background:var(--card);color:var(--text);cursor:pointer;
          font-size:12px;font-weight:600;transition:.15s}
 .lcm-btn:hover{background:var(--bg)}
-.lcm-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
-.lcm-btn.primary:hover{background:#1256a8}
+.lcm-btn.primary{background:#FFE600;color:#1a1a1a;border-color:#FFE600}
+.lcm-btn.primary:hover{background:#E0C000}
 </style>
 </head>
 <body>
@@ -670,10 +671,12 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
     </div>
   </div>
 
-  <!-- Meses filtro (Período Total) — pills inline -->
+  <!-- Meses filtro (Período Total) — pills por Ano + Mês -->
   <div class="fg" id="mesTotalGroup" style="display:none">
-    <label>Meses &nbsp;<button onclick="mesTotalAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
-    <div id="mesTotalPills" class="pills" style="max-width:600px"></div>
+    <label>Ano &nbsp;<button onclick="mesTotalAnoAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalAnoAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
+    <div id="mesTotalAnoPills" class="pills"></div>
+    <label style="margin-top:5px">Mês &nbsp;<button onclick="mesTotalMesAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalMesAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
+    <div id="mesTotalMesPills" class="pills"></div>
   </div>
 
   <div class="sep"></div>
@@ -756,6 +759,7 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
     <div class="bg" id="displayGrp">
       <button class="on" data-dm="abs" onclick="setDisplayMode(this)">Abs</button>
       <button data-dm="pct_tpv" onclick="setDisplayMode(this)">% TPV</button>
+      <button data-dm="pct_nmv" onclick="setDisplayMode(this)">% NMV</button>
     </div>
   </div>
 
@@ -1082,14 +1086,15 @@ let selAnos  = [];   // selected anos (strings)
 let selMacro = [];
 let selProd  = [];
 let selSecao = [];   // selected MNG_1 sections
-let selMesTotal = []; // selected months for Período Total view
-let optMesTotal = []; // available months for Período Total multi-select
+let selAnoTotal      = []; // selected years for Período Total
+let optAnoTotal      = []; // available years for Período Total
+let selMonthNumTotal = [1,2,3,4,5,6,7,8,9,10,11,12]; // selected month numbers 1-12
 
 let viewMode    = 'evolutivo';   // 'evolutivo' | 'total' | 'comparacao'
 let granMode    = 'anual';       // 'mensal' | 'trimestral' | 'anual' | 'ytdfy'
 let unitDiv     = 1_000_000;
 let cutoffMes   = null;          // YTD cutoff month (YYYYMM int)
-let displayMode = 'abs';         // 'abs' | 'pct_tpv'
+let displayMode = 'abs';         // 'abs' | 'pct_tpv' | 'pct_nmv'
 let compCenario    = null;    // reference scenario for comparação mode
 let compHasFcst    = false;   // whether Forecast data exists for the ref month
 let compPeriodType = 'mensal';            // 'mensal'|'trimestral'|'anual'|'personalizado'
@@ -1275,9 +1280,10 @@ function initFilters() {
     pillsDiv.appendChild(el);
   });
 
-  // Período Total month options (YYYYMM as numbers)
-  optMesTotal = uniq(allData.map(d => d.MES)).sort((a,b) => a-b);
-  selMesTotal = [...optMesTotal];
+  // Período Total: year + month-number filters
+  optAnoTotal = uniq(allData.map(d => d.ANO)).sort((a,b) => a-b);
+  selAnoTotal = [...optAnoTotal];
+  selMonthNumTotal = [1,2,3,4,5,6,7,8,9,10,11,12];
 
   buildMsPanel('ano',   optAnos,  selAnos,  v => { selAnos  = v; cascadeMonths(); });
   buildMsPanel('secao', optSecao, selSecao, v => { selSecao = v; });
@@ -1458,30 +1464,55 @@ function buildMsPanel(id, options, selected, setter) {
 }
 
 function buildMesTotalPills() {
-  const wrap = document.getElementById('mesTotalPills');
-  if(!wrap) return;
-  wrap.innerHTML = '';
-  optMesTotal.forEach(m => {
-    const el = document.createElement('span');
-    el.className = 'pill' + (selMesTotal.includes(m) ? ' on' : '');
-    el.textContent = mesLabel(m);
-    el.dataset.m = m;
-    el.onclick = () => {
-      const on = el.classList.toggle('on');
-      selMesTotal = on
-        ? [...selMesTotal, m]
-        : selMesTotal.filter(x => x !== m);
-      render();
-    };
-    wrap.appendChild(el);
-  });
+  // ── Year pills ──
+  const anoWrap = document.getElementById('mesTotalAnoPills');
+  if(anoWrap) {
+    anoWrap.innerHTML = '';
+    optAnoTotal.forEach(y => {
+      const el = document.createElement('span');
+      el.className = 'pill' + (selAnoTotal.includes(y) ? ' on' : '');
+      el.textContent = String(y);
+      el.dataset.y = y;
+      el.onclick = () => {
+        const on = el.classList.toggle('on');
+        selAnoTotal = on ? [...selAnoTotal, y].sort((a,b)=>a-b)
+                        : selAnoTotal.filter(x => x !== y);
+        render();
+      };
+      anoWrap.appendChild(el);
+    });
+  }
+  // ── Month-number pills (always Jan–Dez) ──
+  const mesWrap = document.getElementById('mesTotalMesPills');
+  if(mesWrap) {
+    mesWrap.innerHTML = '';
+    const MNAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    MNAMES.forEach((name, i) => {
+      const m = i + 1;
+      const el = document.createElement('span');
+      el.className = 'pill' + (selMonthNumTotal.includes(m) ? ' on' : '');
+      el.textContent = name;
+      el.dataset.m = m;
+      el.onclick = () => {
+        const on = el.classList.toggle('on');
+        selMonthNumTotal = on ? [...selMonthNumTotal, m].sort((a,b)=>a-b)
+                             : selMonthNumTotal.filter(x => x !== m);
+        render();
+      };
+      mesWrap.appendChild(el);
+    });
+  }
 }
 
-function mesTotalAll(all) {
-  selMesTotal = all ? [...optMesTotal] : [];
-  document.querySelectorAll('#mesTotalPills .pill').forEach(p => {
-    p.classList.toggle('on', all);
-  });
+function mesTotalAnoAll(all) {
+  selAnoTotal = all ? [...optAnoTotal] : [];
+  document.querySelectorAll('#mesTotalAnoPills .pill').forEach(p => p.classList.toggle('on', all));
+  render();
+}
+
+function mesTotalMesAll(all) {
+  selMonthNumTotal = all ? [1,2,3,4,5,6,7,8,9,10,11,12] : [];
+  document.querySelectorAll('#mesTotalMesPills .pill').forEach(p => p.classList.toggle('on', all));
   render();
 }
 
@@ -1694,9 +1725,16 @@ function getFiltered() {
     );
   }
   const [mf, mt] = getMesRange();
-  // In Período Total mode, apply the month multi-select if not all selected
-  const mesTotalSet = (viewMode === 'total' && selMesTotal.length < optMesTotal.length)
-    ? new Set(selMesTotal) : null;
+  // In Período Total mode, filter by selected year × month combinations
+  const mesTotalSet = (viewMode === 'total' &&
+    !(selAnoTotal.length === optAnoTotal.length && selMonthNumTotal.length === 12))
+    ? (() => {
+        const s = new Set();
+        for(const y of selAnoTotal)
+          for(const m of selMonthNumTotal)
+            s.add(y * 100 + m);
+        return s;
+      })() : null;
   const baseFilter = d =>
     (selAnos.length===0  || selAnos.includes(String(d.ANO))) &&
     (selSecao.length===0 || selSecao.includes(d.MNG_1)) &&
@@ -2076,11 +2114,11 @@ function renderBody(l1map, cols, cens) {
   const addGrand = !cols.includes('__total__') && !isTotal && !isComp
                    && granMode !== 'anual';
 
-  // Feature 5: Extract TPV byCen for % TPV display
+  // Feature 5: Extract TPV / NMV byCen for % display
   let tpvByCen = null;
-  if(displayMode === 'pct_tpv') {
-    tpvByCen = l1map.get('Metrics')?.children?.get('TPV')?.byCen || null;
-  }
+  let nmvByCen = null;
+  if(displayMode === 'pct_tpv') tpvByCen = l1map.get('Metrics')?.children?.get('TPV')?.byCen || null;
+  if(displayMode === 'pct_nmv') nmvByCen = l1map.get('Metrics')?.children?.get('NMV')?.byCen || null;
 
   let html = '';
 
@@ -2093,14 +2131,17 @@ function renderBody(l1map, cols, cens) {
     return cols.reduce((s,k) => s + (m.get(k)||0), 0);
   }
 
-  // Feature 5: Format value as % TPV if applicable
+  // Feature 5: Format value as % TPV or % NMV if applicable
   function fmtCell(v, cen, col, isMetrics) {
-    if(displayMode === 'pct_tpv' && !isMetrics && tpvByCen) {
-      const tpvVal = col === '__grand__'
-        ? totalVal(tpvByCen, cen)
-        : (tpvByCen.get(cen)?.get(col) || 0);
-      if(tpvVal === 0) return '—';
-      return (v / Math.abs(tpvVal) * 100).toFixed(2) + '%';
+    if(!isMetrics) {
+      const refByCen = displayMode === 'pct_tpv' ? tpvByCen
+                     : displayMode === 'pct_nmv'  ? nmvByCen : null;
+      if(refByCen) {
+        const refVal = col === '__grand__' ? totalVal(refByCen, cen)
+                                           : (refByCen.get(cen)?.get(col) || 0);
+        if(refVal === 0) return '—';
+        return (v / Math.abs(refVal) * 100).toFixed(2) + '%';
+      }
     }
     return fmt(v);
   }
@@ -2711,7 +2752,7 @@ MPOS_BLOCKS_DEF.forEach(b => { mposLineCfg[b.key] = { order:[...b.defOrder], hid
 
 let cpaDensity       = 0;   // 0=Normal 1=Compact 2=Dense 3=Ultra
 let mposDensity      = 0;
-let mposLightDensity = 0;
+let mposLightDensity = 1; // default: Compact
 
 const DENSITY_LABELS = ['Normal','Compact','Dense','Ultra'];
 const MAX_DENSITY = 3;
@@ -3599,6 +3640,7 @@ function renderEvoTab() {
 
     _evoCharts[abbr] = new Chart(
       card.querySelector('canvas').getContext('2d'), {
+      plugins: [ChartDataLabels],
       type: 'bar',
       data: {
         labels,
@@ -3609,7 +3651,7 @@ function renderEvoTab() {
             borderColor:'#FFE600', backgroundColor:'transparent',
             borderWidth:2, borderDash:[5,3],
             pointBackgroundColor:'#FFE600', pointRadius:3,
-            tension:0.25, order:1 }
+            tension:0.25, order:1, datalabels:{display:false} }
         ]
       },
       options: {
@@ -3622,13 +3664,19 @@ function renderEvoTab() {
               if(v===null) return null;
               return `${ctx.dataset.label}: ${v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} ${udLbl}`;
             }
-          }}
+          }},
+          datalabels:{
+            anchor:'end', align:'end', offset:2,
+            color: ctx => ctx.parsed.y < 0 ? '#C62828' : '#333',
+            font:{size:9,weight:'600'},
+            formatter:(v) => v === null ? null
+              : v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})
+          }
         },
+        layout:{ padding:{ top:18 } },
         scales: {
           x:{ grid:{display:false}, ticks:{font:{size:10}, color:'#888'} },
-          y:{ grid:{color:'#F5F5F5'}, border:{dash:[3,3]},
-              ticks:{font:{size:10},color:'#888',
-                callback:v=>v?.toLocaleString('pt-BR',{maximumFractionDigits:0})} }
+          y:{ display:false }
         }
       }
     });
