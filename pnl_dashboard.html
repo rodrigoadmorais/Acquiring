@@ -665,6 +665,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       <button class="on" data-v="evolutivo" onclick="setView(this)">Evolutivo</button>
       <button data-v="total" onclick="setView(this)">Período Total</button>
       <button data-v="comparacao" onclick="setView(this)">Comparação</button>
+      <button data-v="1x1" onclick="setView(this)">1×1</button>
     </div>
   </div>
 
@@ -745,6 +746,49 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;min-width:82px;cursor:pointer"></select>
     </div>
+  </div>
+
+  <!-- 1×1: Tipo Período -->
+  <div class="fg" id="x1TypeGroup" style="display:none">
+    <label>Tipo</label>
+    <div class="bg" id="x1TypeGrp">
+      <button class="on" data-t="mes"    onclick="set1x1Type(this)">Mês</button>
+      <button           data-t="quarter" onclick="set1x1Type(this)">Quarter</button>
+      <button           data-t="ano"     onclick="set1x1Type(this)">Ano</button>
+    </div>
+  </div>
+  <!-- 1×1: Período A -->
+  <div class="fg" id="x1PeriodAGroup" style="display:none">
+    <label>Período A</label>
+    <select id="x1PeriodASel" onchange="comp1x1PeriodA=this.value;render()"
+      style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+             background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
+  </div>
+  <!-- 1×1: Cenário A -->
+  <div class="fg" id="x1CenAGroup" style="display:none">
+    <label>Cenário A</label>
+    <select id="x1CenASel" onchange="comp1x1CenA=this.value;render()"
+      style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+             background:var(--card);color:var(--text);font-size:12px;min-width:110px;cursor:pointer"></select>
+  </div>
+  <!-- 1×1 vs label -->
+  <div class="fg" id="x1VsGroup" style="display:none">
+    <label>&nbsp;</label>
+    <span style="font-size:14px;font-weight:900;color:var(--muted);padding:3px 5px;line-height:1.6">vs</span>
+  </div>
+  <!-- 1×1: Período B -->
+  <div class="fg" id="x1PeriodBGroup" style="display:none">
+    <label>Período B</label>
+    <select id="x1PeriodBSel" onchange="comp1x1PeriodB=this.value;render()"
+      style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+             background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
+  </div>
+  <!-- 1×1: Cenário B -->
+  <div class="fg" id="x1CenBGroup" style="display:none">
+    <label>Cenário B</label>
+    <select id="x1CenBSel" onchange="comp1x1CenB=this.value;render()"
+      style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
+             background:var(--card);color:var(--text);font-size:12px;min-width:110px;cursor:pointer"></select>
   </div>
 
   <!-- Meses filtro (Período Total) — pills Ano + Mês lado a lado -->
@@ -1233,7 +1277,7 @@ let selAnoTotal      = []; // selected years for Período Total
 let optAnoTotal      = []; // available years for Período Total
 let selMonthNumTotal = [1,2,3,4,5,6,7,8,9,10,11,12]; // selected month numbers 1-12
 
-let viewMode    = 'evolutivo';   // 'evolutivo' | 'total' | 'comparacao'
+let viewMode    = 'evolutivo';   // 'evolutivo' | 'total' | 'comparacao' | '1x1'
 let granMode    = 'anual';       // 'mensal' | 'trimestral' | 'anual' | 'ytdfy'
 let unitDiv     = 1_000_000;
 let cutoffMes   = null;          // YTD cutoff month (YYYYMM int)
@@ -1245,6 +1289,13 @@ let compQuarter    = 1;
 let compYear       = null;
 let compPeriodFrom = null;
 let compPeriodTo   = null;
+
+// 1×1 comparison state
+let comp1x1Type    = 'mes';   // 'mes' | 'quarter' | 'ano'
+let comp1x1PeriodA = null;    // period string (YYYYMM | 'Qn/YY' | 'YYYY')
+let comp1x1PeriodB = null;
+let comp1x1CenA    = null;    // scenario name
+let comp1x1CenB    = null;
 
 // expand state (Set of keys)
 let expL1 = new Set();
@@ -1439,6 +1490,7 @@ function initFilters() {
   buildCutoffSel();
   buildCpaMonthSelectors();
   buildMbuSelects();
+  build1x1Selects();
   // Apply initial granularity state (default=anual: hide mesGroup)
   updateGranVisibility();
 }
@@ -1699,6 +1751,7 @@ function updateGranVisibility() {
   const ev   = viewMode === 'evolutivo';
   const comp = viewMode === 'comparacao';
   const tot  = viewMode === 'total';
+  const x1   = viewMode === '1x1';
   const pt   = compPeriodType;
   document.getElementById('granWrap').style.display          = ev ? '' : 'none';
   document.getElementById('mesGroup').style.display          = (ev && granMode==='mensal') ? '' : 'none';
@@ -1710,12 +1763,17 @@ function updateGranVisibility() {
   document.getElementById('compYearGroup').style.display     = (comp && (pt==='trimestral'||pt==='anual')) ? '' : 'none';
   document.getElementById('compCustomGroup').style.display   = (comp && pt==='personalizado') ? '' : 'none';
   document.getElementById('mesTotalGroup').style.display     = tot ? '' : 'none';
+  // 1×1 groups
+  const show = v => document.getElementById(v).style.display = x1 ? '' : 'none';
+  ['x1TypeGroup','x1PeriodAGroup','x1CenAGroup','x1VsGroup','x1PeriodBGroup','x1CenBGroup']
+    .forEach(show);
 }
 
 function setView(btn) {
   viewMode = btn.dataset.v;
   document.querySelectorAll('#viewGrp button').forEach(b => b.classList.toggle('on', b===btn));
   updateGranVisibility();
+  if(viewMode === '1x1') build1x1Selects();
   render();
 }
 
@@ -1756,6 +1814,105 @@ function buildCompCustomSels() {
   if(!compPeriodTo)   compPeriodTo   = meses[meses.length-1];
   fromSel.value = compPeriodFrom;
   toSel.value   = compPeriodTo;
+}
+
+// ── 1×1 helpers ────────────────────────────────────────────
+function set1x1Type(btn) {
+  comp1x1Type    = btn.dataset.t;
+  // Reset period selections so build1x1Selects picks correct defaults for new type
+  comp1x1PeriodA = null;
+  comp1x1PeriodB = null;
+  document.querySelectorAll('#x1TypeGrp button').forEach(b => b.classList.toggle('on', b===btn));
+  build1x1Selects();
+  render();
+}
+
+// Returns Set<YYYYMM> for the given period/type
+function get1x1MesSet(period, type) {
+  const s = new Set();
+  if(!period) return s;
+  if(type === 'mes') {
+    s.add(parseInt(period));
+  } else if(type === 'quarter') {
+    // period = 'Qn/YY'
+    const qn = parseInt(period[1]);
+    const yr = 2000 + parseInt(period.slice(3));
+    const start = (qn-1)*3 + 1;
+    for(let m=0; m<3; m++) s.add(yr*100 + start + m);
+  } else if(type === 'ano') {
+    const yr = parseInt(period);
+    for(let m=1; m<=12; m++) s.add(yr*100 + m);
+  }
+  return s;
+}
+
+// Returns a human-readable label for a 1×1 period
+function format1x1PeriodLabel(period, type) {
+  if(!period) return '—';
+  if(type === 'mes') return mesLabel(parseInt(period));
+  if(type === 'quarter') return period;   // e.g. 'Q1/25'
+  if(type === 'ano')     return period;   // e.g. '2025'
+  return period;
+}
+
+// Build/rebuild the period + scenario selects for 1×1 mode
+function build1x1Selects() {
+  const cens = optCen.length ? optCen : uniq(allData.map(d => d.Cenario)).sort();
+  const cenOpts = cens.map(c => `<option value="${c}">${shortCen(c)}</option>`).join('');
+  ['x1CenASel','x1CenBSel'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = cenOpts;
+    // Default A = first scenario (e.g. Plan), B = Realizado
+    const def = i === 0 ? (cens.find(c => c==='Plan') || cens[0])
+                        : (cens.find(c => c==='Realizado') || cens[cens.length-1]);
+    if(i === 0 && !comp1x1CenA) comp1x1CenA = def;
+    if(i === 1 && !comp1x1CenB) comp1x1CenB = def;
+    el.value = i === 0 ? comp1x1CenA : comp1x1CenB;
+  });
+
+  // Build period options from allData
+  let periods = [];
+  if(comp1x1Type === 'mes') {
+    periods = uniq(allData.map(d => String(d.MES))).sort();
+  } else if(comp1x1Type === 'quarter') {
+    const qs = new Set();
+    allData.forEach(d => {
+      if(d.QUARTER && d.ANO) qs.add(d.QUARTER + '/' + String(d.ANO).slice(2));
+    });
+    // Sort quarters chronologically
+    periods = [...qs].sort((a,b) => {
+      const [qa,ya] = a.split('/'); const [qb,yb] = b.split('/');
+      return (parseInt(ya)*10+parseInt(qa[1])) - (parseInt(yb)*10+parseInt(qb[1]));
+    });
+  } else if(comp1x1Type === 'ano') {
+    periods = uniq(allData.map(d => String(d.ANO))).sort();
+  }
+
+  const periodOptsFn = (curVal) =>
+    periods.map(p => {
+      const lbl = comp1x1Type === 'mes' ? mesLabel(parseInt(p)) : p;
+      return `<option value="${p}"${p===curVal?' selected':''}>${lbl}</option>`;
+    }).join('');
+
+  ['x1PeriodASel','x1PeriodBSel'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    // Default: A = second-to-last period, B = last period
+    const defA = periods.length >= 2 ? periods[periods.length-2] : periods[0];
+    const defB = periods.length >= 1 ? periods[periods.length-1]  : periods[0];
+    if(i === 0 && !comp1x1PeriodA) comp1x1PeriodA = defA || null;
+    if(i === 1 && !comp1x1PeriodB) comp1x1PeriodB = defB || null;
+    const curVal = i === 0 ? comp1x1PeriodA : comp1x1PeriodB;
+    el.innerHTML = periodOptsFn(curVal);
+    if(curVal && periods.includes(curVal)) el.value = curVal;
+    else if(periods.length) {
+      const fallback = i === 0 ? (defA||periods[0]) : (defB||periods[0]);
+      if(i === 0) comp1x1PeriodA = fallback;
+      else        comp1x1PeriodB = fallback;
+      el.value = fallback;
+    }
+  });
 }
 
 // Returns { curMeses, lyMeses, lmMeses } for current compPeriodType
@@ -1851,6 +2008,19 @@ function toggleTheme() {
 //  FILTERING
 // ═══════════════════════════════════════════════════════════
 function getFiltered() {
+  if(viewMode === '1x1') {
+    const mesA = get1x1MesSet(comp1x1PeriodA, comp1x1Type);
+    const mesB = get1x1MesSet(comp1x1PeriodB, comp1x1Type);
+    return allData.filter(d =>
+      (selSecao.length===0 || selSecao.includes(d.MNG_1)) &&
+      (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
+      (selProd.length===0  || selProd.includes(d.Product)) &&
+      (
+        (mesA.has(d.MES) && d.Cenario === comp1x1CenA) ||
+        (mesB.has(d.MES) && d.Cenario === comp1x1CenB)
+      )
+    );
+  }
   if(viewMode === 'comparacao') {
     const cenRef = getCenRef();
     const { curMeses, lyMeses, lmMeses } = getCompMesRange();
@@ -1912,6 +2082,13 @@ function getAutoCutoff() {
 }
 
 function colKey(row) {
+  if(viewMode==='1x1') {
+    const mesA = get1x1MesSet(comp1x1PeriodA, comp1x1Type);
+    const mesB = get1x1MesSet(comp1x1PeriodB, comp1x1Type);
+    if(mesA.has(row.MES) && row.Cenario === comp1x1CenA) return '1x1_a';
+    if(mesB.has(row.MES) && row.Cenario === comp1x1CenB) return '1x1_b';
+    return null;
+  }
   if(viewMode==='total') return '__total__';
   if(viewMode==='comparacao') {
     const cenRef = getCenRef();
@@ -1960,6 +2137,8 @@ function mesLabel(mes) {
 
 function sortColKeys(arr) {
   function rank(k) {
+    if(k==='1x1_a')           return 1;
+    if(k==='1x1_b')           return 2;
     if(k==='comp_ref')        return 1;
     if(k==='comp_plan')       return 2;
     if(k==='comp_fcst')       return 3;
@@ -2088,7 +2267,24 @@ function renderHead(cols, cens) {
   const head = document.getElementById('pnlHead');
   const isTotal = viewMode === 'total';
   const isComp  = viewMode === 'comparacao';
+  const is1x1   = viewMode === '1x1';
   const multi   = cens.length >= 2;
+
+  if(is1x1) {
+    const lA = format1x1PeriodLabel(comp1x1PeriodA, comp1x1Type);
+    const lB = format1x1PeriodLabel(comp1x1PeriodB, comp1x1Type);
+    const cA = shortCen(comp1x1CenA || '');
+    const cB = shortCen(comp1x1CenB || '');
+    let h = `<tr>`;
+    h += `<th class="sticky-col">Conta</th>`;
+    h += `<th class="col-total-hdr" style="border-left:3px solid #1a1a1a;min-width:110px">${lA}<br><span style="font-size:10px;font-weight:400">${cA}</span></th>`;
+    h += `<th class="col-total-hdr" style="border-left:3px solid #4a7fc1;min-width:110px">${lB}<br><span style="font-size:10px;font-weight:400">${cB}</span></th>`;
+    h += `<th class="col-var-hdr">Δ (B−A)</th>`;
+    h += `<th class="col-var-hdr">Δ%</th>`;
+    h += `</tr>`;
+    head.innerHTML = h;
+    return;
+  }
 
   if(isComp) {
     // Comparação: reference value (highlighted) + delta columns
@@ -2253,9 +2449,10 @@ function renderBody(l1map, cols, cens) {
   const body = document.getElementById('pnlBody');
   const isTotal = viewMode === 'total';
   const isComp  = viewMode === 'comparacao';
+  const is1x1   = viewMode === '1x1';
   const multi   = cens.length >= 2;
   // No grand-total in annual view (year IS the total); always add in ytdfy (shows FY)
-  const addGrand = !cols.includes('__total__') && !isTotal && !isComp
+  const addGrand = !cols.includes('__total__') && !isTotal && !isComp && !is1x1
                    && granMode !== 'anual';
 
   // Feature 5: Extract TPV / NMV byCen for % display
@@ -2292,6 +2489,19 @@ function renderBody(l1map, cols, cens) {
 
   function cells(byCen, isMetrics) {
     let c = '';
+    if(is1x1) {
+      // 1×1: Period A value | Period B value | Δ (B−A) | Δ%
+      // byCen keyed by cenario; each cenario map has colKey '1x1_a' or '1x1_b'
+      const aVal  = (byCen.get(comp1x1CenA)?.get('1x1_a')) || 0;
+      const bVal  = (byCen.get(comp1x1CenB)?.get('1x1_b')) || 0;
+      const delta = bVal - aVal;
+      const pct   = aVal !== 0 ? (delta / Math.abs(aVal) * 100) : null;
+      c += `<td class="col-total-cell ${aVal<0?'neg':''}" style="border-left:3px solid #1a1a1a">${fmtCell(aVal, comp1x1CenA, '1x1_a', isMetrics)}</td>`;
+      c += `<td class="col-total-cell ${bVal<0?'neg':''}" style="border-left:3px solid #4a7fc1">${fmtCell(bVal, comp1x1CenB, '1x1_b', isMetrics)}</td>`;
+      c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${fmt(delta)}</td>`;
+      c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${pct!=null?pct.toFixed(1)+'%':'—'}</td>`;
+      return c;
+    }
     if(isComp) {
       // Comparação: delta-only cells (Ref minus each comparison baseline)
       // Values are keyed by colKey → each scenario's byCen holds the right column
@@ -2419,7 +2629,7 @@ function renderBody(l1map, cols, cens) {
           html += `<tr class="row-l3" data-rk="${escAttr(chartKey2)}" ${chartClickAttr(chartKey2)}>
             <td class="sticky-col i2">${k2}</td>${cells(n2.byCen, true)}</tr>`;
           // YoY Growth row for TPV and NMV
-          if((k2 === 'TPV' || k2 === 'NMV') && !isComp && !isTotal) {
+          if((k2 === 'TPV' || k2 === 'NMV') && !isComp && !isTotal && !is1x1) {
             const yoyMap = computeYoYMap(k2, cols);
             html += `<tr class="row-yoy">
               <td class="sticky-col i3">↳ YoY Realizado</td>
