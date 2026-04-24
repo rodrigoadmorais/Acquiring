@@ -2491,6 +2491,8 @@ function computeYoYMap(metricKey, cols) {
     let cur = 0, py = 0;
     if(/^\d{6}$/.test(col)) {
       const m   = parseInt(col);
+      // No Realizado for this month → nothing to compare
+      if(!realByMes.has(m)) { result.set(col, null); continue; }
       const yr  = Math.floor(m/100);
       const mon = m % 100;
       cur = realByMes.get(m)||0;
@@ -2500,16 +2502,23 @@ function computeYoYMap(metricKey, cols) {
       const yr   = 2000 + parseInt(col.slice(3));
       const pyYr = yr - 1;
       const start = (qn-1)*3+1;
+      // Only compare months that have Realizado data in the current year
       for(let mi=0; mi<3; mi++) {
-        cur += realByMes.get(yr  *100+start+mi)||0;
-        py  += realByMes.get(pyYr*100+start+mi)||0;
+        const m = start+mi;
+        if(realByMes.has(yr*100+m)) {
+          cur += realByMes.get(yr  *100+m)||0;
+          py  += realByMes.get(pyYr*100+m)||0;
+        }
       }
     } else if(/^\d{4}$/.test(col)) {
       const yr   = parseInt(col);
       const pyYr = yr - 1;
+      // Only compare months with Realizado data in current year (avoids partial-year distortion)
       for(let m=1; m<=12; m++) {
-        cur += realByMes.get(yr  *100+m)||0;
-        py  += realByMes.get(pyYr*100+m)||0;
+        if(realByMes.has(yr*100+m)) {
+          cur += realByMes.get(yr  *100+m)||0;
+          py  += realByMes.get(pyYr*100+m)||0;
+        }
       }
     } else if(col === 'ytd') {
       const cut = cutoffMes || getAutoCutoff();
