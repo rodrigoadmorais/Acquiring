@@ -566,7 +566,7 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 .mbu-table th.mbu-desc-hdr{text-align:left;position:sticky;left:0;z-index:201;
   min-width:200px;background:#FFE600;font-size:11px}
 .mbu-table th.mbu-grp-hdr{text-align:center;font-size:11px;border-left:3px solid #1a1a1a}
-.mbu-table th.mbu-grp-total{background:#E8D000;border-left:3px solid #1a1a1a}
+.mbu-table th.mbu-grp-total{background:#E8D000;border-left:3px solid #1a1a1a;text-align:center;font-size:11px;color:#1a1a1a}
 .mbu-table th.mbu-sub-hdr{font-size:10px}
 .mbu-table th.mbu-sub-first{border-left:3px solid #1a1a1a}
 .mbu-table th.mbu-sep,.mbu-table td.mbu-sep{width:7px;min-width:7px;background:var(--bg);padding:0;border:none}
@@ -583,6 +583,12 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 .mbu-row-item td{background:#fff;color:#333;font-size:11px}
 .mbu-row-item td.mbu-desc-cell{background:#fff;padding-left:32px!important}
 .mbu-row-item:hover td{background:#FAFAFA!important}
+.mbu-row-item.expandable{cursor:pointer}
+.mbu-row-k3 td{background:#f7f7f7;color:#444;font-size:10.5px}
+.mbu-row-k3 td.mbu-desc-cell{background:#f7f7f7;padding-left:52px!important}
+.mbu-row-k3:hover td{background:#f0f0f0!important}
+[data-theme=dark] .mbu-row-k3 td{background:#242a34;color:#aaa}
+[data-theme=dark] .mbu-row-k3 td.mbu-desc-cell{background:#242a34}
 .mbu-row-total td{background:#FFFDE7;color:#1a1a1a;font-weight:700;
   border-top:2px solid #1a1a1a;border-bottom:3px solid #FFE600}
 .mbu-row-total td.mbu-desc-cell{background:#FFFDE7;border-left:4px solid #FFE600}
@@ -3048,6 +3054,7 @@ let mbuMacro         = 'Acquiring';
 let mbuAno           = null;   // null = auto (latest year); 'custom' = use De/Até
 let mbuComp          = 'plan_fcast'; // 'plan_fcast' | 'plan_real' | 'fcast_real'
 let mbuExpanded      = new Set(); // expanded MNG_1 sections in MBU tab
+let mbuExpandedK2    = new Set(); // expanded MNG_2 rows (key = k1+'|||'+k2)
 
 // Preferred BU order per Macro BU (others appended alphabetically)
 const MBU_BU_ORDER = {
@@ -3221,6 +3228,13 @@ function mbuToggleSec(tr) {
   renderMbuTab();
 }
 
+function mbuToggleK2(tr) {
+  const key = tr.dataset.k2key;
+  if(mbuExpandedK2.has(key)) mbuExpandedK2.delete(key);
+  else mbuExpandedK2.add(key);
+  renderMbuTab();
+}
+
 function renderMbuTab() {
   // Resolve date range from mbuAno or custom selects
   let fromMes, toMes;
@@ -3268,9 +3282,10 @@ function renderMbuTab() {
   const colsPerBU = hasPct ? 6 : 3;
 
   // ── Aggregate ──
-  const buData = new Map(); // BU → Map<k1, Map<k2, {a,b}>>
-  const buVol  = new Map(); // BU → {aVol, bVol}
-  const buL1   = new Map(); // BU → Map<k1, {a,b}>
+  const buData  = new Map(); // BU → Map<k1, Map<k2, {a,b}>>
+  const buData3 = new Map(); // BU → Map<k1+'|||'+k2, Map<k3, {a,b}>>
+  const buVol   = new Map(); // BU → {aVol, bVol}
+  const buL1    = new Map(); // BU → Map<k1, {a,b}>
 
   // Helper: does cenario match A or B?
   function cenSlot(cen) {
@@ -3302,20 +3317,32 @@ function renderMbuTab() {
     if(slot==='A') mesHasA.add(k);
     if(slot==='B') mesHasB.add(k);
 
+    const v = d.Value||0;
     if(!buData.has(bu)) buData.set(bu, new Map());
     const buMap = buData.get(bu);
     if(!buMap.has(d.MNG_1||'')) buMap.set(d.MNG_1||'', new Map());
     const k1map = buMap.get(d.MNG_1||'');
     if(!k1map.has(d.MNG_2||'')) k1map.set(d.MNG_2||'', {a:0,b:0});
     const cell = k1map.get(d.MNG_2||'');
-    if(slot==='A') cell.a += (d.Value||0);
-    if(slot==='B') cell.b += (d.Value||0);
-
+    if(slot==='A') cell.a += v;
+    if(slot==='B') cell.b += v;
+    // k3 rollup
+    if(d.MNG_3) {
+      const k3key = (d.MNG_1||'')+'|||'+(d.MNG_2||'');
+      if(!buData3.has(bu)) buData3.set(bu, new Map());
+      const b3 = buData3.get(bu);
+      if(!b3.has(k3key)) b3.set(k3key, new Map());
+      const k3m = b3.get(k3key);
+      if(!k3m.has(d.MNG_3)) k3m.set(d.MNG_3, {a:0,b:0});
+      const c3 = k3m.get(d.MNG_3);
+      if(slot==='A') c3.a += v;
+      if(slot==='B') c3.b += v;
+    }
     if(hasPct && d.MNG_1==='Metrics' && d.MNG_2===pctMetric) {
       if(!buVol.has(bu)) buVol.set(bu,{aVol:0,bVol:0});
       const bv = buVol.get(bu);
-      if(slot==='A') bv.aVol += (d.Value||0);
-      if(slot==='B') bv.bVol += (d.Value||0);
+      if(slot==='A') bv.aVol += v;
+      if(slot==='B') bv.bVol += v;
     }
   }
   // Pass 2: fill scenarios (for months without primary)
@@ -3327,20 +3354,31 @@ function renderMbuTab() {
     if(slot==='Afill' && mesHasA.has(k)) continue; // primary exists
     if(slot==='Bfill' && mesHasB.has(k)) continue;
 
+    const v = d.Value||0;
     if(!buData.has(bu)) buData.set(bu, new Map());
     const buMap = buData.get(bu);
     if(!buMap.has(d.MNG_1||'')) buMap.set(d.MNG_1||'', new Map());
     const k1map = buMap.get(d.MNG_1||'');
     if(!k1map.has(d.MNG_2||'')) k1map.set(d.MNG_2||'', {a:0,b:0});
     const cell = k1map.get(d.MNG_2||'');
-    if(slot==='Afill') cell.a += (d.Value||0);
-    if(slot==='Bfill') cell.b += (d.Value||0);
-
+    if(slot==='Afill') cell.a += v;
+    if(slot==='Bfill') cell.b += v;
+    if(d.MNG_3) {
+      const k3key = (d.MNG_1||'')+'|||'+(d.MNG_2||'');
+      if(!buData3.has(bu)) buData3.set(bu, new Map());
+      const b3 = buData3.get(bu);
+      if(!b3.has(k3key)) b3.set(k3key, new Map());
+      const k3m = b3.get(k3key);
+      if(!k3m.has(d.MNG_3)) k3m.set(d.MNG_3, {a:0,b:0});
+      const c3 = k3m.get(d.MNG_3);
+      if(slot==='Afill') c3.a += v;
+      if(slot==='Bfill') c3.b += v;
+    }
     if(hasPct && d.MNG_1==='Metrics' && d.MNG_2===pctMetric) {
       if(!buVol.has(bu)) buVol.set(bu,{aVol:0,bVol:0});
       const bv = buVol.get(bu);
-      if(slot==='Afill') bv.aVol += (d.Value||0);
-      if(slot==='Bfill') bv.bVol += (d.Value||0);
+      if(slot==='Afill') bv.aVol += v;
+      if(slot==='Bfill') bv.bVol += v;
     }
   }
 
@@ -3358,6 +3396,7 @@ function renderMbuTab() {
   // ── Compute Total column (sum of all BUs) ──
   const TOTAL = '__total__';
   const totData  = new Map(); // k1 → Map<k2, {a,b}>
+  const totData3 = new Map(); // k1k2key → Map<k3, {a,b}>
   const totL1    = new Map(); // k1 → {a,b}
   const totVol   = {aVol:0, bVol:0};
   for(const bu of bus) {
@@ -3374,14 +3413,45 @@ function renderMbuTab() {
         tl.a+=v.a; tl.b+=v.b;
       }
     }
+    // Aggregate k3 data for total
+    const b3map = buData3.get(bu);
+    if(b3map) {
+      for(const [k3key, k3m] of b3map) {
+        if(!totData3.has(k3key)) totData3.set(k3key, new Map());
+        const tk3 = totData3.get(k3key);
+        for(const [k3, v] of k3m) {
+          if(!tk3.has(k3)) tk3.set(k3, {a:0,b:0});
+          const tc = tk3.get(k3); tc.a+=v.a; tc.b+=v.b;
+        }
+      }
+    }
     const vol = buVol.get(bu)||{aVol:0,bVol:0};
     totVol.aVol += vol.aVol;
     totVol.bVol += vol.bVol;
   }
-  // Inject total into buData/buVol/buL1 with key TOTAL
-  buData.set(TOTAL, totData);
-  buVol.set(TOTAL,  totVol);
-  buL1.set(TOTAL,   totL1);
+  // Inject total into buData/buVol/buL1/buData3 with key TOTAL
+  buData.set(TOTAL,  totData);
+  buData3.set(TOTAL, totData3);
+  buVol.set(TOTAL,   totVol);
+  buL1.set(TOTAL,    totL1);
+
+  // ── Compute cumulative waterfall totals (each row = sum of all preceding P&L levels) ──
+  // e.g. VC row = PM + NM + VC items combined
+  const WATERFALL = ['Product Monetization','Net Monetization','Variable Contribution',
+                     'Direct Contribution','Business Contribution','Business Margin',
+                     'EBIT','Below EBIT'];
+  const buCum = new Map(); // BU → Map<k1, {a,b}>
+  for(const bu of [...buL1.keys()]) {
+    const l1  = buL1.get(bu);
+    const cum = new Map();
+    let ca = 0, cb = 0;
+    for(const k1 of WATERFALL) {
+      const {a=0, b=0} = l1.get(k1)||{};
+      ca += a; cb += b;
+      cum.set(k1, {a: ca, b: cb});
+    }
+    buCum.set(bu, cum);
+  }
 
   // Column order: Total first, then ordered BUs
   const colBus = [TOTAL, ...bus];
@@ -3460,15 +3530,17 @@ function renderMbuTab() {
     k1 !== 'Metrics' &&
     colBus.some(bu => buData.get(bu)?.has(k1))
   );
+  const getVol = hasPct ? bu => { const v=buVol.get(bu)||{aVol:0,bVol:0}; return {aVol:v.aVol,bVol:v.bVol}; } : null;
 
   for(const k1 of k1s) {
     const isOpen = mbuExpanded.has(k1);
     bHtml += `<tr class="mbu-gap"><td colspan="99"></td></tr>`;
     bHtml += `<tr class="mbu-row-sec" data-k1="${escAttr(k1)}" onclick="mbuToggleSec(this)">`;
     bHtml += `<td class="mbu-desc-cell"><span style="margin-right:5px">${isOpen?'▼':'▶'}</span>${k1}</td>`;
+    // Use CUMULATIVE total for section header (P&L waterfall)
     bHtml += buCells(colBus,
-      bu => buL1.get(bu)?.get(k1)||{a:0,b:0},
-      hasPct ? bu => { const v=buVol.get(bu)||{aVol:0,bVol:0}; return {aVol:v.aVol,bVol:v.bVol}; } : null
+      bu => buCum.get(bu)?.get(k1)||{a:0,b:0},
+      getVol
     );
     bHtml += `</tr>`;
 
@@ -3477,12 +3549,37 @@ function renderMbuTab() {
         [...new Set(colBus.flatMap(bu => [...(buData.get(bu)?.get(k1)?.keys()||[])]))].filter(Boolean);
       for(const k2 of k2s) {
         if(!colBus.some(bu => buData.get(bu)?.get(k1)?.has(k2))) continue;
-        bHtml += `<tr class="mbu-row-item"><td class="mbu-desc-cell">${k2}</td>`;
+        const k3key = k1+'|||'+k2;
+        // Check if any BU has k3 children for this k2
+        const hasK3 = colBus.some(bu => (buData3.get(bu)?.get(k3key)?.size||0) > 0);
+        const isOpenK2 = mbuExpandedK2.has(k3key);
+        const arrow = hasK3
+          ? `<span style="margin-right:5px">${isOpenK2?'▼':'▶'}</span>`
+          : `<span style="display:inline-block;width:14px;margin-right:5px"></span>`;
+        bHtml += `<tr class="mbu-row-item${hasK3?' expandable':''}"
+          ${hasK3?`data-k2key="${escAttr(k3key)}" onclick="mbuToggleK2(this)"`:''}>`;
+        bHtml += `<td class="mbu-desc-cell">${arrow}${k2}</td>`;
         bHtml += buCells(colBus,
           bu => buData.get(bu)?.get(k1)?.get(k2)||{a:0,b:0},
-          hasPct ? bu => { const v=buVol.get(bu)||{aVol:0,bVol:0}; return {aVol:v.aVol,bVol:v.bVol}; } : null
+          getVol
         );
         bHtml += `</tr>`;
+
+        if(isOpenK2) {
+          // k3 items from all BUs combined
+          const allK3 = [...new Set(
+            colBus.flatMap(bu => [...(buData3.get(bu)?.get(k3key)?.keys()||[])])
+          )].filter(Boolean);
+          for(const k3 of allK3) {
+            bHtml += `<tr class="mbu-row-k3">`;
+            bHtml += `<td class="mbu-desc-cell">${k3}</td>`;
+            bHtml += buCells(colBus,
+              bu => buData3.get(bu)?.get(k3key)?.get(k3)||{a:0,b:0},
+              getVol
+            );
+            bHtml += `</tr>`;
+          }
+        }
       }
     }
   }
