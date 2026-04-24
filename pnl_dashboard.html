@@ -4901,7 +4901,7 @@ function getBridgeDrillDownData(mesSetA, cenA, mesSetB, cenB, buSel, k1Group, k2
   const prodName = isProd ? buSel.slice(8) : null;
   const byMNG3   = new Map(); // mng3 → Map<mng4, {a,b}>
   for(const d of allData) {
-    if(d.MNG_1 !== k1Group) continue;
+    if(k1Group && d.MNG_1 !== k1Group) continue; // null k1Group = all P&L levels
     if(getDeParaK2(d.MNG_2||'', d.MNG_3||'', d.MNG_4||'') !== k2Group) continue;
     if(buSel) {
       if(isProd  && d.Product  !== prodName) continue;
@@ -5137,6 +5137,28 @@ function buildBridgeSegments(dataA, dataB, metric) {
       const delta = vB - vA;
       if(Math.abs(delta) < 0.01) continue;
       segments.push({ label: k2, value: delta, type: 'effect', group: k1, segK1: k1, segK2: k2 });
+    }
+  }
+
+  // ── Merge same-label effect segments across P&L levels ──
+  // e.g. "CX, Hosting, PF e OPEX" can appear in VC, DC, BC, BM → collapse into one bar
+  {
+    const _order = [];
+    const _map   = new Map();
+    for(const seg of segments.slice(1)) { // skip 'start'
+      if(_map.has(seg.label)) {
+        const m = _map.get(seg.label);
+        m.value += seg.value;
+        m.segK1  = null; // cross-level merged → drill-down spans all MNG_1
+      } else {
+        _map.set(seg.label, { ...seg });
+        _order.push(seg.label);
+      }
+    }
+    segments.length = 1; // keep only 'start'
+    for(const lbl of _order) {
+      const s = _map.get(lbl);
+      if(Math.abs(s.value) >= 0.01) segments.push(s);
     }
   }
 
@@ -5471,8 +5493,8 @@ function renderBridgesTab() {
       onClick: (event, elements) => {
         if(!elements.length) return;
         const seg = segRefs[elements[0].index];
-        if(!seg || !seg.segK1 || !seg.segK2) return;
-        toggleBridgeDrill(encodeURIComponent(seg.segK1 + '||' + seg.segK2));
+        if(!seg || !seg.segK2) return;
+        toggleBridgeDrill(encodeURIComponent((seg.segK1 || '') + '||' + seg.segK2));
       },
       plugins: {
         legend: { display: false },
@@ -5482,7 +5504,7 @@ function renderBridgesTab() {
               const seg = segRefs[c.dataIndex];
               const v   = seg.value;
               const isAnchored = seg.type === 'start' || seg.type === 'end';
-              const drillHint = seg.segK1 ? '  🔍' : '';
+              const drillHint = seg.segK2 ? '  🔍' : '';
               return `${fmtVal(v, !isAnchored)} ${udLbl}${drillHint}`;
             }
           }
@@ -5568,8 +5590,8 @@ function renderBridgesTab() {
     }
 
     // Drill-down affordance for below-TR effect segments
-    const isDrillable = !!(seg.segK1 && seg.segK2);
-    const drillKey    = isDrillable ? seg.segK1 + '||' + seg.segK2 : null;
+    const isDrillable = !!seg.segK2;
+    const drillKey    = isDrillable ? (seg.segK1 || '') + '||' + seg.segK2 : null;
     const isExpanded  = isDrillable && bridgeDrillKey === drillKey;
     const drillIcon   = isDrillable ? `<span style="float:right;opacity:.5;font-size:10px">${isExpanded?'▼':'▶'}</span>` : '';
     const drillAttr   = isDrillable
