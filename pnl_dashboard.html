@@ -4761,6 +4761,105 @@ function setBridgeUnit(btn) {
 // Anything else is treated as an individual Product (filter by d.Product)
 const BRIDGE_MACRO_LEVEL = new Set(['Acquiring','Commerce','Fintech Services']);
 
+// ── DE-PARA: MNG_2 (+ optional MNG_3, MNG_4) → consolidated bridge K2 group ──
+// Key formats: "MNG2", "MNG2||MNG3", "MNG2||MNG3||MNG4" (longest match wins)
+const BRIDGE_DEPARA = (() => {
+  const m = {};
+  // Business Contribution
+  m['G&A BC']='OPEX BC'; m['G&A Bu / Local']='OPEX BC'; m['G&A Bu/Local']='OPEX BC';
+  m['PD BC']='OPEX BC'; m['Product Development']='OPEX BC'; m['S&M BC']='OPEX BC';
+  m['Marketing Branding']='Branding';
+  // Business Margin
+  m['G&A BM']='OPEX BM'; m['PD BM']='OPEX BM'; m['S&M BM']='OPEX BM';
+  // Direct Contribution — simple
+  m['CX Fixed']='CX, PF & Host. Fixed';
+  m['Fraud Prevention']='CX, PF & Host. Fixed'; m['Fraud Prevention Fixed']='CX, PF & Host. Fixed';
+  m['Hosting Fixed']='CX, PF & Host. Fixed';
+  m['Loyalty Content']='Other DC Costs';
+  m['Marketing Fixed']='Mkt Fixed';
+  m['Other Fixed Costs']='Other DC Costs';
+  m['S&M Local DC']='S&M Local DC'; m['S&M Local Dc']='S&M Local DC';
+  m['Sales Expenses']='Sales Expenses';
+  m['Point Cogs']='MPOS Net'; m['Net Fixed Fees']='MPOS Net';
+  // Shipping Ops Fixed (MNG_3 disambiguates)
+  m['Shipping Ops Fixed||S&W Fixed']='MPOS Net';
+  m['Shipping Ops Fixed||Other Shipping Ops Fixed']='MPOS Net';
+  m['Shipping Ops Fixed||Warehouse Services']='Other DC Costs';
+  // Customer Acquisition Cost (MNG_3 disambiguates, Sales Expenses MPOS needs MNG_4)
+  m['Customer Acquisition Cost||CPA']='CPA';
+  m['Customer Acquisition Cost||Point COGS']='MPOS Net';
+  m['Customer Acquisition Cost||Previsión MPOS Cost']='MPOS Net';
+  m['Customer Acquisition Cost||Sales MPOS']='MPOS Net';
+  m['Customer Acquisition Cost||Sales Taxes MPOS']='MPOS Net';
+  m['Customer Acquisition Cost||Sales Expenses MPOS||Fuerza de Venta de Terceros']='CPA';
+  m['Customer Acquisition Cost||Sales Expenses MPOS||Fuerza de Venta Propia']='CPA';
+  m['Customer Acquisition Cost||Sales Expenses MPOS||Other Sales Expenses']='Sales Expenses';
+  // DC — underscore/legacy variant → DC Costs
+  const _dc = ['Alquiler_MPOS','Com_Resselers','Cost_Of_Product_Sold','CX_Fixed',
+    'Descuentos_MPOS','Fraud_Prevention','Fuerza_de_Ventas','Fuerza_de_Ventas_Propia',
+    'Hosting_Fixed','Insumos_Point','OTHER_FIXED_COSTS','Other_Marketing_Fixed',
+    'Other_MPOS_Cogs','Other_Sales_Expenses','Paid_On_Media','Reacondicionamento',
+    'Sales_MPOS_Gross','Sales_Tax_MPOS','Shipping_Costs_Point','SM_Local',
+    'Special_Dates','Strategic_Initiatives','Subscriptions_Revs','Warehousing_Point'];
+  for(const k of _dc) m[k]='DC Costs';
+  // Metrics
+  m['TPV']='TPV';
+  // Net Monetization
+  m['Meli Pro Net']='Meli Pro Net';
+  m['Sales Taxes']='Sales Taxes'; m['Sales_Taxes_Econ']='Sales Taxes'; m['Sales_Taxes_Contable']='Sales Taxes';
+  m['Financing_Revenues']='Gross Revenues';
+  m['Fin_Cost_FTP']='Theoretical financing cost'; m['HII_FTP']='Theoretical financing cost';
+  m['Financing Net||Financing Adjustments']='Ratably';
+  m['Financing Net||Financing Revenues']='Gross Revenues';
+  m['Financing Net||Theoretical Financing Costs']='Theoretical financing cost';
+  m['Financing Net||Financing Costs||Financial expenses MP']='Financial expenses MP';
+  m['Financing Net||Financing Costs||Financing Cost']='Financing Cost';
+  m['Financing Net||Financing Costs||Holding Interest Income']='Holding Interest Income';
+  m['Financing Net||Financing Costs||Theoretical financing cost']='Theoretical financing cost';
+  m['Financing Net||Financing Costs||Ratably']='Ratably';
+  // Product Monetization
+  m['Net Variable Fees||Final Value Fees']='Other Revenue';
+  m['Net Variable Fees||Other Variable Fees']='Other Revenue';
+  m['Net Variable Fees||Processing Fees']='Gross Revenues';
+  m['Processing_Fees']='Gross Revenues';
+  // Variable Contribution
+  m['Bad Debt']='Other VC Costs'; m['Bad Debt ']='Other VC Costs';
+  m['BPP']='Other VC Costs'; m['Cashbacks_Sellers']='Other VC Costs';
+  m['Chargebacks']='Chargebacks'; m['CBK_Theoretical']='Chargebacks'; m['CHARGEBACKS_Contable']='Chargebacks';
+  m['Collection Fees']='Collection Fees'; m['Collection_Fees']='Collection Fees';
+  m['Coupons']='Other VC Costs'; m['COUPONS']='Other VC Costs';
+  m['CX Variable']='CX & Host. Var.'; m['CX_Variable']='CX & Host. Var.';
+  m['Direct Variable Costs']='Other VC Costs'; m['Other_Direct_Variable_Costs']='Other VC Costs';
+  m['Hosting Variable']='CX & Host. Var.'; m['Hosting_Variable']='CX & Host. Var.';
+  m['Marketing Performance']='POM';
+  m['Shipping Distribution Variable']='Other VC Costs'; m['Shipping Ops Variable']='Other VC Costs';
+  m['Fraud Prevention Variable']='CX & Host. Var.'; m['FP_Variable']='CX & Host. Var.';
+  m['Funding Cost']='Other VC Costs'; m['Funding']='Other VC Costs';
+  m['Revenue_Sharing']='Other VC Costs'; m['Plataforma']='Other VC Costs';
+  m['Telemetria']='Other VC Costs'; m['Telemetría']='Other VC Costs';
+  m['Consultor_Certificado']='Other VC Costs';
+  m['Customer Acquisition Cost||Resellers Commissions MPOS']='Other VC Costs';
+  return m;
+})();
+
+// Logical display order for consolidated bridge groups under each P&L level
+const BRIDGE_BELOW_ORDER = {
+  'Variable Contribution': ['CX & Host. Var.','POM','Chargebacks','Other VC Costs'],
+  'Direct Contribution':   ['CPA','MPOS Net','Sales Expenses','S&M Local DC','Mkt Fixed',
+                             'CX, PF & Host. Fixed','Other DC Costs','DC Costs'],
+  'Business Contribution': ['OPEX BC','Branding'],
+  'Business Margin':       ['OPEX BM'],
+};
+
+function getDeParaK2(mng2, mng3, mng4) {
+  const k3 = mng2 + '||' + mng3 + '||' + mng4;
+  if(BRIDGE_DEPARA[k3] !== undefined) return BRIDGE_DEPARA[k3];
+  const k2 = mng2 + '||' + mng3;
+  if(BRIDGE_DEPARA[k2] !== undefined) return BRIDGE_DEPARA[k2];
+  if(BRIDGE_DEPARA[mng2] !== undefined) return BRIDGE_DEPARA[mng2];
+  return mng2; // passthrough — raw MNG_2 if no mapping found
+}
+
 function buildBridgeBUSel() {
   const sel = document.getElementById('bridgeMacroBUSel');
   if(!sel || !allData.length) return;
@@ -4873,7 +4972,8 @@ function getBridgePeriodData(mesSet, cenario, buSel) {
     if(d.MNG_1 === 'Metrics') continue;
     if(!byK1K2.has(d.MNG_1)) byK1K2.set(d.MNG_1, new Map());
     const k2map = byK1K2.get(d.MNG_1);
-    const k2 = d.MNG_2 || '';
+    // Apply DE-PARA grouping so bridge shows consolidated categories
+    const k2 = getDeParaK2(d.MNG_2 || '', d.MNG_3 || '', d.MNG_4 || '');
     k2map.set(k2, (k2map.get(k2) || 0) + v);
   }
   return { tpv, byK1K2 };
@@ -4953,10 +5053,11 @@ function buildBridgeSegments(dataA, dataB, metric) {
     const k2mapA = k1k2A.get(k1) || new Map();
     const k2mapB = k1k2B.get(k1) || new Map();
     const allK2 = [...new Set([...k2mapA.keys(), ...k2mapB.keys()])].filter(Boolean);
-    // Use defined order if available
-    const orderedK2 = MNG2_ORDER[k1] ? MNG2_ORDER[k1].filter(k2 => allK2.includes(k2))
-                                      .concat(allK2.filter(k2 => !MNG2_ORDER[k1].includes(k2)))
-                    : allK2;
+    // Use bridge-specific order (consolidated DE-PARA groups), fallback to raw order
+    const bOrder = BRIDGE_BELOW_ORDER[k1];
+    const orderedK2 = bOrder ? bOrder.filter(k2 => allK2.includes(k2))
+                                     .concat(allK2.filter(k2 => !bOrder.includes(k2)))
+                             : allK2;
     for(const k2 of orderedK2) {
       if(excludeK2 && k2 === excludeK2) continue;
       const vA    = k2mapA.get(k2) || 0;
