@@ -623,6 +623,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 .bridges-chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;
   padding:20px 24px 16px;height:460px;flex-shrink:0;position:relative}
 .bridges-chart-wrap canvas{display:block}
+.bridges-chart-msg{height:calc(100% - 32px);display:flex;align-items:center;
+  justify-content:center;font-size:14px;color:var(--muted);text-align:center;padding:20px}
 .bridges-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
 .bridges-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
 .bridges-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
@@ -1278,6 +1280,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <div class="bridges-body">
     <div class="bridges-chart-wrap">
       <div class="bridges-legend" id="bridgesLegend"></div>
+      <div id="bridgesChartMsg" class="bridges-chart-msg" style="display:none"></div>
       <canvas id="bridgeChart"></canvas>
     </div>
     <div class="bridges-summary" id="bridgesSummary"></div>
@@ -4944,10 +4947,22 @@ function renderBridgesTab() {
   const summaryEl = document.getElementById('bridgesSummary');
   const legendEl  = document.getElementById('bridgesLegend');
 
+  const msgEl    = document.getElementById('bridgesChartMsg');
+  const canvasEl = document.getElementById('bridgeChart');
+
   function clearChart(msg) {
     if(_bridgeChart) { try{_bridgeChart.destroy()}catch(e){} _bridgeChart = null; }
     legendEl.innerHTML  = '';
-    summaryEl.innerHTML = `<div class="bridges-empty">${msg}</div>`;
+    summaryEl.innerHTML = '';
+    canvasEl.style.display = 'none';
+    msgEl.style.display    = 'flex';
+    msgEl.textContent      = msg;
+  }
+
+  function showCanvas() {
+    canvasEl.style.display = 'block';
+    msgEl.style.display    = 'none';
+    msgEl.textContent      = '';
   }
 
   if(!bridgePeriodA || !bridgePeriodB || !bridgeCenA || !bridgeCenB) {
@@ -4962,9 +4977,11 @@ function renderBridgesTab() {
   const hasDataB = dataB.byK1K2.size > 0 || dataB.tpv > 0;
   if(!hasDataA || !hasDataB) {
     const who = (!hasDataA && !hasDataB) ? 'A e B' : !hasDataA ? 'A' : 'B';
-    clearChart(`⚠️ Sem dados para o período ${who}. Verifique período e cenário selecionados.`);
+    clearChart(`⚠️ Sem dados para o período ${who}.\nVerifique se o período e cenário existem na base.`);
     return;
   }
+
+  showCanvas();
 
   const segments = buildBridgeSegments(dataA, dataB, bridgeMetric);
 
