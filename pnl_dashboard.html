@@ -816,9 +816,11 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <div class="fg" id="x1TypeGroup" style="display:none">
     <label>Tipo</label>
     <div class="bg" id="x1TypeGrp">
-      <button class="on" data-t="mes"    onclick="set1x1Type(this)">Mês</button>
-      <button           data-t="quarter" onclick="set1x1Type(this)">Quarter</button>
-      <button           data-t="ano"     onclick="set1x1Type(this)">Ano</button>
+      <button class="on" data-t="mes"     onclick="set1x1Type(this)">Mês</button>
+      <button            data-t="ytd"     onclick="set1x1Type(this)">YTD</button>
+      <button            data-t="ytg"     onclick="set1x1Type(this)">YTG</button>
+      <button            data-t="quarter" onclick="set1x1Type(this)">Quarter</button>
+      <button            data-t="ano"     onclick="set1x1Type(this)">Ano</button>
     </div>
   </div>
   <!-- 1×1: Período A -->
@@ -1234,6 +1236,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       <label>Tipo</label>
       <div class="bg" id="bridgeTypeGrp">
         <button class="on" data-t="mes"     onclick="setBridgeType(this)">Mês</button>
+        <button            data-t="ytd"     onclick="setBridgeType(this)">YTD</button>
+        <button            data-t="ytg"     onclick="setBridgeType(this)">YTG</button>
         <button            data-t="quarter" onclick="setBridgeType(this)">Quarter</button>
         <button            data-t="ano"     onclick="setBridgeType(this)">Ano</button>
       </div>
@@ -1991,8 +1995,17 @@ function get1x1MesSet(period, type) {
   if(!period) return s;
   if(type === 'mes') {
     s.add(parseInt(period));
+  } else if(type === 'ytd') {
+    // period = YYYYMM → Jan of that year .. that month
+    const p = parseInt(period);
+    const yr = Math.floor(p / 100), mo = p % 100;
+    for(let m = 1; m <= mo; m++) s.add(yr * 100 + m);
+  } else if(type === 'ytg') {
+    // period = YYYYMM → that month .. Dec of that year
+    const p = parseInt(period);
+    const yr = Math.floor(p / 100), mo = p % 100;
+    for(let m = mo; m <= 12; m++) s.add(yr * 100 + m);
   } else if(type === 'quarter') {
-    // period = 'Qn/YY'
     const qn = parseInt(period[1]);
     const yr = 2000 + parseInt(period.slice(3));
     const start = (qn-1)*3 + 1;
@@ -2004,12 +2017,24 @@ function get1x1MesSet(period, type) {
   return s;
 }
 
+// Forecast blending helper: for multi-month Forecast periods, months with no Forecast
+// data fall back to Realizado. Returns a function mes → effective_cenario.
+function makeBlendFn(mesSet, cen) {
+  if(!cen || mesSet.size <= 1 || !/forecast|^fc$/i.test(cen)) return () => cen;
+  const hasFc = new Set(
+    allData.filter(d => mesSet.has(d.MES) && d.Cenario === cen).map(d => d.MES)
+  );
+  return mes => hasFc.has(mes) ? cen : 'Realizado';
+}
+
 // Returns a human-readable label for a 1×1 period
 function format1x1PeriodLabel(period, type) {
   if(!period) return '—';
-  if(type === 'mes') return mesLabel(parseInt(period));
-  if(type === 'quarter') return period;   // e.g. 'Q1/25'
-  if(type === 'ano')     return period;   // e.g. '2025'
+  if(type === 'mes')     return mesLabel(parseInt(period));
+  if(type === 'ytd')     return 'YTD ' + mesLabel(parseInt(period));
+  if(type === 'ytg')     return 'YTG ' + mesLabel(parseInt(period));
+  if(type === 'quarter') return period;
+  if(type === 'ano')     return period;
   return period;
 }
 
@@ -2031,14 +2056,13 @@ function build1x1Selects() {
 
   // Build period options from allData
   let periods = [];
-  if(comp1x1Type === 'mes') {
+  if(comp1x1Type === 'mes' || comp1x1Type === 'ytd' || comp1x1Type === 'ytg') {
     periods = uniq(allData.map(d => String(d.MES))).sort();
   } else if(comp1x1Type === 'quarter') {
     const qs = new Set();
     allData.forEach(d => {
       if(d.QUARTER && d.ANO) qs.add(d.QUARTER + '/' + String(d.ANO).slice(2));
     });
-    // Sort quarters chronologically
     periods = [...qs].sort((a,b) => {
       const [qa,ya] = a.split('/'); const [qb,yb] = b.split('/');
       return (parseInt(ya)*10+parseInt(qa[1])) - (parseInt(yb)*10+parseInt(qb[1]));
@@ -2049,7 +2073,7 @@ function build1x1Selects() {
 
   const periodOptsFn = (curVal) =>
     periods.map(p => {
-      const lbl = comp1x1Type === 'mes' ? mesLabel(parseInt(p)) : p;
+      const lbl = format1x1PeriodLabel(p, comp1x1Type);
       return `<option value="${p}"${p===curVal?' selected':''}>${lbl}</option>`;
     }).join('');
 
@@ -2167,15 +2191,17 @@ function toggleTheme() {
 // ═══════════════════════════════════════════════════════════
 function getFiltered() {
   if(viewMode === '1x1') {
-    const mesA = get1x1MesSet(comp1x1PeriodA, comp1x1Type);
-    const mesB = get1x1MesSet(comp1x1PeriodB, comp1x1Type);
+    const mesA   = get1x1MesSet(comp1x1PeriodA, comp1x1Type);
+    const mesB   = get1x1MesSet(comp1x1PeriodB, comp1x1Type);
+    const blendA = makeBlendFn(mesA, comp1x1CenA);
+    const blendB = makeBlendFn(mesB, comp1x1CenB);
     return allData.filter(d =>
       (selSecao.length===0 || selSecao.includes(d.MNG_1)) &&
       (selMacro.length===0 || selMacro.includes(d.Macro_BU)) &&
       (selProd.length===0  || selProd.includes(d.Product)) &&
       (
-        (mesA.has(d.MES) && d.Cenario === comp1x1CenA) ||
-        (mesB.has(d.MES) && d.Cenario === comp1x1CenB)
+        (mesA.has(d.MES) && d.Cenario === blendA(d.MES)) ||
+        (mesB.has(d.MES) && d.Cenario === blendB(d.MES))
       )
     );
   }
@@ -2241,10 +2267,12 @@ function getAutoCutoff() {
 
 function colKey(row) {
   if(viewMode==='1x1') {
-    const mesA = get1x1MesSet(comp1x1PeriodA, comp1x1Type);
-    const mesB = get1x1MesSet(comp1x1PeriodB, comp1x1Type);
-    if(mesA.has(row.MES) && row.Cenario === comp1x1CenA) return '1x1_a';
-    if(mesB.has(row.MES) && row.Cenario === comp1x1CenB) return '1x1_b';
+    const mesA   = get1x1MesSet(comp1x1PeriodA, comp1x1Type);
+    const mesB   = get1x1MesSet(comp1x1PeriodB, comp1x1Type);
+    const blendA = makeBlendFn(mesA, comp1x1CenA);
+    const blendB = makeBlendFn(mesB, comp1x1CenB);
+    if(mesA.has(row.MES) && row.Cenario === blendA(row.MES)) return '1x1_a';
+    if(mesB.has(row.MES) && row.Cenario === blendB(row.MES)) return '1x1_b';
     return null;
   }
   if(viewMode==='total') return '__total__';
@@ -4991,7 +5019,7 @@ function buildBridgeSelects() {
 
   // Period options (same logic as 1×1)
   let periods = [];
-  if(bridgeType === 'mes') {
+  if(bridgeType === 'mes' || bridgeType === 'ytd' || bridgeType === 'ytg') {
     periods = uniq(allData.map(d => String(d.MES))).sort();
   } else if(bridgeType === 'quarter') {
     const qs = new Set();
@@ -5004,9 +5032,8 @@ function buildBridgeSelects() {
     periods = uniq(allData.map(d => String(d.ANO))).sort();
   }
 
-  const periodLbl = p => bridgeType === 'mes' ? mesLabel(parseInt(p)) : p;
   const periodOptsFn = curVal => periods.map(p =>
-    `<option value="${p}"${p===curVal?' selected':''}>${periodLbl(p)}</option>`
+    `<option value="${p}"${p===curVal?' selected':''}>${format1x1PeriodLabel(p, bridgeType)}</option>`
   ).join('');
 
   ['bridgePeriodASel','bridgePeriodBSel'].forEach((id, i) => {
@@ -5035,11 +5062,13 @@ function getBridgePeriodData(mesSet, cenario, buSel) {
   if(!mesSet || mesSet.size === 0) return { tpv:0, byK1K2: new Map() };
   const isProd   = buSel && buSel.startsWith('__prod__');
   const prodName = isProd ? buSel.slice(8) : null;
+  // Forecast blending: months with no Forecast data fall back to Realizado
+  const blendFn  = makeBlendFn(mesSet, cenario);
   let tpv = 0;
   const byK1K2 = new Map(); // k1 → Map<k2, value>
   for(const d of allData) {
-    if(!mesSet.has(d.MES))    continue;
-    if(d.Cenario !== cenario) continue;
+    if(!mesSet.has(d.MES))             continue;
+    if(d.Cenario !== blendFn(d.MES))   continue;
     if(buSel) {
       if(isProd  && d.Product   !== prodName) continue;
       if(!isProd && d.Macro_BU  !== buSel)    continue;
