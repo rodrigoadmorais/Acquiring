@@ -1215,13 +1215,10 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     </div>
     <!-- Macro BU -->
     <div class="fg">
-      <label>Macro BU</label>
+      <label>BU</label>
       <select id="bridgeMacroBUSel" onchange="bridgeMacro=this.value;renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
-               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:110px">
-        <option value="Acquiring">Acquiring</option>
-        <option value="Commerce">Commerce</option>
-        <option value="Fintech Services">Fintech Services</option>
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:140px">
       </select>
     </div>
     <div class="bridges-filter-sep"></div>
@@ -4763,8 +4760,49 @@ function setBridgeUnit(btn) {
   renderBridgesTab();
 }
 
+// Set of values treated as Macro BU (filter by d.Macro_BU)
+// Anything else is treated as an individual Product (filter by d.Product)
+const BRIDGE_MACRO_LEVEL = new Set(['Acquiring','Commerce','Fintech Services']);
+
+function buildBridgeBUSel() {
+  const sel = document.getElementById('bridgeMacroBUSel');
+  if(!sel || !allData.length) return;
+  // Build unique Macro BU list and Product list from data
+  const macroBUs = [...new Set(allData.map(d => d.Macro_BU).filter(Boolean))].sort();
+  const products = [...new Set(allData.map(d => d.Product).filter(Boolean))].sort();
+
+  // Build optgroups: Macro BU → individual Products within it
+  let html = '';
+  for(const mbu of macroBUs) {
+    html += `<optgroup label="▸ ${mbu}">`;
+    html += `<option value="${mbu}">${mbu} (total)</option>`;
+    const buProds = products.filter(p =>
+      allData.some(d => d.Macro_BU === mbu && d.Product === p)
+    );
+    for(const prod of buProds) {
+      html += `<option value="${'__prod__' + prod}">${prod}</option>`;
+    }
+    html += `</optgroup>`;
+  }
+  sel.innerHTML = html;
+
+  // Restore or default selection
+  const cur = bridgeMacro;
+  const allVals = [
+    ...macroBUs,
+    ...products.map(p => '__prod__' + p)
+  ];
+  if(cur && allVals.includes(cur)) {
+    sel.value = cur;
+  } else {
+    bridgeMacro = macroBUs[0] || '';
+    sel.value   = bridgeMacro;
+  }
+}
+
 function buildBridgeSelects() {
   if(!allData || !allData.length) return;
+  buildBridgeBUSel();
   const cens = optCen.length ? optCen : uniq(allData.map(d => d.Cenario)).sort();
   const cenOpts = cens.map(c => `<option value="${c}">${shortCen(c)}</option>`).join('');
 
@@ -4817,18 +4855,25 @@ function buildBridgeSelects() {
   });
 }
 
-// Aggregate all P&L data for a given set of months + scenario + macro BU
-function getBridgePeriodData(mesSet, cenario, macroBU) {
+// Aggregate all P&L data for a given set of months + scenario + BU selector
+// buSel can be: a Macro BU name (e.g. 'Acquiring') → filter by d.Macro_BU
+//               '__prod__' + product name            → filter by d.Product
+function getBridgePeriodData(mesSet, cenario, buSel) {
   if(!mesSet || mesSet.size === 0) return { tpv:0, byK1K2: new Map() };
+  const isProd   = buSel && buSel.startsWith('__prod__');
+  const prodName = isProd ? buSel.slice(8) : null;
   let tpv = 0;
   const byK1K2 = new Map(); // k1 → Map<k2, value>
   for(const d of allData) {
-    if(!mesSet.has(d.MES))           continue;
-    if(d.Cenario !== cenario)        continue;
-    if(macroBU && d.Macro_BU !== macroBU) continue;
+    if(!mesSet.has(d.MES))    continue;
+    if(d.Cenario !== cenario) continue;
+    if(buSel) {
+      if(isProd  && d.Product   !== prodName) continue;
+      if(!isProd && d.Macro_BU  !== buSel)    continue;
+    }
     const v = d.Value || 0;
     if(d.MNG_1 === 'Metrics' && d.MNG_2 === 'TPV') { tpv += v; continue; }
-    if(d.MNG_1 === 'Metrics') continue; // skip NMV etc.
+    if(d.MNG_1 === 'Metrics') continue;
     if(!byK1K2.has(d.MNG_1)) byK1K2.set(d.MNG_1, new Map());
     const k2map = byK1K2.get(d.MNG_1);
     const k2 = d.MNG_2 || '';
