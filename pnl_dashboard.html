@@ -628,7 +628,19 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 .bridges-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
 .bridges-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
 .bridges-summary{background:var(--card);border:1px solid var(--border);border-radius:12px;
-  margin:16px 24px 24px;padding:16px 20px;overflow-x:auto}
+  margin:0 24px 24px;padding:16px 20px;overflow-x:auto}
+#bridgesAISummary{margin:16px 24px 12px;background:linear-gradient(135deg,#fffde7 0%,#fff8e1 100%);
+  border:1px solid #FFE600;border-radius:12px;padding:16px 20px;font-size:13px;line-height:1.7;
+  color:#1a1a1a}
+[data-theme=dark] #bridgesAISummary{background:linear-gradient(135deg,#2a2410 0%,#1e1a08 100%);
+  border-color:#b8a000;color:#f5f0d0}
+#bridgesAISummary .ai-header{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.8px;color:#8a7000;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+[data-theme=dark] #bridgesAISummary .ai-header{color:#c9a800}
+#bridgesAISummary .ai-bullets{margin-top:10px;padding-left:0;list-style:none;display:flex;
+  flex-direction:column;gap:4px}
+#bridgesAISummary .ai-bullets li::before{content:'›';margin-right:6px;color:#8a7000;font-weight:700}
+[data-theme=dark] #bridgesAISummary .ai-bullets li::before{color:#c9a800}
 .bridges-summary table{border-collapse:collapse;width:100%;font-size:12px}
 .bridges-summary th{padding:6px 14px;text-align:right;background:var(--bg);font-size:10px;
   font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
@@ -1279,6 +1291,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <div id="bridgesChartMsg" class="bridges-chart-msg" style="display:none"></div>
     <canvas id="bridgeChart"></canvas>
   </div>
+  <div id="bridgesAISummary" style="display:none"></div>
   <div class="bridges-summary" id="bridgesSummary"></div>
 </div>
 
@@ -4780,31 +4793,31 @@ const BRIDGE_MACRO_LEVEL = new Set(['Acquiring','Commerce','Fintech Services']);
 const BRIDGE_DEPARA = (() => {
   const m = {};
   // Business Contribution
-  m['G&A BC']='OPEX BC'; m['G&A Bu / Local']='OPEX BC'; m['G&A Bu/Local']='OPEX BC';
-  m['PD BC']='OPEX BC'; m['Product Development']='OPEX BC'; m['S&M BC']='OPEX BC';
+  m['G&A BC']='CX, Hosting, PF e OPEX'; m['G&A Bu / Local']='CX, Hosting, PF e OPEX'; m['G&A Bu/Local']='CX, Hosting, PF e OPEX';
+  m['PD BC']='CX, Hosting, PF e OPEX'; m['Product Development']='CX, Hosting, PF e OPEX'; m['S&M BC']='CX, Hosting, PF e OPEX';
   m['Marketing Branding']='Branding';
   // Business Margin
-  m['G&A BM']='OPEX BM'; m['PD BM']='OPEX BM'; m['S&M BM']='OPEX BM';
+  m['G&A BM']='CX, Hosting, PF e OPEX'; m['PD BM']='CX, Hosting, PF e OPEX'; m['S&M BM']='CX, Hosting, PF e OPEX';
   // Direct Contribution — simple
-  m['CX Fixed']='CX, PF & Host. Fixed';
-  m['Fraud Prevention']='CX, PF & Host. Fixed'; m['Fraud Prevention Fixed']='CX, PF & Host. Fixed';
-  m['Hosting Fixed']='CX, PF & Host. Fixed';
+  m['CX Fixed']='CX, Hosting, PF e OPEX';
+  m['Fraud Prevention']='CX, Hosting, PF e OPEX'; m['Fraud Prevention Fixed']='CX, Hosting, PF e OPEX';
+  m['Hosting Fixed']='CX, Hosting, PF e OPEX';
   m['Loyalty Content']='Other DC Costs';
   m['Marketing Fixed']='Mkt Fixed';
   m['Other Fixed Costs']='Other DC Costs';
   m['S&M Local DC']='S&M Local DC'; m['S&M Local Dc']='S&M Local DC';
   m['Sales Expenses']='Sales Expenses';
-  m['Point Cogs']='MPOS Net'; m['Net Fixed Fees']='MPOS Net';
+  m['Point Cogs']='MPOS'; m['Net Fixed Fees']='MPOS';
   // Shipping Ops Fixed (MNG_3 disambiguates)
-  m['Shipping Ops Fixed||S&W Fixed']='MPOS Net';
-  m['Shipping Ops Fixed||Other Shipping Ops Fixed']='MPOS Net';
+  m['Shipping Ops Fixed||S&W Fixed']='MPOS';
+  m['Shipping Ops Fixed||Other Shipping Ops Fixed']='MPOS';
   m['Shipping Ops Fixed||Warehouse Services']='Other DC Costs';
   // Customer Acquisition Cost (MNG_3 disambiguates, Sales Expenses MPOS needs MNG_4)
   m['Customer Acquisition Cost||CPA']='CPA';
-  m['Customer Acquisition Cost||Point COGS']='MPOS Net';
-  m['Customer Acquisition Cost||Previsión MPOS Cost']='MPOS Net';
-  m['Customer Acquisition Cost||Sales MPOS']='MPOS Net';
-  m['Customer Acquisition Cost||Sales Taxes MPOS']='MPOS Net';
+  m['Customer Acquisition Cost||Point COGS']='MPOS';
+  m['Customer Acquisition Cost||Previsión MPOS Cost']='MPOS';
+  m['Customer Acquisition Cost||Sales MPOS']='MPOS';
+  m['Customer Acquisition Cost||Sales Taxes MPOS']='MPOS';
   m['Customer Acquisition Cost||Sales Expenses MPOS||Fuerza de Venta de Terceros']='CPA';
   m['Customer Acquisition Cost||Sales Expenses MPOS||Fuerza de Venta Propia']='CPA';
   m['Customer Acquisition Cost||Sales Expenses MPOS||Other Sales Expenses']='Sales Expenses';
@@ -4842,12 +4855,12 @@ const BRIDGE_DEPARA = (() => {
   m['Chargebacks']='Chargebacks'; m['CBK_Theoretical']='Chargebacks'; m['CHARGEBACKS_Contable']='Chargebacks';
   m['Collection Fees']='Collection Fees'; m['Collection_Fees']='Collection Fees';
   m['Coupons']='Other VC Costs'; m['COUPONS']='Other VC Costs';
-  m['CX Variable']='CX & Host. Var.'; m['CX_Variable']='CX & Host. Var.';
+  m['CX Variable']='CX, Hosting, PF e OPEX'; m['CX_Variable']='CX, Hosting, PF e OPEX';
   m['Direct Variable Costs']='Other VC Costs'; m['Other_Direct_Variable_Costs']='Other VC Costs';
-  m['Hosting Variable']='CX & Host. Var.'; m['Hosting_Variable']='CX & Host. Var.';
+  m['Hosting Variable']='CX, Hosting, PF e OPEX'; m['Hosting_Variable']='CX, Hosting, PF e OPEX';
   m['Marketing Performance']='POM';
   m['Shipping Distribution Variable']='Other VC Costs'; m['Shipping Ops Variable']='Other VC Costs';
-  m['Fraud Prevention Variable']='CX & Host. Var.'; m['FP_Variable']='CX & Host. Var.';
+  m['Fraud Prevention Variable']='CX, Hosting, PF e OPEX'; m['FP_Variable']='CX, Hosting, PF e OPEX';
   m['Funding Cost']='Other VC Costs'; m['Funding']='Other VC Costs';
   m['Revenue_Sharing']='Other VC Costs'; m['Plataforma']='Other VC Costs';
   m['Telemetria']='Other VC Costs'; m['Telemetría']='Other VC Costs';
@@ -4858,11 +4871,11 @@ const BRIDGE_DEPARA = (() => {
 
 // Logical display order for consolidated bridge groups under each P&L level
 const BRIDGE_BELOW_ORDER = {
-  'Variable Contribution': ['CX & Host. Var.','POM','Chargebacks','Other VC Costs'],
-  'Direct Contribution':   ['CPA','MPOS Net','Sales Expenses','S&M Local DC','Mkt Fixed',
-                             'CX, PF & Host. Fixed','Other DC Costs','DC Costs'],
-  'Business Contribution': ['OPEX BC','Branding'],
-  'Business Margin':       ['OPEX BM'],
+  'Variable Contribution': ['CX, Hosting, PF e OPEX','POM','Chargebacks','Other VC Costs'],
+  'Direct Contribution':   ['CPA','MPOS','Sales Expenses','S&M Local DC','Mkt Fixed',
+                             'CX, Hosting, PF e OPEX','Other DC Costs','DC Costs'],
+  'Business Contribution': ['CX, Hosting, PF e OPEX','Branding'],
+  'Business Margin':       ['CX, Hosting, PF e OPEX'],
 };
 
 function getDeParaK2(mng2, mng3, mng4) {
@@ -5126,8 +5139,18 @@ function buildBridgeSegments(dataA, dataB, metric) {
     }
   }
 
-  segments.push({ label: 'B', value: endVal, type: 'end' });
-  return segments;
+  // ── Collapse effects < 0.5 M into "Others" ──
+  const OTHERS_THRESHOLD = 500_000; // R$ 500k
+  const effectSegs = segments.slice(1); // everything except the 'start' bar
+  const bigEffects  = effectSegs.filter(s => s.type !== 'effect' || Math.abs(s.value) >= OTHERS_THRESHOLD);
+  const smallEffects = effectSegs.filter(s => s.type === 'effect'  && Math.abs(s.value) < OTHERS_THRESHOLD);
+  const othersVal = smallEffects.reduce((sum, s) => sum + s.value, 0);
+
+  const result = [segments[0], ...bigEffects.filter(s => s.type !== 'end')];
+  if(Math.abs(othersVal) >= 0.01)
+    result.push({ label: 'Others', value: othersVal, type: 'effect', group: 'others' });
+  result.push({ label: 'B', value: endVal, type: 'end' });
+  return result;
 }
 
 function bridgeFmt(v) {
@@ -5137,6 +5160,79 @@ function bridgeFmt(v) {
   const dec = bridgeUnitDiv >= 1_000_000 ? 1 : 0;
   const str = abs.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
   return neg ? `(${str})` : str;
+}
+
+// ── Executive summary generator ──
+function generateBridgeSummary(segments, tpvA, tpvB, fmtFn, udLbl, metricLabel, ctxA, ctxB) {
+  const startSeg = segments.find(s => s.type === 'start');
+  const endSeg   = segments.find(s => s.type === 'end');
+  if(!startSeg || !endSeg) return null;
+
+  const totalDelta = endSeg.value - startSeg.value;
+  if(Math.abs(totalDelta) < 0.01) return null;
+
+  const totalAbs = totalDelta < 0 ? 'recuou' : 'avançou';
+  const deltaFmt = fmtFn(totalDelta, true);
+
+  // Volume / TR rate effects
+  const volSeg = segments.find(s => s.group === 'vol');
+  const trSeg  = segments.find(s => s.group === 'tr');
+
+  // Other effects (below TR)
+  const effects = segments.filter(s => s.type === 'effect' && s.group !== 'vol' && s.group !== 'tr' && s.label !== 'Others');
+  const sorted  = [...effects].sort((a,b) => Math.abs(b.value) - Math.abs(a.value));
+
+  // Top lines covering 80% of absolute variation (excl. vol/tr)
+  const totalAbsEff = sorted.reduce((s, e) => s + Math.abs(e.value), 0);
+  let covered = 0, coverage = 0;
+  const top80 = [];
+  for(const seg of sorted) {
+    if(covered >= totalAbsEff * 0.80) break;
+    top80.push(seg);
+    covered += Math.abs(seg.value);
+  }
+  if(totalAbsEff > 0) coverage = Math.round(covered / totalAbsEff * 100);
+
+  // TPV context
+  const tpvDelta = tpvB - tpvA;
+  const tpvGrowth = tpvA ? (tpvDelta / tpvA * 100).toFixed(1) : null;
+
+  // Build narrative
+  const lines = [];
+
+  // Headline
+  lines.push(`<strong>${metricLabel}</strong> ${totalAbs} <strong>${deltaFmt} ${udLbl}</strong> de ${ctxA} para ${ctxB}.`);
+
+  // Volume & TR rate paragraph
+  const driverParts = [];
+  if(volSeg) {
+    const sign = volSeg.value >= 0 ? 'positivo' : 'negativo';
+    driverParts.push(`efeito de <strong>volume ${sign}</strong> de ${fmtFn(volSeg.value, true)} ${udLbl}` +
+      (tpvGrowth ? ` (TPV ${tpvGrowth >= 0 ? '+' : ''}${tpvGrowth}%)` : ''));
+  }
+  if(trSeg) {
+    const dir = trSeg.value >= 0 ? 'positivo' : 'negativo';
+    const rateMeta = trSeg.meta;
+    const ppStr = (rateMeta && rateMeta.rateA != null && rateMeta.rateB != null)
+      ? ` — taxa variou de ${rateMeta.rateA.toFixed(2)}% para ${rateMeta.rateB.toFixed(2)}%`
+      : '';
+    driverParts.push(`efeito de <strong>taxa de Take Rate ${dir}</strong> de ${fmtFn(trSeg.value, true)} ${udLbl}${ppStr}`);
+  }
+  if(driverParts.length)
+    lines.push('Dos drivers de monetização: ' + driverParts.join('; ') + '.');
+
+  // Top 80% contributors
+  if(top80.length) {
+    const itemStrs = top80.map(s => {
+      const pct = totalAbsEff > 0 ? Math.round(Math.abs(s.value) / totalAbsEff * 100) : 0;
+      const dir = s.value >= 0 ? '↑' : '↓';
+      return `<li>${dir} <strong>${s.label}</strong>: ${fmtFn(s.value, true)} ${udLbl} (${pct}% da var.)</li>`;
+    });
+    lines.push(`As linhas que explicam <strong>${coverage}%</strong> da variação absoluta abaixo do Take Rate:`);
+    lines.push(`<ul class="ai-bullets">${itemStrs.join('')}</ul>`);
+  }
+
+  return lines.join('<br>');
 }
 
 function renderBridgesTab() {
@@ -5416,6 +5512,23 @@ function renderBridgesTab() {
   // A / B context labels for table header (lA / lB already declared above for legend)
   const ctxA = `${lA} · ${shortCen(bridgeCenA)}`;
   const ctxB = `${lB} · ${shortCen(bridgeCenB)}`;
+
+  // ── AI Executive Summary ──
+  const aiSummaryEl = document.getElementById('bridgesAISummary');
+  if(aiSummaryEl) {
+    const summaryHtml = generateBridgeSummary(
+      segments, tpvA, tpvB, fmtVal, udLbl,
+      bridgeMetric, ctxA, ctxB
+    );
+    if(summaryHtml) {
+      aiSummaryEl.style.display = 'block';
+      aiSummaryEl.innerHTML = `
+        <div class="ai-header"><span>✦</span> Resumo Executivo</div>
+        ${summaryHtml}`;
+    } else {
+      aiSummaryEl.style.display = 'none';
+    }
+  }
 
   const COL_G = '#2E7D32', COL_R = '#C62828';
 
