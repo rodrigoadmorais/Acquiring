@@ -6,7 +6,7 @@
 <title>P&L Brasil</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -15,8 +15,8 @@
 :root {
   /* Brand */
   --yellow:#FFE600; --yellow-dark:#D9C200; --yellow-dim:#FFFBE6;
-  /* MELI Blue (primary accent per SKILL.md) */
-  --meli-blue:#3483FA; --meli-blue-dark:#1259C3; --meli-blue-lt:#EBF2FF;
+  /* Black tertiary (replaces MELI blue) */
+  --meli-blue:#1a1a1a; --meli-blue-dark:#111111; --meli-blue-lt:#F5F5F0;
   /* Surfaces — SKILL.md palette */
   --bg:#F5F7FA; --bg-2:#EEF2F7; --card:#FFFFFF; --card-2:#F8FAFC;
   /* Borders */
@@ -32,7 +32,7 @@
   --l1bg:#FFF9E0; --l2bg:#F8F8F4; --l3bg:#fff;
   --sticky:#fff; --hdr-text:#1F2937;
   /* Column accents */
-  --total-col:#1259C3; --var-col:#00A650;
+  --total-col:#1a1a1a; --var-col:#00A650;
   /* Shadows — SKILL.md */
   --sh-xs:0 1px 3px rgba(0,0,0,.06);
   --sh-sm:0 2px 8px rgba(0,0,0,.06);
@@ -46,15 +46,15 @@
   --bg:#0F1829; --bg-2:#1A2540; --card:#1A2540; --card-2:#1F2D50;
   --border:#2A3550; --border-strong:#374565;
   --text:#E8EBF3; --text-2:#C8CFDF; --muted:#8896B3; --muted-2:#5C6B8A;
-  --meli-blue:#5A9DFF; --meli-blue-dark:#3483FA; --meli-blue-lt:#0D1F40;
+  --meli-blue:#e0e0e0; --meli-blue-dark:#c0c0c0; --meli-blue-lt:#1E1E1E;
   --blue:#FFE600; --blue-lt:#1E1A00;
   --red:#F87171; --red-lt:#2D0E0E; --green:#4ADE80; --green-lt:#0A2014;
   --l1bg:#1E1A00; --l2bg:#1C2540; --l3bg:#1A2540;
   --sticky:#1A2540; --hdr-text:#E8EBF3;
-  --total-col:#3483FA; --var-col:#4ADE80;
+  --total-col:#e0e0e0; --var-col:#4ADE80;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+body{font-family:'Nunito','Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
      background:var(--bg);color:var(--text);font-size:13px;
      height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
@@ -76,7 +76,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
          background:rgba(255,255,255,.55);cursor:pointer;font-size:11px;
          font-weight:700;color:#1a1a1a;transition:.15s}
 .btn-hdr:hover{background:rgba(255,255,255,.9);border-color:rgba(0,0,0,.3)}
-.btn-hdr.on{background:var(--meli-blue);color:#fff;border-color:var(--meli-blue-dark)}
+.btn-hdr.on{background:#1a1a1a;color:#FFE600;border-color:#000}
 
 /* ── Filters ── */
 .filters{background:var(--card);border-bottom:1px solid var(--border);
@@ -95,9 +95,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
       background:var(--card);color:var(--muted);cursor:pointer;
       font-size:11px;font-weight:600;transition:.15s;white-space:nowrap;
       user-select:none}
-.pill:hover{border-color:var(--meli-blue);color:var(--meli-blue)}
-.pill.on{border-color:var(--meli-blue);background:var(--meli-blue);color:#fff;
-         box-shadow:0 2px 8px rgba(52,131,250,.25)}
+.pill:hover{border-color:#1a1a1a;color:#1a1a1a}
+.pill.on{border-color:#FFE600;background:#FFE600;color:#1a1a1a;
+         box-shadow:0 2px 8px rgba(0,0,0,.15)}
 
 /* ── Btn group ── */
 .bg{display:flex;border:1.5px solid var(--border);border-radius:var(--r-sm);
@@ -106,7 +106,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
            background:transparent;color:var(--muted);cursor:pointer;
            font-size:11px;font-weight:600;transition:.15s;white-space:nowrap}
 .bg button:last-child{border-right:none}
-.bg button.on{background:var(--meli-blue);color:#fff;font-weight:700}
+.bg button.on{background:#FFE600;color:#1a1a1a;font-weight:700}
 .bg button:hover:not(.on){background:var(--card);color:var(--text)}
 
 /* ── Multi-select dropdown ── */
@@ -125,7 +125,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 .ms-item{display:flex;align-items:center;gap:8px;padding:6px 14px;
          cursor:pointer;font-size:12px;transition:.1s}
 .ms-item:hover{background:var(--bg)}
-.ms-item input{accent-color:var(--meli-blue);cursor:pointer;flex-shrink:0}
+.ms-item input{accent-color:#1a1a1a;cursor:pointer;flex-shrink:0}
 .ms-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ms-actions{display:flex;gap:8px;padding:7px 14px 5px;
             border-top:1px solid var(--border);margin-top:3px}
@@ -153,12 +153,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 #pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
                         background:#FFE600;min-width:260px;max-width:340px;
                         font-size:12px;letter-spacing:.3px}
-#pnlTable th.grp-hdr{background:var(--meli-blue);color:#fff;border-left:2px solid var(--meli-blue-dark)}
-#pnlTable th.col-total-hdr{background:var(--meli-blue-dark);color:#fff;border-left:2px solid rgba(0,0,0,.2)}
-#pnlTable th.col-var-hdr{background:#1259C3;color:#fff;border-left:1px solid rgba(0,0,0,.2)}
-[data-theme=dark] #pnlTable th.grp-hdr{background:#1259C3;border-left-color:#0D44A0}
-[data-theme=dark] #pnlTable th.col-total-hdr{background:#0D44A0;border-left-color:rgba(0,0,0,.3)}
-[data-theme=dark] #pnlTable th.col-var-hdr{background:#0A3A8A}
+#pnlTable th.grp-hdr{background:#1a1a1a;color:#FFE600;border-left:2px solid #000}
+#pnlTable th.col-total-hdr{background:#111;color:#FFE600;border-left:2px solid rgba(0,0,0,.3)}
+#pnlTable th.col-var-hdr{background:#2c2c2c;color:#fff;border-left:1px solid rgba(0,0,0,.2)}
+[data-theme=dark] #pnlTable th.grp-hdr{background:#000;border-left-color:#333}
+[data-theme=dark] #pnlTable th.col-total-hdr{background:#111;border-left-color:rgba(0,0,0,.4)}
+[data-theme=dark] #pnlTable th.col-var-hdr{background:#1a1a1a}
 
 #pnlTable td{padding:5px 12px;border-bottom:1px solid var(--border);
              white-space:nowrap;text-align:right}
@@ -218,12 +218,12 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans
 .vpos{color:var(--green);font-weight:600}
 .vneg{color:var(--red);font-weight:600}
 .bold{font-weight:700}
-td.col-total-cell{background:rgba(52,131,250,.06);font-weight:700;
-                  border-left:2px solid rgba(52,131,250,.18)}
+td.col-total-cell{background:rgba(0,0,0,.04);font-weight:700;
+                  border-left:2px solid rgba(0,0,0,.12)}
 td.col-var-cell{background:rgba(0,166,80,.04)}
 td.col-var-cell.vpos{background:rgba(0,166,80,.07)}
 td.col-var-cell.vneg{background:rgba(229,57,53,.05)}
-[data-theme=dark] td.col-total-cell{background:rgba(52,131,250,.20)}
+[data-theme=dark] td.col-total-cell{background:rgba(255,255,255,.06)}
 [data-theme=dark] td.col-var-cell{background:rgba(74,222,128,.12)}
 
 .invisible{visibility:hidden}
@@ -302,8 +302,8 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
          background:none;color:var(--muted);cursor:pointer;font-size:12.5px;
          font-weight:600;transition:.15s;white-space:nowrap;
          display:flex;align-items:center;margin-bottom:-1px}
-.tab-btn:hover{color:var(--meli-blue);background:var(--meli-blue-lt)}
-.tab-btn.on{color:var(--meli-blue);border-bottom-color:var(--meli-blue);font-weight:700}
+.tab-btn:hover{color:#1a1a1a;background:#FFFDE7}
+.tab-btn.on{color:#1a1a1a;border-bottom-color:#FFE600;font-weight:700;background:#FFFDE7}
 
 /* ── CPA / MPOS panel ── */
 .cpa-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
@@ -551,7 +551,7 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
              font-weight:700;transition:.15s;white-space:nowrap;display:flex;
              align-items:center;gap:5px;line-height:1.4}
 .cpa-cfg-btn:hover{border-color:var(--border-strong);color:var(--text)}
-.cpa-cfg-btn.on{background:var(--meli-blue);color:#fff;border-color:var(--meli-blue-dark)}
+.cpa-cfg-btn.on{background:#FFE600;color:#1a1a1a;border-color:#D9C200}
 
 /* ── Line Config Modal ── */
 #lineConfigModal{display:none;position:fixed;inset:0;z-index:1500;
@@ -593,8 +593,8 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
          background:var(--card);color:var(--text);cursor:pointer;
          font-size:12px;font-weight:600;transition:.15s}
 .lcm-btn:hover{background:var(--bg)}
-.lcm-btn.primary{background:var(--meli-blue);color:#fff;border-color:var(--meli-blue-dark)}
-.lcm-btn.primary:hover{background:var(--meli-blue-dark)}
+.lcm-btn.primary{background:#FFE600;color:#1a1a1a;border-color:#D9C200}
+.lcm-btn.primary:hover{background:#D9C200}
 
 /* ── Macro BU Overview ── */
 .mbu-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
@@ -664,7 +664,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 .bridges-filter-sep{width:1px;background:var(--border);margin:0 4px;align-self:stretch}
 .bridges-chart-wrap{background:var(--card);border:1px solid var(--border);
   border-radius:var(--r-lg);box-shadow:var(--sh-md);
-  margin:20px 24px 0;padding:22px 24px 18px;height:460px;position:relative;overflow:hidden}
+  margin:0;padding:22px 24px 18px;height:460px;position:relative;overflow:hidden}
 .bridges-chart-wrap canvas{display:block;width:100%!important;height:calc(100% - 44px)!important}
 .bridges-chart-msg{height:calc(100% - 32px);display:flex;align-items:center;
   justify-content:center;font-size:14px;color:var(--muted);text-align:center;padding:20px}
@@ -672,8 +672,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 .bridges-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
 .bridges-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
 .bridges-summary{background:var(--card);border:1px solid var(--border);
-  border-radius:var(--r-lg);box-shadow:var(--sh-sm);
-  margin:0 24px 24px;padding:18px 20px;overflow-x:auto}
+  border-top:none;border-radius:0 0 var(--r-lg) var(--r-lg);box-shadow:var(--sh-sm);
+  margin:0;padding:18px 20px;overflow-x:auto}
 #bridgesAISummary{margin:16px 24px 0;
   background:linear-gradient(135deg,#fffde7 0%,#fff9d6 60%,#fffbe0 100%);
   border:1px solid rgba(220,180,0,.35);border-radius:var(--r-lg);
@@ -704,6 +704,41 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 [data-theme=dark] .bridges-summary tr.bsm-vol td{background:#0e1e33;color:#93c5fd}
 [data-theme=dark] .bridges-summary tr.bsm-tr td{background:#1e1030;color:#d8b4fe}
 .bridges-empty{padding:60px 0;text-align:center;color:var(--muted);font-size:13px}
+
+/* ── Bridge two-column layout ── */
+.bridge-layout{display:flex;gap:16px;margin:16px 24px 20px;align-items:flex-start;min-height:0;flex-wrap:wrap}
+.bridge-pnl-panel{flex:0 0 400px;min-width:300px;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
+.bridge-chart-side{flex:1 1 500px;min-width:300px;display:flex;flex-direction:column;gap:0}
+.bridge-chart-side .bridges-chart-wrap{margin:0!important}
+.bridge-chart-side .bridges-summary{margin-left:0!important;margin-right:0!important;margin-top:0!important}
+.bpnl-header{background:#FFE600;color:#1a1a1a;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.7px;padding:10px 14px;
+  border-bottom:2px solid #D9C200;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bpnl-scen{font-size:10px;font-weight:600;color:#555;text-transform:none;letter-spacing:0}
+.bpnl-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.bpnl-table th{background:var(--bg-2);color:var(--muted);font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;
+  text-align:right;border-bottom:2px solid var(--border);white-space:nowrap}
+.bpnl-table th:first-child{text-align:left;min-width:150px}
+.bpnl-table td{padding:5px 8px;border-bottom:1px solid var(--border);
+  text-align:right;white-space:nowrap;font-size:11px}
+.bpnl-table td:first-child{text-align:left}
+.bpnl-row-l0 td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:11.5px;
+  border-top:2px solid #D9C200;border-bottom:1px solid #D9C200;padding-top:7px;padding-bottom:7px}
+.bpnl-row-l0.expandable{cursor:pointer}
+.bpnl-row-l0:hover td{filter:brightness(.97)}
+.bpnl-row-sub td{background:#FFFDE7;color:#333;font-weight:400;font-size:11px;
+  border-bottom:1px solid #F0E080}
+.bpnl-row-sub td:first-child{padding-left:28px}
+.bpnl-row-sub:hover td{background:#FFF9C4!important}
+.bpnl-col-var.pos{color:#2E7D32;font-weight:700}
+.bpnl-col-var.neg{color:#C62828;font-weight:700}
+.bpnl-col-bps{color:var(--muted);font-size:10px}
+[data-theme=dark] .bpnl-row-l0 td{background:#1E1A00;color:#FFE600;border-color:#2E2800}
+[data-theme=dark] .bpnl-row-sub td{background:#181200;color:#D8CC88;border-color:#2A2200}
+[data-theme=dark] .bpnl-row-sub:hover td{background:#201A00!important}
+.bpnl-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:13px}
 
 /* ── YoY Growth row ── */
 .row-yoy td{background:var(--card);color:var(--muted-2);font-size:10.5px;font-style:italic;
@@ -756,8 +791,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <button class="tab-btn" data-tab="pnl" onclick="switchTab(this)">P&amp;L</button>
   <button class="tab-btn on" data-tab="evo" onclick="switchTab(this)">Evolutivos</button>
   <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
-  <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">Point &amp; MPOS</button>
-  <button class="tab-btn" data-tab="mposlight" onclick="switchTab(this)">MPOS Light</button>
+  <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">MPOS</button>
   <button class="tab-btn" data-tab="mbu" onclick="switchTab(this)">Macro BU Overview</button>
   <button class="tab-btn" data-tab="bridges" onclick="switchTab(this)">Bridges</button>
 </nav>
@@ -1113,7 +1147,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <div class="cpa-filter-bar">
     <div>
       <label>Mês</label>
-      <select id="mposMesSel" onchange="renderMposTab()"
+      <select id="mposMesSel" onchange="renderMposTab();renderMposLightTabMerged()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;min-width:90px;cursor:pointer"></select>
     </div>
@@ -1127,7 +1161,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     </div>
     <div>
       <label>Macro BU</label>
-      <select id="mposMacroBUSel" onchange="mposMacroBU=this.value;renderMposTab()"
+      <select id="mposMacroBUSel" onchange="mposMacroBU=this.value;renderMposTab();renderMposLightTabMerged()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;min-width:110px;cursor:pointer"></select>
     </div>
@@ -1155,10 +1189,22 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <tbody id="mposBody"><tr><td colspan="12" class="empty">⏳ Carregando...</td></tr></tbody>
       </table>
     </div>
+    <!-- ── MPOS Light section (merged below MPOS table) ── -->
+    <div style="margin-top:28px;padding-top:6px;border-top:2px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+                  color:var(--muted);padding:0 4px 10px">MPOS Light</div>
+      <div class="tbl-outer">
+        <table class="cpa-table" id="mposLightTable">
+          <thead id="mposLightHead"></thead>
+          <tbody id="mposLightBody"><tr><td colspan="12" class="empty">⏳ Carregando...</td></tr></tbody>
+        </table>
+      </div>
+      <div id="mposLightFootnote" class="mpos-light-footnote"></div>
+    </div>
   </div>
 </div>
 
-<!-- ── MPOS Light Panel ── -->
+<!-- ── MPOS Light Panel (kept hidden — merged into MPOS tab) ── -->
 <div id="mposLightPanel" class="cpa-panel" style="display:none">
   <div class="cpa-filter-bar">
     <div>
@@ -1344,15 +1390,30 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       </button>
     </div>
   </div>
-  <!-- AI Summary (above chart) -->
+  <!-- AI Summary (above layout) -->
   <div id="bridgesAISummary" style="display:none"></div>
-  <!-- Chart + summary -->
-  <div class="bridges-chart-wrap">
-    <div class="bridges-legend" id="bridgesLegend"></div>
-    <div id="bridgesChartMsg" class="bridges-chart-msg" style="display:none"></div>
-    <canvas id="bridgeChart"></canvas>
+  <!-- Two-column layout: P&L left, chart right -->
+  <div class="bridge-layout">
+    <!-- Left: P&L comparison -->
+    <div class="bridge-pnl-panel">
+      <div class="bpnl-header">
+        <span>P&amp;L — Comparação</span>
+        <span class="bpnl-scen" id="bpnlScenLabel"></span>
+      </div>
+      <div id="bridgePnlContent" style="overflow-y:auto;max-height:520px">
+        <div class="bpnl-empty">Selecione os cenários para ver o P&amp;L</div>
+      </div>
+    </div>
+    <!-- Right: bridge chart + summary -->
+    <div class="bridge-chart-side">
+      <div class="bridges-chart-wrap">
+        <div class="bridges-legend" id="bridgesLegend"></div>
+        <div id="bridgesChartMsg" class="bridges-chart-msg" style="display:none"></div>
+        <canvas id="bridgeChart"></canvas>
+      </div>
+      <div class="bridges-summary" id="bridgesSummary"></div>
+    </div>
   </div>
-  <div class="bridges-summary" id="bridgesSummary"></div>
 </div>
 
 <!-- ── Key-numbers Panel ── -->
@@ -3327,33 +3388,30 @@ function switchTab(btn) {
   currentTab = btn.dataset.tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b===btn));
 
-  const isPnl       = currentTab === 'pnl';
-  const isCpa       = currentTab === 'cpa';
-  const isMpos      = currentTab === 'mpos';
-  const isMposLight = currentTab === 'mposlight';
-  const isKeyNums   = currentTab === 'keynums';
-  const isEvo       = currentTab === 'evo';
-  const isMbu       = currentTab === 'mbu';
-  const isBridges   = currentTab === 'bridges';
+  const isPnl     = currentTab === 'pnl';
+  const isCpa     = currentTab === 'cpa';
+  const isMpos    = currentTab === 'mpos';
+  const isKeyNums = currentTab === 'keynums';
+  const isEvo     = currentTab === 'evo';
+  const isMbu     = currentTab === 'mbu';
+  const isBridges = currentTab === 'bridges';
 
-  document.getElementById('filterBar').style.display       = isPnl       ? '' : 'none';
-  document.querySelector('.tbl-wrap').style.display        = isPnl       ? '' : 'none';
-  document.getElementById('selectionBar').style.display    = (isPnl && selectedRows.size > 0) ? '' : 'none';
-  document.getElementById('cpaPanel').style.display        = isCpa       ? '' : 'none';
-  document.getElementById('mposPanel').style.display       = isMpos      ? '' : 'none';
-  document.getElementById('mposLightPanel').style.display  = isMposLight ? '' : 'none';
-  document.getElementById('mbuPanel').style.display        = isMbu       ? '' : 'none';
-  document.getElementById('keyNumPanel').style.display     = isKeyNums   ? '' : 'none';
-  document.getElementById('evoPanel').style.display        = isEvo       ? '' : 'none';
-  document.getElementById('bridgesPanel').style.display    = isBridges   ? '' : 'none';
+  document.getElementById('filterBar').style.display    = isPnl     ? '' : 'none';
+  document.querySelector('.tbl-wrap').style.display     = isPnl     ? '' : 'none';
+  document.getElementById('selectionBar').style.display = (isPnl && selectedRows.size > 0) ? '' : 'none';
+  document.getElementById('cpaPanel').style.display     = isCpa     ? '' : 'none';
+  document.getElementById('mposPanel').style.display    = isMpos    ? '' : 'none';
+  document.getElementById('mbuPanel').style.display     = isMbu     ? '' : 'none';
+  document.getElementById('keyNumPanel').style.display  = isKeyNums ? '' : 'none';
+  document.getElementById('evoPanel').style.display     = isEvo     ? '' : 'none';
+  document.getElementById('bridgesPanel').style.display = isBridges ? '' : 'none';
 
-  if(isCpa)       renderCpaTab();
-  if(isMpos)      renderMposTab();
-  if(isMposLight) renderMposLightTab();
-  if(isKeyNums)   renderKeyNumTab();
-  if(isEvo)       renderEvoTab();
-  if(isMbu)       renderMbuTab();
-  if(isBridges)   renderBridgesTab();
+  if(isCpa)     renderCpaTab();
+  if(isMpos)    { renderMposTab(); renderMposLightTabMerged(); }
+  if(isKeyNums) renderKeyNumTab();
+  if(isEvo)     renderEvoTab();
+  if(isMbu)     renderMbuTab();
+  if(isBridges) renderBridgesTab();
 }
 
 function setCpaUnit(btn) {
@@ -3365,6 +3423,7 @@ function setMposUnit(btn) {
   mposUnitDiv = parseFloat(btn.dataset.u);
   document.querySelectorAll('#mposUnitGrp button').forEach(b => b.classList.toggle('on', b===btn));
   renderMposTab();
+  renderMposLightTabMerged();
 }
 function setMposLightUnit(btn) {
   mposLightUnitDiv = parseFloat(btn.dataset.u);
@@ -4320,11 +4379,21 @@ const MPOS_LIGHT_CMV_KEYS         = ['Cost of Product Sold','Previsión Costo MP
 const MPOS_LIGHT_OTHERS_COST_KEYS = ['Telemetría','Reacondicionamiento','Other MPOS Cogs','Insumos Point','Warehousing Point','Shipping Costs Point','S&W Fixed'];
 const EMPTY_VALS = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
 
+// Renders MPOS Light using the shared MPOS filter state (merged tab)
+function renderMposLightTabMerged() {
+  const mes = parseInt(document.getElementById('mposMesSel').value || 0);
+  if(!mes || !allData.length) return;
+  renderMposLightCore(mes, mposUnitDiv, mposMacroBU);
+}
+
 function renderMposLightTab() {
   const mes = parseInt(document.getElementById('mposLightMesSel').value || 0);
   if(!mes || !allData.length) return;
-  const ud = mposLightUnitDiv;
-  const macroFn = d => !mposLightMacroBU || d.Macro_BU === mposLightMacroBU;
+  renderMposLightCore(mes, mposLightUnitDiv, mposLightMacroBU);
+}
+
+function renderMposLightCore(mes, ud, macroBuFilter) {
+  const macroFn = d => !macroBuFilter || d.Macro_BU === macroBuFilter;
 
   const salesData = aggregateLines(d => MPOS_FILTERS.Sales(d)     && macroFn(d), mes);
   const cogsData  = aggregateLines(d => MPOS_FILTERS.PointCogs(d) && macroFn(d), mes);
@@ -5504,6 +5573,157 @@ function exportBridgeImage() {
   a.click();
 }
 
+// ── Bridge P&L Comparison ────────────────────────────────────
+let bridgePnlExpanded = new Set(); // which metric rows are expanded
+let _bridgeLastDataA  = null;      // cached for drill-down re-render
+let _bridgeLastDataB  = null;
+
+function toggleBridgePnlRow(id) {
+  if(bridgePnlExpanded.has(id)) bridgePnlExpanded.delete(id);
+  else bridgePnlExpanded.add(id);
+  if(_bridgeLastDataA && _bridgeLastDataB) {
+    const refTPV = (_bridgeLastDataA.tpv || _bridgeLastDataB.tpv || 1);
+    const ud = bridgeDisplayPct ? (refTPV / 100) : bridgeUnitDiv;
+    renderBridgePnlTable(_bridgeLastDataA, _bridgeLastDataB, ud);
+  }
+}
+
+function renderBridgePnlTable(dataA, dataB, ud) {
+  const el = document.getElementById('bridgePnlContent');
+  if(!el) return;
+  const tpvA = dataA.tpv || 1;
+  const tpvB = dataB.tpv || 1;
+  const dec  = ud >= 1e6 ? 1 : 0;
+
+  function fmt(v) {
+    if(v === 0 || v == null) return '—';
+    const s = v / ud;
+    const neg = s < 0;
+    const str = Math.abs(s).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+    return neg ? `(${str})` : str;
+  }
+  function fmtVar(v) {
+    if(v === 0 || v == null) return '—';
+    const s = v / ud; const neg = s < 0;
+    const str = Math.abs(s).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+    return neg ? `<span class="neg">(${str})</span>` : `<span class="vpos">+${str}</span>`;
+  }
+  function bps(v, tpv) {
+    if(!tpv || !v) return '—';
+    const bp = (v / tpv * 10000);
+    return bp.toFixed(1);
+  }
+
+  // Get all k2 items for a given list of k1s from a byK1K2 map
+  function getK2s(byK1K2, k1s, asFlat) {
+    const m = new Map();
+    for(const k1 of k1s) {
+      const sub = byK1K2.get(k1);
+      if(!sub) continue;
+      sub.forEach((v, k2) => {
+        const key = asFlat ? k2 : `${k1} · ${k2}`;
+        m.set(key, (m.get(key) || 0) + v);
+      });
+    }
+    return m;
+  }
+
+  function totalK1s(byK1K2, k1s) {
+    let t = 0;
+    for(const k of k1s) { const m = byK1K2.get(k); if(m) m.forEach(v => { t += v; }); }
+    return t;
+  }
+
+  const TR_K1S = ['Product Monetization','Net Monetization'];
+  const VC_K1S = ['Product Monetization','Net Monetization','Variable Contribution'];
+  const DC_K1S = [...VC_K1S,'Direct Contribution'];
+  const BM_K1S = [...DC_K1S,'Business Contribution','Business Margin'];
+
+  function trTotal(byK1K2) {
+    let t = totalK1s(byK1K2, TR_K1S);
+    const vc = byK1K2.get('Variable Contribution');
+    if(vc) t += (vc.get('Collection Fees') || 0);
+    return t;
+  }
+  function trSubs(byK1K2) {
+    const m = getK2s(byK1K2, TR_K1S, false);
+    const vc = byK1K2.get('Variable Contribution');
+    if(vc) { const cf = vc.get('Collection Fees'); if(cf) m.set('Collection Fees', cf); }
+    return m;
+  }
+
+  const PNL_LEVELS = [
+    { id:'nm',  label:'Net Monetization',
+      total: (d) => totalK1s(d, TR_K1S),
+      subs:  (d) => getK2s(d, TR_K1S, false) },
+    { id:'tr',  label:'Take Rate',
+      total: trTotal,
+      subs:  trSubs },
+    { id:'vc',  label:'Variable Contribution',
+      total: (d) => totalK1s(d, VC_K1S),
+      subs:  (d) => getK2s(d, ['Variable Contribution'], true) },
+    { id:'dc',  label:'Direct Contribution',
+      total: (d) => totalK1s(d, DC_K1S),
+      subs:  (d) => getK2s(d, ['Direct Contribution'], true) },
+    { id:'bm',  label:'Business Margin',
+      total: (d) => totalK1s(d, BM_K1S),
+      subs:  (d) => getK2s(d, ['Business Contribution','Business Margin'], true) },
+  ];
+
+  const pA = bridgePeriodA ? format1x1PeriodLabel(bridgePeriodA, bridgeType) : 'A';
+  const pB = bridgePeriodB ? format1x1PeriodLabel(bridgePeriodB, bridgeType) : 'B';
+  const cA = bridgeCenA    ? shortCen(bridgeCenA) : 'A';
+  const cB = bridgeCenB    ? shortCen(bridgeCenB) : 'B';
+  const udLbl = bridgeDisplayPct ? 'pp' : (ud >= 1e6 ? 'M' : ud >= 1e3 ? 'K' : 'R$');
+
+  const sl = document.getElementById('bpnlScenLabel');
+  if(sl) sl.textContent = `${pA} ${cA} vs ${pB} ${cB}`;
+
+  let h = `<table class="bpnl-table">
+  <thead><tr>
+    <th>P&amp;L</th>
+    <th title="${pA} · ${cA}">${pA}<br><small>${cA}</small></th>
+    <th title="${pB} · ${cB}">${pB}<br><small>${cB}</small></th>
+    <th>Var</th>
+    <th title="BPS sobre TPV — ${pA}">BPS A</th>
+    <th title="BPS sobre TPV — ${pB}">BPS B</th>
+  </tr></thead><tbody>`;
+
+  for(const lvl of PNL_LEVELS) {
+    const vA   = lvl.total(dataA.byK1K2);
+    const vB   = lvl.total(dataB.byK1K2);
+    const varV = vB - vA;
+    const open = bridgePnlExpanded.has(lvl.id);
+    const arrow = `<span class="xarr${open?' open':''}">▶</span> `;
+    h += `<tr class="bpnl-row-l0 expandable" onclick="toggleBridgePnlRow('${lvl.id}')">
+      <td>${arrow}${lvl.label}</td>
+      <td>${fmt(vA)}</td><td>${fmt(vB)}</td>
+      <td class="bpnl-col-var">${fmtVar(varV)}</td>
+      <td class="bpnl-col-bps">${bps(vA,tpvA)}</td>
+      <td class="bpnl-col-bps">${bps(vB,tpvB)}</td>
+    </tr>`;
+    if(open) {
+      const subA = lvl.subs(dataA.byK1K2);
+      const subB = lvl.subs(dataB.byK1K2);
+      const keys = [...new Set([...subA.keys(),...subB.keys()])];
+      for(const k of keys) {
+        const sa = subA.get(k) || 0;
+        const sb = subB.get(k) || 0;
+        const sv = sb - sa;
+        h += `<tr class="bpnl-row-sub">
+          <td>${k}</td>
+          <td>${fmt(sa)}</td><td>${fmt(sb)}</td>
+          <td class="bpnl-col-var">${fmtVar(sv)}</td>
+          <td class="bpnl-col-bps">${bps(sa,tpvA)}</td>
+          <td class="bpnl-col-bps">${bps(sb,tpvB)}</td>
+        </tr>`;
+      }
+    }
+  }
+  h += '</tbody></table>';
+  el.innerHTML = h;
+}
+
 function renderBridgesTab() {
   if(!allData || !allData.length) return;
   buildBridgeSelects();
@@ -5537,6 +5757,9 @@ function renderBridgesTab() {
 
   if(!bridgePeriodA || !bridgePeriodB || !bridgeCenA || !bridgeCenB) {
     clearChart('Selecione os períodos e cenários para gerar a bridge.');
+    const pnlEl = document.getElementById('bridgePnlContent');
+    if(pnlEl) pnlEl.innerHTML = '<div class="bpnl-empty">Selecione os cenários para ver o P&amp;L</div>';
+    _bridgeLastDataA = null; _bridgeLastDataB = null;
     return;
   }
 
@@ -5551,10 +5774,17 @@ function renderBridgesTab() {
     return;
   }
 
+  // ── Cache for drill-down re-render ──
+  _bridgeLastDataA = dataA;
+  _bridgeLastDataB = dataB;
+
   // ── ud / udLbl — depends on %TPV mode which needs TPV from data ──
   const refTPV = (dataA.tpv || dataB.tpv || 1);
   const ud    = bridgeDisplayPct ? (refTPV / 100) : bridgeUnitDiv;
   const udLbl = bridgeDisplayPct ? 'pp' : (bridgeUnitDiv >= 1e6 ? 'R$ M' : bridgeUnitDiv >= 1e3 ? 'R$ mil' : 'R$');
+
+  // ── Render P&L comparison table ──
+  renderBridgePnlTable(dataA, dataB, ud);
   // Formatter for %TPV mode (2 decimal places, sign preserved)
   function fmtVal(v, signed) {
     if(v === 0 || v == null) return '—';
