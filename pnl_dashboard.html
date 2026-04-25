@@ -706,39 +706,42 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 .bridges-empty{padding:60px 0;text-align:center;color:var(--muted);font-size:13px}
 
 /* ── Bridge two-column layout ── */
-.bridge-layout{display:flex;gap:16px;margin:16px 24px 20px;align-items:flex-start;min-height:0;flex-wrap:wrap}
-.bridge-pnl-panel{flex:0 0 430px;min-width:300px;background:var(--card);border:1px solid var(--border);
-  border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
-.bridge-chart-side{flex:1 1 500px;min-width:300px;display:flex;flex-direction:column;gap:0}
+.bridge-layout{display:flex;gap:16px;margin:12px 24px 16px;align-items:flex-start;min-height:0;flex-wrap:wrap}
+.bridge-pnl-panel{flex:0 0 420px;min-width:280px;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden;
+  display:flex;flex-direction:column}
+.bridge-chart-side{flex:1 1 480px;min-width:300px;display:flex;flex-direction:column;gap:0}
 .bridge-chart-side .bridges-chart-wrap{margin:0!important}
 .bridge-chart-side .bridges-summary{margin-left:0!important;margin-right:0!important;margin-top:0!important}
-.bpnl-header{background:#FFE600;color:#1a1a1a;font-size:11px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.7px;padding:10px 14px;
-  border-bottom:2px solid #D9C200;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.bpnl-scen{font-size:10px;font-weight:600;color:#555;text-transform:none;letter-spacing:0}
-.bpnl-table{width:100%;border-collapse:collapse;font-size:11.5px;background:#fff}
-.bpnl-table th{background:#1a1a1a;color:#fff;font-size:9.5px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.4px;padding:7px 8px;position:sticky;top:0;z-index:3;
+/* P&L header — compact */
+.bpnl-header{background:#FFE600;color:#1a1a1a;font-size:10.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.6px;padding:7px 12px;
+  border-bottom:2px solid #D9C200;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-shrink:0}
+.bpnl-scen{font-size:9.5px;font-weight:600;color:#555;text-transform:none;letter-spacing:0}
+/* P&L table — compact */
+.bpnl-table{width:100%;border-collapse:collapse;font-size:10px;background:#fff}
+.bpnl-table th{background:#1a1a1a;color:#fff;font-size:8.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.3px;padding:5px 6px;position:sticky;top:0;z-index:3;
   text-align:right;white-space:nowrap}
-.bpnl-table th:first-child{text-align:left;min-width:150px}
-.bpnl-table td{padding:5px 8px;border-bottom:1px solid #eeeeea;
-  text-align:right;white-space:nowrap;font-size:11px;background:#fff;color:#1a1a1a}
-.bpnl-table td:first-child{text-align:left}
+.bpnl-table th:first-child{text-align:left;min-width:130px}
+.bpnl-table td{padding:3px 6px;border-bottom:1px solid #eeeeea;
+  text-align:right;white-space:nowrap;font-size:10px;background:#fff;color:#1a1a1a;line-height:1.4}
+.bpnl-table td:first-child{text-align:left;white-space:normal}
 /* Individual P&L line rows — white bg */
-.bpnl-row-line td{background:#fff;color:#1a1a1a;font-size:11.5px;border-bottom:1px solid #eeeeea}
+.bpnl-row-line td{background:#fff;color:#1a1a1a;font-size:10px;border-bottom:1px solid #eeeeea}
 .bpnl-row-line.expandable{cursor:pointer}
 .bpnl-row-line.expandable:hover td{background:#FFFDE7!important}
 /* Subtotal rows (Take Rate, VC, DC, BM) — yellow */
-.bpnl-row-subtotal td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:12px;
-  border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a;padding-top:7px;padding-bottom:7px}
+.bpnl-row-subtotal td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:10.5px;
+  border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a;padding:5px 6px}
 /* Drill-down sub-items */
-.bpnl-row-sub td{background:#FAFAF8;color:#444;font-size:10.5px;border-bottom:1px solid #f0f0ea}
-.bpnl-row-sub td:first-child{padding-left:26px}
+.bpnl-row-sub td{background:#FAFAF8;color:#444;font-size:9.5px;border-bottom:1px solid #f0f0ea;padding:2px 6px}
+.bpnl-row-sub td:first-child{padding-left:22px;white-space:normal}
 .bpnl-row-sub:hover td{background:#FFFDE7!important}
 /* Volume row (TPV / NMV) */
-.bpnl-row-vol td{background:#F5F5F0;color:#555;font-size:11px;border-bottom:2px solid #1a1a1a;padding:8px 8px}
-/* Tiny spacer between sections */
-.bpnl-row-sect td{background:#fff;height:5px;border:none;padding:0}
+.bpnl-row-vol td{background:#F5F5F0;color:#555;font-size:10px;border-bottom:2px solid #1a1a1a;padding:5px 6px;font-weight:600}
+/* Tiny spacer between P&L sections */
+.bpnl-row-sect td{background:#fff;height:3px;border:none;padding:0}
 /* Dark mode overrides */
 [data-theme=dark] .bpnl-table{background:var(--bg)}
 [data-theme=dark] .bpnl-table th{background:#111;color:#fff}
@@ -1411,7 +1414,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <span>P&amp;L — Comparação</span>
         <span class="bpnl-scen" id="bpnlScenLabel"></span>
       </div>
-      <div id="bridgePnlContent" style="overflow-y:auto;max-height:620px">
+      <div id="bridgePnlContent" style="overflow-y:auto;max-height:calc(100vh - 260px);flex:1">
         <div class="bpnl-empty">Selecione os cenários para ver o P&amp;L</div>
       </div>
     </div>
