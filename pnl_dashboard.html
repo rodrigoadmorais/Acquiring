@@ -4,50 +4,57 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>P&L Brasil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   DESIGN SYSTEM — P&L Brasil
+   DESIGN SYSTEM — P&L Brasil · MELI Style
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 :root {
   /* Brand */
   --yellow:#FFE600; --yellow-dark:#D9C200; --yellow-dim:#FFFBE6;
-  /* Surfaces */
-  --bg:#F1F3F7; --card:#FFFFFF; --card-2:#F8F9FB;
+  /* MELI Blue (primary accent per SKILL.md) */
+  --meli-blue:#3483FA; --meli-blue-dark:#1259C3; --meli-blue-lt:#EBF2FF;
+  /* Surfaces — SKILL.md palette */
+  --bg:#F5F7FA; --bg-2:#EEF2F7; --card:#FFFFFF; --card-2:#F8FAFC;
   /* Borders */
-  --border:#DDE1EA; --border-strong:#B8BECE;
-  /* Text */
-  --text:#0D1117; --text-2:#374151; --muted:#6B7280; --muted-2:#9CA3AF;
-  /* Legacy aliases */
+  --border:#E5E7EB; --border-strong:#C5CAD4;
+  /* Text — SKILL.md */
+  --text:#1F2937; --text-2:#374151; --muted:#6B7280; --muted-2:#9CA3AF;
+  /* Legacy aliases — keep for compat */
   --blue:#1a1a1a; --blue-lt:#FFF9C4;
-  /* Semantics */
-  --red:#C62828; --red-lt:#FEF2F2; --green:#2E7D32; --green-lt:#F0FDF4;
+  /* Semantics — SKILL.md */
+  --red:#E53935; --red-lt:#FEF2F2; --green:#00A650; --green-lt:#F0FDF4;
+  --orange:#FF9F1C; --purple:#7C3AED;
   /* Row backgrounds */
   --l1bg:#FFF9E0; --l2bg:#F8F8F4; --l3bg:#fff;
-  --sticky:#fff; --hdr-text:#0D1117;
+  --sticky:#fff; --hdr-text:#1F2937;
   /* Column accents */
-  --total-col:#1A237E; --var-col:#1B5E20;
-  /* Shadows */
+  --total-col:#1259C3; --var-col:#00A650;
+  /* Shadows — SKILL.md */
   --sh-xs:0 1px 3px rgba(0,0,0,.06);
-  --sh-sm:0 2px 6px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
-  --sh-md:0 4px 14px rgba(0,0,0,.09),0 2px 4px rgba(0,0,0,.05);
-  --sh-lg:0 8px 28px rgba(0,0,0,.11),0 3px 8px rgba(0,0,0,.06);
+  --sh-sm:0 2px 8px rgba(0,0,0,.06);
+  --sh-md:0 4px 16px rgba(0,0,0,.10);
+  --sh-lg:0 8px 28px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);
   --sh-xl:0 20px 50px rgba(0,0,0,.18),0 6px 16px rgba(0,0,0,.08);
   /* Radii */
-  --r-xs:4px; --r-sm:6px; --r-md:10px; --r-lg:14px; --r-xl:20px;
+  --r-xs:4px; --r-sm:6px; --r-md:10px; --r-lg:12px; --r-xl:16px;
 }
 [data-theme=dark] {
-  --bg:#0E1117; --card:#161C2A; --card-2:#1A2135;
-  --border:#242D40; --border-strong:#333E54;
-  --text:#E2E8F0; --text-2:#CBD5E1; --muted:#8A97AC; --muted-2:#5A6780;
+  --bg:#0F1829; --bg-2:#1A2540; --card:#1A2540; --card-2:#1F2D50;
+  --border:#2A3550; --border-strong:#374565;
+  --text:#E8EBF3; --text-2:#C8CFDF; --muted:#8896B3; --muted-2:#5C6B8A;
+  --meli-blue:#5A9DFF; --meli-blue-dark:#3483FA; --meli-blue-lt:#0D1F40;
   --blue:#FFE600; --blue-lt:#1E1A00;
   --red:#F87171; --red-lt:#2D0E0E; --green:#4ADE80; --green-lt:#0A2014;
-  --l1bg:#1A1600; --l2bg:#1C2130; --l3bg:#161C2A;
-  --sticky:#161C2A; --hdr-text:#F1F5F9;
-  --total-col:#1e3a8a; --var-col:#14532d;
+  --l1bg:#1E1A00; --l2bg:#1C2540; --l3bg:#1A2540;
+  --sticky:#1A2540; --hdr-text:#E8EBF3;
+  --total-col:#3483FA; --var-col:#4ADE80;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
      background:var(--bg);color:var(--text);font-size:13px;
      height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
@@ -55,20 +62,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .hdr{background:var(--yellow);height:50px;padding:0 24px;
      display:flex;align-items:center;justify-content:space-between;
      position:sticky;top:0;z-index:400;
-     box-shadow:0 1px 0 #D9C200,0 2px 8px rgba(0,0,0,.10)}
-.hdr h1{font-size:15px;font-weight:800;color:#111;letter-spacing:-.4px;
+     box-shadow:0 1px 0 rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.08)}
+.hdr h1{font-size:15px;font-weight:800;color:var(--meli-blue);letter-spacing:-.5px;
         display:flex;align-items:center;gap:10px}
-.hdr h1::before{content:'';width:16px;height:16px;background:#111;
-                border-radius:3px;display:inline-block;flex-shrink:0}
+.hdr h1::before{content:'';width:16px;height:16px;
+                background:var(--meli-blue);border-radius:3px;
+                display:inline-block;flex-shrink:0}
 .hdr-r{display:flex;gap:8px;align-items:center}
-.upd{font-size:11px;color:rgba(0,0,0,.5);font-weight:500;
+.upd{font-size:11px;color:rgba(0,0,0,.55);font-weight:500;
      background:rgba(0,0,0,.08);padding:3px 10px;border-radius:20px}
 .btn-hdr{padding:5px 14px;border-radius:var(--r-sm);
          border:1.5px solid rgba(0,0,0,.18);
          background:rgba(255,255,255,.55);cursor:pointer;font-size:11px;
          font-weight:700;color:#1a1a1a;transition:.15s}
 .btn-hdr:hover{background:rgba(255,255,255,.9);border-color:rgba(0,0,0,.3)}
-.btn-hdr.on{background:#1a1a1a;color:#FFE600;border-color:#1a1a1a}
+.btn-hdr.on{background:var(--meli-blue);color:#fff;border-color:var(--meli-blue-dark)}
 
 /* ── Filters ── */
 .filters{background:var(--card);border-bottom:1px solid var(--border);
@@ -87,9 +95,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
       background:var(--card);color:var(--muted);cursor:pointer;
       font-size:11px;font-weight:600;transition:.15s;white-space:nowrap;
       user-select:none}
-.pill:hover{border-color:var(--border-strong);color:var(--text)}
-.pill.on{border-color:#FFE600;background:#FFE600;color:#1a1a1a;
-         box-shadow:0 1px 4px rgba(200,180,0,.3)}
+.pill:hover{border-color:var(--meli-blue);color:var(--meli-blue)}
+.pill.on{border-color:var(--meli-blue);background:var(--meli-blue);color:#fff;
+         box-shadow:0 2px 8px rgba(52,131,250,.25)}
 
 /* ── Btn group ── */
 .bg{display:flex;border:1.5px solid var(--border);border-radius:var(--r-sm);
@@ -98,7 +106,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
            background:transparent;color:var(--muted);cursor:pointer;
            font-size:11px;font-weight:600;transition:.15s;white-space:nowrap}
 .bg button:last-child{border-right:none}
-.bg button.on{background:#FFE600;color:#1a1a1a;font-weight:700}
+.bg button.on{background:var(--meli-blue);color:#fff;font-weight:700}
 .bg button:hover:not(.on){background:var(--card);color:var(--text)}
 
 /* ── Multi-select dropdown ── */
@@ -117,7 +125,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .ms-item{display:flex;align-items:center;gap:8px;padding:6px 14px;
          cursor:pointer;font-size:12px;transition:.1s}
 .ms-item:hover{background:var(--bg)}
-.ms-item input{accent-color:#FFE600;cursor:pointer;flex-shrink:0}
+.ms-item input{accent-color:var(--meli-blue);cursor:pointer;flex-shrink:0}
 .ms-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ms-actions{display:flex;gap:8px;padding:7px 14px 5px;
             border-top:1px solid var(--border);margin-top:3px}
@@ -145,9 +153,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 #pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
                         background:#FFE600;min-width:260px;max-width:340px;
                         font-size:12px;letter-spacing:.3px}
-#pnlTable th.grp-hdr{background:#E6CD00;border-left:2px solid #C8AE00}
-#pnlTable th.col-total-hdr{background:#EED800;border-left:2px solid #C8AE00}
-#pnlTable th.col-var-hdr{background:#E4CC00;border-left:1px solid #C8AE00}
+#pnlTable th.grp-hdr{background:var(--meli-blue);color:#fff;border-left:2px solid var(--meli-blue-dark)}
+#pnlTable th.col-total-hdr{background:var(--meli-blue-dark);color:#fff;border-left:2px solid rgba(0,0,0,.2)}
+#pnlTable th.col-var-hdr{background:#1259C3;color:#fff;border-left:1px solid rgba(0,0,0,.2)}
+[data-theme=dark] #pnlTable th.grp-hdr{background:#1259C3;border-left-color:#0D44A0}
+[data-theme=dark] #pnlTable th.col-total-hdr{background:#0D44A0;border-left-color:rgba(0,0,0,.3)}
+[data-theme=dark] #pnlTable th.col-var-hdr{background:#0A3A8A}
 
 #pnlTable td{padding:5px 12px;border-bottom:1px solid var(--border);
              white-space:nowrap;text-align:right}
@@ -207,13 +218,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 .vpos{color:var(--green);font-weight:600}
 .vneg{color:var(--red);font-weight:600}
 .bold{font-weight:700}
-td.col-total-cell{background:rgba(26,35,126,.05);font-weight:700;
-                  border-left:2px solid rgba(26,35,126,.12)}
-td.col-var-cell{background:rgba(27,94,32,.04)}
-td.col-var-cell.vpos{background:rgba(27,94,32,.07)}
-td.col-var-cell.vneg{background:rgba(198,40,40,.05)}
-[data-theme=dark] td.col-total-cell{background:rgba(30,58,138,.28)}
-[data-theme=dark] td.col-var-cell{background:rgba(20,83,45,.22)}
+td.col-total-cell{background:rgba(52,131,250,.06);font-weight:700;
+                  border-left:2px solid rgba(52,131,250,.18)}
+td.col-var-cell{background:rgba(0,166,80,.04)}
+td.col-var-cell.vpos{background:rgba(0,166,80,.07)}
+td.col-var-cell.vneg{background:rgba(229,57,53,.05)}
+[data-theme=dark] td.col-total-cell{background:rgba(52,131,250,.20)}
+[data-theme=dark] td.col-var-cell{background:rgba(74,222,128,.12)}
 
 .invisible{visibility:hidden}
 
@@ -291,8 +302,8 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
          background:none;color:var(--muted);cursor:pointer;font-size:12.5px;
          font-weight:600;transition:.15s;white-space:nowrap;
          display:flex;align-items:center;margin-bottom:-1px}
-.tab-btn:hover{color:var(--text);background:var(--bg)}
-.tab-btn.on{color:var(--text);border-bottom-color:#FFE600;font-weight:700}
+.tab-btn:hover{color:var(--meli-blue);background:var(--meli-blue-lt)}
+.tab-btn.on{color:var(--meli-blue);border-bottom-color:var(--meli-blue);font-weight:700}
 
 /* ── CPA / MPOS panel ── */
 .cpa-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
@@ -540,7 +551,7 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
              font-weight:700;transition:.15s;white-space:nowrap;display:flex;
              align-items:center;gap:5px;line-height:1.4}
 .cpa-cfg-btn:hover{border-color:var(--border-strong);color:var(--text)}
-.cpa-cfg-btn.on{background:#FFE600;color:#1a1a1a;border-color:#FFE600}
+.cpa-cfg-btn.on{background:var(--meli-blue);color:#fff;border-color:var(--meli-blue-dark)}
 
 /* ── Line Config Modal ── */
 #lineConfigModal{display:none;position:fixed;inset:0;z-index:1500;
@@ -582,8 +593,8 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
          background:var(--card);color:var(--text);cursor:pointer;
          font-size:12px;font-weight:600;transition:.15s}
 .lcm-btn:hover{background:var(--bg)}
-.lcm-btn.primary{background:#FFE600;color:#1a1a1a;border-color:#D9C200}
-.lcm-btn.primary:hover{background:#D9C200}
+.lcm-btn.primary{background:var(--meli-blue);color:#fff;border-color:var(--meli-blue-dark)}
+.lcm-btn.primary:hover{background:var(--meli-blue-dark)}
 
 /* ── Macro BU Overview ── */
 .mbu-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
@@ -625,8 +636,14 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 .mbu-row-k3 td{background:var(--card-2);color:var(--muted);font-size:10.5px}
 .mbu-row-k3 td.mbu-desc-cell{background:var(--card-2);padding-left:52px!important}
 .mbu-row-k3:hover td{background:var(--bg)!important}
+.mbu-row-k3.expandable{cursor:pointer}
 [data-theme=dark] .mbu-row-k3 td{background:var(--card-2);color:var(--muted-2)}
 [data-theme=dark] .mbu-row-k3 td.mbu-desc-cell{background:var(--card-2)}
+.mbu-row-k4 td{background:var(--bg);color:var(--muted-2);font-size:10px;font-style:italic}
+.mbu-row-k4 td.mbu-desc-cell{background:var(--bg);padding-left:72px!important;font-style:italic}
+.mbu-row-k4:hover td{background:var(--border)!important}
+[data-theme=dark] .mbu-row-k4 td{background:var(--bg-2,#1A2540);color:var(--muted-2)}
+[data-theme=dark] .mbu-row-k4 td.mbu-desc-cell{background:var(--bg-2,#1A2540)}
 .mbu-row-total td{background:#FFFDE7;color:#1a1a1a;font-weight:700;
   border-top:2px solid #1a1a1a;border-bottom:3px solid #FFE600}
 .mbu-row-total td.mbu-desc-cell{background:#FFFDE7;border-left:4px solid #FFE600}
@@ -736,8 +753,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 <!-- ── Tab Navigation ── -->
 <nav class="tab-nav" id="tabNav">
   <button class="tab-btn" data-tab="keynums" onclick="switchTab(this)">Key-numbers</button>
-  <button class="tab-btn on" data-tab="pnl" onclick="switchTab(this)">P&amp;L</button>
-  <button class="tab-btn" data-tab="evo" onclick="switchTab(this)">Evolutivos</button>
+  <button class="tab-btn" data-tab="pnl" onclick="switchTab(this)">P&amp;L</button>
+  <button class="tab-btn on" data-tab="evo" onclick="switchTab(this)">Evolutivos</button>
   <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">Point &amp; MPOS</button>
   <button class="tab-btn" data-tab="mposlight" onclick="switchTab(this)">MPOS Light</button>
@@ -746,7 +763,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 </nav>
 
 <!-- ── Filters ── -->
-<div class="filters" id="filterBar" style="top:88px">
+<div class="filters" id="filterBar" style="top:88px;display:none">
 
   <!-- Cenários -->
   <div class="fg">
@@ -990,7 +1007,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 </div>
 
 <!-- ── Table ── -->
-<div class="tbl-wrap">
+<div class="tbl-wrap" style="display:none">
   <div class="tbl-outer">
     <table id="pnlTable">
       <thead id="pnlHead"></thead>
@@ -1010,7 +1027,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 </div>
 
 <!-- ── Evolutivos Panel ── -->
-<div id="evoPanel" class="evo-panel" style="display:none">
+<div id="evoPanel" class="evo-panel">
   <div class="evo-filter-bar">
     <div>
       <label>BU</label>
@@ -1020,8 +1037,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <div>
       <label>Granularidade</label>
       <div id="evoGranGrp" style="display:flex;gap:4px">
-        <button class="btn-hdr on" data-g="monthly"   onclick="setEvoGran(this)">Mensal</button>
-        <button class="btn-hdr"    data-g="quarterly" onclick="setEvoGran(this)">Trimestral</button>
+        <button class="btn-hdr"    data-g="monthly"   onclick="setEvoGran(this)">Mensal</button>
+        <button class="btn-hdr on" data-g="quarterly" onclick="setEvoGran(this)">Trimestral</button>
         <button class="btn-hdr"    data-g="annual"    onclick="setEvoGran(this)">Anual</button>
       </div>
     </div>
@@ -1627,6 +1644,7 @@ fetch('data_pnl.json?t=' + Date.now())
     initFilters();
     initCompSelects();
     render();
+    renderEvoTab();
   })
   .catch(err => {
     document.getElementById('pnlBody').innerHTML =
@@ -3269,7 +3287,7 @@ function fmt(v) {
 // ═══════════════════════════════════════════════════════════
 //  TAB SYSTEM
 // ═══════════════════════════════════════════════════════════
-let currentTab       = 'pnl';
+let currentTab       = 'evo';
 let cpaUnitDiv       = 1_000_000;
 let mposUnitDiv      = 1_000_000;
 let mposLightUnitDiv = 1_000_000;
@@ -3283,6 +3301,7 @@ let mbuAno           = null;   // null = auto (latest year); 'custom' = use De/A
 let mbuComp          = 'plan_fcast'; // 'plan_fcast' | 'plan_real' | 'fcast_real'
 let mbuExpanded      = new Set(); // expanded MNG_1 sections in MBU tab
 let mbuExpandedK2    = new Set(); // expanded MNG_2 rows (key = k1+'|||'+k2)
+let mbuExpandedK3    = new Set(); // expanded MNG_3 rows (key = k1+'|||'+k2+'|||'+k3)
 
 // ── Bridges tab state ──
 let bridgeMetric  = 'BM';  // 'Take Rate' | 'VC' | 'DC' | 'BM'
@@ -3478,6 +3497,12 @@ function mbuToggleK2(tr) {
   else mbuExpandedK2.add(key);
   renderMbuTab();
 }
+function mbuToggleK3(tr) {
+  const key = tr.dataset.k3key;
+  if(mbuExpandedK3.has(key)) mbuExpandedK3.delete(key);
+  else mbuExpandedK3.add(key);
+  renderMbuTab();
+}
 
 function renderMbuTab() {
   // Resolve date range from mbuAno or custom selects
@@ -3528,6 +3553,7 @@ function renderMbuTab() {
   // ── Aggregate ──
   const buData  = new Map(); // BU → Map<k1, Map<k2, {a,b}>>
   const buData3 = new Map(); // BU → Map<k1+'|||'+k2, Map<k3, {a,b}>>
+  const buData4 = new Map(); // BU → Map<k1+'|||'+k2+'|||'+k3, Map<k4, {a,b}>>
   const buVol   = new Map(); // BU → {aVol, bVol}
   const buL1    = new Map(); // BU → Map<k1, {a,b}>
 
@@ -3581,6 +3607,18 @@ function renderMbuTab() {
       const c3 = k3m.get(d.MNG_3);
       if(slot==='A') c3.a += v;
       if(slot==='B') c3.b += v;
+      // k4 rollup
+      if(d.MNG_4) {
+        const k4key = k3key+'|||'+d.MNG_3;
+        if(!buData4.has(bu)) buData4.set(bu, new Map());
+        const b4 = buData4.get(bu);
+        if(!b4.has(k4key)) b4.set(k4key, new Map());
+        const k4m = b4.get(k4key);
+        if(!k4m.has(d.MNG_4)) k4m.set(d.MNG_4, {a:0,b:0});
+        const c4 = k4m.get(d.MNG_4);
+        if(slot==='A') c4.a += v;
+        if(slot==='B') c4.b += v;
+      }
     }
     if(hasPct && d.MNG_1==='Metrics' && d.MNG_2===pctMetric) {
       if(!buVol.has(bu)) buVol.set(bu,{aVol:0,bVol:0});
@@ -3617,6 +3655,17 @@ function renderMbuTab() {
       const c3 = k3m.get(d.MNG_3);
       if(slot==='Afill') c3.a += v;
       if(slot==='Bfill') c3.b += v;
+      if(d.MNG_4) {
+        const k4key = k3key+'|||'+d.MNG_3;
+        if(!buData4.has(bu)) buData4.set(bu, new Map());
+        const b4 = buData4.get(bu);
+        if(!b4.has(k4key)) b4.set(k4key, new Map());
+        const k4m = b4.get(k4key);
+        if(!k4m.has(d.MNG_4)) k4m.set(d.MNG_4, {a:0,b:0});
+        const c4 = k4m.get(d.MNG_4);
+        if(slot==='Afill') c4.a += v;
+        if(slot==='Bfill') c4.b += v;
+      }
     }
     if(hasPct && d.MNG_1==='Metrics' && d.MNG_2===pctMetric) {
       if(!buVol.has(bu)) buVol.set(bu,{aVol:0,bVol:0});
@@ -3641,6 +3690,7 @@ function renderMbuTab() {
   const TOTAL = '__total__';
   const totData  = new Map(); // k1 → Map<k2, {a,b}>
   const totData3 = new Map(); // k1k2key → Map<k3, {a,b}>
+  const totData4 = new Map(); // k1k2k3key → Map<k4, {a,b}>
   const totL1    = new Map(); // k1 → {a,b}
   const totVol   = {aVol:0, bVol:0};
   for(const bu of bus) {
@@ -3669,13 +3719,26 @@ function renderMbuTab() {
         }
       }
     }
+    // Aggregate k4 data for total
+    const b4map = buData4.get(bu);
+    if(b4map) {
+      for(const [k4key, k4m] of b4map) {
+        if(!totData4.has(k4key)) totData4.set(k4key, new Map());
+        const tk4 = totData4.get(k4key);
+        for(const [k4, v] of k4m) {
+          if(!tk4.has(k4)) tk4.set(k4, {a:0,b:0});
+          const tc = tk4.get(k4); tc.a+=v.a; tc.b+=v.b;
+        }
+      }
+    }
     const vol = buVol.get(bu)||{aVol:0,bVol:0};
     totVol.aVol += vol.aVol;
     totVol.bVol += vol.bVol;
   }
-  // Inject total into buData/buVol/buL1/buData3 with key TOTAL
+  // Inject total into buData/buVol/buL1/buData3/buData4 with key TOTAL
   buData.set(TOTAL,  totData);
   buData3.set(TOTAL, totData3);
+  buData4.set(TOTAL, totData4);
   buVol.set(TOTAL,   totVol);
   buL1.set(TOTAL,    totL1);
 
@@ -3815,13 +3878,32 @@ function renderMbuTab() {
             colBus.flatMap(bu => [...(buData3.get(bu)?.get(k3key)?.keys()||[])])
           )].filter(Boolean);
           for(const k3 of allK3) {
-            bHtml += `<tr class="mbu-row-k3">`;
-            bHtml += `<td class="mbu-desc-cell">${k3}</td>`;
+            const k4key = k3key+'|||'+k3;
+            const hasK4 = colBus.some(bu => (buData4.get(bu)?.get(k4key)?.size||0) > 0);
+            const isOpenK3 = mbuExpandedK3.has(k4key);
+            const k3Arrow = hasK4 ? `<span class="xarr${isOpenK3?' open':''}">▶</span> ` : '';
+            bHtml += `<tr class="mbu-row-k3${hasK4?' expandable':''}"
+              ${hasK4?`data-k3key="${escAttr(k4key)}" onclick="mbuToggleK3(this)"`:''}>`;
+            bHtml += `<td class="mbu-desc-cell">${k3Arrow}${k3}</td>`;
             bHtml += buCells(colBus,
               bu => buData3.get(bu)?.get(k3key)?.get(k3)||{a:0,b:0},
               getVol
             );
             bHtml += `</tr>`;
+            if(isOpenK3 && hasK4) {
+              const allK4 = [...new Set(
+                colBus.flatMap(bu => [...(buData4.get(bu)?.get(k4key)?.keys()||[])])
+              )].filter(Boolean);
+              for(const k4 of allK4) {
+                bHtml += `<tr class="mbu-row-k4">`;
+                bHtml += `<td class="mbu-desc-cell">${k4}</td>`;
+                bHtml += buCells(colBus,
+                  bu => buData4.get(bu)?.get(k4key)?.get(k4)||{a:0,b:0},
+                  getVol
+                );
+                bHtml += `</tr>`;
+              }
+            }
           }
         }
       }
@@ -3829,8 +3911,8 @@ function renderMbuTab() {
     // ── Inject Take Rate after Net Monetization (Acquiring only) ──
     if(k1 === 'Net Monetization' && mbuMacro === 'Acquiring') {
       bHtml += `<tr class="mbu-gap"><td colspan="99"></td></tr>`;
-      bHtml += `<tr class="mbu-row-sec" style="background:#E8F5E9;color:#1B5E20;border-top:2px solid #2E7D32;border-bottom:3px solid #81C784">`;
-      bHtml += `<td class="mbu-desc-cell" style="background:#E8F5E9;color:#1B5E20;font-weight:700;border-left:4px solid #2E7D32">Take Rate</td>`;
+      bHtml += `<tr class="mbu-row-sec">`;
+      bHtml += `<td class="mbu-desc-cell">Take Rate</td>`;
       bHtml += buCells(colBus,
         bu => {
           const nm = buCum.get(bu)?.get('Net Monetization')||{a:0,b:0};
@@ -4725,9 +4807,9 @@ function renderKnOneoffList() {
 // ═══════════════════════════════════════════════════════════
 //  EVOLUTIVOS TAB
 // ═══════════════════════════════════════════════════════════
-let evoBU      = 'Fintech';
+let evoBU      = 'Acquiring';
 let evoUnitDiv = 1_000_000;
-let evoGran    = 'monthly';   // 'monthly' | 'quarterly' | 'annual'
+let evoGran    = 'quarterly'; // 'monthly' | 'quarterly' | 'annual'
 let _evoCharts = {};          // Chart instances keyed by abbr
 
 const EVO_METRICS = [
@@ -4774,7 +4856,7 @@ function mesLabel(m) {
 function buildEvoBUSel() {
   const sel = document.getElementById('evoBUSel');
   if(!sel || sel.options.length) return;
-  ['Fintech','Acquiring','Fintech Services','Point','OP','QR','Credits','DA & Investments','Insurtech']
+  ['Acquiring','Commerce','Fintech','Fintech Services','Point','OP','QR','Credits','DA & Investments','Insurtech']
     .forEach(bu => { const o=document.createElement('option'); o.value=o.textContent=bu; sel.appendChild(o); });
   sel.value = evoBU;
 }
