@@ -138,7 +138,7 @@ body{font-family:'Nunito','Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe
 .tbl-wrap::-webkit-scrollbar-track{background:transparent}
 .tbl-wrap::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
 .tbl-outer{border-radius:var(--r-md);box-shadow:var(--sh-md);
-           border:1px solid var(--border);overflow:hidden}
+           border:1px solid var(--border)}
 
 /* ── P&L Table ── */
 #pnlTable{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
@@ -739,6 +739,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 [data-theme=dark] .bpnl-row-sub td{background:#181200;color:#D8CC88;border-color:#2A2200}
 [data-theme=dark] .bpnl-row-sub:hover td{background:#201A00!important}
 .bpnl-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:13px}
+.bpnl-row-vol td{background:var(--bg-2);padding-top:8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+[data-theme=dark] .bpnl-row-vol td{background:var(--bg-2)}
 
 /* ── YoY Growth row ── */
 .row-yoy td{background:var(--card);color:var(--muted-2);font-size:10.5px;font-style:italic;
@@ -5249,7 +5251,7 @@ function getBridgePeriodData(mesSet, cenario, buSel) {
   const prodName = isProd ? buSel.slice(8) : null;
   // Forecast blending: months with no Forecast data fall back to Realizado
   const blendFn  = makeBlendFn(mesSet, cenario);
-  let tpv = 0;
+  let tpv = 0, nmv = 0;
   const byK1K2 = new Map(); // k1 → Map<k2, value>
   for(const d of allData) {
     if(!mesSet.has(d.MES))             continue;
@@ -5259,15 +5261,18 @@ function getBridgePeriodData(mesSet, cenario, buSel) {
       if(!isProd && d.Macro_BU  !== buSel)    continue;
     }
     const v = d.Value || 0;
-    if(d.MNG_1 === 'Metrics' && d.MNG_2 === 'TPV') { tpv += v; continue; }
-    if(d.MNG_1 === 'Metrics') continue;
+    if(d.MNG_1 === 'Metrics') {
+      if(d.MNG_2 === 'TPV') tpv += v;
+      if(d.MNG_2 === 'NMV') nmv += v;
+      continue;
+    }
     if(!byK1K2.has(d.MNG_1)) byK1K2.set(d.MNG_1, new Map());
     const k2map = byK1K2.get(d.MNG_1);
     // Apply DE-PARA grouping so bridge shows consolidated categories
     const k2 = getDeParaK2(d.MNG_2 || '', d.MNG_3 || '', d.MNG_4 || '');
     k2map.set(k2, (k2map.get(k2) || 0) + v);
   }
-  return { tpv, byK1K2 };
+  return { tpv, nmv, byK1K2 };
 }
 
 // Sum Take Rate value from a k1k2 map: PM + NM + Collection Fees (from VC)
@@ -5591,30 +5596,35 @@ function toggleBridgePnlRow(id) {
 function renderBridgePnlTable(dataA, dataB, ud) {
   const el = document.getElementById('bridgePnlContent');
   if(!el) return;
-  const tpvA = dataA.tpv || 1;
-  const tpvB = dataB.tpv || 1;
-  const dec  = ud >= 1e6 ? 1 : 0;
+
+  // Volume metric: TPV for Acquiring BUs, NMV for Commerce
+  const isCommerce = /commerce/i.test(bridgeMacro || '');
+  const volA  = isCommerce ? (dataA.nmv || 0) : (dataA.tpv || 0);
+  const volB  = isCommerce ? (dataB.nmv || 0) : (dataB.tpv || 0);
+  const volLbl = isCommerce ? 'NMV' : 'TPV';
+  // Use TPV as the BPS denominator always (even when showing NMV)
+  const tpvA  = dataA.tpv || volA || 1;
+  const tpvB  = dataB.tpv || volB || 1;
+  const dec   = ud >= 1e6 ? 1 : 0;
 
   function fmt(v) {
-    if(v === 0 || v == null) return '—';
+    if(!v && v !== 0) return '—';
     const s = v / ud;
     const neg = s < 0;
     const str = Math.abs(s).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
     return neg ? `(${str})` : str;
   }
   function fmtVar(v) {
-    if(v === 0 || v == null) return '—';
+    if(!v && v !== 0) return '—';
     const s = v / ud; const neg = s < 0;
     const str = Math.abs(s).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
     return neg ? `<span class="neg">(${str})</span>` : `<span class="vpos">+${str}</span>`;
   }
   function bps(v, tpv) {
     if(!tpv || !v) return '—';
-    const bp = (v / tpv * 10000);
-    return bp.toFixed(1);
+    return (v / tpv * 10000).toFixed(1);
   }
 
-  // Get all k2 items for a given list of k1s from a byK1K2 map
   function getK2s(byK1K2, k1s, asFlat) {
     const m = new Map();
     for(const k1 of k1s) {
@@ -5627,7 +5637,6 @@ function renderBridgePnlTable(dataA, dataB, ud) {
     }
     return m;
   }
-
   function totalK1s(byK1K2, k1s) {
     let t = 0;
     for(const k of k1s) { const m = byK1K2.get(k); if(m) m.forEach(v => { t += v; }); }
@@ -5639,61 +5648,76 @@ function renderBridgePnlTable(dataA, dataB, ud) {
   const DC_K1S = [...VC_K1S,'Direct Contribution'];
   const BM_K1S = [...DC_K1S,'Business Contribution','Business Margin'];
 
-  function trTotal(byK1K2) {
-    let t = totalK1s(byK1K2, TR_K1S);
-    const vc = byK1K2.get('Variable Contribution');
+  function trTotal(d) {
+    let t = totalK1s(d, TR_K1S);
+    const vc = d.get('Variable Contribution');
     if(vc) t += (vc.get('Collection Fees') || 0);
     return t;
   }
-  function trSubs(byK1K2) {
-    const m = getK2s(byK1K2, TR_K1S, false);
-    const vc = byK1K2.get('Variable Contribution');
+  function trSubs(d) {
+    const m = getK2s(d, TR_K1S, false);
+    const vc = d.get('Variable Contribution');
     if(vc) { const cf = vc.get('Collection Fees'); if(cf) m.set('Collection Fees', cf); }
     return m;
   }
 
   const PNL_LEVELS = [
-    { id:'nm',  label:'Net Monetization',
-      total: (d) => totalK1s(d, TR_K1S),
-      subs:  (d) => getK2s(d, TR_K1S, false) },
-    { id:'tr',  label:'Take Rate',
-      total: trTotal,
-      subs:  trSubs },
-    { id:'vc',  label:'Variable Contribution',
-      total: (d) => totalK1s(d, VC_K1S),
-      subs:  (d) => getK2s(d, ['Variable Contribution'], true) },
-    { id:'dc',  label:'Direct Contribution',
-      total: (d) => totalK1s(d, DC_K1S),
-      subs:  (d) => getK2s(d, ['Direct Contribution'], true) },
-    { id:'bm',  label:'Business Margin',
-      total: (d) => totalK1s(d, BM_K1S),
-      subs:  (d) => getK2s(d, ['Business Contribution','Business Margin'], true) },
+    { id:'nm', label:'Net Monetization',
+      total: d => totalK1s(d, TR_K1S),
+      subs:  d => getK2s(d, TR_K1S, false) },
+    { id:'tr', label:'Take Rate',
+      total: trTotal, subs: trSubs },
+    { id:'vc', label:'Variable Contribution',
+      total: d => totalK1s(d, VC_K1S),
+      subs:  d => getK2s(d, ['Variable Contribution'], true) },
+    { id:'dc', label:'Direct Contribution',
+      total: d => totalK1s(d, DC_K1S),
+      subs:  d => getK2s(d, ['Direct Contribution'], true) },
+    { id:'bm', label:'Business Margin',
+      total: d => totalK1s(d, BM_K1S),
+      subs:  d => getK2s(d, ['Business Contribution','Business Margin'], true) },
   ];
 
   const pA = bridgePeriodA ? format1x1PeriodLabel(bridgePeriodA, bridgeType) : 'A';
   const pB = bridgePeriodB ? format1x1PeriodLabel(bridgePeriodB, bridgeType) : 'B';
-  const cA = bridgeCenA    ? shortCen(bridgeCenA) : 'A';
-  const cB = bridgeCenB    ? shortCen(bridgeCenB) : 'B';
-  const udLbl = bridgeDisplayPct ? 'pp' : (ud >= 1e6 ? 'M' : ud >= 1e3 ? 'K' : 'R$');
+  const cA = bridgeCenA ? shortCen(bridgeCenA) : 'A';
+  const cB = bridgeCenB ? shortCen(bridgeCenB) : 'B';
 
   const sl = document.getElementById('bpnlScenLabel');
   if(sl) sl.textContent = `${pA} ${cA} vs ${pB} ${cB}`;
 
+  // Sticky header inside the scrollable pnl content
   let h = `<table class="bpnl-table">
-  <thead><tr>
-    <th>P&amp;L</th>
-    <th title="${pA} · ${cA}">${pA}<br><small>${cA}</small></th>
-    <th title="${pB} · ${cB}">${pB}<br><small>${cB}</small></th>
-    <th>Var</th>
-    <th title="BPS sobre TPV — ${pA}">BPS A</th>
-    <th title="BPS sobre TPV — ${pB}">BPS B</th>
-  </tr></thead><tbody>`;
+  <thead>
+    <tr class="bpnl-hdr-row">
+      <th style="position:sticky;top:0;z-index:3">P&amp;L</th>
+      <th style="position:sticky;top:0;z-index:3" title="${pA} · ${cA}">${pA}<br><small>${cA}</small></th>
+      <th style="position:sticky;top:0;z-index:3" title="${pB} · ${cB}">${pB}<br><small>${cB}</small></th>
+      <th style="position:sticky;top:0;z-index:3">Var</th>
+      <th style="position:sticky;top:0;z-index:3">BPS A</th>
+      <th style="position:sticky;top:0;z-index:3">BPS B</th>
+    </tr>
+  </thead><tbody>`;
 
+  // ── First row: volume metric (TPV or NMV) ──────────────────
+  const varVol = volB - volA;
+  // Volume uses its own unit (always R$ M if ud >= 1e6, no BPS denominator issue)
+  h += `<tr class="bpnl-row-vol">
+    <td style="font-weight:700;font-size:11.5px;color:#555;padding-left:8px">${volLbl}</td>
+    <td style="font-weight:600;color:var(--text)">${fmt(volA)}</td>
+    <td style="font-weight:600;color:var(--text)">${fmt(volB)}</td>
+    <td class="bpnl-col-var">${fmtVar(varVol)}</td>
+    <td class="bpnl-col-bps">—</td>
+    <td class="bpnl-col-bps">—</td>
+  </tr>
+  <tr><td colspan="6" style="height:4px;background:var(--border);padding:0"></td></tr>`;
+
+  // ── P&L levels ─────────────────────────────────────────────
   for(const lvl of PNL_LEVELS) {
     const vA   = lvl.total(dataA.byK1K2);
     const vB   = lvl.total(dataB.byK1K2);
     const varV = vB - vA;
-    const open = bridgePnlExpanded.has(lvl.id);
+    const open  = bridgePnlExpanded.has(lvl.id);
     const arrow = `<span class="xarr${open?' open':''}">▶</span> `;
     h += `<tr class="bpnl-row-l0 expandable" onclick="toggleBridgePnlRow('${lvl.id}')">
       <td>${arrow}${lvl.label}</td>
@@ -5782,6 +5806,11 @@ function renderBridgesTab() {
   const refTPV = (dataA.tpv || dataB.tpv || 1);
   const ud    = bridgeDisplayPct ? (refTPV / 100) : bridgeUnitDiv;
   const udLbl = bridgeDisplayPct ? 'pp' : (bridgeUnitDiv >= 1e6 ? 'R$ M' : bridgeUnitDiv >= 1e3 ? 'R$ mil' : 'R$');
+
+  // ── Auto-expand the metric matching the bridge selection ──
+  const METRIC_TO_ROW = {'Take Rate':'tr','VC':'vc','DC':'dc','BM':'bm'};
+  const autoId = METRIC_TO_ROW[bridgeMetric];
+  if(autoId) bridgePnlExpanded.add(autoId); // always open the current metric
 
   // ── Render P&L comparison table ──
   renderBridgePnlTable(dataA, dataB, ud);
