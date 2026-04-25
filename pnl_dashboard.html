@@ -707,7 +707,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 
 /* ── Bridge two-column layout ── */
 .bridge-layout{display:flex;gap:16px;margin:16px 24px 20px;align-items:flex-start;min-height:0;flex-wrap:wrap}
-.bridge-pnl-panel{flex:0 0 400px;min-width:300px;background:var(--card);border:1px solid var(--border);
+.bridge-pnl-panel{flex:0 0 430px;min-width:300px;background:var(--card);border:1px solid var(--border);
   border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
 .bridge-chart-side{flex:1 1 500px;min-width:300px;display:flex;flex-direction:column;gap:0}
 .bridge-chart-side .bridges-chart-wrap{margin:0!important}
@@ -716,31 +716,40 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   text-transform:uppercase;letter-spacing:.7px;padding:10px 14px;
   border-bottom:2px solid #D9C200;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .bpnl-scen{font-size:10px;font-weight:600;color:#555;text-transform:none;letter-spacing:0}
-.bpnl-table{width:100%;border-collapse:collapse;font-size:11.5px}
-.bpnl-table th{background:var(--bg-2);color:var(--muted);font-size:9.5px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;
-  text-align:right;border-bottom:2px solid var(--border);white-space:nowrap}
+.bpnl-table{width:100%;border-collapse:collapse;font-size:11.5px;background:#fff}
+.bpnl-table th{background:#1a1a1a;color:#fff;font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;padding:7px 8px;position:sticky;top:0;z-index:3;
+  text-align:right;white-space:nowrap}
 .bpnl-table th:first-child{text-align:left;min-width:150px}
-.bpnl-table td{padding:5px 8px;border-bottom:1px solid var(--border);
-  text-align:right;white-space:nowrap;font-size:11px}
+.bpnl-table td{padding:5px 8px;border-bottom:1px solid #eeeeea;
+  text-align:right;white-space:nowrap;font-size:11px;background:#fff;color:#1a1a1a}
 .bpnl-table td:first-child{text-align:left}
-.bpnl-row-l0 td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:11.5px;
-  border-top:2px solid #D9C200;border-bottom:1px solid #D9C200;padding-top:7px;padding-bottom:7px}
-.bpnl-row-l0.expandable{cursor:pointer}
-.bpnl-row-l0:hover td{filter:brightness(.97)}
-.bpnl-row-sub td{background:#FFFDE7;color:#333;font-weight:400;font-size:11px;
-  border-bottom:1px solid #F0E080}
-.bpnl-row-sub td:first-child{padding-left:28px}
-.bpnl-row-sub:hover td{background:#FFF9C4!important}
-.bpnl-col-var.pos{color:#2E7D32;font-weight:700}
-.bpnl-col-var.neg{color:#C62828;font-weight:700}
-.bpnl-col-bps{color:var(--muted);font-size:10px}
-[data-theme=dark] .bpnl-row-l0 td{background:#1E1A00;color:#FFE600;border-color:#2E2800}
-[data-theme=dark] .bpnl-row-sub td{background:#181200;color:#D8CC88;border-color:#2A2200}
-[data-theme=dark] .bpnl-row-sub:hover td{background:#201A00!important}
+/* Individual P&L line rows — white bg */
+.bpnl-row-line td{background:#fff;color:#1a1a1a;font-size:11.5px;border-bottom:1px solid #eeeeea}
+.bpnl-row-line.expandable{cursor:pointer}
+.bpnl-row-line.expandable:hover td{background:#FFFDE7!important}
+/* Subtotal rows (Take Rate, VC, DC, BM) — yellow */
+.bpnl-row-subtotal td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:12px;
+  border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a;padding-top:7px;padding-bottom:7px}
+/* Drill-down sub-items */
+.bpnl-row-sub td{background:#FAFAF8;color:#444;font-size:10.5px;border-bottom:1px solid #f0f0ea}
+.bpnl-row-sub td:first-child{padding-left:26px}
+.bpnl-row-sub:hover td{background:#FFFDE7!important}
+/* Volume row (TPV / NMV) */
+.bpnl-row-vol td{background:#F5F5F0;color:#555;font-size:11px;border-bottom:2px solid #1a1a1a;padding:8px 8px}
+/* Tiny spacer between sections */
+.bpnl-row-sect td{background:#fff;height:5px;border:none;padding:0}
+/* Dark mode overrides */
+[data-theme=dark] .bpnl-table{background:var(--bg)}
+[data-theme=dark] .bpnl-table th{background:#111;color:#fff}
+[data-theme=dark] .bpnl-table td{background:var(--bg);color:var(--text);border-bottom-color:var(--border)}
+[data-theme=dark] .bpnl-row-line td{background:var(--bg)}
+[data-theme=dark] .bpnl-row-line.expandable:hover td{background:var(--bg-2)!important}
+[data-theme=dark] .bpnl-row-subtotal td{background:#1E1A00;color:#FFE600;border-color:#D9C200}
+[data-theme=dark] .bpnl-row-sub td{background:var(--l3bg);border-bottom-color:var(--border)}
+[data-theme=dark] .bpnl-row-sub:hover td{background:var(--bg-2)!important}
+[data-theme=dark] .bpnl-row-vol td{background:var(--bg-2);border-bottom-color:var(--border)}
 .bpnl-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:13px}
-.bpnl-row-vol td{background:var(--bg-2);padding-top:8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-[data-theme=dark] .bpnl-row-vol td{background:var(--bg-2)}
 
 /* ── YoY Growth row ── */
 .row-yoy td{background:var(--card);color:var(--muted-2);font-size:10.5px;font-style:italic;
@@ -1402,7 +1411,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <span>P&amp;L — Comparação</span>
         <span class="bpnl-scen" id="bpnlScenLabel"></span>
       </div>
-      <div id="bridgePnlContent" style="overflow-y:auto;max-height:520px">
+      <div id="bridgePnlContent" style="overflow-y:auto;max-height:620px">
         <div class="bpnl-empty">Selecione os cenários para ver o P&amp;L</div>
       </div>
     </div>
@@ -5246,13 +5255,14 @@ function buildBridgeSelects() {
 // buSel can be: a Macro BU name (e.g. 'Acquiring') → filter by d.Macro_BU
 //               '__prod__' + product name            → filter by d.Product
 function getBridgePeriodData(mesSet, cenario, buSel) {
-  if(!mesSet || mesSet.size === 0) return { tpv:0, byK1K2: new Map() };
+  if(!mesSet || mesSet.size === 0) return { tpv:0, nmv:0, byK1K2: new Map(), byK1K2K3: new Map() };
   const isProd   = buSel && buSel.startsWith('__prod__');
   const prodName = isProd ? buSel.slice(8) : null;
   // Forecast blending: months with no Forecast data fall back to Realizado
   const blendFn  = makeBlendFn(mesSet, cenario);
   let tpv = 0, nmv = 0;
-  const byK1K2 = new Map(); // k1 → Map<k2, value>
+  const byK1K2   = new Map(); // MNG_1 → Map<k2_depara, value>
+  const byK1K2K3 = new Map(); // MNG_1 → Map<k2_depara, Map<sub_label, value>>
   for(const d of allData) {
     if(!mesSet.has(d.MES))             continue;
     if(d.Cenario !== blendFn(d.MES))   continue;
@@ -5271,8 +5281,21 @@ function getBridgePeriodData(mesSet, cenario, buSel) {
     // Apply DE-PARA grouping so bridge shows consolidated categories
     const k2 = getDeParaK2(d.MNG_2 || '', d.MNG_3 || '', d.MNG_4 || '');
     k2map.set(k2, (k2map.get(k2) || 0) + v);
+    // Sub-breakdown for P&L drill-down
+    if(!byK1K2K3.has(d.MNG_1)) byK1K2K3.set(d.MNG_1, new Map());
+    const k2k3 = byK1K2K3.get(d.MNG_1);
+    if(!k2k3.has(k2)) k2k3.set(k2, new Map());
+    const k3map = k2k3.get(k2);
+    let subLbl;
+    if(k2 === 'Gross Revenues') {
+      // Split by P&L level for clarity: Processing (PM) vs Fin Gross (NM)
+      subLbl = (d.MNG_1 === 'Product Monetization') ? 'Processing' : 'Fin Gross';
+    } else {
+      subLbl = d.MNG_3 || d.MNG_2 || '';
+    }
+    if(subLbl) k3map.set(subLbl, (k3map.get(subLbl) || 0) + v);
   }
-  return { tpv, nmv, byK1K2 };
+  return { tpv, nmv, byK1K2, byK1K2K3 };
 }
 
 // Sum Take Rate value from a k1k2 map: PM + NM + Collection Fees (from VC)
@@ -5597,153 +5620,169 @@ function renderBridgePnlTable(dataA, dataB, ud) {
   const el = document.getElementById('bridgePnlContent');
   if(!el) return;
 
+  const {byK1K2: k1k2A, byK1K2K3: k3A} = dataA;
+  const {byK1K2: k1k2B, byK1K2K3: k3B} = dataB;
+
   // Volume metric: TPV for Acquiring BUs, NMV for Commerce
   const isCommerce = /commerce/i.test(bridgeMacro || '');
-  const volA  = isCommerce ? (dataA.nmv || 0) : (dataA.tpv || 0);
-  const volB  = isCommerce ? (dataB.nmv || 0) : (dataB.tpv || 0);
+  const volA   = isCommerce ? (dataA.nmv || 0) : (dataA.tpv || 0);
+  const volB   = isCommerce ? (dataB.nmv || 0) : (dataB.tpv || 0);
   const volLbl = isCommerce ? 'NMV' : 'TPV';
-  // Use TPV as the BPS denominator always (even when showing NMV)
-  const tpvA  = dataA.tpv || volA || 1;
-  const tpvB  = dataB.tpv || volB || 1;
-  const dec   = ud >= 1e6 ? 1 : 0;
+  const dec    = ud >= 1e6 ? 1 : 0;
 
   function fmt(v) {
     if(!v && v !== 0) return '—';
-    const s = v / ud;
-    const neg = s < 0;
+    const s = v / ud, neg = s < 0;
     const str = Math.abs(s).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
     return neg ? `(${str})` : str;
   }
   function fmtVar(v) {
     if(!v && v !== 0) return '—';
-    const s = v / ud; const neg = s < 0;
+    const s = v / ud, neg = s < 0;
     const str = Math.abs(s).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
     return neg ? `<span class="neg">(${str})</span>` : `<span class="vpos">+${str}</span>`;
   }
-  function bps(v, tpv) {
-    if(!tpv || !v) return '—';
-    return (v / tpv * 10000).toFixed(1);
-  }
 
-  function getK2s(byK1K2, k1s, asFlat) {
+  // Sum a k2 key across multiple MNG_1 levels
+  function kv(byK1K2, k1s, k2key) {
+    let v = 0;
+    for(const k1 of k1s) { const m = byK1K2.get(k1); if(m) v += (m.get(k2key) || 0); }
+    return v;
+  }
+  // Sum multiple k2 keys across multiple MNG_1 levels
+  function kvs(byK1K2, k1s, k2keys) {
+    let v = 0;
+    for(const k2 of k2keys) v += kv(byK1K2, k1s, k2);
+    return v;
+  }
+  // Get sub-breakdown map for drill-down (merges across k1s)
+  function getSubs(byK1K2K3, k1s, k2keys) {
     const m = new Map();
     for(const k1 of k1s) {
-      const sub = byK1K2.get(k1);
-      if(!sub) continue;
-      sub.forEach((v, k2) => {
-        const key = asFlat ? k2 : `${k1} · ${k2}`;
-        m.set(key, (m.get(key) || 0) + v);
-      });
+      const k2map = byK1K2K3 && byK1K2K3.get(k1);
+      if(!k2map) continue;
+      for(const k2 of k2keys) {
+        const k3map = k2map.get(k2);
+        if(!k3map) continue;
+        k3map.forEach((v, lbl) => m.set(lbl, (m.get(m.has(lbl) ? lbl : lbl) || 0) + v));
+      }
     }
     return m;
   }
+
+  // ── P&L line definitions ──────────────────────────────────
+  // Each: {id, label, k1s, k2s, expand}
+  const TR_LINES = [
+    {id:'gr',  label:'Gross Revenues',         k1s:['Product Monetization','Net Monetization'], k2s:['Gross Revenues'],              expand:true },
+    {id:'cf',  label:'Coll Fee',               k1s:['Variable Contribution'],                   k2s:['Collection Fees'],             expand:false},
+    {id:'fc',  label:'Fin Cost',               k1s:['Net Monetization','Product Monetization'], k2s:['Theoretical financing cost'],  expand:false},
+    {id:'hii', label:'Holding Interest Income',k1s:['Net Monetization'],                        k2s:['Holding Interest Income'],     expand:false},
+    {id:'st',  label:'Sales Taxes',            k1s:['Net Monetization','Product Monetization'], k2s:['Sales Taxes'],                 expand:false},
+  ];
+  const VC_LINES = [
+    {id:'cbk', label:'Chargeback',             k1s:['Variable Contribution'], k2s:['Chargebacks'],              expand:true },
+    {id:'cxv', label:'CX, PF & Hosting Var.',  k1s:['Variable Contribution'], k2s:['CX, Hosting, PF e OPEX'],  expand:true },
+    {id:'ovc', label:'Other VC Costs',         k1s:['Variable Contribution'], k2s:['Other VC Costs','POM'],     expand:true },
+  ];
+  const DC_LINES = [
+    {id:'cpa',  label:'CPA',            k1s:['Direct Contribution'], k2s:['CPA'],                    expand:true },
+    {id:'mpos', label:'MPOS',           k1s:['Direct Contribution'], k2s:['MPOS'],                   expand:true },
+    {id:'sml',  label:'S&M Local DC',   k1s:['Direct Contribution'], k2s:['S&M Local DC'],           expand:true },
+    {id:'se',   label:'Sales Expenses', k1s:['Direct Contribution'], k2s:['Sales Expenses'],         expand:true },
+    {id:'cxhdc',label:'CX PF & Hosting',k1s:['Direct Contribution'], k2s:['CX, Hosting, PF e OPEX'],expand:true },
+    {id:'mkt',  label:'MKT',            k1s:['Direct Contribution'], k2s:['MKT and Branding'],       expand:true },
+    {id:'odc',  label:'Other DC Costs', k1s:['Direct Contribution'], k2s:['Other DC Costs','DC Costs'], expand:true },
+  ];
+  const BM_LINES = [
+    {id:'brd',  label:'Branding',       k1s:['Business Contribution','Business Margin'], k2s:['MKT and Branding'],       expand:false},
+    {id:'opex', label:'OPEX',           k1s:['Business Contribution','Business Margin'], k2s:['CX, Hosting, PF e OPEX'], expand:true },
+  ];
+
+  // ── Subtotal computations (same logic as bridge chart) ───
+  const TR_K1S = ['Product Monetization','Net Monetization'];
+  const VC_K1S = ['Product Monetization','Net Monetization','Variable Contribution'];
+  const DC_K1S = [...VC_K1S,'Direct Contribution'];
+  const BM_K1S = [...DC_K1S,'Business Contribution','Business Margin'];
   function totalK1s(byK1K2, k1s) {
     let t = 0;
     for(const k of k1s) { const m = byK1K2.get(k); if(m) m.forEach(v => { t += v; }); }
     return t;
   }
-
-  const TR_K1S = ['Product Monetization','Net Monetization'];
-  const VC_K1S = ['Product Monetization','Net Monetization','Variable Contribution'];
-  const DC_K1S = [...VC_K1S,'Direct Contribution'];
-  const BM_K1S = [...DC_K1S,'Business Contribution','Business Margin'];
-
-  function trTotal(d) {
-    let t = totalK1s(d, TR_K1S);
-    const vc = d.get('Variable Contribution');
+  function trTotal(byK1K2) {
+    let t = totalK1s(byK1K2, TR_K1S);
+    const vc = byK1K2.get('Variable Contribution');
     if(vc) t += (vc.get('Collection Fees') || 0);
     return t;
   }
-  function trSubs(d) {
-    const m = getK2s(d, TR_K1S, false);
-    const vc = d.get('Variable Contribution');
-    if(vc) { const cf = vc.get('Collection Fees'); if(cf) m.set('Collection Fees', cf); }
-    return m;
-  }
 
-  const PNL_LEVELS = [
-    { id:'nm', label:'Net Monetization',
-      total: d => totalK1s(d, TR_K1S),
-      subs:  d => getK2s(d, TR_K1S, false) },
-    { id:'tr', label:'Take Rate',
-      total: trTotal, subs: trSubs },
-    { id:'vc', label:'Variable Contribution',
-      total: d => totalK1s(d, VC_K1S),
-      subs:  d => getK2s(d, ['Variable Contribution'], true) },
-    { id:'dc', label:'Direct Contribution',
-      total: d => totalK1s(d, DC_K1S),
-      subs:  d => getK2s(d, ['Direct Contribution'], true) },
-    { id:'bm', label:'Business Margin',
-      total: d => totalK1s(d, BM_K1S),
-      subs:  d => getK2s(d, ['Business Contribution','Business Margin'], true) },
-  ];
-
+  // ── Header labels ────────────────────────────────────────
   const pA = bridgePeriodA ? format1x1PeriodLabel(bridgePeriodA, bridgeType) : 'A';
   const pB = bridgePeriodB ? format1x1PeriodLabel(bridgePeriodB, bridgeType) : 'B';
   const cA = bridgeCenA ? shortCen(bridgeCenA) : 'A';
   const cB = bridgeCenB ? shortCen(bridgeCenB) : 'B';
-
   const sl = document.getElementById('bpnlScenLabel');
   if(sl) sl.textContent = `${pA} ${cA} vs ${pB} ${cB}`;
 
-  // Sticky header inside the scrollable pnl content
-  let h = `<table class="bpnl-table">
-  <thead>
-    <tr class="bpnl-hdr-row">
-      <th style="position:sticky;top:0;z-index:3">P&amp;L</th>
-      <th style="position:sticky;top:0;z-index:3" title="${pA} · ${cA}">${pA}<br><small>${cA}</small></th>
-      <th style="position:sticky;top:0;z-index:3" title="${pB} · ${cB}">${pB}<br><small>${cB}</small></th>
-      <th style="position:sticky;top:0;z-index:3">Var</th>
-      <th style="position:sticky;top:0;z-index:3">BPS A</th>
-      <th style="position:sticky;top:0;z-index:3">BPS B</th>
-    </tr>
-  </thead><tbody>`;
+  // ── Build table ──────────────────────────────────────────
+  let h = `<table class="bpnl-table"><thead><tr>
+    <th>P&amp;L</th>
+    <th title="${pA} · ${cA}">${pA}<br><small>${cA}</small></th>
+    <th title="${pB} · ${cB}">${pB}<br><small>${cB}</small></th>
+    <th>Var</th>
+  </tr></thead><tbody>`;
 
-  // ── First row: volume metric (TPV or NMV) ──────────────────
+  // TPV / NMV row
   const varVol = volB - volA;
-  // Volume uses its own unit (always R$ M if ud >= 1e6, no BPS denominator issue)
   h += `<tr class="bpnl-row-vol">
-    <td style="font-weight:700;font-size:11.5px;color:#555;padding-left:8px">${volLbl}</td>
-    <td style="font-weight:600;color:var(--text)">${fmt(volA)}</td>
-    <td style="font-weight:600;color:var(--text)">${fmt(volB)}</td>
-    <td class="bpnl-col-var">${fmtVar(varVol)}</td>
-    <td class="bpnl-col-bps">—</td>
-    <td class="bpnl-col-bps">—</td>
-  </tr>
-  <tr><td colspan="6" style="height:4px;background:var(--border);padding:0"></td></tr>`;
+    <td style="font-weight:700">${volLbl}</td>
+    <td style="font-weight:600">${fmt(volA)}</td>
+    <td style="font-weight:600">${fmt(volB)}</td>
+    <td>${fmtVar(varVol)}</td>
+  </tr>`;
 
-  // ── P&L levels ─────────────────────────────────────────────
-  for(const lvl of PNL_LEVELS) {
-    const vA   = lvl.total(dataA.byK1K2);
-    const vB   = lvl.total(dataB.byK1K2);
-    const varV = vB - vA;
-    const open  = bridgePnlExpanded.has(lvl.id);
-    const arrow = `<span class="xarr${open?' open':''}">▶</span> `;
-    h += `<tr class="bpnl-row-l0 expandable" onclick="toggleBridgePnlRow('${lvl.id}')">
-      <td>${arrow}${lvl.label}</td>
-      <td>${fmt(vA)}</td><td>${fmt(vB)}</td>
-      <td class="bpnl-col-var">${fmtVar(varV)}</td>
-      <td class="bpnl-col-bps">${bps(vA,tpvA)}</td>
-      <td class="bpnl-col-bps">${bps(vB,tpvB)}</td>
-    </tr>`;
-    if(open) {
-      const subA = lvl.subs(dataA.byK1K2);
-      const subB = lvl.subs(dataB.byK1K2);
-      const keys = [...new Set([...subA.keys(),...subB.keys()])];
-      for(const k of keys) {
-        const sa = subA.get(k) || 0;
-        const sb = subB.get(k) || 0;
-        const sv = sb - sa;
-        h += `<tr class="bpnl-row-sub">
-          <td>${k}</td>
-          <td>${fmt(sa)}</td><td>${fmt(sb)}</td>
-          <td class="bpnl-col-var">${fmtVar(sv)}</td>
-          <td class="bpnl-col-bps">${bps(sa,tpvA)}</td>
-          <td class="bpnl-col-bps">${bps(sb,tpvB)}</td>
-        </tr>`;
+  // Helper: render a block of line rows + optional subtotal
+  function renderLines(lines, subtotalLabel, subtotalFn) {
+    for(const ln of lines) {
+      const vA  = kvs(k1k2A, ln.k1s, ln.k2s);
+      const vB  = kvs(k1k2B, ln.k1s, ln.k2s);
+      const vr  = vB - vA;
+      const open = ln.expand && bridgePnlExpanded.has(ln.id);
+      const arr  = ln.expand ? `<span class="xarr${open?' open':''}">▶</span> ` : '<span style="display:inline-block;width:14px"></span>';
+      const cls  = ln.expand ? 'bpnl-row-line expandable' : 'bpnl-row-line';
+      const oc   = ln.expand ? ` onclick="toggleBridgePnlRow('${ln.id}')"` : '';
+      h += `<tr class="${cls}"${oc}><td>${arr}${ln.label}</td><td>${fmt(vA)}</td><td>${fmt(vB)}</td><td>${fmtVar(vr)}</td></tr>`;
+      if(open) {
+        const subA = getSubs(k3A, ln.k1s, ln.k2s);
+        const subB = getSubs(k3B, ln.k1s, ln.k2s);
+        const keys = [...new Set([...subA.keys(),...subB.keys()])].filter(Boolean);
+        for(const k of keys) {
+          const sa = subA.get(k) || 0, sb = subB.get(k) || 0, sv = sb - sa;
+          h += `<tr class="bpnl-row-sub"><td>${k}</td><td>${fmt(sa)}</td><td>${fmt(sb)}</td><td>${fmtVar(sv)}</td></tr>`;
+        }
       }
     }
+    if(subtotalLabel && subtotalFn) {
+      const stA = subtotalFn(k1k2A), stB = subtotalFn(k1k2B);
+      h += `<tr class="bpnl-row-subtotal"><td>${subtotalLabel}</td><td>${fmt(stA)}</td><td>${fmt(stB)}</td><td>${fmtVar(stB-stA)}</td></tr>`;
+    }
   }
+
+  // ── Take Rate section ──────────────────────────────────
+  h += `<tr class="bpnl-row-sect"><td colspan="4"></td></tr>`;
+  renderLines(TR_LINES, 'Take Rate', trTotal);
+
+  // ── Variable Contribution section ─────────────────────
+  h += `<tr class="bpnl-row-sect"><td colspan="4"></td></tr>`;
+  renderLines(VC_LINES, 'Variable Contribution', d => totalK1s(d, VC_K1S));
+
+  // ── Direct Contribution section ───────────────────────
+  h += `<tr class="bpnl-row-sect"><td colspan="4"></td></tr>`;
+  renderLines(DC_LINES, 'Direct Contribution', d => totalK1s(d, DC_K1S));
+
+  // ── Business Margin section ───────────────────────────
+  h += `<tr class="bpnl-row-sect"><td colspan="4"></td></tr>`;
+  renderLines(BM_LINES, 'Business Margin', d => totalK1s(d, BM_K1S));
+
   h += '</tbody></table>';
   el.innerHTML = h;
 }
@@ -5808,9 +5847,10 @@ function renderBridgesTab() {
   const udLbl = bridgeDisplayPct ? 'pp' : (bridgeUnitDiv >= 1e6 ? 'R$ M' : bridgeUnitDiv >= 1e3 ? 'R$ mil' : 'R$');
 
   // ── Auto-expand the metric matching the bridge selection ──
-  const METRIC_TO_ROW = {'Take Rate':'tr','VC':'vc','DC':'dc','BM':'bm'};
+  // Auto-expand the primary drill line for the selected bridge metric
+  const METRIC_TO_ROW = {'Take Rate':'gr', 'VC':'ovc', 'DC':'cpa', 'BM':'opex'};
   const autoId = METRIC_TO_ROW[bridgeMetric];
-  if(autoId) bridgePnlExpanded.add(autoId); // always open the current metric
+  if(autoId) bridgePnlExpanded.add(autoId); // always open the primary line for current metric
 
   // ── Render P&L comparison table ──
   renderBridgePnlTable(dataA, dataB, ud);
