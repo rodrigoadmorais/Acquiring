@@ -5111,6 +5111,7 @@ function evoPeriodLabel(key) {
 function setBridgeMetric(btn) {
   bridgeMetric = btn.dataset.m;
   bridgeDrillKey = null; bridgeSubDrillKeys.clear();
+  bridgePnlExpanded.clear(); bridgePnlSubExpanded.clear();
   document.querySelectorAll('#bridgeMetricGrp button').forEach(b => b.classList.toggle('on', b===btn));
   renderBridgesTab();
 }
@@ -5119,6 +5120,7 @@ function setBridgeType(btn) {
   bridgePeriodA = null;
   bridgePeriodB = null;
   bridgeDrillKey = null; bridgeSubDrillKeys.clear();
+  bridgePnlExpanded.clear(); bridgePnlSubExpanded.clear();
   document.querySelectorAll('#bridgeTypeGrp button').forEach(b => b.classList.toggle('on', b===btn));
   buildBridgeSelects();
   renderBridgesTab();
@@ -6046,12 +6048,6 @@ function renderBridgesTab() {
   const refTPV = (dataA.tpv || dataB.tpv || 1);
   const ud    = bridgeDisplayPct ? (refTPV / 100) : bridgeUnitDiv;
   const udLbl = bridgeDisplayPct ? 'pp' : (bridgeUnitDiv >= 1e6 ? 'R$ M' : bridgeUnitDiv >= 1e3 ? 'R$ mil' : 'R$');
-
-  // ── Auto-expand the metric matching the bridge selection ──
-  // Auto-expand the primary drill line for the selected bridge metric (BM excluded — too noisy)
-  const METRIC_TO_ROW = {'Take Rate':'gr', 'VC':'ovc', 'DC':'cpa'};
-  const autoId = METRIC_TO_ROW[bridgeMetric];
-  if(autoId) bridgePnlExpanded.add(autoId);
 
   // ── Render P&L comparison table ──
   renderBridgePnlTable(dataA, dataB, ud);
