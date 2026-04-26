@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    DESIGN SYSTEM — P&L Brasil · MELI Style
@@ -1165,7 +1166,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       </div>
       <div>
         <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Print</label>
-        <button class="cpa-cfg-btn" onclick="printDashTable('cpaTable','CPA')" title="Copiar tabela para impressão">🖨 Imprimir</button>
+        <button class="cpa-cfg-btn" onclick="captureTableImg('cpaTable','CPA',this)" title="Capturar tabela como imagem para colar no slide">📸 Capturar</button>
       </div>
     </div>
   </div>
@@ -1231,7 +1232,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <div style="margin-top:28px;padding-top:6px;border-top:2px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 10px">
         <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)">MPOS Light</span>
-        <button class="cpa-cfg-btn" onclick="printDashTable('mposLightTable','MPOS Light')" title="Imprimir tabela MPOS Light" style="font-size:10.5px;padding:3px 9px">🖨 Imprimir</button>
+        <button class="cpa-cfg-btn" onclick="captureTableImg('mposLightTable','MPOS_Light',this)" title="Capturar tabela como imagem para colar no slide" style="font-size:10.5px;padding:3px 9px">📸 Capturar</button>
       </div>
       <div class="tbl-outer">
         <table class="cpa-table" id="mposLightTable">
@@ -6283,32 +6284,66 @@ function renderBridgesTab() {
     </table>`;
 }
 
-// ── Print a table to a clean white window ────────────────────────────────
-function printDashTable(tableId, title) {
+// ── Capture table as a slide-ready PNG image (clipboard → paste into PPT/Slides) ──
+async function captureTableImg(tableId, title, btn) {
   const el = document.getElementById(tableId);
   if(!el) return;
-  // Collect all inline <style> from the page so table classes render correctly
-  const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
-  const w = window.open('', '_blank', 'width=1400,height=900');
-  if(!w) { alert('Permita pop-ups para imprimir.'); return; }
-  w.document.write(`<!DOCTYPE html><html><head>
-    <meta charset="utf-8">
-    <title>${title}</title>
-    <style>${css}</style>
-    <style>
-      html,body{margin:0;padding:16px 20px;background:#fff!important;font-family:inherit}
-      h2{font-size:13px;font-weight:700;color:#555;margin:0 0 12px;letter-spacing:.4px;text-transform:uppercase}
-      .tbl-outer{box-shadow:none!important;border:1px solid #eee!important;border-radius:6px;overflow:hidden}
-      table{font-size:11px}
-      th{font-size:10px}
-      @media print{body{padding:8px 12px}.tbl-outer{border:none!important}}
-    </style>
-  </head><body>
-    <h2>${title}</h2>
-    <div class="tbl-outer">${el.outerHTML}</div>
-  </body></html>`);
-  w.document.close();
-  w.onload = () => { w.focus(); w.print(); };
+
+  // Button feedback
+  const origHTML = btn ? btn.innerHTML : '';
+  const setBtn = (html, disabled) => { if(btn){ btn.innerHTML = html; btn.disabled = !!disabled; } };
+  setBtn('⏳ Capturando…', true);
+
+  try {
+    // Temporarily neutralise sticky positioning so html2canvas renders the full table
+    const stickyEls = el.querySelectorAll('[style*="sticky"], .sticky-col, .mbu-desc-cell, th');
+    const saved = [];
+    stickyEls.forEach(e => {
+      saved.push([e, e.style.position]);
+      e.style.position = 'relative';
+    });
+
+    const canvas = await html2canvas(el, {
+      backgroundColor: '#ffffff',
+      scale: 2,           // retina-quality for crisp slide paste
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+    });
+
+    // Restore sticky
+    saved.forEach(([e, pos]) => { e.style.position = pos; });
+
+    // Try writing to clipboard (Chrome 97+, Edge — most corp environments)
+    canvas.toBlob(async blob => {
+      let copied = false;
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        copied = true;
+      } catch(_) { /* fallback below */ }
+
+      if(copied) {
+        setBtn('✅ Copiado! Cole no slide', false);
+      } else {
+        // Clipboard write blocked → download PNG instead
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.download = `${title.replace(/\s+/g,'_')}.png`;
+        a.href     = url;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        setBtn('✅ Imagem salva!', false);
+      }
+      setTimeout(() => setBtn(origHTML, false), 2800);
+    }, 'image/png');
+
+  } catch(err) {
+    console.error('captureTableImg:', err);
+    setBtn('❌ Erro ao capturar', false);
+    setTimeout(() => setBtn(origHTML, false), 2500);
+  }
 }
 
 function renderEvoTab() {
