@@ -5456,21 +5456,18 @@ function buildBridgeSegments(dataA, dataB, metric) {
   const volEffect  = rateA * tpvDelta;                  // ΔTPV × rate_A
   const trEffect   = trDelta - volEffect;               // TPV_B × (rate_B − rate_A)
 
+  // Volume bar: only in absolute mode (user doesn't want it in % TPV)
   if(Math.abs(volEffect) > 0.01 && !bridgeDisplayPct)
     segments.push({ label: 'Volume (TPV)', value: volEffect, type: 'effect', group: 'vol',
       meta: { tpvDelta, rateA: rateA * 100 } });
 
-  // In % TPV mode: use trDelta (total TR change vs common tpvA base) so the bar
-  // represents exactly the pp shown in the Var column of the P&L panel.
-  // In absolute mode: use only the rate component (trEffect), volume is shown separately.
-  const trSegValue = bridgeDisplayPct ? trDelta : trEffect;
-  // Meta rates: in % mode show both periods normalized by tpvA so they match the P&L panel.
-  const rateBMeta  = bridgeDisplayPct
-    ? (tpvA !== 0 ? trB / tpvA * 100 : null)   // trB as % of tpvA (= panel's B column)
-    : (rateB !== null ? rateB * 100 : null);     // true rate of B (% of its own TPV)
-  if(Math.abs(trSegValue) > 0.01)
-    segments.push({ label: 'Take Rate %', value: trSegValue, type: 'effect', group: 'tr',
-      meta: { rateA: rateA * 100, rateB: rateBMeta, tpvB } });
+  // Rate bar: always use trEffect (the pure rate component) in both modes.
+  // In % TPV mode the volume bar is hidden and its portion lands in the Outros safety bar,
+  // but the direction of the rate bar is consistent with absolute mode.
+  // Meta always uses the TRUE rate of B (trB / tpvB) so summary text is unambiguous.
+  if(Math.abs(trEffect) > 0.01)
+    segments.push({ label: 'Take Rate %', value: trEffect, type: 'effect', group: 'tr',
+      meta: { rateA: rateA * 100, rateB: rateB !== null ? rateB * 100 : null, tpvB } });
 
   // Below-TR lines (absolute delta), depending on bridge metric
   const BELOW_TR = [];
