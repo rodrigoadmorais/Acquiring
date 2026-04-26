@@ -742,10 +742,18 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 /* Subtotal rows (Take Rate, VC, DC, BM) — yellow */
 .bpnl-row-subtotal td{background:#FFE600;color:#1a1a1a;font-weight:700;font-size:10.5px;
   border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a;padding:5px 6px}
-/* Drill-down sub-items */
+/* Drill-down sub-items (level 2 — MNG_3) */
 .bpnl-row-sub td{background:#FAFAF8;color:#444;font-size:9.5px;border-bottom:1px solid #f0f0ea;padding:2px 6px}
 .bpnl-row-sub td:first-child{padding-left:22px;white-space:normal}
 .bpnl-row-sub:hover td{background:#FFFDE7!important}
+.bpnl-row-sub.expandable{cursor:pointer}
+.bpnl-row-sub.expandable:hover td{background:#FFF3CD!important}
+/* Drill-down deep-items (level 3 — MNG_4) */
+.bpnl-row-sub2 td{background:#F5F5F0;color:#666;font-size:8.5px;border-bottom:1px solid #eeeee8;padding:2px 6px;font-style:italic}
+.bpnl-row-sub2 td:first-child{padding-left:38px;white-space:normal}
+.bpnl-row-sub2:hover td{background:#FFF9C4!important}
+[data-theme=dark] .bpnl-row-sub2 td{background:var(--bg-2);color:var(--muted);border-bottom-color:var(--border)}
+[data-theme=dark] .bpnl-row-sub2:hover td{background:var(--card-2)!important}
 /* Volume row (TPV / NMV) */
 .bpnl-row-vol td{background:#F5F5F0;color:#555;font-size:10px;border-bottom:2px solid #1a1a1a;padding:5px 6px;font-weight:600}
 /* Tiny spacer between P&L sections */
@@ -807,12 +815,6 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       <text x="15" y="20" text-anchor="middle" fill="#FFE600"
         font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="14" letter-spacing="-0.5">ML</text>
     </svg>
-    <!-- Mercado Pago logo badge -->
-    <svg class="brand-logo" viewBox="0 0 30 28" width="30" height="28" aria-label="Mercado Pago">
-      <rect width="30" height="28" rx="5" fill="#009EE3"/>
-      <text x="15" y="20" text-anchor="middle" fill="#fff"
-        font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="14" letter-spacing="-0.5">MP</text>
-    </svg>
     <span class="hdr-divider"></span>
     MBL P&amp;L Managerial - Analytics
   </h1>
@@ -824,13 +826,12 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 
 <!-- ── Tab Navigation ── -->
 <nav class="tab-nav" id="tabNav">
-  <button class="tab-btn" data-tab="keynums" onclick="switchTab(this)">Key-numbers</button>
-  <button class="tab-btn" data-tab="pnl" onclick="switchTab(this)">P&amp;L</button>
-  <button class="tab-btn on" data-tab="evo" onclick="switchTab(this)">Evolutivos</button>
-  <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
-  <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">MPOS</button>
-  <button class="tab-btn" data-tab="mbu" onclick="switchTab(this)">Macro BU Overview</button>
+  <button class="tab-btn on" data-tab="pnl" onclick="switchTab(this)">P&amp;L</button>
   <button class="tab-btn" data-tab="bridges" onclick="switchTab(this)">Bridges</button>
+  <button class="tab-btn" data-tab="mbu" onclick="switchTab(this)">Macro BU Overview</button>
+  <button class="tab-btn" data-tab="keynums" onclick="switchTab(this)">Key-numbers</button>
+  <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">MPOS</button>
+  <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
 </nav>
 
 <!-- ── Filters ── -->
@@ -1098,7 +1099,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 </div>
 
 <!-- ── Evolutivos Panel ── -->
-<div id="evoPanel" class="evo-panel">
+<div id="evoPanel" class="evo-panel" style="display:none">
   <div class="evo-filter-bar">
     <div>
       <label>BU</label>
@@ -1377,7 +1378,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <!-- Macro BU -->
     <div class="fg">
       <label>BU</label>
-      <select id="bridgeMacroBUSel" onchange="bridgeMacro=this.value;bridgeDrillKey=null;renderBridgesTab()"
+      <select id="bridgeMacroBUSel" onchange="bridgeMacro=this.value;bridgeDrillKey=null;bridgeSubDrillKeys.clear();renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:140px">
       </select>
@@ -1397,13 +1398,13 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <!-- Period A -->
     <div class="fg">
       <label>De (período A)</label>
-      <select id="bridgePeriodASel" onchange="bridgePeriodA=this.value;bridgeDrillKey=null;renderBridgesTab()"
+      <select id="bridgePeriodASel" onchange="bridgePeriodA=this.value;bridgeDrillKey=null;bridgeSubDrillKeys.clear();renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
     </div>
     <div class="fg">
       <label>Cenário A</label>
-      <select id="bridgeCenASel" onchange="bridgeCenA=this.value;bridgeDrillKey=null;renderBridgesTab()"
+      <select id="bridgeCenASel" onchange="bridgeCenA=this.value;bridgeDrillKey=null;bridgeSubDrillKeys.clear();renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:100px"></select>
     </div>
@@ -1415,13 +1416,13 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <!-- Period B -->
     <div class="fg">
       <label>Para (período B)</label>
-      <select id="bridgePeriodBSel" onchange="bridgePeriodB=this.value;bridgeDrillKey=null;renderBridgesTab()"
+      <select id="bridgePeriodBSel" onchange="bridgePeriodB=this.value;bridgeDrillKey=null;bridgeSubDrillKeys.clear();renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
     </div>
     <div class="fg">
       <label>Cenário B</label>
-      <select id="bridgeCenBSel" onchange="bridgeCenB=this.value;bridgeDrillKey=null;renderBridgesTab()"
+      <select id="bridgeCenBSel" onchange="bridgeCenB=this.value;bridgeDrillKey=null;bridgeSubDrillKeys.clear();renderBridgesTab()"
         style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:100px"></select>
     </div>
@@ -3418,7 +3419,7 @@ function fmt(v) {
 // ═══════════════════════════════════════════════════════════
 //  TAB SYSTEM
 // ═══════════════════════════════════════════════════════════
-let currentTab       = 'evo';
+let currentTab       = 'pnl';
 let cpaUnitDiv       = 1_000_000;
 let mposUnitDiv      = 1_000_000;
 let mposLightUnitDiv = 1_000_000;
@@ -3445,7 +3446,8 @@ let bridgeMacro      = 'Acquiring';
 let bridgeUnitDiv    = 1_000_000;
 let bridgeDisplayPct = false;   // true = show bridge in % of TPV (pp)
 let _bridgeChart     = null;
-let bridgeDrillKey   = null; // "k1||k2" of the currently expanded drill-down row
+let bridgeDrillKey     = null;      // "k1||k2" of the currently expanded segment row
+let bridgeSubDrillKeys = new Set(); // "k1||k2::mng3" of MNG_3 groups expanded inside segment
 
 // Preferred BU order per Macro BU (others appended alphabetically)
 const MBU_BU_ORDER = {
@@ -5068,7 +5070,7 @@ function evoPeriodLabel(key) {
 
 function setBridgeMetric(btn) {
   bridgeMetric = btn.dataset.m;
-  bridgeDrillKey = null;
+  bridgeDrillKey = null; bridgeSubDrillKeys.clear();
   document.querySelectorAll('#bridgeMetricGrp button').forEach(b => b.classList.toggle('on', b===btn));
   renderBridgesTab();
 }
@@ -5076,7 +5078,7 @@ function setBridgeType(btn) {
   bridgeType = btn.dataset.t;
   bridgePeriodA = null;
   bridgePeriodB = null;
-  bridgeDrillKey = null;
+  bridgeDrillKey = null; bridgeSubDrillKeys.clear();
   document.querySelectorAll('#bridgeTypeGrp button').forEach(b => b.classList.toggle('on', b===btn));
   buildBridgeSelects();
   renderBridgesTab();
@@ -5202,7 +5204,15 @@ function getDeParaK2(mng2, mng3, mng4) {
 // Toggle drill-down for a bridge segment (called from onclick)
 function toggleBridgeDrill(encodedKey) {
   const key = decodeURIComponent(encodedKey);
+  if(bridgeDrillKey !== key) bridgeSubDrillKeys.clear(); // reset sub-expansion on parent change
   bridgeDrillKey = (bridgeDrillKey === key) ? null : key;
+  renderBridgesTab();
+}
+
+// Toggle a MNG_3 group within an expanded segment drill-down
+function toggleBridgeSubDrill(ckey) {
+  if(bridgeSubDrillKeys.has(ckey)) bridgeSubDrillKeys.delete(ckey);
+  else bridgeSubDrillKeys.add(ckey);
   renderBridgesTab();
 }
 
@@ -5431,7 +5441,7 @@ function buildBridgeSegments(dataA, dataB, metric) {
   const volEffect  = rateA * tpvDelta;                  // ΔTPV × rate_A
   const trEffect   = trDelta - volEffect;               // TPV_B × (rate_B − rate_A)
 
-  if(Math.abs(volEffect) > 0.01)
+  if(Math.abs(volEffect) > 0.01 && !bridgeDisplayPct)
     segments.push({ label: 'Volume (TPV)', value: volEffect, type: 'effect', group: 'vol',
       meta: { tpvDelta, rateA: rateA * 100 } });
   if(Math.abs(trEffect) > 0.01)
@@ -5693,13 +5703,24 @@ function exportBridgeImage() {
 }
 
 // ── Bridge P&L Comparison ────────────────────────────────────
-let bridgePnlExpanded = new Set(); // which metric rows are expanded
+let bridgePnlExpanded    = new Set(); // which metric rows are expanded (level 1)
+let bridgePnlSubExpanded = new Set(); // which sub-rows are expanded (level 2 → level 3)
 let _bridgeLastDataA  = null;      // cached for drill-down re-render
 let _bridgeLastDataB  = null;
 
 function toggleBridgePnlRow(id) {
   if(bridgePnlExpanded.has(id)) bridgePnlExpanded.delete(id);
   else bridgePnlExpanded.add(id);
+  if(_bridgeLastDataA && _bridgeLastDataB) {
+    const refTPV = (_bridgeLastDataA.tpv || _bridgeLastDataB.tpv || 1);
+    const ud = bridgeDisplayPct ? (refTPV / 100) : bridgeUnitDiv;
+    renderBridgePnlTable(_bridgeLastDataA, _bridgeLastDataB, ud);
+  }
+}
+
+function toggleBridgePnlSub(ckey) {
+  if(bridgePnlSubExpanded.has(ckey)) bridgePnlSubExpanded.delete(ckey);
+  else bridgePnlSubExpanded.add(ckey);
   if(_bridgeLastDataA && _bridgeLastDataB) {
     const refTPV = (_bridgeLastDataA.tpv || _bridgeLastDataB.tpv || 1);
     const ud = bridgeDisplayPct ? (refTPV / 100) : bridgeUnitDiv;
@@ -5714,12 +5735,47 @@ function renderBridgePnlTable(dataA, dataB, ud) {
   const {byK1K2: k1k2A, byK1K2K3: k3A} = dataA;
   const {byK1K2: k1k2B, byK1K2K3: k3B} = dataB;
 
+  // Period sets for K4 lookup (computed from globals)
+  const _msA = get1x1MesSet(bridgePeriodA, bridgeType);
+  const _msB = get1x1MesSet(bridgePeriodB, bridgeType);
+  const _isProdBU   = bridgeMacro && bridgeMacro.startsWith('__prod__');
+  const _prodNameBU = _isProdBU ? bridgeMacro.slice(8) : null;
+
+  // Get MNG_4 breakdown for a given combination of k1s, k2keys, and mng3Label
+  function getK4(k1s, k2keys, mng3Label) {
+    const m = new Map(); // mng4 → {a, b}
+    for(const d of allData) {
+      if(!k1s.includes(d.MNG_1)) continue;
+      const k2 = getDeParaK2(d.MNG_2||'', d.MNG_3||'', d.MNG_4||'');
+      if(!k2keys.includes(k2)) continue;
+      if(bridgeMacro) {
+        if(_isProdBU  && d.Product  !== _prodNameBU) continue;
+        if(!_isProdBU && d.Macro_BU !== bridgeMacro) continue;
+      }
+      // Match the level-2 label (handle Gross Revenues special case)
+      let subLbl;
+      if(k2 === 'Gross Revenues') {
+        subLbl = (d.MNG_1 === 'Product Monetization') ? 'Processing' : 'Fin Gross';
+      } else {
+        subLbl = d.MNG_3 || d.MNG_2 || '';
+      }
+      if(subLbl !== mng3Label) continue;
+      const mng4 = d.MNG_4 || d.MNG_3 || '';
+      if(!mng4) continue;
+      if(!m.has(mng4)) m.set(mng4, {a:0, b:0});
+      const e = m.get(mng4);
+      if(_msA && _msA.has(d.MES) && d.Cenario === bridgeCenA) e.a += d.Value||0;
+      if(_msB && _msB.has(d.MES) && d.Cenario === bridgeCenB) e.b += d.Value||0;
+    }
+    return m;
+  }
+
   // Volume metric: TPV for Acquiring BUs, NMV for Commerce
   const isCommerce = /commerce/i.test(bridgeMacro || '');
   const volA   = isCommerce ? (dataA.nmv || 0) : (dataA.tpv || 0);
   const volB   = isCommerce ? (dataB.nmv || 0) : (dataB.tpv || 0);
   const volLbl = isCommerce ? 'NMV' : 'TPV';
-  const dec    = ud >= 1e6 ? 1 : 0;
+  const dec    = bridgeDisplayPct ? 2 : (ud >= 1e6 ? 1 : 0);
 
   function fmt(v) {
     if(!v && v !== 0) return '—';
@@ -5847,7 +5903,25 @@ function renderBridgePnlTable(dataA, dataB, ud) {
         const keys = [...new Set([...subA.keys(),...subB.keys()])].filter(Boolean);
         for(const k of keys) {
           const sa = subA.get(k) || 0, sb = subB.get(k) || 0, sv = sb - sa;
-          h += `<tr class="bpnl-row-sub"><td>${k}</td><td>${fmt(sa)}</td><td>${fmt(sb)}</td><td>${fmtVar(sv)}</td></tr>`;
+          const ckey = `${ln.id}::${k}`;
+          const subOpen = bridgePnlSubExpanded.has(ckey);
+          // Get MNG_4 breakdown for this sub-row
+          const k4map = getK4(ln.k1s, ln.k2s, k);
+          const k4entries = [...k4map.entries()]
+            .filter(([,{a,b}]) => Math.abs(a) > 0.01 || Math.abs(b) > 0.01)
+            .sort(([,aa],[,bb]) => Math.abs((bb.b-bb.a)) - Math.abs((aa.b-aa.a)));
+          // Only show expand if there are K4 items that differ from the MNG_3 label itself
+          const hasK4 = k4entries.length > 0 && !k4entries.every(([lbl]) => lbl === k);
+          const subArr = hasK4 ? `<span class="xarr${subOpen?' open':''}">▶</span>` : '<span style="display:inline-block;width:14px"></span>';
+          const subCls = `bpnl-row-sub${hasK4 ? ' expandable' : ''}`;
+          h += `<tr class="${subCls}" data-ckey="${ckey.replace(/"/g,'&quot;')}" ${hasK4 ? 'onclick="toggleBridgePnlSub(this.dataset.ckey)"' : ''}>
+            <td>${subArr} ${k}</td><td>${fmt(sa)}</td><td>${fmt(sb)}</td><td>${fmtVar(sv)}</td></tr>`;
+          if(subOpen && hasK4) {
+            for(const [k4lbl, {a:k4a, b:k4b}] of k4entries) {
+              const k4v = k4b - k4a;
+              h += `<tr class="bpnl-row-sub2"><td>${k4lbl}</td><td>${fmt(k4a)}</td><td>${fmt(k4b)}</td><td>${fmtVar(k4v)}</td></tr>`;
+            }
+          }
         }
       }
     }
@@ -5976,7 +6050,7 @@ function renderBridgesTab() {
   const colors   = [];
   const segRefs  = [];
   const DARK_A  = '#1a1a1a';
-  const DARK_B  = '#4a7fc1';
+  const DARK_B  = '#1a1a1a';
   const COL_POS = 'rgba(46,125,50,0.85)';
   const COL_NEG = 'rgba(198,40,40,0.85)';
 
@@ -6254,7 +6328,7 @@ function renderBridgesTab() {
       <td class="bsm-delta" ${numStyle}>${dPctStr}</td>
     </tr>`;
 
-    // Drill-down sub-rows (MNG_3 groups → MNG_4 items)
+    // Drill-down sub-rows (MNG_3 groups → MNG_4 items, level-by-level)
     if(isExpanded) {
       const groups = getBridgeDrillDownData(mesSetA, bridgeCenA, mesSetB, bridgeCenB, bridgeMacro, seg.segK1, seg.segK2);
       if(groups.length === 0) {
@@ -6266,21 +6340,37 @@ function renderBridgesTab() {
           <td style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">A · B</td>
         </tr>`;
         for(const {mng3, items, delta: gDelta} of groups) {
-          // Show MNG_3 group header only if there are multiple MNG_4 items or MNG_4 ≠ MNG_3
-          const showGrpHdr = items.length > 1 || (items.length === 1 && items[0].label !== mng3);
-          if(showGrpHdr) {
-            const gc = gDelta >= 0 ? COL_G : COL_R;
-            rows += `<tr style="background:var(--bg);border-top:1px solid var(--border)">
-              <td style="padding:5px 14px 5px 24px;font-size:11px;font-weight:700">${mng3}</td>
+          const gc = gDelta >= 0 ? COL_G : COL_R;
+          // Determine if this MNG_3 group has expandable MNG_4 children
+          const hasChildren = items.length > 1 || (items.length === 1 && items[0].label !== mng3);
+          const subCkey = `${drillKey}::${mng3}`;
+          const subOpen = bridgeSubDrillKeys.has(subCkey);
+          if(hasChildren) {
+            // Show MNG_3 as a clickable expandable row
+            const subIcon = `<span style="margin-right:6px;opacity:.6;font-size:10px">${subOpen?'▼':'▶'}</span>`;
+            rows += `<tr data-sckey="${subCkey.replace(/"/g,'&quot;')}"
+              onclick="toggleBridgeSubDrill(this.dataset.sckey)"
+              style="background:var(--bg);border-top:1px solid var(--border);cursor:pointer">
+              <td style="padding:5px 14px 5px 24px;font-size:11px;font-weight:700">${subIcon}${mng3}</td>
               <td style="font-size:11px;font-weight:700;color:${gc}">${fmtVal(gDelta,true)}</td>
               <td></td>
             </tr>`;
-          }
-          for(const {label, vA, vB, delta: d} of items) {
+            if(subOpen) {
+              for(const {label, vA, vB, delta: d} of items) {
+                const dc = d >= 0 ? COL_G : COL_R;
+                rows += `<tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:4px 14px 4px 40px;font-size:11px;font-style:italic">${label}</td>
+                  <td style="font-size:11px;color:${dc};font-weight:700">${fmtVal(d,true)}</td>
+                  <td style="font-size:11px;color:var(--muted)">${fmtVal(vA,false)} · ${fmtVal(vB,false)}</td>
+                </tr>`;
+              }
+            }
+          } else {
+            // Single item, no nesting needed — show directly as leaf row
+            const {label, vA, vB, delta: d} = items[0] || {label:mng3, vA:0, vB:0, delta:gDelta};
             const dc = d >= 0 ? COL_G : COL_R;
-            const indent = showGrpHdr ? '36px' : '28px';
-            rows += `<tr style="border-bottom:1px solid var(--border)">
-              <td style="padding:4px 14px 4px ${indent};font-size:11px">${label}</td>
+            rows += `<tr style="border-bottom:1px solid var(--border);border-top:1px solid var(--border)">
+              <td style="padding:5px 14px 5px 28px;font-size:11px">${label}</td>
               <td style="font-size:11px;color:${dc};font-weight:700">${fmtVal(d,true)}</td>
               <td style="font-size:11px;color:var(--muted)">${fmtVal(vA,false)} · ${fmtVal(vB,false)}</td>
             </tr>`;
