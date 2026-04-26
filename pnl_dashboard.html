@@ -1769,8 +1769,7 @@ fetch('data_pnl.json?t=' + Date.now())
       rowCount    = raw.row_count || data.length;
     }
     allData = data;
-    document.getElementById('lastUpd').textContent =
-      'Atualizado: ' + lastUpdated + ' · ' + rowCount.toLocaleString('pt-BR') + ' linhas';
+    document.getElementById('lastUpd').textContent = 'Bases Sincronizadas Online';
     initFilters();
     initCompSelects();
     render();
