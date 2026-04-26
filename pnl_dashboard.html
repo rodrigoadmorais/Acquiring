@@ -1338,9 +1338,10 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <div class="fg">
       <label>Comparar</label>
       <div class="bg" id="mbuCompGrp">
-        <button class="on" data-comp="plan_fcast" onclick="setMbuComp(this)">Plan / Fcast</button>
-        <button            data-comp="plan_real"  onclick="setMbuComp(this)">Plan / Real</button>
-        <button            data-comp="fcast_real" onclick="setMbuComp(this)">Fcast / Real</button>
+        <button class="on" data-comp="plan_fcast"   onclick="setMbuComp(this)">Plan / Fcst</button>
+        <button            data-comp="plan_real"    onclick="setMbuComp(this)">Plan / Real</button>
+        <button            data-comp="previa_fcst"  onclick="setMbuComp(this)">Prévia / Fcst</button>
+        <button            data-comp="previa_real"  onclick="setMbuComp(this)">Prévia / Real</button>
       </div>
     </div>
     <div class="fg">
@@ -1648,7 +1649,7 @@ const MN = {
 
 // short labels for scenarios
 const CEN_LABEL = {
-  'Actual Sin Distribuir':                         'Act SD',
+  'Actual Sin Distribuir':                         'Prévia',
   'Realizado':                                     'Real',
   'Plan':                                          'Plan',
   'Forecast':                                      'Fcst',
@@ -1804,7 +1805,7 @@ function initFilters() {
     const el = document.createElement('span');
     const isDefault = selCen.includes(c);
     el.className = 'pill' + (isDefault ? ' on' : '');
-    el.textContent = c;
+    el.textContent = CEN_LABEL[c] || c;
     el.dataset.c = c;
     el.onclick = () => {
       const on = el.classList.toggle('on');
@@ -3662,9 +3663,10 @@ function renderMbuTab() {
 
   // Resolve scenario labels from mbuComp
   const compMap = {
-    plan_fcast:  { cenA:'Plan', cenAFill:null,        cenB:'Forecast', cenBFill:'Realizado', lblA:'Plan', lblB:'Fcast' },
-    plan_real:   { cenA:'Plan', cenAFill:null,        cenB:'Realizado',cenBFill:null,        lblA:'Plan', lblB:'Real'  },
-    fcast_real:  { cenA:'Forecast', cenAFill:'Realizado', cenB:'Realizado',cenBFill:null,    lblA:'Fcast',lblB:'Real'  },
+    plan_fcast:  { cenA:'Plan',                  cenAFill:null,       cenB:'Forecast',           cenBFill:'Realizado', lblA:'Plan',   lblB:'Fcst'  },
+    plan_real:   { cenA:'Plan',                  cenAFill:null,       cenB:'Realizado',           cenBFill:null,        lblA:'Plan',   lblB:'Real'  },
+    previa_fcst: { cenA:'Actual Sin Distribuir', cenAFill:null,       cenB:'Forecast',           cenBFill:'Realizado', lblA:'Prévia', lblB:'Fcst'  },
+    previa_real: { cenA:'Actual Sin Distribuir', cenAFill:null,       cenB:'Realizado',           cenBFill:null,        lblA:'Prévia', lblB:'Real'  },
   };
   const comp = compMap[mbuComp] || compMap.plan_fcast;
 
