@@ -5461,13 +5461,18 @@ function buildBridgeSegments(dataA, dataB, metric) {
     segments.push({ label: 'Volume (TPV)', value: volEffect, type: 'effect', group: 'vol',
       meta: { tpvDelta, rateA: rateA * 100 } });
 
-  // Rate bar: always use trEffect (the pure rate component) in both modes.
-  // In % TPV mode the volume bar is hidden and its portion lands in the Outros safety bar,
-  // but the direction of the rate bar is consistent with absolute mode.
-  // Meta always uses the TRUE rate of B (trB / tpvB) so summary text is unambiguous.
-  if(Math.abs(trEffect) > 0.01)
-    segments.push({ label: 'Take Rate %', value: trEffect, type: 'effect', group: 'tr',
-      meta: { rateA: rateA * 100, rateB: rateB !== null ? rateB * 100 : null, tpvB } });
+  // Take Rate bar:
+  //   % TPV mode → trDelta (net TR change vs tpvA base) so the bar matches
+  //               the Var column of the P&L panel (internally consistent).
+  //   R$ mode   → trEffect (pure rate component; volume shown separately).
+  // Meta always uses the TRUE rate of B (trB/tpvB) in both modes so the
+  // summary "taxa variou de X% para Y%" is always unambiguous and identical.
+  const trSegValue = bridgeDisplayPct ? trDelta : trEffect;
+  const rateBTrue  = rateB !== null ? rateB * 100 : null; // trB/tpvB × 100 — always
+  if(Math.abs(trSegValue) > 0.01)
+    segments.push({ label: 'Take Rate %', value: trSegValue, type: 'effect', group: 'tr',
+      meta: { rateA: rateA * 100, rateB: rateBTrue, tpvB,
+              isPctMode: bridgeDisplayPct } });
 
   // Below-TR lines (absolute delta), depending on bridge metric
   const BELOW_TR = [];
@@ -5613,12 +5618,19 @@ function generateBridgeSummary(segments, tpvA, tpvB, fmtFn, udLbl, metricLabel, 
       (tpvGrowth ? ` (TPV ${Number(tpvGrowth) >= 0 ? '+' : ''}${tpvGrowth}%)` : ''));
   }
   if(trSeg) {
-    const dir = trSeg.value >= 0 ? 'positivo' : 'negativo';
     const rateMeta = trSeg.meta;
-    const ppStr = (rateMeta && rateMeta.rateA != null && rateMeta.rateB != null)
+    const rateStr = (rateMeta && rateMeta.rateA != null && rateMeta.rateB != null)
       ? ` — taxa variou de ${rateMeta.rateA.toFixed(2)}% para ${rateMeta.rateB.toFixed(2)}%`
       : '';
-    driverParts.push(`efeito de taxa de Take Rate ${dir} de ${numSpan(trSeg.value, fmtFn(trSeg.value, true))}${ppStr}`);
+    if(rateMeta && rateMeta.isPctMode) {
+      // In % TPV mode the bar = net TR change (vol+rate combined), so avoid the word
+      // "efeito de taxa" which implies rate-only.
+      const dir = trSeg.value >= 0 ? 'positivo' : 'negativo';
+      driverParts.push(`contribuição líquida de Take Rate ${dir} de ${numSpan(trSeg.value, fmtFn(trSeg.value, true))}${rateStr}`);
+    } else {
+      const dir = trSeg.value >= 0 ? 'positivo' : 'negativo';
+      driverParts.push(`efeito de taxa de Take Rate ${dir} de ${numSpan(trSeg.value, fmtFn(trSeg.value, true))}${rateStr}`);
+    }
   }
   if(driverParts.length)
     lines.push('Dos drivers de monetização: ' + driverParts.join('; ') + '.');
