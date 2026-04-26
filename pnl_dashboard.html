@@ -693,7 +693,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 #bridgesAISummary .ai-header{font-size:9.5px;font-weight:700;text-transform:uppercase;
   letter-spacing:.9px;color:#7A6200;margin-bottom:5px;display:flex;align-items:center;gap:6px}
 [data-theme=dark] #bridgesAISummary .ai-header{color:#C9A800}
-#bridgesAISummary .ai-header .claude-icon{width:14px;height:14px;flex-shrink:0;opacity:.85}
+#bridgesAISummary .ai-header .ai-icon{width:13px;height:13px;flex-shrink:0}
 .bridges-summary table{border-collapse:collapse;width:100%;font-size:12px}
 .bridges-summary th{padding:6px 14px;text-align:right;background:var(--bg);font-size:10px;
   font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
@@ -1113,6 +1113,17 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <button class="btn-hdr"    data-g="annual"    onclick="setEvoGran(this)">Anual</button>
       </div>
     </div>
+    <!-- Range pickers (only in Mensal mode) -->
+    <div id="evoRangeGroup" style="display:none;gap:10px;align-items:flex-end">
+      <div><label>De</label>
+        <select id="evoFromSel" onchange="renderEvoTab()"
+          style="padding:3px 7px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:11px;cursor:pointer"></select>
+      </div>
+      <div><label>Até</label>
+        <select id="evoToSel" onchange="renderEvoTab()"
+          style="padding:3px 7px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);font-size:11px;cursor:pointer"></select>
+      </div>
+    </div>
     <div>
       <label>Unidade</label>
       <div id="evoUnitGrp" style="display:flex;gap:4px">
@@ -1122,6 +1133,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     </div>
     <div class="evo-legend">
       <span class="evo-legend-item"><span class="evo-legend-bar"></span> Realizado</span>
+      <span class="evo-legend-item"><span class="evo-legend-bar" style="background:repeating-linear-gradient(135deg,#FFE600 0,#FFE600 3px,rgba(0,0,0,.15) 3px,rgba(0,0,0,.15) 5px)"></span> Forecast</span>
       <span class="evo-legend-item" style="color:#888"><span class="evo-legend-line"></span> Plan</span>
     </div>
   </div>
@@ -5019,6 +5031,8 @@ function setEvoUnit(btn) {
 function setEvoGran(btn) {
   evoGran = btn.dataset.g;
   document.querySelectorAll('#evoGranGrp button').forEach(b=>b.classList.toggle('on',b===btn));
+  const rangeGrp = document.getElementById('evoRangeGroup');
+  if(rangeGrp) rangeGrp.style.display = evoGran === 'monthly' ? 'flex' : 'none';
   renderEvoTab();
 }
 
@@ -6181,7 +6195,7 @@ function renderBridgesTab() {
     if(summaryHtml) {
       aiSummaryEl.style.display = 'block';
       aiSummaryEl.innerHTML = `
-        <div class="ai-header"><svg class="claude-icon" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.5 0C9.178 0 0 9.178 0 20.5S9.178 41 20.5 41 41 31.822 41 20.5 31.822 0 20.5 0Z" fill="#D97757"/><path d="M27.2 12.5h-3.1l-3.6 8.6-3.6-8.6h-3.1l5.2 12 .5 1.2.5-1.2 7.2-12Z" fill="white"/></svg> Resumo gerado por Claude</div>
+        <div class="ai-header"><svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 1C12 7.075 7.075 12 1 12C7.075 12 12 16.925 12 23C12 16.925 16.925 12 23 12C16.925 12 12 7.075 12 1Z" fill="#1a73e8"/></svg> Resumo executivo</div>
         ${summaryHtml}`;
     } else {
       aiSummaryEl.style.display = 'none';
@@ -6370,6 +6384,18 @@ async function captureTableImg(tableId, title, btn) {
   }
 }
 
+// Create diagonal hatch canvas pattern for forecast bars
+function _evoHatchPattern(color, bg) {
+  const c = document.createElement('canvas'); c.width=8; c.height=8;
+  const x = c.getContext('2d');
+  x.fillStyle = bg || color;
+  x.fillRect(0,0,8,8);
+  x.strokeStyle = 'rgba(0,0,0,0.22)';
+  x.lineWidth = 1.5;
+  x.beginPath(); x.moveTo(0,8); x.lineTo(8,0); x.stroke();
+  return x.createPattern(c, 'repeat');
+}
+
 function renderEvoTab() {
   if(!allData || !allData.length) return;
   buildEvoBUSel();
@@ -6384,7 +6410,10 @@ function renderEvoTab() {
   const planMeses = [...new Set(
     allData.filter(d=>d.Cenario==='Plan'&&buses.includes(d.Product)).map(d=>d.MES)
   )].sort();
-  const allMeses = [...new Set([...realMeses,...planMeses])].sort();
+  const fcstMeses = [...new Set(
+    allData.filter(d=>d.Cenario==='Forecast'&&buses.includes(d.Product)).map(d=>d.MES)
+  )].sort();
+  const allMeses = [...new Set([...realMeses,...planMeses,...fcstMeses])].sort();
 
   // Build period keys (respects granularity)
   function toPeriodKey(m) {
@@ -6393,8 +6422,37 @@ function renderEvoTab() {
     if(evoGran==='annual')    return String(yr);
     return m;
   }
-  const allPeriods = [...new Set(allMeses.map(toPeriodKey))];
+  let allPeriods = [...new Set(allMeses.map(toPeriodKey))];
+
+  // ── Monthly range filter ──
+  if(evoGran === 'monthly') {
+    const fromSel = document.getElementById('evoFromSel');
+    const toSel   = document.getElementById('evoToSel');
+    // Populate selects (only months that appear in data)
+    if(fromSel && toSel) {
+      const curFrom = fromSel.value;
+      const curTo   = toSel.value;
+      fromSel.innerHTML = allPeriods.map(p=>`<option value="${p}">${evoPeriodLabel(p)}</option>`).join('');
+      toSel.innerHTML   = allPeriods.map(p=>`<option value="${p}">${evoPeriodLabel(p)}</option>`).join('');
+      // Restore or default: from = 12 months ago, to = last
+      const defFrom = allPeriods[Math.max(0, allPeriods.length - 13)];
+      const defTo   = allPeriods[allPeriods.length - 1];
+      fromSel.value = allPeriods.includes(Number(curFrom)||curFrom) ? (Number(curFrom)||curFrom) : defFrom;
+      toSel.value   = allPeriods.includes(Number(curTo)||curTo)     ? (Number(curTo)||curTo)     : defTo;
+      // Filter periods by range
+      const fromVal = Number(fromSel.value) || fromSel.value;
+      const toVal   = Number(toSel.value)   || toSel.value;
+      const fi = allPeriods.indexOf(fromVal), ti = allPeriods.indexOf(toVal);
+      if(fi !== -1 && ti !== -1 && ti >= fi)
+        allPeriods = allPeriods.slice(fi, ti + 1);
+    }
+  }
+
   const labels = allPeriods.map(evoPeriodLabel);
+
+  // Determine the last Realizado period key (for YTG threshold)
+  const lastRealPeriod = realMeses.length
+    ? toPeriodKey(realMeses[realMeses.length - 1]) : null;
 
   // Destroy old charts
   Object.values(_evoCharts).forEach(c=>{ try{c.destroy()}catch(e){} });
@@ -6403,32 +6461,52 @@ function renderEvoTab() {
   const grid = document.getElementById('evoGrid');
   grid.innerHTML = '';
 
+  // Hatch pattern (created once per render)
+  let _hatchPos = null, _hatchNeg = null;
+  function hatchPos() { return _hatchPos || (_hatchPos = _evoHatchPattern('#FFE600')); }
+  function hatchNeg() { return _hatchNeg || (_hatchNeg = _evoHatchPattern('#C62828')); }
+
   EVO_METRICS.forEach(({key, abbr, label, takerate}) => {
     // Take Rate: only show for Acquiring-related BUs
     if(takerate && !EVO_ACQUIRING_BUS.has(evoBU)) return;
 
-    // Aggregate by period
+    // Aggregate by period — Plan uses null when no data (avoids phantom zeros)
     const realByPeriod = new Map();
     const planByPeriod = new Map();
-    allPeriods.forEach(p => { realByPeriod.set(p, null); planByPeriod.set(p, 0); });
+    const fcstByPeriod = new Map();
+    allPeriods.forEach(p => { realByPeriod.set(p, null); planByPeriod.set(p, null); fcstByPeriod.set(p, null); });
 
     for(const m of allMeses) {
       const p = toPeriodKey(m);
+      if(!allPeriods.includes(p)) continue; // outside range
       if(realMeses.includes(m)) {
         const v = takerate ? evoGetTakeRate(evoBU, m, 'Realizado') : evoGetVal(evoBU, m, 'Realizado', key);
-        realByPeriod.set(p, (realByPeriod.get(p) || 0) + v);
+        realByPeriod.set(p, (realByPeriod.get(p) ?? 0) + v);
       }
-      const vp = takerate ? evoGetTakeRate(evoBU, m, 'Plan') : evoGetVal(evoBU, m, 'Plan', key);
-      planByPeriod.set(p, (planByPeriod.get(p) || 0) + vp);
+      if(planMeses.includes(m)) {
+        const vp = takerate ? evoGetTakeRate(evoBU, m, 'Plan') : evoGetVal(evoBU, m, 'Plan', key);
+        planByPeriod.set(p, (planByPeriod.get(p) ?? 0) + vp);
+      }
+      // Forecast: only for periods beyond last Realizado
+      if(fcstMeses.includes(m) && !realMeses.includes(m)) {
+        const vf = takerate ? evoGetTakeRate(evoBU, m, 'Forecast') : evoGetVal(evoBU, m, 'Forecast', key);
+        fcstByPeriod.set(p, (fcstByPeriod.get(p) ?? 0) + vf);
+      }
     }
 
-    const realVals = allPeriods.map(p => {
-      const v = realByPeriod.get(p);
-      return v === null ? null : v / ud;
+    // Build bar values: real where available, forecast where not
+    const barVals = allPeriods.map(p => {
+      const r = realByPeriod.get(p);
+      if(r !== null) return r / ud;
+      const f = fcstByPeriod.get(p);
+      return f !== null ? f / ud : null;
     });
-    const planVals = allPeriods.map(p => planByPeriod.get(p) / ud);
+    const planVals = allPeriods.map(p => {
+      const v = planByPeriod.get(p);
+      return v !== null ? v / ud : null;
+    });
 
-    if(realVals.every(v=>v===null||v===0) && planVals.every(v=>v===0)) return;
+    if(barVals.every(v=>v===null||v===0) && planVals.every(v=>v===null||v===0)) return;
 
     const displayLabel = label || key;
     const card = document.createElement('div');
@@ -6441,41 +6519,43 @@ function renderEvoTab() {
       <canvas id="evoC_${abbr}"></canvas>`;
     grid.appendChild(card);
 
-    // Bars: yellow for positive, red for negative
-    const barColors = realVals.map(v => v===null ? 'transparent' : v>=0 ? '#FFE600' : '#C62828');
+    // Bar colors: solid for Realizado, hatched for Forecast, transparent for null
+    const barColors = allPeriods.map((p, i) => {
+      const v = barVals[i];
+      if(v === null) return 'transparent';
+      const isFcst = realByPeriod.get(p) === null && fcstByPeriod.get(p) !== null;
+      if(isFcst) return v >= 0 ? hatchPos() : hatchNeg();
+      return v >= 0 ? '#FFE600' : '#C62828';
+    });
 
-    // Plugin: rótulos acima das barras (Realizado) + junto aos pontos (Plan)
+    // Plugin: rótulos acima das barras + junto aos pontos (Plan)
     const barLabelPlugin = {
       id:'barLabels',
       afterDatasetsDraw(chart) {
         const { ctx } = chart;
         ctx.save();
-        // ── Bar labels (Realizado) ────────────────────────
+        // ── Bar labels ────────────────────────────────────
         const metaBar = chart.getDatasetMeta(0);
         if(metaBar && metaBar.type === 'bar') {
           ctx.font = '700 9px system-ui,sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'bottom';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
           metaBar.data.forEach((bar, i) => {
             const v = chart.data.datasets[0].data[i];
             if(v === null || v === undefined || v === 0) return;
-            const lbl = v.toLocaleString('pt-BR',{maximumFractionDigits:0});
             ctx.fillStyle = v < 0 ? '#C62828' : '#1a1a1a';
-            ctx.fillText(lbl, bar.x, bar.y - 2);
+            ctx.fillText(v.toLocaleString('pt-BR',{maximumFractionDigits:0}), bar.x, bar.y - 2);
           });
         }
-        // ── Plan line labels ─────────────────────────────
+        // ── Plan line labels ──────────────────────────────
         const metaLine = chart.getDatasetMeta(1);
         if(metaLine && metaLine.type === 'line') {
           ctx.font = '500 8.5px system-ui,sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'bottom';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
           metaLine.data.forEach((point, i) => {
             const v = chart.data.datasets[1].data[i];
             if(v === null || v === undefined || v === 0) return;
-            const lbl = v.toLocaleString('pt-BR',{maximumFractionDigits:0});
             ctx.fillStyle = '#1a1a1a';
-            ctx.fillText(lbl, point.x, point.y - 5);
+            ctx.fillText(v.toLocaleString('pt-BR',{maximumFractionDigits:0}), point.x, point.y - 5);
           });
         }
         ctx.restore();
@@ -6489,11 +6569,11 @@ function renderEvoTab() {
       data: {
         labels,
         datasets: [
-          { label:'Realizado', data:realVals,
+          { label:'Realizado / Forecast', data:barVals,
             backgroundColor:barColors, borderRadius:4, order:2 },
           { label:'Plan', data:planVals, type:'line',
             borderColor:'#1a1a1a', backgroundColor:'transparent',
-            borderWidth:2, borderDash:[5,3],
+            borderWidth:2, borderDash:[5,3], spanGaps:false,
             pointBackgroundColor:'#1a1a1a', pointBorderColor:'#1a1a1a', pointRadius:3,
             tension:0.25, order:1 }
         ]
@@ -6507,7 +6587,11 @@ function renderEvoTab() {
             label: ctx => {
               const v = ctx.parsed.y;
               if(v===null) return null;
-              return `${ctx.dataset.label}: ${v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} ${udLbl}`;
+              const p  = allPeriods[ctx.dataIndex];
+              const isFcst = p && realByPeriod.get(p) === null && fcstByPeriod.get(p) !== null;
+              const lbl = ctx.datasetIndex === 0
+                ? (isFcst ? 'Forecast' : 'Realizado') : 'Plan';
+              return `${lbl}: ${v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} ${udLbl}`;
             }
           }}
         },
