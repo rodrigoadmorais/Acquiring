@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>P&L Brasil</title>
+<title>MBL P&L Managerial - Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -63,11 +63,11 @@ body{font-family:'Nunito','Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe
      display:flex;align-items:center;justify-content:space-between;
      position:sticky;top:0;z-index:400;
      box-shadow:0 1px 0 rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.08)}
-.hdr h1{font-size:15px;font-weight:800;color:var(--meli-blue);letter-spacing:-.5px;
-        display:flex;align-items:center;gap:10px}
-.hdr h1::before{content:'';width:16px;height:16px;
-                background:var(--meli-blue);border-radius:3px;
-                display:inline-block;flex-shrink:0}
+.hdr h1{font-size:13.5px;font-weight:800;color:#1a1a1a;letter-spacing:-.3px;
+        display:flex;align-items:center;gap:8px;margin:0}
+.hdr h1::before{display:none}
+.brand-logo{flex-shrink:0;display:block}
+.hdr-divider{width:1px;height:22px;background:rgba(0,0,0,.2);margin:0 2px}
 .hdr-r{display:flex;gap:8px;align-items:center}
 .upd{font-size:11px;color:rgba(0,0,0,.55);font-weight:500;
      background:rgba(0,0,0,.08);padding:3px 10px;border-radius:20px}
@@ -146,19 +146,21 @@ body{font-family:'Nunito','Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe
 #pnlTable thead tr:first-child th:last-child{border-radius:0 var(--r-md) 0 0}
 #pnlTable tbody tr:last-child td:first-child{border-radius:0 0 0 var(--r-md)}
 #pnlTable tbody tr:last-child td:last-child{border-radius:0 0 var(--r-md) 0}
-#pnlTable th{background:#FFE600;color:#1a1a1a;padding:10px 12px;
+#pnlTable th{background:#fff;color:#1a1a1a;padding:10px 12px;
              text-align:right;white-space:nowrap;font-size:11px;font-weight:700;
              position:sticky;top:0;z-index:100;
-             border-bottom:2px solid #D0B800;letter-spacing:.4px}
+             border-bottom:3px solid #FFE600;letter-spacing:.4px}
 #pnlTable th.sticky-col{text-align:left;position:sticky;left:0;z-index:200;
-                        background:#FFE600;min-width:260px;max-width:340px;
+                        background:#fff;min-width:260px;max-width:340px;
                         font-size:12px;letter-spacing:.3px}
-#pnlTable th.grp-hdr{background:#1a1a1a;color:#FFE600;border-left:2px solid #000}
-#pnlTable th.col-total-hdr{background:#111;color:#FFE600;border-left:2px solid rgba(0,0,0,.3)}
-#pnlTable th.col-var-hdr{background:#2c2c2c;color:#fff;border-left:1px solid rgba(0,0,0,.2)}
-[data-theme=dark] #pnlTable th.grp-hdr{background:#000;border-left-color:#333}
-[data-theme=dark] #pnlTable th.col-total-hdr{background:#111;border-left-color:rgba(0,0,0,.4)}
-[data-theme=dark] #pnlTable th.col-var-hdr{background:#1a1a1a}
+#pnlTable th.grp-hdr{background:#f5f5f2;color:#1a1a1a;border-left:3px solid #FFE600}
+#pnlTable th.col-total-hdr{background:#f8f8f5;color:#1a1a1a;border-left:2px solid rgba(200,170,0,.25)}
+#pnlTable th.col-var-hdr{background:#f2f2ef;color:#555;border-left:1px solid rgba(0,0,0,.06)}
+[data-theme=dark] #pnlTable th{background:var(--bg-2);border-bottom-color:#333}
+[data-theme=dark] #pnlTable th.sticky-col{background:var(--bg-2)}
+[data-theme=dark] #pnlTable th.grp-hdr{background:#1a1a00;color:#FFE600;border-left-color:#333}
+[data-theme=dark] #pnlTable th.col-total-hdr{background:#111;color:#FFE600;border-left-color:rgba(0,0,0,.4)}
+[data-theme=dark] #pnlTable th.col-var-hdr{background:#1a1a1a;color:#aaa}
 
 #pnlTable td{padding:5px 12px;border-bottom:1px solid var(--border);
              white-space:nowrap;text-align:right}
@@ -170,20 +172,20 @@ body{font-family:'Nunito','Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe
 
 /* ── Row levels ── */
 .row-l1 td{
-  background:#FFE600;color:#1a1a1a;
+  background:#fff;color:#1a1a1a;
   font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;
-  border-top:3px solid #D9C200;border-bottom:1px solid #D9C200;
+  border-top:3px solid #FFE600;border-bottom:1px solid #e8e8e2;
   padding-top:8px;padding-bottom:8px}
-.row-l1 td.sticky-col{background:#FFE600;color:#1a1a1a}
+.row-l1 td.sticky-col{background:#FFFDE7;color:#1a1a1a;border-left:3px solid #FFE600}
 [data-theme=dark] .row-l1 td{background:#111;color:#FFE600;border-color:#000}
 [data-theme=dark] .row-l1 td.sticky-col{background:#111}
 
-.row-l1 .xarr{color:#1a1a1a}
+.row-l1 .xarr{color:#888}
 
 .row-l2 td{
-  background:#FFFDE7;font-weight:700;font-size:12px;color:#1a1a1a;
-  border-bottom:1px solid #EDE050}
-.row-l2 td.sticky-col{background:#FFFDE7;border-left:3px solid #1a1a1a}
+  background:#fafaf7;font-weight:700;font-size:12px;color:#1a1a1a;
+  border-bottom:1px solid #eeeeea}
+.row-l2 td.sticky-col{background:#fafaf7;border-left:3px solid #FFE600}
 [data-theme=dark] .row-l2 td{background:#1E1A00;color:#FFE600;border-color:#2E2800}
 [data-theme=dark] .row-l2 td.sticky-col{background:#1E1A00;border-left-color:#FFE600}
 
@@ -306,7 +308,7 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .tab-btn.on{color:#1a1a1a;border-bottom-color:#FFE600;font-weight:700;background:#FFFDE7}
 
 /* ── CPA / MPOS panel ── */
-.cpa-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.cpa-panel{flex:1 1 0;min-height:0;display:flex;flex-direction:column;background:#fff}
 .cpa-filter-bar{background:var(--card);border-bottom:1px solid var(--border);
                 padding:10px 24px;display:flex;gap:14px;flex-wrap:wrap;
                 align-items:flex-end;flex-shrink:0}
@@ -437,8 +439,8 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .evo-filter-bar select:hover{border-color:var(--border-strong)}
 .evo-legend{display:flex;gap:14px;align-items:center;margin-left:auto}
 .evo-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
-.evo-legend-bar{width:14px;height:10px;border-radius:3px;background:#1a1a1a}
-.evo-legend-line{width:20px;height:2px;background:#FFE600;position:relative}
+.evo-legend-bar{width:14px;height:10px;border-radius:3px;background:#FFE600;border:1px solid #D9C200}
+.evo-legend-line{width:20px;height:2px;background:#1a1a1a;position:relative}
 .evo-legend-line::after{content:'';position:absolute;top:-3px;left:50%;
   transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:#FFE600}
 .evo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));
@@ -657,10 +659,12 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 /* ── Bridges tab ── */
 .bridges-panel{flex:1 1 0;min-height:0;overflow-y:auto;background:var(--bg)}
 .bridges-filter-bar{background:var(--card);border-bottom:1px solid var(--border);
-  padding:10px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;
+  padding:5px 18px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;
   position:sticky;top:0;z-index:50;box-shadow:var(--sh-xs)}
-.bridges-filter-bar label{font-size:10px;font-weight:700;color:var(--muted);
-  text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px;white-space:nowrap}
+.bridges-filter-bar label{font-size:9.5px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:1px;white-space:nowrap}
+.bridges-filter-bar select{padding:3px 6px!important;font-size:11px!important;min-width:80px!important}
+.bridges-filter-bar .bg button{padding:3px 9px;font-size:11px}
 .bridges-filter-sep{width:1px;background:var(--border);margin:0 4px;align-self:stretch}
 .bridges-chart-wrap{background:var(--card);border:1px solid var(--border);
   border-radius:var(--r-lg);box-shadow:var(--sh-md);
@@ -674,7 +678,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 .bridges-summary{background:var(--card);border:1px solid var(--border);
   border-top:none;border-radius:0 0 var(--r-lg) var(--r-lg);box-shadow:var(--sh-sm);
   margin:0;padding:18px 20px;overflow-x:auto}
-#bridgesAISummary{margin:16px 24px 0;
+#bridgesAISummary{margin:0;
   background:linear-gradient(135deg,#fffde7 0%,#fff9d6 60%,#fffbe0 100%);
   border:1px solid rgba(220,180,0,.35);border-radius:var(--r-lg);
   box-shadow:0 2px 12px rgba(200,160,0,.10),0 1px 3px rgba(0,0,0,.04);
@@ -792,7 +796,22 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 
 <!-- ── Header ── -->
 <header class="hdr">
-  <h1>P&amp;L Brasil</h1>
+  <h1>
+    <!-- Mercado Libre logo badge -->
+    <svg class="brand-logo" viewBox="0 0 30 28" width="30" height="28" aria-label="Mercado Livre">
+      <rect width="30" height="28" rx="5" fill="#1a1a1a"/>
+      <text x="15" y="20" text-anchor="middle" fill="#FFE600"
+        font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="14" letter-spacing="-0.5">ML</text>
+    </svg>
+    <!-- Mercado Pago logo badge -->
+    <svg class="brand-logo" viewBox="0 0 30 28" width="30" height="28" aria-label="Mercado Pago">
+      <rect width="30" height="28" rx="5" fill="#009EE3"/>
+      <text x="15" y="20" text-anchor="middle" fill="#fff"
+        font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="14" letter-spacing="-0.5">MP</text>
+    </svg>
+    <span class="hdr-divider"></span>
+    MBL P&amp;L Managerial - Analytics
+  </h1>
   <div class="hdr-r">
     <span class="upd" id="lastUpd"></span>
     <button class="btn-hdr" id="btnTheme" onclick="toggleTheme()">Dark</button>
@@ -1143,6 +1162,10 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">P&amp;L</label>
         <button class="cpa-cfg-btn" onclick="openLcm('cpa')">⚙ Editar P&amp;L</button>
       </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Print</label>
+        <button class="cpa-cfg-btn" onclick="printDashTable('cpaTable','CPA')" title="Copiar tabela para impressão">🖨 Imprimir</button>
+      </div>
     </div>
   </div>
   <div class="cpa-tbl-wrap">
@@ -1205,8 +1228,10 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     </div>
     <!-- ── MPOS Light section (merged below MPOS table) ── -->
     <div style="margin-top:28px;padding-top:6px;border-top:2px solid var(--border)">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
-                  color:var(--muted);padding:0 4px 10px">MPOS Light</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 10px">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)">MPOS Light</span>
+        <button class="cpa-cfg-btn" onclick="printDashTable('mposLightTable','MPOS Light')" title="Imprimir tabela MPOS Light" style="font-size:10.5px;padding:3px 9px">🖨 Imprimir</button>
+      </div>
       <div class="tbl-outer">
         <table class="cpa-table" id="mposLightTable">
           <thead id="mposLightHead"></thead>
@@ -1404,8 +1429,6 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       </button>
     </div>
   </div>
-  <!-- AI Summary (above layout) -->
-  <div id="bridgesAISummary" style="display:none"></div>
   <!-- Two-column layout: P&L left, chart right -->
   <div class="bridge-layout">
     <!-- Left: P&L comparison -->
@@ -1414,12 +1437,14 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <span>P&amp;L — Comparação</span>
         <span class="bpnl-scen" id="bpnlScenLabel"></span>
       </div>
-      <div id="bridgePnlContent" style="overflow-y:auto;max-height:calc(100vh - 260px);flex:1">
+      <div id="bridgePnlContent" style="overflow-y:auto;max-height:calc(100vh - 240px);flex:1">
         <div class="bpnl-empty">Selecione os cenários para ver o P&amp;L</div>
       </div>
     </div>
-    <!-- Right: bridge chart + summary -->
+    <!-- Right: AI summary + bridge chart + data summary -->
     <div class="bridge-chart-side">
+      <!-- AI Summary sits here, above the chart only -->
+      <div id="bridgesAISummary" style="display:none;margin-bottom:10px"></div>
       <div class="bridges-chart-wrap">
         <div class="bridges-legend" id="bridgesLegend"></div>
         <div id="bridgesChartMsg" class="bridges-chart-msg" style="display:none"></div>
@@ -5678,8 +5703,7 @@ function renderBridgePnlTable(dataA, dataB, ud) {
   const TR_LINES = [
     {id:'gr',  label:'Gross Revenues',         k1s:['Product Monetization','Net Monetization'], k2s:['Gross Revenues'],              expand:true },
     {id:'cf',  label:'Coll Fee',               k1s:['Variable Contribution'],                   k2s:['Collection Fees'],             expand:false},
-    {id:'fc',  label:'Fin Cost',               k1s:['Net Monetization','Product Monetization'], k2s:['Theoretical financing cost'],  expand:false},
-    {id:'hii', label:'Holding Interest Income',k1s:['Net Monetization'],                        k2s:['Holding Interest Income'],     expand:false},
+    {id:'fc',  label:'Fin Cost',               k1s:['Net Monetization','Product Monetization'], k2s:['Theoretical financing cost','Holding Interest Income'], expand:true },
     {id:'st',  label:'Sales Taxes',            k1s:['Net Monetization','Product Monetization'], k2s:['Sales Taxes'],                 expand:false},
   ];
   const VC_LINES = [
@@ -5850,10 +5874,10 @@ function renderBridgesTab() {
   const udLbl = bridgeDisplayPct ? 'pp' : (bridgeUnitDiv >= 1e6 ? 'R$ M' : bridgeUnitDiv >= 1e3 ? 'R$ mil' : 'R$');
 
   // ── Auto-expand the metric matching the bridge selection ──
-  // Auto-expand the primary drill line for the selected bridge metric
-  const METRIC_TO_ROW = {'Take Rate':'gr', 'VC':'ovc', 'DC':'cpa', 'BM':'opex'};
+  // Auto-expand the primary drill line for the selected bridge metric (BM excluded — too noisy)
+  const METRIC_TO_ROW = {'Take Rate':'gr', 'VC':'ovc', 'DC':'cpa'};
   const autoId = METRIC_TO_ROW[bridgeMetric];
-  if(autoId) bridgePnlExpanded.add(autoId); // always open the primary line for current metric
+  if(autoId) bridgePnlExpanded.add(autoId);
 
   // ── Render P&L comparison table ──
   renderBridgePnlTable(dataA, dataB, ud);
@@ -6235,6 +6259,34 @@ function renderBridgesTab() {
     </table>`;
 }
 
+// ── Print a table to a clean white window ────────────────────────────────
+function printDashTable(tableId, title) {
+  const el = document.getElementById(tableId);
+  if(!el) return;
+  // Collect all inline <style> from the page so table classes render correctly
+  const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n');
+  const w = window.open('', '_blank', 'width=1400,height=900');
+  if(!w) { alert('Permita pop-ups para imprimir.'); return; }
+  w.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="utf-8">
+    <title>${title}</title>
+    <style>${css}</style>
+    <style>
+      html,body{margin:0;padding:16px 20px;background:#fff!important;font-family:inherit}
+      h2{font-size:13px;font-weight:700;color:#555;margin:0 0 12px;letter-spacing:.4px;text-transform:uppercase}
+      .tbl-outer{box-shadow:none!important;border:1px solid #eee!important;border-radius:6px;overflow:hidden}
+      table{font-size:11px}
+      th{font-size:10px}
+      @media print{body{padding:8px 12px}.tbl-outer{border:none!important}}
+    </style>
+  </head><body>
+    <h2>${title}</h2>
+    <div class="tbl-outer">${el.outerHTML}</div>
+  </body></html>`);
+  w.document.close();
+  w.onload = () => { w.focus(); w.print(); };
+}
+
 function renderEvoTab() {
   if(!allData || !allData.length) return;
   buildEvoBUSel();
@@ -6306,26 +6358,43 @@ function renderEvoTab() {
       <canvas id="evoC_${abbr}"></canvas>`;
     grid.appendChild(card);
 
-    const barColors = realVals.map(v => v===null ? 'transparent' : v>=0 ? '#1a1a1a' : '#C62828');
+    // Bars: yellow for positive, red for negative
+    const barColors = realVals.map(v => v===null ? 'transparent' : v>=0 ? '#FFE600' : '#C62828');
 
-    // Plugin inline: rótulos de dados acima das barras (sem dependência externa)
+    // Plugin: rótulos acima das barras (Realizado) + junto aos pontos (Plan)
     const barLabelPlugin = {
       id:'barLabels',
       afterDatasetsDraw(chart) {
-        const meta = chart.getDatasetMeta(0);
-        if(!meta || meta.type !== 'bar') return;
         const { ctx } = chart;
         ctx.save();
-        ctx.font = '600 9px system-ui,sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        meta.data.forEach((bar, i) => {
-          const v = chart.data.datasets[0].data[i];
-          if(v === null || v === undefined || v === 0) return;
-          const lbl = v.toLocaleString('pt-BR',{maximumFractionDigits:0});
-          ctx.fillStyle = v < 0 ? '#C62828' : '#444';
-          ctx.fillText(lbl, bar.x, bar.y - 2);
-        });
+        // ── Bar labels (Realizado) ────────────────────────
+        const metaBar = chart.getDatasetMeta(0);
+        if(metaBar && metaBar.type === 'bar') {
+          ctx.font = '700 9px system-ui,sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          metaBar.data.forEach((bar, i) => {
+            const v = chart.data.datasets[0].data[i];
+            if(v === null || v === undefined || v === 0) return;
+            const lbl = v.toLocaleString('pt-BR',{maximumFractionDigits:0});
+            ctx.fillStyle = v < 0 ? '#C62828' : '#1a1a1a';
+            ctx.fillText(lbl, bar.x, bar.y - 2);
+          });
+        }
+        // ── Plan line labels ─────────────────────────────
+        const metaLine = chart.getDatasetMeta(1);
+        if(metaLine && metaLine.type === 'line') {
+          ctx.font = '500 8.5px system-ui,sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          metaLine.data.forEach((point, i) => {
+            const v = chart.data.datasets[1].data[i];
+            if(v === null || v === undefined || v === 0) return;
+            const lbl = v.toLocaleString('pt-BR',{maximumFractionDigits:0});
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillText(lbl, point.x, point.y - 5);
+          });
+        }
         ctx.restore();
       }
     };
@@ -6340,9 +6409,9 @@ function renderEvoTab() {
           { label:'Realizado', data:realVals,
             backgroundColor:barColors, borderRadius:4, order:2 },
           { label:'Plan', data:planVals, type:'line',
-            borderColor:'#FFE600', backgroundColor:'transparent',
+            borderColor:'#1a1a1a', backgroundColor:'transparent',
             borderWidth:2, borderDash:[5,3],
-            pointBackgroundColor:'#FFE600', pointRadius:3,
+            pointBackgroundColor:'#1a1a1a', pointBorderColor:'#1a1a1a', pointRadius:3,
             tension:0.25, order:1 }
         ]
       },
