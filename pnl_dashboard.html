@@ -609,26 +609,26 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 .mbu-table thead tr:first-child th:last-child{border-radius:0 var(--r-md) 0 0}
 .mbu-table tbody tr:last-child td:first-child{border-radius:0 0 0 var(--r-md)}
 .mbu-table tbody tr:last-child td:last-child{border-radius:0 0 var(--r-md) 0}
-.mbu-table th{background:#fff;color:#1a1a1a;padding:8px 10px;text-align:right;
+.mbu-table th{background:#FFFDE7;color:#1a1a1a;padding:8px 10px;text-align:right;
   font-size:10px;font-weight:700;border:none;border-bottom:2px solid #FFE600;letter-spacing:.4px;
   position:sticky;top:0;z-index:100}
 .mbu-table th.mbu-desc-hdr{text-align:left;position:sticky;left:0;z-index:201;
-  min-width:200px;background:#fff;font-size:11px}
+  min-width:200px;background:#FFFDE7;font-size:11px}
 .mbu-table th.mbu-grp-hdr{text-align:center;font-size:11px;border-left:3px solid #FFE600}
-.mbu-table th.mbu-grp-total{background:#FFFDE7;border-left:3px solid #FFE600;
+.mbu-table th.mbu-grp-total{background:#FFF3A3;border-left:3px solid #FFE600;
   text-align:center;font-size:11px;color:#1a1a1a}
 .mbu-table th.mbu-sub-hdr{font-size:10px}
-.mbu-table th.mbu-sub-first{border-left:3px solid #e0e0e0}
+.mbu-table th.mbu-sub-first{border-left:3px solid #FFE600}
 .mbu-table th.mbu-sep,.mbu-table td.mbu-sep{width:7px;min-width:7px;background:var(--bg);padding:0;border:none}
 .mbu-table td{padding:5px 10px;text-align:right;border-bottom:1px solid var(--border)}
 .mbu-table td.mbu-desc-cell{text-align:left;position:sticky;left:0;
   background:var(--sticky);z-index:50;min-width:200px}
 .mbu-table td.mbu-sub-first{border-left:3px solid var(--border)}
-.mbu-row-vol td{background:#FFF9E0;color:#1a1a1a;font-weight:700;font-size:12px;border-top:2px solid #FFE600;border-bottom:1px solid #FFE600}
-.mbu-row-vol td.mbu-desc-cell{background:#FFF9E0;color:#1a1a1a}
-.mbu-row-sec td{background:#fff;color:#1a1a1a;font-weight:700;font-size:10.5px;
-  text-transform:uppercase;letter-spacing:.5px;border-top:2px solid #FFE600;border-bottom:1px solid #e0e0e0;cursor:pointer}
-.mbu-row-sec td.mbu-desc-cell{background:#fff;color:#1a1a1a}
+.mbu-row-vol td{background:#FFF9C4;color:#1a1a1a;font-weight:700;font-size:10.5px;border-top:2px solid #FFE600;border-bottom:1px solid #FFE600}
+.mbu-row-vol td.mbu-desc-cell{background:#FFF9C4;color:#1a1a1a}
+.mbu-row-sec td{background:#FFFDE7;color:#1a1a1a;font-weight:700;font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.5px;border-top:2px solid #FFE600;border-bottom:1px solid #E8D800;cursor:pointer}
+.mbu-row-sec td.mbu-desc-cell{background:#FFFDE7;color:#1a1a1a}
 .mbu-row-sec:hover td{filter:brightness(.96)}
 .mbu-row-item td{background:var(--card);color:var(--text-2);font-size:11px}
 .mbu-row-item td.mbu-desc-cell{background:var(--card);padding-left:32px!important}
@@ -645,9 +645,9 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 .mbu-row-k4:hover td{background:var(--border)!important}
 [data-theme=dark] .mbu-row-k4 td{background:var(--bg-2,#1A2540);color:var(--muted-2)}
 [data-theme=dark] .mbu-row-k4 td.mbu-desc-cell{background:var(--bg-2,#1A2540)}
-.mbu-row-total td{background:#fff;color:#1a1a1a;font-weight:700;
+.mbu-row-total td{background:#FFF3A3;color:#1a1a1a;font-weight:700;
   border-top:2px solid #FFE600;border-bottom:2px solid #FFE600}
-.mbu-row-total td.mbu-desc-cell{background:#fff;border-left:4px solid #FFE600}
+.mbu-row-total td.mbu-desc-cell{background:#FFF3A3;border-left:4px solid #FFE600}
 .mbu-pct-col{color:var(--muted);font-size:10.5px}
 .mbu-dpos{color:#2E7D32!important;font-weight:600}
 .mbu-dneg{color:#C62828!important;font-weight:600}
@@ -655,8 +655,10 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 [data-theme=dark] .mbu-row-sec td,[data-theme=dark] .mbu-row-sec td.mbu-desc-cell,
 [data-theme=dark] .mbu-row-vol td,[data-theme=dark] .mbu-row-vol td.mbu-desc-cell{background:#111;color:#FFE600}
 [data-theme=dark] .mbu-table th,[data-theme=dark] .mbu-table th.mbu-desc-hdr,
-[data-theme=dark] .mbu-table th.mbu-grp-total{background:#1a1a1a;color:#FFE600;border-bottom-color:#FFE600}
-[data-theme=dark] .mbu-row-total td,[data-theme=dark] .mbu-row-total td.mbu-desc-cell{background:#1a1a1a;color:#FFE600}
+[data-theme=dark] .mbu-table th.mbu-grp-total{background:#1E1A00;color:#FFE600;border-bottom-color:#FFE600}
+[data-theme=dark] .mbu-row-total td,[data-theme=dark] .mbu-row-total td.mbu-desc-cell{background:#1E1A00;color:#FFE600}
+[data-theme=dark] .mbu-row-sec td,[data-theme=dark] .mbu-row-sec td.mbu-desc-cell{background:#111;color:#FFE600}
+[data-theme=dark] .mbu-row-vol td,[data-theme=dark] .mbu-row-vol td.mbu-desc-cell{background:#111;color:#FFE600}
 
 /* ── Bridges tab ── */
 .bridges-panel{flex:1 1 0;min-height:0;overflow-y:auto;background:var(--bg)}
@@ -4025,9 +4027,10 @@ function renderMbuTab() {
     }
     // ── Inject Take Rate after Net Monetization (Acquiring only) ──
     if(k1 === 'Net Monetization' && mbuMacro === 'Acquiring') {
+      const trIsOpen = mbuExpanded.has('__takerate__');
       bHtml += `<tr class="mbu-gap"><td colspan="99"></td></tr>`;
-      bHtml += `<tr class="mbu-row-sec">`;
-      bHtml += `<td class="mbu-desc-cell">Take Rate</td>`;
+      bHtml += `<tr class="mbu-row-sec" data-k1="__takerate__" onclick="mbuToggleSec(this)" style="cursor:pointer">`;
+      bHtml += `<td class="mbu-desc-cell"><span style="margin-right:5px">${trIsOpen?'▼':'▶'}</span>Take Rate</td>`;
       bHtml += buCells(colBus,
         bu => {
           const nm = buCum.get(bu)?.get('Net Monetization')||{a:0,b:0};
@@ -4037,6 +4040,27 @@ function renderMbuTab() {
         getVol
       );
       bHtml += `</tr>`;
+
+      if(trIsOpen) {
+        const indent = `<span style="display:inline-block;width:14px;margin-right:5px"></span>`;
+        // Product Monetization layer
+        bHtml += `<tr class="mbu-row-item">`;
+        bHtml += `<td class="mbu-desc-cell">${indent}Product Monetization</td>`;
+        bHtml += buCells(colBus, bu => buL1.get(bu)?.get('Product Monetization')||{a:0,b:0}, getVol);
+        bHtml += `</tr>`;
+        // Net Monetization layer (own contribution only)
+        bHtml += `<tr class="mbu-row-item">`;
+        bHtml += `<td class="mbu-desc-cell">${indent}Net Monetization</td>`;
+        bHtml += buCells(colBus, bu => buL1.get(bu)?.get('Net Monetization')||{a:0,b:0}, getVol);
+        bHtml += `</tr>`;
+        // Collection Fees (from VC)
+        bHtml += `<tr class="mbu-row-item">`;
+        bHtml += `<td class="mbu-desc-cell">${indent}Collection Fees</td>`;
+        bHtml += buCells(colBus,
+          bu => buData.get(bu)?.get('Variable Contribution')?.get('Collection Fees')||{a:0,b:0},
+          getVol);
+        bHtml += `</tr>`;
+      }
     }
   }
 
