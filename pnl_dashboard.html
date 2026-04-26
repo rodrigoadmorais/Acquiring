@@ -732,9 +732,11 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   text-transform:uppercase;letter-spacing:.3px;padding:5px 6px;position:sticky;top:0;z-index:3;
   text-align:right;white-space:nowrap}
 .bpnl-table th:first-child{text-align:left;min-width:130px}
+.bpnl-table th:last-child{padding-right:14px}
 .bpnl-table td{padding:3px 6px;border-bottom:1px solid #eeeeea;
   text-align:right;white-space:nowrap;font-size:10px;background:#fff;color:#1a1a1a;line-height:1.4}
 .bpnl-table td:first-child{text-align:left;white-space:normal}
+.bpnl-table td:last-child{padding-right:14px}
 /* Individual P&L line rows — white bg */
 .bpnl-row-line td{background:#fff;color:#1a1a1a;font-size:10px;border-bottom:1px solid #eeeeea}
 .bpnl-row-line.expandable{cursor:pointer}
@@ -832,6 +834,12 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <button class="tab-btn" data-tab="keynums" onclick="switchTab(this)">Key-numbers</button>
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">MPOS</button>
   <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
+  <button id="filterToggleBtn" onclick="toggleFilterBar()" title="Recolher/expandir filtros"
+    style="margin-left:auto;padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);
+           background:var(--card);color:var(--muted);cursor:pointer;font-size:12px;
+           font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap">
+    <span id="filterToggleIcon">▲</span> Filtros
+  </button>
 </nav>
 
 <!-- ── Filters ── -->
@@ -1779,14 +1787,20 @@ function initFilters() {
   optCen   = uniq(allData.map(d => d.Cenario)).sort();
   optAnos  = uniq(allData.map(d => String(d.ANO))).sort();
   optMeses = uniq(allData.map(d => d.MES)).sort((a,b) => a-b);
-  // Macro BU: alphabetical but "Acquiring" always last
+  // Macro BU: Acquiring first, rest alphabetical
   optMacro = uniq(allData.map(d => d.Macro_BU)).sort()
     .sort((a, b) => {
-      if(a === 'Acquiring') return 1;
+      if(a === 'Acquiring') return -1;
+      if(b === 'Acquiring') return  1;
+      return a.localeCompare(b);
+    });
+  // Produto: alphabetical but Acquiring last
+  optProd = uniq(allData.map(d => d.Product)).sort()
+    .sort((a, b) => {
+      if(a === 'Acquiring') return  1;
       if(b === 'Acquiring') return -1;
       return a.localeCompare(b);
     });
-  optProd  = uniq(allData.map(d => d.Product)).sort();
   // Seção P&L: use MNG1_ORDER so options appear in P&L order
   optSecao = MNG1_ORDER.filter(s => allData.some(d => d.MNG_1 === s));
 
@@ -3470,6 +3484,16 @@ const MBU_BU_ORDER = {
   'Fintech Services': []
 };
 
+let _filterBarCollapsed = false;
+
+function toggleFilterBar() {
+  _filterBarCollapsed = !_filterBarCollapsed;
+  const fb = document.getElementById('filterBar');
+  const icon = document.getElementById('filterToggleIcon');
+  if(fb) fb.style.display = _filterBarCollapsed ? 'none' : '';
+  if(icon) icon.textContent = _filterBarCollapsed ? '▼' : '▲';
+}
+
 function switchTab(btn) {
   currentTab = btn.dataset.tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b===btn));
@@ -3482,7 +3506,7 @@ function switchTab(btn) {
   const isMbu     = currentTab === 'mbu';
   const isBridges = currentTab === 'bridges';
 
-  document.getElementById('filterBar').style.display    = isPnl     ? '' : 'none';
+  document.getElementById('filterBar').style.display    = (isPnl && !_filterBarCollapsed) ? '' : 'none';
   document.querySelector('.tbl-wrap').style.display     = isPnl     ? '' : 'none';
   document.getElementById('selectionBar').style.display = (isPnl && selectedRows.size > 0) ? '' : 'none';
   document.getElementById('cpaPanel').style.display     = isCpa     ? '' : 'none';
@@ -5654,85 +5678,64 @@ function generateBridgeSummary(segments, tpvA, tpvB, fmtFn, udLbl, metricLabel, 
   return lines.join('<br>');
 }
 
-function exportBridgeImage() {
-  const chartCanvas = document.getElementById('bridgeChart');
-  const aiDiv       = document.getElementById('bridgesAISummary');
-  if(!chartCanvas) return;
+async function exportBridgeImage() {
+  const btn = document.querySelector('[onclick="exportBridgeImage()"]');
+  if(btn) { btn.textContent = '⏳ Gerando…'; btn.disabled = true; }
 
-  // Resolve summary plain text (strip HTML tags)
-  const summaryText = aiDiv && aiDiv.style.display !== 'none'
-    ? (aiDiv.innerText || '').trim()
-    : '';
+  try {
+    const pnlPanel  = document.querySelector('.bridge-pnl-panel');
+    const chartSide = document.querySelector('.bridge-chart-side');
+    if(!pnlPanel || !chartSide) return;
 
-  const DPR     = window.devicePixelRatio || 1;
-  const cW      = chartCanvas.offsetWidth  || 900;
-  const cH      = chartCanvas.offsetHeight || 400;
-  const PAD     = 20;
-  const FS      = 13;
-  const LH      = 20;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const bg     = isDark ? '#1a1a1a' : '#ffffff';
+    const GAP    = 12;
+    const PAD    = 16;
+    const SCALE  = 2;
 
-  // Wrap summary text into lines that fit cW
-  const tmpCtx  = document.createElement('canvas').getContext('2d');
-  tmpCtx.font   = `${FS}px system-ui,sans-serif`;
-  const maxW    = cW - PAD * 2;
-  const words   = summaryText.replace(/\n+/g,' ').split(' ');
-  const textLines = [];
-  let cur = '';
-  for(const w of words) {
-    const test = cur ? cur + ' ' + w : w;
-    if(tmpCtx.measureText(test).width > maxW && cur) { textLines.push(cur); cur = w; }
-    else cur = test;
+    // Temporarily remove sticky positioning for clean capture
+    const stickyEls = pnlPanel.querySelectorAll('[style*="position:sticky"],[style*="position: sticky"]');
+    stickyEls.forEach(el => el.style.position = 'relative');
+
+    const [pnlCanvas, chartCanvas] = await Promise.all([
+      html2canvas(pnlPanel,  { scale: SCALE, backgroundColor: bg, useCORS: true, logging: false }),
+      html2canvas(chartSide, { scale: SCALE, backgroundColor: bg, useCORS: true, logging: false }),
+    ]);
+
+    stickyEls.forEach(el => el.style.position = '');
+
+    const W = pnlCanvas.width + GAP * SCALE + chartCanvas.width + PAD * 2 * SCALE;
+    const H = Math.max(pnlCanvas.height, chartCanvas.height) + PAD * 2 * SCALE;
+
+    const out = document.createElement('canvas');
+    out.width  = W;
+    out.height = H;
+    const ctx  = out.getContext('2d');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    const pnlX   = PAD * SCALE;
+    const chartX = pnlX + pnlCanvas.width + GAP * SCALE;
+    const topY   = PAD * SCALE;
+
+    ctx.drawImage(pnlCanvas,   pnlX,   topY);
+    ctx.drawImage(chartCanvas, chartX, topY);
+
+    // Download
+    const a = document.createElement('a');
+    const cenA = bridgeCenA || 'A';
+    const cenB = bridgeCenB || 'B';
+    a.download = `bridge_${bridgeMetric}_${cenA}_vs_${cenB}.png`;
+    a.href = out.toDataURL('image/png');
+    a.click();
+
+    if(btn) { btn.textContent = '✅ Baixado!'; btn.disabled = false;
+      setTimeout(() => { btn.innerHTML = '⬇ Exportar imagem'; }, 2500); }
+  } catch(e) {
+    console.error('exportBridgeImage:', e);
+    if(btn) { btn.textContent = '⚠️ Erro'; btn.disabled = false;
+      setTimeout(() => { btn.innerHTML = '⬇ Exportar imagem'; }, 2500); }
   }
-  if(cur) textLines.push(cur);
-
-  const sumH = textLines.length ? textLines.length * LH + PAD * 2 + 10 : 0;
-  const totalH = sumH + cH + PAD;
-
-  const out  = document.createElement('canvas');
-  out.width  = cW  * DPR;
-  out.height = totalH * DPR;
-  const ctx  = out.getContext('2d');
-  ctx.scale(DPR, DPR);
-
-  // Background
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  ctx.fillStyle = isDark ? '#1a1a1a' : '#ffffff';
-  ctx.fillRect(0, 0, cW, totalH);
-
-  // Summary card
-  if(textLines.length) {
-    ctx.fillStyle = isDark ? '#2a2410' : '#fffde7';
-    ctx.strokeStyle = '#FFE600';
-    ctx.lineWidth   = 1;
-    const cardH = textLines.length * LH + PAD * 2;
-    roundRect(ctx, PAD, PAD, cW - PAD * 2, cardH, 10);
-    ctx.fill(); ctx.stroke();
-
-    ctx.fillStyle = isDark ? '#f5f0d0' : '#1a1a1a';
-    ctx.font      = `${FS}px system-ui,sans-serif`;
-    textLines.forEach((ln, i) => ctx.fillText(ln, PAD * 2, PAD * 2 + i * LH + FS));
-  }
-
-  // Draw chart
-  ctx.drawImage(chartCanvas, 0, sumH, cW, cH);
-
-  // Helper: rounded rect path
-  function roundRect(c, x, y, w, h, r) {
-    c.beginPath();
-    c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.arcTo(x+w,y,x+w,y+r,r);
-    c.lineTo(x+w,y+h-r); c.arcTo(x+w,y+h,x+w-r,y+h,r);
-    c.lineTo(x+r,y+h); c.arcTo(x,y+h,x,y+h-r,r);
-    c.lineTo(x,y+r); c.arcTo(x,y,x+r,y,r);
-    c.closePath();
-  }
-
-  // Download
-  const a = document.createElement('a');
-  const cenA = bridgeCenA || 'A';
-  const cenB = bridgeCenB || 'B';
-  a.download = `bridge_${bridgeMetric}_${cenA}_vs_${cenB}.png`;
-  a.href = out.toDataURL('image/png');
-  a.click();
 }
 
 // ── Bridge P&L Comparison ────────────────────────────────────
@@ -6278,11 +6281,7 @@ function renderBridgesTab() {
   // ── Legend ──
   const lA = format1x1PeriodLabel(bridgePeriodA, bridgeType);
   const lB = format1x1PeriodLabel(bridgePeriodB, bridgeType);
-  legendEl.innerHTML = `
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_A}"></span>A: ${lA} / ${shortCen(bridgeCenA)}</span>
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${DARK_B}"></span>B: ${lB} / ${shortCen(bridgeCenB)}</span>
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_POS}"></span>Efeito positivo</span>
-    <span class="bridges-legend-item"><span class="bridges-legend-dot" style="background:${COL_NEG}"></span>Efeito negativo</span>`;
+  legendEl.innerHTML = ''; // legend removed per user request
 
   // ── Summary table ──
   const tpvA  = dataA.tpv, tpvB = dataB.tpv;
@@ -6302,7 +6301,7 @@ function renderBridgesTab() {
     if(summaryHtml) {
       aiSummaryEl.style.display = 'block';
       aiSummaryEl.innerHTML = `
-        <div class="ai-header"><svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 1C12 7.075 7.075 12 1 12C7.075 12 12 16.925 12 23C12 16.925 16.925 12 23 12C16.925 12 12 7.075 12 1Z" fill="#1a73e8"/></svg> Resumo executivo</div>
+        <div class="ai-header"><svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 1C12 7.075 7.075 12 1 12C7.075 12 12 16.925 12 23C12 16.925 16.925 12 23 12C16.925 12 12 7.075 12 1Z" fill="#1a73e8"/></svg> Resumo gerado pelo Claude</div>
         ${summaryHtml}`;
     } else {
       aiSummaryEl.style.display = 'none';
