@@ -1146,6 +1146,9 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       <span class="evo-legend-item"><span class="evo-legend-bar" style="background:repeating-linear-gradient(135deg,#FFE600 0,#FFE600 3px,rgba(0,0,0,.15) 3px,rgba(0,0,0,.15) 5px)"></span> Forecast</span>
       <span class="evo-legend-item" style="color:#888"><span class="evo-legend-line"></span> Plan</span>
     </div>
+    <div style="margin-left:auto">
+      <button id="evoShowAllBtn" class="btn-hdr" onclick="evoShowAll=!evoShowAll;this.classList.toggle('on',evoShowAll);this.textContent=evoShowAll?'− Menos métricas':'+ Mais métricas';renderEvoTab()">+ Mais métricas</button>
+    </div>
   </div>
   <div class="evo-grid" id="evoGrid"></div>
 </div>
@@ -5016,15 +5019,19 @@ let evoGran    = 'quarterly'; // 'monthly' | 'quarterly' | 'annual'
 let _evoCharts = {};          // Chart instances keyed by abbr
 
 const EVO_METRICS = [
-  { key:'Product Monetization',  abbr:'PM'   },
-  { key:'Net Monetization',      abbr:'NM'   },
+  // Default visible (first 5)
+  { key:'__tpv__',               abbr:'TPV', label:'TPV', tpv:true },
+  { key:'Business Margin',       abbr:'BM'   },
   { key:'__takerate__',          abbr:'TR',  label:'Take Rate', takerate:true },
   { key:'Variable Contribution', abbr:'VC'   },
   { key:'Direct Contribution',   abbr:'DC'   },
-  { key:'Business Contribution', abbr:'BC'   },
-  { key:'Business Margin',       abbr:'BM'   },
-  { key:'EBIT',                  abbr:'EBIT' },
+  // Hidden by default — shown when evoShowAll = true
+  { key:'Product Monetization',  abbr:'PM',  hidden:true },
+  { key:'Net Monetization',      abbr:'NM',  hidden:true },
+  { key:'Business Contribution', abbr:'BC',  hidden:true },
+  { key:'EBIT',                  abbr:'EBIT', hidden:true },
 ];
+let evoShowAll = false;
 
 function evoGetVal(buKey, mes, cenario, metric) {
   const buses    = KN_BU_MAP[buKey] || [buKey];
@@ -5044,6 +5051,17 @@ function evoGetTakeRate(buKey, mes, cenario) {
     if(d.MES !== mes || d.Cenario !== cenario || !buses.includes(d.Product)) continue;
     if(d.MNG_1 === 'Product Monetization' || d.MNG_1 === 'Net Monetization') sum += d.Value;
     if(d.MNG_1 === 'Variable Contribution' && d.MNG_2 === 'Collection Fees')  sum += d.Value;
+  }
+  return sum;
+}
+
+// TPV from Metrics section
+function evoGetTPV(buKey, mes, cenario) {
+  const buses = KN_BU_MAP[buKey] || [buKey];
+  let sum = 0;
+  for(const d of allData) {
+    if(d.MES !== mes || d.Cenario !== cenario || !buses.includes(d.Product)) continue;
+    if(d.MNG_1 === 'Metrics' && d.MNG_2 === 'TPV') sum += d.Value;
   }
   return sum;
 }
@@ -5700,12 +5718,18 @@ async function exportBridgeImage() {
     const stickyEls = pnlPanel.querySelectorAll('[style*="position:sticky"],[style*="position: sticky"]');
     stickyEls.forEach(el => el.style.position = 'relative');
 
+    // Hide segment table during export (only P&L + chart + AI summary should appear)
+    const segTable = document.getElementById('bridgesSummary');
+    const segWasVisible = segTable && segTable.style.display !== 'none';
+    if(segTable) segTable.style.display = 'none';
+
     const [pnlCanvas, chartCanvas] = await Promise.all([
       html2canvas(pnlPanel,  { scale: SCALE, backgroundColor: bg, useCORS: true, logging: false }),
       html2canvas(chartSide, { scale: SCALE, backgroundColor: bg, useCORS: true, logging: false }),
     ]);
 
     stickyEls.forEach(el => el.style.position = '');
+    if(segTable && segWasVisible) segTable.style.display = '';
 
     const W = pnlCanvas.width + GAP * SCALE + chartCanvas.width + PAD * 2 * SCALE;
     const H = Math.max(pnlCanvas.height, chartCanvas.height) + PAD * 2 * SCALE;
@@ -6439,6 +6463,8 @@ function renderBridgesTab() {
       </thead>
       <tbody>${rows}${tpvRow}</tbody>
     </table>`;
+  // Only show segment table when a drill-down is active
+  summaryEl.style.display = bridgeDrillKey ? '' : 'none';
 }
 
 // ── Capture table as a slide-ready PNG image (clipboard → paste into PPT/Slides) ──
@@ -6585,7 +6611,9 @@ function renderEvoTab() {
   function hatchPos() { return _hatchPos || (_hatchPos = _evoHatchPattern('#FFE600')); }
   function hatchNeg() { return _hatchNeg || (_hatchNeg = _evoHatchPattern('#C62828')); }
 
-  EVO_METRICS.forEach(({key, abbr, label, takerate}) => {
+  EVO_METRICS.forEach(({key, abbr, label, takerate, tpv, hidden}) => {
+    // Skip hidden metrics unless show-all is toggled
+    if(hidden && !evoShowAll) return;
     // Take Rate: only show for Acquiring-related BUs
     if(takerate && !EVO_ACQUIRING_BUS.has(evoBU)) return;
 
@@ -6595,20 +6623,25 @@ function renderEvoTab() {
     const fcstByPeriod = new Map();
     allPeriods.forEach(p => { realByPeriod.set(p, null); planByPeriod.set(p, null); fcstByPeriod.set(p, null); });
 
+    const getVal = (buKey, m, cen) =>
+      takerate ? evoGetTakeRate(buKey, m, cen)
+      : tpv    ? evoGetTPV(buKey, m, cen)
+               : evoGetVal(buKey, m, cen, key);
+
     for(const m of allMeses) {
       const p = toPeriodKey(m);
       if(!allPeriods.includes(p)) continue; // outside range
       if(realMeses.includes(m)) {
-        const v = takerate ? evoGetTakeRate(evoBU, m, 'Realizado') : evoGetVal(evoBU, m, 'Realizado', key);
+        const v = getVal(evoBU, m, 'Realizado');
         realByPeriod.set(p, (realByPeriod.get(p) ?? 0) + v);
       }
       if(planMeses.includes(m)) {
-        const vp = takerate ? evoGetTakeRate(evoBU, m, 'Plan') : evoGetVal(evoBU, m, 'Plan', key);
+        const vp = getVal(evoBU, m, 'Plan');
         planByPeriod.set(p, (planByPeriod.get(p) ?? 0) + vp);
       }
       // Forecast: only for periods beyond last Realizado
       if(fcstMeses.includes(m) && !realMeses.includes(m)) {
-        const vf = takerate ? evoGetTakeRate(evoBU, m, 'Forecast') : evoGetVal(evoBU, m, 'Forecast', key);
+        const vf = getVal(evoBU, m, 'Forecast');
         fcstByPeriod.set(p, (fcstByPeriod.get(p) ?? 0) + vf);
       }
     }
