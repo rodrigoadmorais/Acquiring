@@ -688,9 +688,9 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   background:linear-gradient(135deg,#1E1A04 0%,#181400 60%,#1A1600 100%);
   border-color:rgba(180,140,0,.35);color:#F0E8B0}
 #bridgesAISummary .ai-header{font-size:9.5px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.9px;color:#7A6200;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+  letter-spacing:.9px;color:#7A6200;margin-bottom:5px;display:flex;align-items:center;gap:6px}
 [data-theme=dark] #bridgesAISummary .ai-header{color:#C9A800}
-#bridgesAISummary .ai-header::before{content:'✦';font-size:9px;opacity:.7}
+#bridgesAISummary .ai-header .claude-icon{width:14px;height:14px;flex-shrink:0;opacity:.85}
 .bridges-summary table{border-collapse:collapse;width:100%;font-size:12px}
 .bridges-summary th{padding:6px 14px;text-align:right;background:var(--bg);font-size:10px;
   font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
@@ -847,7 +847,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <div class="bg" id="viewGrp">
       <button class="on" data-v="evolutivo" onclick="setView(this)">Evolutivo</button>
       <button data-v="total" onclick="setView(this)">Período Total</button>
-      <button data-v="comparacao" onclick="setView(this)">Comparação</button>
+      <button data-v="comparacao" onclick="setView(this)">Prévia</button>
       <button data-v="1x1" onclick="setView(this)">1×1</button>
     </div>
   </div>
@@ -976,9 +976,9 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
              background:var(--card);color:var(--text);font-size:12px;min-width:110px;cursor:pointer"></select>
   </div>
 
-  <!-- Meses filtro (Período Total) — pills Ano + Mês lado a lado -->
+  <!-- Meses filtro (Período Total) — pills Mês (ANO removido: redundante com seletor de ano) -->
   <div id="mesTotalGroup" style="display:none;flex-direction:row;gap:14px;align-items:flex-start">
-    <div class="fg">
+    <div class="fg" style="display:none">
       <label>Ano &nbsp;<button onclick="mesTotalAnoAll(true)"  style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Todos</button> · <button onclick="mesTotalAnoAll(false)" style="font-size:9px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0">Nenhum</button></label>
       <div id="mesTotalAnoPills" class="pills"></div>
     </div>
@@ -1435,7 +1435,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <!-- Left: P&L comparison -->
     <div class="bridge-pnl-panel">
       <div class="bpnl-header">
-        <span>P&amp;L — Comparação</span>
+        <span>P&amp;L — Prévia</span>
         <span class="bpnl-scen" id="bpnlScenLabel"></span>
       </div>
       <div id="bridgePnlContent" style="flex:1">
@@ -2830,15 +2830,30 @@ function renderBody(l1map, cols, cens) {
     let c = '';
     if(is1x1) {
       // 1×1: Period A value | Period B value | Δ (B−A) | Δ%
-      // byCen keyed by cenario; each cenario map has colKey '1x1_a' or '1x1_b'
       const aVal  = (byCen.get(comp1x1CenA)?.get('1x1_a')) || 0;
       const bVal  = (byCen.get(comp1x1CenB)?.get('1x1_b')) || 0;
       const delta = bVal - aVal;
       const pct   = aVal !== 0 ? (delta / Math.abs(aVal) * 100) : null;
       c += `<td class="col-total-cell ${aVal<0?'neg':''}" style="border-left:3px solid #1a1a1a">${fmtCell(aVal, comp1x1CenA, '1x1_a', isMetrics)}</td>`;
       c += `<td class="col-total-cell ${bVal<0?'neg':''}" style="border-left:3px solid #4a7fc1">${fmtCell(bVal, comp1x1CenB, '1x1_b', isMetrics)}</td>`;
-      c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${fmt(delta)}</td>`;
-      c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${pct!=null?pct.toFixed(2)+'%':'—'}</td>`;
+      // In % TPV/NMV mode → show pp difference; otherwise absolute delta
+      const refByCenVar = !isMetrics && displayMode !== 'abs'
+        ? (displayMode === 'pct_tpv' ? tpvByCen : nmvByCen) : null;
+      if(refByCenVar) {
+        const refA   = (refByCenVar.get(comp1x1CenA)?.get('1x1_a')) || 0;
+        const refB   = (refByCenVar.get(comp1x1CenB)?.get('1x1_b')) || 0;
+        const pctA   = refA !== 0 ? aVal / Math.abs(refA) * 100 : null;
+        const pctB   = refB !== 0 ? bVal / Math.abs(refB) * 100 : null;
+        const ppDiff = (pctA != null && pctB != null) ? pctB - pctA : null;
+        const pcls   = (ppDiff ?? 0) >= 0 ? 'vpos' : 'vneg';
+        const ppStr  = ppDiff != null
+          ? (ppDiff >= 0 ? '+' : '') + ppDiff.toFixed(2) + 'pp' : '—';
+        c += `<td class="col-var-cell ${pcls}">${ppStr}</td>`;
+        c += `<td class="col-var-cell ${pcls}">—</td>`;
+      } else {
+        c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${fmt(delta)}</td>`;
+        c += `<td class="col-var-cell ${delta>=0?'vpos':'vneg'}">${pct!=null?pct.toFixed(2)+'%':'—'}</td>`;
+      }
       return c;
     }
     if(isComp) {
@@ -6141,7 +6156,7 @@ function renderBridgesTab() {
     if(summaryHtml) {
       aiSummaryEl.style.display = 'block';
       aiSummaryEl.innerHTML = `
-        <div class="ai-header"><span>✦</span> Resumo executivo gerado por AI</div>
+        <div class="ai-header"><svg class="claude-icon" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.5 0C9.178 0 0 9.178 0 20.5S9.178 41 20.5 41 41 31.822 41 20.5 31.822 0 20.5 0Z" fill="#D97757"/><path d="M27.2 12.5h-3.1l-3.6 8.6-3.6-8.6h-3.1l5.2 12 .5 1.2.5-1.2 7.2-12Z" fill="white"/></svg> Resumo gerado por Claude</div>
         ${summaryHtml}`;
     } else {
       aiSummaryEl.style.display = 'none';
