@@ -6558,7 +6558,8 @@ function renderEvoTab() {
   const fcstMeses = [...new Set(
     allData.filter(d=>d.Cenario==='Forecast'&&buses.includes(d.Product)).map(d=>d.MES)
   )].sort();
-  const allMeses = [...new Set([...realMeses,...planMeses,...fcstMeses])].sort();
+  // Default: show only from 2025 onwards
+  const allMeses = [...new Set([...realMeses,...planMeses,...fcstMeses])].sort().filter(m => m >= 202501);
 
   // Build period keys (respects granularity)
   function toPeriodKey(m) {
