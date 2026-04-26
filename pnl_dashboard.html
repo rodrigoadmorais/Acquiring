@@ -1778,22 +1778,32 @@ function initFilters() {
   optCen   = uniq(allData.map(d => d.Cenario)).sort();
   optAnos  = uniq(allData.map(d => String(d.ANO))).sort();
   optMeses = uniq(allData.map(d => d.MES)).sort((a,b) => a-b);
-  optMacro = uniq(allData.map(d => d.Macro_BU)).sort();
+  // Macro BU: alphabetical but "Acquiring" always last
+  optMacro = uniq(allData.map(d => d.Macro_BU)).sort()
+    .sort((a, b) => {
+      if(a === 'Acquiring') return 1;
+      if(b === 'Acquiring') return -1;
+      return a.localeCompare(b);
+    });
   optProd  = uniq(allData.map(d => d.Product)).sort();
   // Seção P&L: use MNG1_ORDER so options appear in P&L order
   optSecao = MNG1_ORDER.filter(s => allData.some(d => d.MNG_1 === s));
 
-  selCen   = [...optCen];
-  selAnos  = [...optAnos];
+  // Default selections: only Plan + Forecast, year 2026, everything else all-selected
+  const DEFAULT_CEN  = optCen.filter(c => /^(plan|forecast|fcst)$/i.test(c));
+  selCen   = DEFAULT_CEN.length ? DEFAULT_CEN : [...optCen];
+  const DEFAULT_ANOS = optAnos.filter(y => y === '2026');
+  selAnos  = DEFAULT_ANOS.length ? DEFAULT_ANOS : [...optAnos];
   selMacro = [...optMacro];
   selProd  = [...optProd];
   selSecao = [...optSecao];
 
-  // Cenário pills
+  // Cenário pills — start ON only for default scenarios
   const pillsDiv = document.getElementById('cenarioPills');
   optCen.forEach(c => {
     const el = document.createElement('span');
-    el.className = 'pill on';
+    const isDefault = selCen.includes(c);
+    el.className = 'pill' + (isDefault ? ' on' : '');
     el.textContent = c;
     el.dataset.c = c;
     el.onclick = () => {
@@ -1814,6 +1824,9 @@ function initFilters() {
   buildMsPanel('macro', optMacro, selMacro, v => { selMacro = v; cascadeBU(); });
   buildMsPanel('prod',  optProd,  selProd,  v => { selProd  = v; });
   buildMesTotalPills();
+  // Recompute optMeses to match the default year selection (2026)
+  { const yearsSet = new Set(selAnos.map(Number));
+    optMeses = uniq(allData.filter(d => yearsSet.has(d.ANO)).map(d => d.MES)).sort((a,b)=>a-b); }
   buildMesSelects();
   buildMesRefSel();
   buildCenRefSel();
@@ -5444,9 +5457,18 @@ function buildBridgeSegments(dataA, dataB, metric) {
   if(Math.abs(volEffect) > 0.01 && !bridgeDisplayPct)
     segments.push({ label: 'Volume (TPV)', value: volEffect, type: 'effect', group: 'vol',
       meta: { tpvDelta, rateA: rateA * 100 } });
-  if(Math.abs(trEffect) > 0.01)
-    segments.push({ label: 'Take Rate %', value: trEffect,  type: 'effect', group: 'tr',
-      meta: { rateA: rateA * 100, rateB: rateB !== null ? rateB * 100 : null, tpvB } });
+
+  // In % TPV mode: use trDelta (total TR change vs common tpvA base) so the bar
+  // represents exactly the pp shown in the Var column of the P&L panel.
+  // In absolute mode: use only the rate component (trEffect), volume is shown separately.
+  const trSegValue = bridgeDisplayPct ? trDelta : trEffect;
+  // Meta rates: in % mode show both periods normalized by tpvA so they match the P&L panel.
+  const rateBMeta  = bridgeDisplayPct
+    ? (tpvA !== 0 ? trB / tpvA * 100 : null)   // trB as % of tpvA (= panel's B column)
+    : (rateB !== null ? rateB * 100 : null);     // true rate of B (% of its own TPV)
+  if(Math.abs(trSegValue) > 0.01)
+    segments.push({ label: 'Take Rate %', value: trSegValue, type: 'effect', group: 'tr',
+      meta: { rateA: rateA * 100, rateB: rateBMeta, tpvB } });
 
   // Below-TR lines (absolute delta), depending on bridge metric
   const BELOW_TR = [];
