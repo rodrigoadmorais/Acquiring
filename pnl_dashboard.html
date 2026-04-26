@@ -6723,23 +6723,7 @@ function renderEvoTab() {
             ctx.fillText(v.toLocaleString('pt-BR',{maximumFractionDigits:0}), bar.x, bar.y - 2);
           });
         }
-        // ── Plan line labels (use dataset 2 = actual plan line) ──────────────────────────────
-        const metaLine = chart.getDatasetMeta(2);
-        if(metaLine && metaLine.type === 'line') {
-          ctx.font = '500 8.5px system-ui,sans-serif';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-          metaLine.data.forEach((point, i) => {
-            const v = chart.data.datasets[2].data[i];
-            if(v === null || v === undefined || v === 0) return;
-            // White knockout behind label text
-            const txt = v.toLocaleString('pt-BR',{maximumFractionDigits:0});
-            const tw  = ctx.measureText(txt).width;
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
-            ctx.fillRect(point.x - tw/2 - 2, point.y - 14, tw + 4, 11);
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillText(txt, point.x, point.y - 5);
-          });
-        }
+        // Plan line labels intentionally omitted to avoid overlap with bar labels
         ctx.restore();
       }
     };
