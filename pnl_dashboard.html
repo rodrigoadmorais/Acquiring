@@ -3487,14 +3487,27 @@ const MBU_BU_ORDER = {
   'Fintech Services': []
 };
 
-let _filterBarCollapsed = false;
+// Per-tab filter collapsed state
+const _filterCollapsed = {};
+
+function _getTabFilterBar(tab) {
+  if(tab === 'pnl')     return document.getElementById('filterBar');
+  if(tab === 'mbu')     return document.querySelector('#mbuPanel .mbu-filter-bar');
+  if(tab === 'bridges') return document.querySelector('#bridgesPanel .bridges-filter-bar');
+  if(tab === 'evo')     return document.querySelector('#evoPanel .evo-filter-bar');
+  if(tab === 'cpa')     return document.querySelector('#cpaPanel .cpa-filter-bar');
+  if(tab === 'mpos')    return document.querySelector('#mposPanel .cpa-filter-bar');
+  if(tab === 'keynums') return document.querySelector('#keyNumPanel .kn-filter-bar');
+  return null;
+}
 
 function toggleFilterBar() {
-  _filterBarCollapsed = !_filterBarCollapsed;
-  const fb = document.getElementById('filterBar');
+  _filterCollapsed[currentTab] = !_filterCollapsed[currentTab];
+  const collapsed = _filterCollapsed[currentTab];
+  const fb   = _getTabFilterBar(currentTab);
   const icon = document.getElementById('filterToggleIcon');
-  if(fb) fb.style.display = _filterBarCollapsed ? 'none' : '';
-  if(icon) icon.textContent = _filterBarCollapsed ? '▼' : '▲';
+  if(fb)   fb.style.display   = collapsed ? 'none' : '';
+  if(icon) icon.textContent   = collapsed ? '▼' : '▲';
 }
 
 function switchTab(btn) {
@@ -3509,7 +3522,9 @@ function switchTab(btn) {
   const isMbu     = currentTab === 'mbu';
   const isBridges = currentTab === 'bridges';
 
-  document.getElementById('filterBar').style.display    = (isPnl && !_filterBarCollapsed) ? '' : 'none';
+  // Apply per-tab filter bar visibility (respects per-tab collapsed state)
+  // First hide the P&L global filterBar; each tab's own filter bar is inside its panel
+  document.getElementById('filterBar').style.display = isPnl && !_filterCollapsed['pnl'] ? '' : 'none';
   document.querySelector('.tbl-wrap').style.display     = isPnl     ? '' : 'none';
   document.getElementById('selectionBar').style.display = (isPnl && selectedRows.size > 0) ? '' : 'none';
   document.getElementById('cpaPanel').style.display     = isCpa     ? '' : 'none';
@@ -3518,6 +3533,15 @@ function switchTab(btn) {
   document.getElementById('keyNumPanel').style.display  = isKeyNums ? '' : 'none';
   document.getElementById('evoPanel').style.display     = isEvo     ? '' : 'none';
   document.getElementById('bridgesPanel').style.display = isBridges ? '' : 'none';
+
+  // Apply collapsed state for the newly active tab's filter bar
+  const activeFilterBar = _getTabFilterBar(currentTab);
+  if(activeFilterBar && currentTab !== 'pnl') {
+    activeFilterBar.style.display = _filterCollapsed[currentTab] ? 'none' : '';
+  }
+  // Sync icon to current tab's state
+  const icon = document.getElementById('filterToggleIcon');
+  if(icon) icon.textContent = _filterCollapsed[currentTab] ? '▼' : '▲';
 
   if(isCpa)     renderCpaTab();
   if(isMpos)    { renderMposTab(); renderMposLightTabMerged(); }
