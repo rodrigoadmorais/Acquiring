@@ -5470,7 +5470,7 @@ function buildBridgeSegments(dataA, dataB, metric) {
   const trSegValue = bridgeDisplayPct ? trDelta : trEffect;
   const rateBTrue  = rateB !== null ? rateB * 100 : null; // trB/tpvB × 100 — always
   if(Math.abs(trSegValue) > 0.01)
-    segments.push({ label: 'Take Rate %', value: trSegValue, type: 'effect', group: 'tr',
+    segments.push({ label: bridgeDisplayPct ? 'Take Rate' : 'Take Rate %', value: trSegValue, type: 'effect', group: 'tr',
       meta: { rateA: rateA * 100, rateB: rateBTrue, tpvB,
               isPctMode: bridgeDisplayPct } });
 
