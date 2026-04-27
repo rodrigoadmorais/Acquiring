@@ -691,10 +691,13 @@
             backgroundColor: '#111827',
             titleColor: '#F9FAFB',
             bodyColor: '#D1D5DB',
+            footerColor: '#009EE3',
             padding: 14,
             cornerRadius: 14,
             titleFont: { size: 13, weight: '700', family: "'Inter', sans-serif" },
-            bodyFont: { size: 12, family: "'Inter', sans-serif" },
+            bodyFont:  { size: 12, family: "'Inter', sans-serif" },
+            footerFont: { size: 12, weight: '700', family: "'Inter', sans-serif" },
+            footerMarginTop: 8,
             displayColors: true,
             boxPadding: 4,
         };
@@ -953,6 +956,16 @@
                                         label += formatCurrencyWithMagnitude(context.parsed.y * currentMagnitude);
                                     }
                                     return label;
+                                },
+                                footer(tooltipItems) {
+                                    if (!tooltipItems.length) return '';
+                                    const idx      = tooltipItems[0].dataIndex;
+                                    const datasets = tooltipItems[0].chart.data.datasets;
+                                    const actual   = datasets[0]?.data[idx];
+                                    const plan     = datasets[1]?.data[idx];
+                                    if (actual == null || plan == null || plan === 0) return '';
+                                    const pct = (actual / plan * 100).toFixed(1).replace('.', ',');
+                                    return `Atingimento: ${pct}%`;
                                 }
                             }
                         },
