@@ -1044,6 +1044,8 @@
                 const sortedMonths = Array.from(months).sort();
                 const years = [...new Set(sortedMonths.map(m => m.substring(0, 4)))];
                 years.forEach(y => {
+                    // Evita duplicata: se já existe cenário com mesmo label e mesmo ano, ignora
+                    if (scenarioList.some(s => s.label === label && s.id.endsWith(`|${y}`))) return;
                     const yMonths = sortedMonths.filter(m => m.startsWith(y)).map(m => m.substring(4));
                     scenarioList.push({ id: `${key}|${y}`, label, type: key, months: yMonths });
                 });
