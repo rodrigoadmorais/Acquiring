@@ -7330,12 +7330,20 @@ function renderGrafgenTab() {
   ctEl.innerHTML = '<canvas id="grafgenChart"></canvas>';
   const cvs = document.getElementById('grafgenChart');
 
+  // Fix: set explicit pixel dimensions on the canvas so Chart.js doesn't
+  // enter a responsive-resize loop that misaligns element positions.
+  const containerW = ctEl.clientWidth  || 800;
+  const containerH = ctEl.clientHeight || 400;
+  cvs.width  = containerW;
+  cvs.height = containerH;
+
   try {
     _grafgenChart = new Chart(cvs, {
       type:'line',
       data:{ labels, datasets },
       options:{
-        responsive:true, maintainAspectRatio:false,
+        responsive:false, maintainAspectRatio:false,
+        animation:false,
         layout:{ padding:{ top:8, right:isAbsPct?8:0 } },
         interaction:{ mode:'index', intersect:false },
         plugins:{
