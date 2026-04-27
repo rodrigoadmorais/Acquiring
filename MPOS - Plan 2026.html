@@ -1240,6 +1240,7 @@
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
+                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                     let opts = `<optgroup label="--- ${label} ---">`;
@@ -2758,6 +2759,7 @@
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
+                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
                         const lbl = t === 'PLAN' ? '🟢 Plano' : (t === 'ACTUAL' ? '🔵 Realizado' : '🟠 Forecast');
                         html += `<optgroup label="${lbl}">`;
@@ -2973,6 +2975,7 @@
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
+                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
                         const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                         let opts = `<optgroup label="--- ${label} ---">`;
@@ -3607,6 +3610,7 @@
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
+                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                     let opts = `<optgroup label="--- ${label} ---">`;
@@ -4149,6 +4153,7 @@
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
+                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
                         const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                         html += `<optgroup label="--- ${label} ---">`;
@@ -4196,6 +4201,7 @@
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
+                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
                     let opts = `<optgroup label="--- ${label} ---">`;
