@@ -626,6 +626,8 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 .mbu-table td.mbu-sub-first{border-left:3px solid var(--border)}
 .mbu-row-vol td{background:#FFF9C4;color:#1a1a1a;font-weight:700;font-size:10.5px;border-top:2px solid #FFE600;border-bottom:1px solid #FFE600}
 .mbu-row-vol td.mbu-desc-cell{background:#FFF9C4;color:#1a1a1a}
+.mbu-row-yoy td{background:#FFFEF0;font-size:10px;border-bottom:1px solid #F0EAA0}
+.mbu-row-yoy td.mbu-desc-cell{background:#FFFEF0;color:var(--muted)}
 .mbu-row-sec td{background:#FFFDE7;color:#1a1a1a;font-weight:700;font-size:10.5px;
   text-transform:uppercase;letter-spacing:.5px;border-top:2px solid #FFE600;border-bottom:1px solid #E8D800;cursor:pointer}
 .mbu-row-sec td.mbu-desc-cell{background:#FFFDE7;color:#1a1a1a}
@@ -3872,6 +3874,36 @@ function renderMbuTab() {
     }
   }
 
+  // ── Prior-year volumes for YoY% row ──
+  const buVolPY = new Map();
+  if(hasPct) {
+    const pyFrom = fromMes - 100, pyTo = toMes - 100;
+    const dataPY = allData.filter(d => d.Macro_BU === mbuMacro && d.MES >= pyFrom && d.MES <= pyTo);
+    const mesHasAPY = new Set(), mesHasBPY = new Set();
+    // Pass 1: primary
+    for(const d of dataPY) {
+      const slot = cenSlot(d.Cenario);
+      if(!slot || (slot !== 'A' && slot !== 'B')) continue;
+      if(!d.Product || d.MNG_1 !== 'Metrics' || d.MNG_2 !== pctMetric) continue;
+      const bu = d.Product; const k = bu+'|'+d.MES;
+      if(slot==='A') mesHasAPY.add(k); else mesHasBPY.add(k);
+      if(!buVolPY.has(bu)) buVolPY.set(bu,{aVol:0,bVol:0});
+      const bv = buVolPY.get(bu);
+      if(slot==='A') bv.aVol += d.Value||0; else bv.bVol += d.Value||0;
+    }
+    // Pass 2: fill
+    for(const d of dataPY) {
+      const slot = cenSlot(d.Cenario);
+      if(!slot || (slot !== 'Afill' && slot !== 'Bfill')) continue;
+      if(!d.Product || d.MNG_1 !== 'Metrics' || d.MNG_2 !== pctMetric) continue;
+      const bu = d.Product; const k = bu+'|'+d.MES;
+      if(!buVolPY.has(bu)) buVolPY.set(bu,{aVol:0,bVol:0});
+      const bv = buVolPY.get(bu);
+      if(slot==='Afill' && !mesHasAPY.has(k)) bv.aVol += d.Value||0;
+      if(slot==='Bfill' && !mesHasBPY.has(k)) bv.bVol += d.Value||0;
+    }
+  }
+
   // Roll up MNG_1 totals per BU
   for(const [bu, k1map] of buData) {
     if(!buL1.has(bu)) buL1.set(bu, new Map());
@@ -3938,6 +3970,12 @@ function renderMbuTab() {
   buData4.set(TOTAL, totData4);
   buVol.set(TOTAL,   totVol);
   buL1.set(TOTAL,    totL1);
+  // Aggregate prior-year volumes total
+  if(hasPct) {
+    let pyA=0, pyB=0;
+    bus.forEach(bu => { const v=buVolPY.get(bu)||{aVol:0,bVol:0}; pyA+=v.aVol; pyB+=v.bVol; });
+    buVolPY.set(TOTAL, {aVol:pyA, bVol:pyB});
+  }
 
   // ── Compute cumulative waterfall totals (each row = sum of all preceding P&L levels) ──
   // e.g. VC row = PM + NM + VC items combined
@@ -4019,13 +4057,37 @@ function renderMbuTab() {
   // ── Build tbody ──
   let bHtml = '';
 
-  // Volume metric row
+  // Volume metric row + YoY% row
   if(hasPct) {
     bHtml += `<tr class="mbu-row-vol"><td class="mbu-desc-cell">${pctMetric}</td>`;
     bHtml += buCells(colBus,
       bu => { const v=buVol.get(bu)||{aVol:0,bVol:0}; return {a:v.aVol,b:v.bVol}; },
       null // no % for the volume row itself
     );
+    bHtml += `</tr>`;
+
+    // YoY% row — shows growth of current period vs same period prior year
+    bHtml += `<tr class="mbu-row-yoy">`;
+    bHtml += `<td class="mbu-desc-cell" style="font-size:10px;padding-left:20px;color:var(--muted)">${pctMetric} YoY%</td>`;
+    const fmtYoy = (cur, py) => {
+      if(!py) return `<span style="color:var(--muted)">—</span>`;
+      const pct = (cur - py) / Math.abs(py) * 100;
+      const cls = pct >= 0 ? 'mbu-dpos' : 'mbu-dneg';
+      return `<span class="${cls}">${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</span>`;
+    };
+    colBus.forEach((bu, bi) => {
+      if(bi > 0) bHtml += `<td class="mbu-sep"></td>`;
+      const cur = buVol.get(bu)  || {aVol:0,bVol:0};
+      const py  = buVolPY.get(bu)|| {aVol:0,bVol:0};
+      bHtml += `<td class="mbu-sub-first" style="font-size:10px">${fmtYoy(cur.aVol, py.aVol)}</td>`;
+      bHtml += `<td style="font-size:10px">${fmtYoy(cur.bVol, py.bVol)}</td>`;
+      bHtml += `<td style="font-size:10px;color:var(--muted)">—</td>`;
+      if(hasPct) {
+        bHtml += `<td class="mbu-pct-col" style="color:var(--muted)">—</td>`;
+        bHtml += `<td class="mbu-pct-col" style="color:var(--muted)">—</td>`;
+        bHtml += `<td class="mbu-pct-col" style="color:var(--muted)">—</td>`;
+      }
+    });
     bHtml += `</tr>`;
   }
 
