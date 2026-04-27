@@ -833,7 +833,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <button class="tab-btn on" data-tab="pnl" onclick="switchTab(this)">P&amp;L</button>
   <button class="tab-btn" data-tab="bridges" onclick="switchTab(this)">Bridges</button>
   <button class="tab-btn" data-tab="mbu" onclick="switchTab(this)">Macro BU Overview</button>
-  <button class="tab-btn" data-tab="evo" onclick="switchTab(this)">Evolutivos</button>
+  <button class="tab-btn" data-tab="evo" onclick="switchTab(this)">Evolution</button>
+  <button class="tab-btn" data-tab="grafgen" onclick="switchTab(this)">Graphic Generator</button>
   <button class="tab-btn" data-tab="keynums" onclick="switchTab(this)">Key-numbers</button>
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">MPOS</button>
   <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
@@ -1153,6 +1154,70 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     </div>
   </div>
   <div class="evo-grid" id="evoGrid"></div>
+</div>
+
+<!-- ── Graphic Generator Panel ── -->
+<div id="grafgenPanel" class="evo-panel" style="display:none">
+  <div class="evo-filter-bar" id="grafgenFilterBar" style="flex-wrap:wrap;gap:12px 20px;padding:10px 24px">
+    <!-- BU -->
+    <div>
+      <label>BU</label>
+      <select id="grafgenBUSel" onchange="grafgenBU=this.value;renderGrafgenTab()"
+        style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:150px"></select>
+    </div>
+    <!-- From -->
+    <div>
+      <label>De</label>
+      <select id="grafgenFromSel" onchange="grafgenFromMes=+this.value;renderGrafgenTab()"
+        style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
+    </div>
+    <!-- To -->
+    <div>
+      <label>Até</label>
+      <select id="grafgenToSel" onchange="grafgenToMes=+this.value;renderGrafgenTab()"
+        style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:90px"></select>
+    </div>
+    <!-- Granularity -->
+    <div>
+      <label>Granularidade</label>
+      <div id="grafgenGranGrp" style="display:flex;gap:4px">
+        <button class="btn-hdr on" data-g="monthly"   onclick="setGrafgenGran(this)">Mensal</button>
+        <button class="btn-hdr"    data-g="quarterly" onclick="setGrafgenGran(this)">Trimestral</button>
+        <button class="btn-hdr"    data-g="annual"    onclick="setGrafgenGran(this)">Anual</button>
+      </div>
+    </div>
+    <!-- Display mode -->
+    <div>
+      <label>Exibição</label>
+      <div id="grafgenDisplayGrp" style="display:flex;gap:4px">
+        <button class="btn-hdr on" data-d="abs"     onclick="setGrafgenDisplay(this)">Abs</button>
+        <button class="btn-hdr"    data-d="pct"     onclick="setGrafgenDisplay(this)">% Vol</button>
+        <button class="btn-hdr"    data-d="abs_pct" onclick="setGrafgenDisplay(this)">Abs + %</button>
+      </div>
+    </div>
+    <!-- Scenarios pills -->
+    <div>
+      <label>Cenários</label>
+      <div id="grafgenCenGrp" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+    </div>
+  </div>
+  <!-- Metrics selector -->
+  <div id="grafgenMetricsBar"
+    style="background:var(--card);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+    <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-right:4px">Métricas</span>
+    <div id="grafgenMetricPills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+  <!-- Chart -->
+  <div style="padding:24px;flex:1">
+    <div id="grafgenChartWrap" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);
+         box-shadow:var(--sh-md);padding:20px 24px;position:relative;min-height:420px;display:flex;flex-direction:column">
+      <div id="grafgenChartMsg" style="flex:1;display:flex;align-items:center;justify-content:center;
+           font-size:13px;color:var(--muted);text-align:center;padding:40px">
+        Selecione pelo menos uma métrica e um cenário para gerar o gráfico.
+      </div>
+      <canvas id="grafgenChart" style="display:none;flex:1;min-height:360px"></canvas>
+    </div>
+  </div>
 </div>
 
 <!-- ── CPA Panel ── -->
@@ -3497,6 +3562,7 @@ function _getTabFilterBar(tab) {
   if(tab === 'mbu')     return document.querySelector('#mbuPanel .mbu-filter-bar');
   if(tab === 'bridges') return document.querySelector('#bridgesPanel .bridges-filter-bar');
   if(tab === 'evo')     return document.querySelector('#evoPanel .evo-filter-bar');
+  if(tab === 'grafgen') return document.getElementById('grafgenFilterBar');
   if(tab === 'cpa')     return document.querySelector('#cpaPanel .cpa-filter-bar');
   if(tab === 'mpos')    return document.querySelector('#mposPanel .cpa-filter-bar');
   if(tab === 'keynums') return document.querySelector('#keyNumPanel .kn-filter-bar');
@@ -3523,6 +3589,7 @@ function switchTab(btn) {
   const isEvo     = currentTab === 'evo';
   const isMbu     = currentTab === 'mbu';
   const isBridges = currentTab === 'bridges';
+  const isGrafgen = currentTab === 'grafgen';
 
   // Apply per-tab filter bar visibility (respects per-tab collapsed state)
   // First hide the P&L global filterBar; each tab's own filter bar is inside its panel
@@ -3535,6 +3602,7 @@ function switchTab(btn) {
   document.getElementById('keyNumPanel').style.display  = isKeyNums ? '' : 'none';
   document.getElementById('evoPanel').style.display     = isEvo     ? '' : 'none';
   document.getElementById('bridgesPanel').style.display = isBridges ? '' : 'none';
+  document.getElementById('grafgenPanel').style.display = isGrafgen ? '' : 'none';
 
   // Apply collapsed state for the newly active tab's filter bar
   const activeFilterBar = _getTabFilterBar(currentTab);
@@ -3551,6 +3619,7 @@ function switchTab(btn) {
   if(isEvo)     renderEvoTab();
   if(isMbu)     renderMbuTab();
   if(isBridges) renderBridgesTab();
+  if(isGrafgen) renderGrafgenTab();
 }
 
 function setCpaUnit(btn) {
@@ -6874,6 +6943,411 @@ function renderEvoTab() {
       }
     });
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GRAPHIC GENERATOR TAB
+// ═══════════════════════════════════════════════════════════
+
+// Shared period-key helper (used by Evo and GrafGen)
+function _toPeriodKey(m, gran) {
+  const yr = Math.floor(m/100), mo = m%100;
+  if(gran === 'quarterly') return `${yr}Q${Math.ceil(mo/3)}`;
+  if(gran === 'annual')    return String(yr);
+  return m;
+}
+function _periodLabel(p, gran) {
+  if(gran === 'annual')    return String(p);
+  if(gran === 'quarterly') return String(p).replace(/(\d{4})Q(\d)/, "$1 T$2");
+  const yr = Math.floor(p/100), mo = p%100;
+  return new Date(yr,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})
+    .replace(' de ',"'").replace('.','').toUpperCase();
+}
+
+// Metric definitions
+const GRAFGEN_METRICS = [
+  { key:'__tpv__',               label:'TPV',            color:'#B8960C', tpv:true      },
+  { key:'__nmv__',               label:'NMV',            color:'#D97706', nmv:true      },
+  { key:'Product Monetization',  label:'Product Mon.',   color:'#1565C0'                },
+  { key:'Net Monetization',      label:'Net Mon.',       color:'#1976D2'                },
+  { key:'__takerate__',          label:'Take Rate',      color:'#2E7D32', takerate:true },
+  { key:'Variable Contribution', label:'VC',             color:'#00897B'                },
+  { key:'Direct Contribution',   label:'DC',             color:'#7B1FA2'                },
+  { key:'Business Contribution', label:'Business Cont.', color:'#AD1457'                },
+  { key:'Business Margin',       label:'BM',             color:'#E53935'                },
+  { key:'EBIT',                  label:'EBIT',           color:'#37474F'                },
+];
+
+// Scenario dash styles
+const GRAFGEN_CEN_DASH = {
+  'Realizado'            : [],
+  'Plan'                 : [6,3],
+  'Forecast'             : [3,3],
+  'Actual Sin Distribuir': [8,3,2,3],
+};
+const GRAFGEN_CEN_LABEL = {
+  'Realizado':'Real', 'Plan':'Plan', 'Forecast':'Fcst', 'Actual Sin Distribuir':'Prévia'
+};
+
+// State
+let grafgenBU      = 'Acquiring';
+let grafgenGran    = 'monthly';
+let grafgenFromMes = null; // initialised on first render
+let grafgenToMes   = null;
+let grafgenCens    = new Set(['Plan','Forecast']);
+let grafgenMetrics = new Set(['__takerate__']);
+let grafgenDisplay = 'abs'; // 'abs' | 'pct' | 'abs_pct'
+let _grafgenChart  = null;
+let _grafgenInitDone = false;
+
+function _grafgenGetVal(buKey, m, cen, metric) {
+  const buses = KN_BU_MAP[buKey] || [buKey];
+  if(metric.tpv) {
+    let s=0;
+    for(const d of allData)
+      if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2==='TPV') s+=d.Value||0;
+    return s;
+  }
+  if(metric.nmv) {
+    let s=0;
+    for(const d of allData)
+      if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2==='NMV') s+=d.Value||0;
+    return s;
+  }
+  if(metric.takerate) {
+    let s=0;
+    for(const d of allData) {
+      if(d.MES!==m||d.Cenario!==cen||!buses.includes(d.Product)) continue;
+      if(d.MNG_1==='Product Monetization'||d.MNG_1==='Net Monetization') s+=d.Value||0;
+      if(d.MNG_1==='Variable Contribution'&&d.MNG_2==='Collection Fees') s+=d.Value||0;
+    }
+    return s;
+  }
+  const sections = knCumSections(metric.key);
+  let s=0;
+  for(const d of allData)
+    if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && sections.has(d.MNG_1)) s+=d.Value||0;
+  return s;
+}
+
+function _grafgenGetVol(buKey, m, cen) {
+  // volume metric: TPV for Acquiring-related, NMV for Commerce, else TPV
+  const buses = KN_BU_MAP[buKey] || [buKey];
+  const volKey = (buKey==='Commerce') ? 'NMV' : 'TPV';
+  let s=0;
+  for(const d of allData)
+    if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2===volKey) s+=d.Value||0;
+  return s;
+}
+
+function buildGrafgenBUSel() {
+  const sel = document.getElementById('grafgenBUSel');
+  if(!sel || sel.options.length || !allData || !allData.length) return;
+  // reuse same logic as buildEvoBUSel
+  const macroToProds = new Map();
+  for(const d of allData) {
+    if(!d.Macro_BU||!d.Product) continue;
+    if(!macroToProds.has(d.Macro_BU)) macroToProds.set(d.Macro_BU, new Set());
+    macroToProds.get(d.Macro_BU).add(d.Product);
+  }
+  for(const [macro,prods] of macroToProds)
+    if(!KN_BU_MAP[macro]) KN_BU_MAP[macro]=[...prods];
+  const macroBUs = [...macroToProds.keys()].sort((a,b)=>{
+    if(a==='Acquiring') return -1; if(b==='Acquiring') return 1; return a.localeCompare(b,'pt-BR');
+  });
+  const knGrouped = Object.keys(KN_BU_MAP).filter(k=>!macroToProds.has(k))
+    .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const allProds  = [...new Set(allData.map(d=>d.Product).filter(Boolean))].sort((a,b)=>{
+    if(a==='Acquiring') return 1; if(b==='Acquiring') return -1; return a.localeCompare(b,'pt-BR');
+  });
+  sel.innerHTML='';
+  const addGroup=(lbl,items)=>{
+    const grp=document.createElement('optgroup'); grp.label=lbl;
+    items.forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;grp.appendChild(o);});
+    sel.appendChild(grp);
+  };
+  addGroup('Macro BU',macroBUs);
+  if(knGrouped.length) addGroup('BU Agrupada',knGrouped);
+  addGroup('Produto',allProds);
+  sel.value = grafgenBU;
+}
+
+function buildGrafgenPeriodSels() {
+  const allMeses = [...new Set(allData.map(d=>d.MES))].sort();
+  const now = new Date(); const curMes = now.getFullYear()*100+(now.getMonth()+1);
+  const defFrom = 202601;
+  const defTo   = allMeses.filter(m=>m<=curMes).pop() || allMeses[allMeses.length-1];
+
+  if(grafgenFromMes===null) grafgenFromMes = defFrom;
+  if(grafgenToMes===null)   grafgenToMes   = defTo;
+
+  const fromSel = document.getElementById('grafgenFromSel');
+  const toSel   = document.getElementById('grafgenToSel');
+  if(!fromSel || !toSel) return;
+  if(fromSel.options.length) return; // already built
+  const fmtMes = m => {
+    const yr=Math.floor(m/100),mo=m%100;
+    return new Date(yr,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'numeric'})
+      .replace(' de ','/'').replace('.','');
+  };
+  allMeses.forEach(m=>{
+    const o1=document.createElement('option'); o1.value=m; o1.textContent=_periodLabel(m,'monthly'); fromSel.appendChild(o1);
+    const o2=document.createElement('option'); o2.value=m; o2.textContent=_periodLabel(m,'monthly'); toSel.appendChild(o2);
+  });
+  fromSel.value = allMeses.includes(grafgenFromMes) ? grafgenFromMes : allMeses[0];
+  toSel.value   = allMeses.includes(grafgenToMes)   ? grafgenToMes  : allMeses[allMeses.length-1];
+  grafgenFromMes = +fromSel.value;
+  grafgenToMes   = +toSel.value;
+}
+
+function buildGrafgenCenPills() {
+  const grp = document.getElementById('grafgenCenGrp');
+  if(!grp || grp.children.length) return;
+  const avail = [...new Set(allData.map(d=>d.Cenario))].sort();
+  const ORDER = ['Plan','Forecast','Realizado','Actual Sin Distribuir'];
+  const sorted = [...ORDER.filter(c=>avail.includes(c)), ...avail.filter(c=>!ORDER.includes(c))];
+  sorted.forEach(cen=>{
+    const btn = document.createElement('button');
+    btn.className = 'btn-hdr' + (grafgenCens.has(cen)?' on':'');
+    btn.textContent = GRAFGEN_CEN_LABEL[cen]||cen;
+    btn.title = cen;
+    btn.onclick = () => {
+      if(grafgenCens.has(cen)) grafgenCens.delete(cen); else grafgenCens.add(cen);
+      btn.classList.toggle('on', grafgenCens.has(cen));
+      renderGrafgenTab();
+    };
+    grp.appendChild(btn);
+  });
+}
+
+function buildGrafgenMetricPills() {
+  const wrap = document.getElementById('grafgenMetricPills');
+  if(!wrap || wrap.children.length) return;
+  GRAFGEN_METRICS.forEach(m=>{
+    const btn = document.createElement('button');
+    btn.className = 'btn-hdr' + (grafgenMetrics.has(m.key)?' on':'');
+    btn.textContent = m.label;
+    btn.style.cssText = grafgenMetrics.has(m.key)
+      ? `border-color:${m.color};background:${m.color}22;color:${m.color};font-weight:700`
+      : '';
+    btn.onclick = () => {
+      if(grafgenMetrics.has(m.key)) grafgenMetrics.delete(m.key); else grafgenMetrics.add(m.key);
+      const on = grafgenMetrics.has(m.key);
+      btn.classList.toggle('on', on);
+      btn.style.cssText = on ? `border-color:${m.color};background:${m.color}22;color:${m.color};font-weight:700` : '';
+      renderGrafgenTab();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function setGrafgenGran(btn) {
+  grafgenGran = btn.dataset.g;
+  document.querySelectorAll('#grafgenGranGrp button').forEach(b=>b.classList.toggle('on',b===btn));
+  renderGrafgenTab();
+}
+function setGrafgenDisplay(btn) {
+  grafgenDisplay = btn.dataset.d;
+  document.querySelectorAll('#grafgenDisplayGrp button').forEach(b=>b.classList.toggle('on',b===btn));
+  renderGrafgenTab();
+}
+
+function renderGrafgenTab() {
+  if(!allData||!allData.length) return;
+  buildGrafgenBUSel();
+  buildGrafgenPeriodSels();
+  buildGrafgenCenPills();
+  buildGrafgenMetricPills();
+
+  const ud    = 1_000_000;
+  const udLbl = 'R$ M';
+  const from  = grafgenFromMes, to = grafgenToMes;
+
+  // Build allMeses in range, then period keys
+  const allMeses = [...new Set(allData.map(d=>d.MES))].sort().filter(m=>m>=from&&m<=to);
+  if(!allMeses.length) { _grafgenShowMsg('Sem dados para o período selecionado.'); return; }
+
+  const allPeriods = [...new Set(allMeses.map(m=>_toPeriodKey(m,grafgenGran)))];
+  const labels     = allPeriods.map(p=>_periodLabel(p,grafgenGran));
+
+  const selMetrics = GRAFGEN_METRICS.filter(m=>grafgenMetrics.has(m.key));
+  const selCens    = [...grafgenCens];
+
+  if(!selMetrics.length||!selCens.length) {
+    _grafgenShowMsg('Selecione pelo menos uma métrica e um cenário para gerar o gráfico.');
+    return;
+  }
+
+  // Aggregate values per metric × scenario × period
+  const agg = new Map(); // `${metric.key}::${cen}` → Map<periodKey, number>
+  for(const metric of selMetrics) {
+    for(const cen of selCens) {
+      const serKey = `${metric.key}::${cen}`;
+      const byPer  = new Map();
+      allPeriods.forEach(p=>byPer.set(p,null));
+      for(const m of allMeses) {
+        const p = _toPeriodKey(m,grafgenGran);
+        const v = _grafgenGetVal(grafgenBU,m,cen,metric);
+        byPer.set(p,(byPer.get(p)||0)+v);
+      }
+      agg.set(serKey, byPer);
+    }
+  }
+
+  // Volume per scenario × period (for % display)
+  const volAgg = new Map(); // cen → Map<period, number>
+  if(grafgenDisplay!=='abs') {
+    for(const cen of selCens) {
+      const byPer = new Map();
+      allPeriods.forEach(p=>byPer.set(p,0));
+      for(const m of allMeses) {
+        const p = _toPeriodKey(m,grafgenGran);
+        byPer.set(p,(byPer.get(p)||0)+_grafgenGetVol(grafgenBU,m,cen));
+      }
+      volAgg.set(cen, byPer);
+    }
+  }
+
+  // Build Chart.js datasets
+  const datasets = [];
+  const isAbsPct = grafgenDisplay==='abs_pct';
+  const isPct    = grafgenDisplay==='pct';
+
+  selMetrics.forEach(metric=>{
+    selCens.forEach(cen=>{
+      const serKey = `${metric.key}::${cen}`;
+      const byPer  = agg.get(serKey);
+      const dash   = GRAFGEN_CEN_DASH[cen]||[];
+      const cenLbl = GRAFGEN_CEN_LABEL[cen]||cen;
+
+      // Absolute dataset (always when abs or abs_pct)
+      if(!isPct) {
+        const data = allPeriods.map(p=>{
+          const v = byPer.get(p);
+          return (v===null||v===undefined) ? null : v/ud;
+        });
+        datasets.push({
+          label:`${metric.label} · ${cenLbl}`,
+          data,
+          type:'line',
+          borderColor: metric.color,
+          backgroundColor: metric.color+'18',
+          borderWidth: 2.5,
+          borderDash: dash,
+          pointBackgroundColor: metric.color,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
+          pointRadius: 4,
+          tension: 0.25,
+          spanGaps: false,
+          yAxisID: 'yAbs',
+          _metricKey: metric.key,
+          _cen: cen,
+        });
+      }
+
+      // Percentage dataset (pct or abs_pct)
+      if(isPct||isAbsPct) {
+        const volByPer = volAgg.get(cen);
+        const data = allPeriods.map(p=>{
+          const v   = byPer.get(p);
+          const vol = volByPer?.get(p)||0;
+          if(!vol||v===null||v===undefined) return null;
+          return (v/vol)*100;
+        });
+        datasets.push({
+          label: isPct ? `${metric.label} · ${cenLbl} %vol` : `${metric.label} · ${cenLbl} %`,
+          data,
+          type:'line',
+          borderColor: metric.color,
+          backgroundColor: 'transparent',
+          borderWidth: isPct ? 2.5 : 1.5,
+          borderDash: isPct ? dash : [...dash,2,2].filter(Boolean).length?[...(dash.length?dash:[6,2]),2,2]:[2,4],
+          pointBackgroundColor: metric.color,
+          pointBorderColor:'#fff',
+          pointBorderWidth:1.5,
+          pointRadius: isPct ? 4 : 2.5,
+          tension:0.25,
+          spanGaps:false,
+          yAxisID: isPct ? 'yAbs' : 'yPct',
+          _metricKey: metric.key,
+          _cen: cen,
+          _isPct: true,
+        });
+      }
+    });
+  });
+
+  if(!datasets.length) { _grafgenShowMsg('Sem dados.'); return; }
+
+  // Scales
+  const scales = {
+    x:{ grid:{display:false}, ticks:{font:{size:10},color:'#888'} },
+    yAbs:{
+      position:'left',
+      grid:{color:'rgba(0,0,0,.06)'},
+      ticks:{font:{size:10},color:'#888',
+        callback:v=>v.toLocaleString('pt-BR',{maximumFractionDigits:0})},
+      title:{ display:true, text: isPct?'% do Volume':udLbl, font:{size:10}, color:'#888' }
+    },
+  };
+  if(isAbsPct) {
+    scales.yPct = {
+      position:'right',
+      grid:{ drawOnChartArea:false },
+      ticks:{ font:{size:10}, color:'#888',
+        callback:v=>(v>=0?'+':'')+v.toFixed(2)+'%' },
+      title:{ display:true, text:'% do Volume', font:{size:10}, color:'#888' }
+    };
+  }
+
+  // Destroy previous chart
+  if(_grafgenChart) { try{_grafgenChart.destroy()}catch(e){} _grafgenChart=null; }
+
+  const msgEl = document.getElementById('grafgenChartMsg');
+  const cvs   = document.getElementById('grafgenChart');
+  if(msgEl) msgEl.style.display='none';
+  if(cvs)   cvs.style.display='block';
+
+  _grafgenChart = new Chart(cvs.getContext('2d'),{
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:8, right:isAbsPct?8:0 } },
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{
+          display:true,
+          position:'bottom',
+          labels:{ font:{size:10}, boxWidth:14, padding:12,
+            filter: item => !item.label.startsWith('_') }
+        },
+        tooltip:{
+          callbacks:{
+            label: ctx => {
+              const v=ctx.parsed.y;
+              if(v===null||v===undefined) return null;
+              const isPctDs = ctx.dataset._isPct;
+              const fv = isPctDs
+                ? (v>=0?'+':'')+v.toFixed(2)+'%'
+                : v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+udLbl;
+              return `${ctx.dataset.label}: ${fv}`;
+            }
+          }
+        }
+      },
+      scales
+    }
+  });
+}
+
+function _grafgenShowMsg(msg) {
+  if(_grafgenChart) { try{_grafgenChart.destroy()}catch(e){} _grafgenChart=null; }
+  const msgEl = document.getElementById('grafgenChartMsg');
+  const cvs   = document.getElementById('grafgenChart');
+  if(msgEl){ msgEl.textContent=msg; msgEl.style.display='flex'; }
+  if(cvs)   cvs.style.display='none';
 }
 </script>
 </body>
