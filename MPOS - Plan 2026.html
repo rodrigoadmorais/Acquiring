@@ -1050,23 +1050,49 @@
             });
         }
 
-        function fuseActualIntoForecast(actualDb, forecastDb) {
-            const today = new Date();
-            const currentYYYYMM = String(today.getFullYear()) + String(today.getMonth() + 1).padStart(2, '0');
-            
+        // Funde realizado no forecast substituindo os N primeiros meses do ano do forecast.
+        // versionLabel = "Forecast 3+9" → N=3 → meses 1-3 do ano do forecast usam ACTUAL.
+        // Se N não puder ser extraído do label, cai no mês atual-1 como corte.
+        function fuseActualIntoForecast(actualDb, forecastDb, versionLabel) {
+            // Extrai N de "Forecast N+M" ou "N+M"
+            const nMatch = String(versionLabel || '').match(/(\d+)\+\d+/);
+            const N = nMatch ? parseInt(nMatch[1]) : null;
+
+            // Determina o ano do forecast (maior ano presente nos dados — o ano sendo previsto)
+            let forecastYear = String(new Date().getFullYear());
+            forecastDb.forEach(row => {
+                Object.keys(row).forEach(k => {
+                    if (/^\d{6}$/.test(k) && k.substring(0, 4) > forecastYear)
+                        forecastYear = k.substring(0, 4);
+                });
+            });
+
+            // Mês de corte inclusivo: meses ≤ cutoff usam realizado; meses > cutoff mantêm forecast
+            let cutoffYYYYMM;
+            if (N != null) {
+                // Usa exatamente os N primeiros meses do ano do forecast
+                cutoffYYYYMM = forecastYear + String(N).padStart(2, '0');
+            } else {
+                // Fallback: mês anterior ao atual (comportamento anterior)
+                const today = new Date();
+                const prev  = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                cutoffYYYYMM = String(prev.getFullYear()) + String(prev.getMonth() + 1).padStart(2, '0');
+            }
+
             let forecastMap = {};
-            
+
             forecastDb.forEach(row => {
                 let rawC = String(row.Canal||'').trim().toUpperCase();
                 let canal = canalRegistry[rawC] || String(row.Canal||'').trim();
                 let device = row.Device;
-                
-                let key = canal + "|" + device;
-                if(!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
 
-                for(let k in row) {
-                    if(/^\d{6}$/.test(k)) {
-                        if (k < currentYYYYMM) forecastMap[key][k] = 0;
+                let key = canal + "|" + device;
+                if (!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
+
+                for (let k in row) {
+                    if (/^\d{6}$/.test(k)) {
+                        // Meses dentro do corte serão preenchidos com realizado (zera agora)
+                        if (k <= cutoffYYYYMM) forecastMap[key][k] = 0;
                         else forecastMap[key][k] = (forecastMap[key][k] || 0) + (row[k] || 0);
                     }
                 }
@@ -1077,13 +1103,13 @@
                 let canal = canalRegistry[rawC] || String(row[cols.ACTUAL.canal]||'').trim();
                 let rawD = String(row[cols.ACTUAL.device]||'');
                 let device = classifyDevice(rawD) || rawD;
-                
-                if(!canal || !device) return;
+
+                if (!canal || !device) return;
 
                 let key = canal.toUpperCase() + "|" + device;
-                for(let k in row) {
-                    if(/^\d{6}$/.test(k) && k < currentYYYYMM) {
-                        if(!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
+                for (let k in row) {
+                    if (/^\d{6}$/.test(k) && k <= cutoffYYYYMM) {
+                        if (!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
                         forecastMap[key][k] = (forecastMap[key][k] || 0) + parseNum(row[k]);
                     }
                 }
@@ -1120,7 +1146,13 @@
                 detectStructure();
 
                 if (db.ACTUAL.length > 0) {
-                    db.FORECAST = fuseActualIntoForecast(db.ACTUAL, db.FORECAST);
+                    // Forecast principal: usa N do label (ex: "Forecast 3+9" → meses 1-3 do ano do forecast = realizado)
+                    db.FORECAST = fuseActualIntoForecast(db.ACTUAL, db.FORECAST, forecastDisplayVersion);
+                    // Todos os forecasts antigos: mesmo tratamento com o label de cada versão
+                    forecastOldVersions.forEach(({ key, label }) => {
+                        if (db[key] && db[key].length > 0)
+                            db[key] = fuseActualIntoForecast(db.ACTUAL, db[key], label);
+                    });
                 }
 
                 buildForecastOldScenarios();
