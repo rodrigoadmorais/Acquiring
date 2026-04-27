@@ -5099,9 +5099,46 @@ function mesLabel(m) {
 
 function buildEvoBUSel() {
   const sel = document.getElementById('evoBUSel');
-  if(!sel || sel.options.length) return;
-  ['Acquiring','Commerce','Fintech','Fintech Services','Point','OP','QR','Credits','DA & Investments','Insurtech']
-    .forEach(bu => { const o=document.createElement('option'); o.value=o.textContent=bu; sel.appendChild(o); });
+  if(!sel || sel.options.length || !allData || !allData.length) return;
+
+  // Build Macro BU → Products map from actual data
+  const macroToProds = new Map();
+  for(const d of allData) {
+    if(!d.Macro_BU || !d.Product) continue;
+    if(!macroToProds.has(d.Macro_BU)) macroToProds.set(d.Macro_BU, new Set());
+    macroToProds.get(d.Macro_BU).add(d.Product);
+  }
+  // Register any Macro BU not yet in KN_BU_MAP (e.g. Commerce)
+  for(const [macro, prods] of macroToProds)
+    if(!KN_BU_MAP[macro]) KN_BU_MAP[macro] = [...prods];
+
+  // Macro BUs: Acquiring first, rest alphabetical
+  const macroBUs = [...macroToProds.keys()].sort((a,b) => {
+    if(a==='Acquiring') return -1; if(b==='Acquiring') return 1;
+    return a.localeCompare(b,'pt-BR');
+  });
+
+  // KN grouped BUs not already covered by Macro BU list
+  const knGrouped = Object.keys(KN_BU_MAP)
+    .filter(k => !macroToProds.has(k))
+    .sort((a,b) => a.localeCompare(b,'pt-BR'));
+
+  // Individual products: alphabetical, Acquiring last
+  const allProds = [...new Set(allData.map(d=>d.Product).filter(Boolean))].sort((a,b) => {
+    if(a==='Acquiring') return 1; if(b==='Acquiring') return -1;
+    return a.localeCompare(b,'pt-BR');
+  });
+
+  sel.innerHTML = '';
+  const addGroup = (lbl, items) => {
+    const grp = document.createElement('optgroup'); grp.label = lbl;
+    items.forEach(v => { const o=document.createElement('option'); o.value=o.textContent=v; grp.appendChild(o); });
+    sel.appendChild(grp);
+  };
+  addGroup('Macro BU', macroBUs);
+  if(knGrouped.length) addGroup('BU Agrupada', knGrouped);
+  addGroup('Produto', allProds);
+
   sel.value = evoBU;
 }
 
@@ -6638,8 +6675,6 @@ function renderEvoTab() {
   EVO_METRICS.forEach(({key, abbr, label, takerate, tpv, hidden}) => {
     // Skip hidden metrics unless show-all is toggled
     if(hidden && !evoShowAll) return;
-    // Take Rate: only show for Acquiring-related BUs
-    if(takerate && !EVO_ACQUIRING_BUS.has(evoBU)) return;
 
     // Aggregate by period — Plan uses null when no data (avoids phantom zeros)
     const realByPeriod = new Map();
