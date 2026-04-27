@@ -1072,49 +1072,61 @@
             // Mês de corte inclusivo: meses ≤ cutoff usam realizado; meses > cutoff mantêm forecast
             let cutoffYYYYMM;
             if (N != null) {
-                // Usa exatamente os N primeiros meses do ano do forecast
                 cutoffYYYYMM = forecastYear + String(N).padStart(2, '0');
             } else {
-                // Fallback: mês anterior ao atual (comportamento anterior)
                 const today = new Date();
                 const prev  = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                 cutoffYYYYMM = String(prev.getFullYear()) + String(prev.getMonth() + 1).padStart(2, '0');
             }
 
-            let forecastMap = {};
-
-            forecastDb.forEach(row => {
-                let rawC = String(row.Canal||'').trim().toUpperCase();
-                let canal = canalRegistry[rawC] || String(row.Canal||'').trim();
-                let device = row.Device;
-
-                let key = canal + "|" + device;
-                if (!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
-
-                for (let k in row) {
-                    if (/^\d{6}$/.test(k)) {
-                        // Meses dentro do corte serão preenchidos com realizado (zera agora)
-                        if (k <= cutoffYYYYMM) forecastMap[key][k] = 0;
-                        else forecastMap[key][k] = (forecastMap[key][k] || 0) + (row[k] || 0);
+            // --- Passo 1: monta actualMap com chaves UPPERCASE para lookup ---
+            // Só coleta meses do ano do forecast que estejam dentro do corte.
+            const actualMap = {};
+            actualDb.forEach(row => {
+                const rawC  = String(row[cols.ACTUAL.canal]||'').trim().toUpperCase();
+                const canal = (canalRegistry[rawC] || String(row[cols.ACTUAL.canal]||'').trim()).toUpperCase();
+                const rawD  = String(row[cols.ACTUAL.device]||'');
+                const dev   = (classifyDevice(rawD) || rawD).toUpperCase();
+                if (!canal || !dev) return;
+                const key = canal + '|' + dev;
+                if (!actualMap[key]) actualMap[key] = {};
+                for (const k in row) {
+                    if (/^\d{6}$/.test(k) && k.startsWith(forecastYear) && k <= cutoffYYYYMM) {
+                        actualMap[key][k] = (actualMap[key][k] || 0) + parseNum(row[k]);
                     }
                 }
             });
 
-            actualDb.forEach(row => {
-                let rawC = String(row[cols.ACTUAL.canal]||'').trim().toUpperCase();
-                let canal = canalRegistry[rawC] || String(row[cols.ACTUAL.canal]||'').trim();
-                let rawD = String(row[cols.ACTUAL.device]||'');
-                let device = classifyDevice(rawD) || rawD;
-
-                if (!canal || !device) return;
-
-                let key = canal.toUpperCase() + "|" + device;
-                for (let k in row) {
-                    if (/^\d{6}$/.test(k) && k <= cutoffYYYYMM) {
-                        if (!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: device };
-                        forecastMap[key][k] = (forecastMap[key][k] || 0) + parseNum(row[k]);
+            // --- Passo 2: monta forecastMap com chave UPPERCASE, acumulando linhas duplicadas ---
+            const forecastMap = {};
+            forecastDb.forEach(row => {
+                const rawC  = String(row.Canal||'').trim().toUpperCase();
+                const canal = canalRegistry[rawC] || String(row.Canal||'').trim();
+                const dev   = String(row.Device||'').trim();
+                const key   = canal.toUpperCase() + '|' + dev.toUpperCase();   // chave UPPERCASE uniforme
+                if (!forecastMap[key]) forecastMap[key] = { Canal: canal, Device: dev };
+                for (const k in row) {
+                    if (/^\d{6}$/.test(k)) {
+                        if (k.startsWith(forecastYear) && k <= cutoffYYYYMM) {
+                            // Meses dentro do corte: serão substituídos pelo realizado → zera
+                            forecastMap[key][k] = 0;
+                        } else {
+                            // Meses fora do corte: acumula valores do forecast
+                            forecastMap[key][k] = (forecastMap[key][k] || 0) + parseNum(row[k]);
+                        }
                     }
                 }
+            });
+
+            // --- Passo 3: substitui meses ≤ cutoff pelo realizado (REPLACE, não ADD) ---
+            Object.keys(forecastMap).forEach(key => {
+                const actual = actualMap[key];
+                const fYear = forecastYear;
+                Object.keys(forecastMap[key]).forEach(k => {
+                    if (/^\d{6}$/.test(k) && k.startsWith(fYear) && k <= cutoffYYYYMM) {
+                        forecastMap[key][k] = actual ? (actual[k] || 0) : 0;
+                    }
+                });
             });
 
             return Object.values(forecastMap);
