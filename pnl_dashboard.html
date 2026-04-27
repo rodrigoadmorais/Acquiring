@@ -7088,7 +7088,7 @@ function buildGrafgenPeriodSels() {
   const fmtMes = m => {
     const yr=Math.floor(m/100),mo=m%100;
     return new Date(yr,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'numeric'})
-      .replace(' de ','/'').replace('.','');
+      .replace(' de ','/').replace('.','');
   };
   allMeses.forEach(m=>{
     const o1=document.createElement('option'); o1.value=m; o1.textContent=_periodLabel(m,'monthly'); fromSel.appendChild(o1);
