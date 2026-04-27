@@ -1208,14 +1208,16 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <div id="grafgenMetricPills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
   </div>
   <!-- Chart -->
-  <div style="padding:24px;flex:1">
+  <div style="padding:24px">
     <div id="grafgenChartWrap" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);
-         box-shadow:var(--sh-md);padding:20px 24px;position:relative;min-height:420px;display:flex;flex-direction:column">
-      <div id="grafgenChartMsg" style="flex:1;display:flex;align-items:center;justify-content:center;
+         box-shadow:var(--sh-md);padding:20px 24px">
+      <div id="grafgenChartMsg" style="height:400px;display:flex;align-items:center;justify-content:center;
            font-size:13px;color:var(--muted);text-align:center;padding:40px">
         Selecione pelo menos uma métrica e um cenário para gerar o gráfico.
       </div>
-      <canvas id="grafgenChart" style="display:none;flex:1;min-height:360px"></canvas>
+      <div id="grafgenChartContainer" style="display:none;height:400px;position:relative">
+        <canvas id="grafgenChart"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -7304,10 +7306,11 @@ function renderGrafgenTab() {
   // Destroy previous chart
   if(_grafgenChart) { try{_grafgenChart.destroy()}catch(e){} _grafgenChart=null; }
 
-  const msgEl = document.getElementById('grafgenChartMsg');
-  const cvs   = document.getElementById('grafgenChart');
+  const msgEl  = document.getElementById('grafgenChartMsg');
+  const ctEl   = document.getElementById('grafgenChartContainer');
+  const cvs    = document.getElementById('grafgenChart');
   if(msgEl) msgEl.style.display='none';
-  if(cvs)   cvs.style.display='block';
+  if(ctEl)  ctEl.style.display='block';
 
   _grafgenChart = new Chart(cvs.getContext('2d'),{
     type:'line',
@@ -7345,9 +7348,9 @@ function renderGrafgenTab() {
 function _grafgenShowMsg(msg) {
   if(_grafgenChart) { try{_grafgenChart.destroy()}catch(e){} _grafgenChart=null; }
   const msgEl = document.getElementById('grafgenChartMsg');
-  const cvs   = document.getElementById('grafgenChart');
+  const ctEl  = document.getElementById('grafgenChartContainer');
   if(msgEl){ msgEl.textContent=msg; msgEl.style.display='flex'; }
-  if(cvs)   cvs.style.display='none';
+  if(ctEl)  ctEl.style.display='none';
 }
 </script>
 </body>
