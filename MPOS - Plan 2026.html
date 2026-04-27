@@ -306,6 +306,13 @@
                                 <button onclick="resetSalesTaxesRate()" class="bg-gray-200 text-gray-600 text-[10px] font-black px-2.5 py-1.5 rounded-lg hover:bg-gray-300 transition-all">Reset</button>
                             </div>
                         </div>
+                        <!-- Toggle ajuste CMV Smart -->
+                        <button id="btn-smart-cost-adj" onclick="toggleSmartCostAdj()"
+                            title="Aplica +12,5% no CMV unitário do Smart a partir de Agosto&#10;e +7% adicional a partir de Novembro"
+                            class="flex items-center gap-1.5 border px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all bg-white border-gray-300 text-gray-500 hover:bg-gray-50">
+                            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                            <span>↑ CMV Smart</span>
+                        </button>
                     </div>
                 </div>
                 <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-white">
@@ -2170,6 +2177,7 @@
         let plUnitMode = false;
         let plMetric = 'resultado';
         let plTimelineChartObj = null, plBarChartObj = null;
+        let smartCostAdjEnabled = false;  // toggle ajuste de custo Smart (ago +12,5% / nov +7% adicional)
 
         const PL_METRIC_LABELS = { resultado: 'Resultado', receita: 'Receita', salesTaxes: 'Sales Taxes', cmv: 'CMV' };
         const PL_METRIC_ACTIVE_COLOR = { resultado: '#1d4ed8', receita: '#1d4ed8', salesTaxes: '#d97706', cmv: '#dc2626' };
@@ -2211,11 +2219,26 @@
             return (PL_SELL_PRICE[d] && PL_SELL_PRICE[d][c] !== undefined) ? PL_SELL_PRICE[d][c] : 0;
         }
 
-        function getCostBRL(device) {
-            return PL_COST_BRL[String(device).toUpperCase().trim()] || 0;
+        // Retorna multiplicador de custo para Smart baseado no mês (1-12).
+        // Ago-Out: +12,5%  |  Nov+: +12,5% × 1,07  |  demais: 1×
+        function getSmartCostMult(moNum) {
+            if (!smartCostAdjEnabled || moNum == null) return 1;
+            if (moNum >= 11) return 1.125 * 1.07;
+            if (moNum >= 8)  return 1.125;
+            return 1;
         }
 
-        function computePL(byCanalDevice) {
+        // moNum (1-12) opcional — aplica ajuste de custo Smart quando presente
+        function getCostBRL(device, moNum) {
+            const base = PL_COST_BRL[String(device).toUpperCase().trim()] || 0;
+            if (String(device).toUpperCase().trim() === 'SMART' && moNum != null) {
+                return base * getSmartCostMult(moNum);
+            }
+            return base;
+        }
+
+        // moNum (1-12) opcional — quando fornecido aplica custo ajustado do mês
+        function computePL(byCanalDevice, moNum) {
             let totalReceita = 0, totalCMV = 0;
             let byCanal = {};
 
@@ -2227,7 +2250,7 @@
                 Object.keys(devices).forEach(device => {
                     const qty = devices[device];
                     const price = getSellPrice(device, canal);
-                    const cost = getCostBRL(device);
+                    const cost = getCostBRL(device, moNum);
                     const receita = qty * price;
                     const cmv = qty * cost;
                     const salesTaxes = -salesTaxesRate * receita;
@@ -2246,6 +2269,91 @@
             const totalQty = Object.values(byCanal).reduce((s, c) => s + c.qty, 0);
             const totalSalesTaxes = -salesTaxesRate * totalReceita;
             return { totalReceita, totalCMV, totalSalesTaxes, totalResultado: totalReceita + totalSalesTaxes + totalCMV, totalQty, byCanal };
+        }
+
+        // Acumula dois objetos P&L (para agregação mês a mês)
+        function mergePL(acc, pl) {
+            if (!acc) {
+                // cópia profunda para não mutar o objeto original
+                const clone = { ...pl, byCanal: {} };
+                Object.entries(pl.byCanal).forEach(([c, cd]) => {
+                    clone.byCanal[c] = { ...cd, devices: {} };
+                    Object.entries(cd.devices || {}).forEach(([d, dd]) => { clone.byCanal[c].devices[d] = { ...dd }; });
+                });
+                return clone;
+            }
+            acc.totalReceita    += pl.totalReceita;
+            acc.totalCMV        += pl.totalCMV;
+            acc.totalSalesTaxes += pl.totalSalesTaxes;
+            acc.totalResultado  += pl.totalResultado;
+            acc.totalQty        += pl.totalQty;
+            Object.entries(pl.byCanal).forEach(([c, cd]) => {
+                if (!acc.byCanal[c]) acc.byCanal[c] = { receita:0, cmv:0, salesTaxes:0, resultado:0, qty:0, devices:{} };
+                const t = acc.byCanal[c];
+                t.receita    += cd.receita;    t.cmv        += cd.cmv;
+                t.salesTaxes += cd.salesTaxes; t.resultado  += cd.resultado; t.qty += cd.qty;
+                Object.entries(cd.devices || {}).forEach(([d, dd]) => {
+                    if (!t.devices[d]) t.devices[d] = { qty:0, receita:0, cmv:0, salesTaxes:0, resultado:0 };
+                    const td = t.devices[d];
+                    td.qty += dd.qty; td.receita += dd.receita; td.cmv += dd.cmv;
+                    td.salesTaxes += dd.salesTaxes; td.resultado += dd.resultado;
+                });
+            });
+            return acc;
+        }
+
+        // Computa P&L para um período aplicando o custo Smart correto por mês quando o ajuste está ativo.
+        // Para períodos multi-mês com ajuste ligado, agrega mês a mês com o multiplicador adequado.
+        function computePLPeriod(type, periodId, filterCanal, filterDevice) {
+            const [periodType, periodValue] = periodId.split('|');
+
+            if (!smartCostAdjEnabled || periodType === 'MONTH') {
+                // Caminho simples: ajuste desligado ou período de um único mês
+                const data  = extractValue(type, periodId, filterCanal, filterDevice);
+                const bcd   = data.byCanalDeviceRaw || data.byCanalDevice;
+                const moNum = periodType === 'MONTH' ? parseInt(periodValue.substring(4, 6)) : null;
+                return computePL(bcd, moNum);
+            }
+
+            // Ajuste ligado + período multi-mês: acumula mês a mês com custo correto
+            const year = periodValue.substring(0, 4);
+            const sc   = scenarioList.find(s => s.id === `${type}|${year}`);
+            if (!sc || !sc.months.length) {
+                const data = extractValue(type, periodId, filterCanal, filterDevice);
+                return computePL(data.byCanalDeviceRaw || data.byCanalDevice);
+            }
+
+            let months = sc.months; // ['01','02',...]
+            if (periodType === 'YTD') {
+                const cut = parseInt(periodValue.substring(4, 6));
+                months = months.filter(m => parseInt(m) <= cut);
+            } else if (periodType === 'YTG') {
+                const cut = parseInt(periodValue.substring(4, 6));
+                months = months.filter(m => parseInt(m) >= cut);
+            }
+
+            let result = null;
+            for (const mo of months) {
+                const yyyymm = year + mo;
+                const data   = extractValue(type, `MONTH|${yyyymm}`, filterCanal, filterDevice);
+                const bcd    = data.byCanalDeviceRaw || data.byCanalDevice;
+                result = mergePL(result, computePL(bcd, parseInt(mo)));
+            }
+            return result || computePL({});
+        }
+
+        // Liga/desliga ajuste de custo Smart e re-renderiza
+        function toggleSmartCostAdj() {
+            smartCostAdjEnabled = !smartCostAdjEnabled;
+            const btn = document.getElementById('btn-smart-cost-adj');
+            if (smartCostAdjEnabled) {
+                btn.classList.remove('bg-white','border-gray-300','text-gray-500');
+                btn.classList.add('bg-orange-500','border-orange-600','text-white');
+            } else {
+                btn.classList.remove('bg-orange-500','border-orange-600','text-white');
+                btn.classList.add('bg-white','border-gray-300','text-gray-500');
+            }
+            renderPLTab();
         }
 
         function formatBRL(val) {
@@ -2907,8 +3015,9 @@
 
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
-            let plA = computePL(dataA.byCanalDeviceRaw || dataA.byCanalDevice);
-            let plB = computePL(dataB.byCanalDeviceRaw || dataB.byCanalDevice);
+            // computePLPeriod aplica custo ajustado do Smart mês a mês quando o toggle está ativo
+            let plA = computePLPeriod(typeA, periodA, filterCanal, filterDevice);
+            let plB = computePLPeriod(typeB, periodB, filterCanal, filterDevice);
             if (groupDigital || groupAcquisicao) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
 
             // KPI colors
@@ -3153,8 +3262,8 @@
             const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${prefix}${moB})`;
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
-            let plA = computePL(dataA.byCanalDeviceRaw || dataA.byCanalDevice);
-            let plB = computePL(dataB.byCanalDeviceRaw || dataB.byCanalDevice);
+            let plA = computePLPeriod(typeA, periodA, filterCanal, filterDevice);
+            let plB = computePLPeriod(typeB, periodB, filterCanal, filterDevice);
             if (groupDigital || groupAcquisicao) { plA = applyGroupingPL(plA); plB = applyGroupingPL(plB); }
             const bColor = getBaseColor(typeB, true);
             const fmtC = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0});
@@ -3290,8 +3399,8 @@
 
             // Timeline chart
             function getPLMonthVal(type, yr, mo) {
-                const d = extractValue(type, `MONTH|${yr}${String(mo).padStart(2,'0')}`, filterCanal, filterDevice);
-                const pl = computePL(d.byCanalDeviceRaw || d.byCanalDevice);
+                const mmStr = String(mo).padStart(2,'0');
+                const pl    = computePLPeriod(type, `MONTH|${yr}${mmStr}`, filterCanal, filterDevice);
                 const total = getMetricTotal(pl);
                 if (total === 0) return null;
                 return plUnitMode && pl.totalQty > 0 ? total/pl.totalQty : total;
@@ -3492,8 +3601,7 @@
 
             for (let m = 1; m <= 12; m++) {
                 const periodId = `MONTH|${year}${String(m).padStart(2, '0')}`;
-                const d = extractValue(type, periodId, 'ALL', 'ALL');
-                const pl = computePL(d.byCanalDeviceRaw || d.byCanalDevice);
+                const pl = computePLPeriod(type, periodId, 'ALL', 'ALL');
                 receitaRow.push(pl.totalReceita !== 0 ? Math.round(pl.totalReceita) : '');
                 salesTaxesRow.push(pl.totalSalesTaxes !== 0 ? Math.round(pl.totalSalesTaxes) : '');
                 cmvRow.push(pl.totalCMV !== 0 ? Math.round(pl.totalCMV) : '');
