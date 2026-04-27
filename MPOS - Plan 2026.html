@@ -309,7 +309,7 @@
                         <!-- Toggle ajuste CMV Smart -->
                         <button id="btn-smart-cost-adj" onclick="toggleSmartCostAdj()"
                             title="Aplica +12,5% no CMV unitário do Smart a partir de Agosto&#10;e +7% adicional a partir de Novembro"
-                            class="flex items-center gap-1.5 border px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all bg-white border-gray-300 text-gray-500 hover:bg-gray-50">
+                            class="flex items-center gap-1.5 border px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all bg-orange-500 border-orange-600 text-white">
                             <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
                             <span>↑ CMV Smart</span>
                         </button>
@@ -2211,7 +2211,7 @@
         let plUnitMode = false;
         let plMetric = 'resultado';
         let plTimelineChartObj = null, plBarChartObj = null;
-        let smartCostAdjEnabled = false;  // toggle ajuste de custo Smart (ago +12,5% / nov +7% adicional)
+        let smartCostAdjEnabled = true;   // toggle ajuste de custo Smart (ago +12,5% / nov +7% adicional) — ativo por padrão
 
         const PL_METRIC_LABELS = { resultado: 'Resultado', receita: 'Receita', salesTaxes: 'Sales Taxes', cmv: 'CMV' };
         const PL_METRIC_ACTIVE_COLOR = { resultado: '#1d4ed8', receita: '#1d4ed8', salesTaxes: '#d97706', cmv: '#dc2626' };
