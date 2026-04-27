@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    DESIGN SYSTEM — P&L Brasil · MELI Style
@@ -1195,27 +1196,43 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <button class="btn-hdr"    data-d="abs_pct" onclick="setGrafgenDisplay(this)">Abs + %</button>
       </div>
     </div>
-    <!-- Scenarios pills -->
+    <!-- Chart type -->
     <div>
-      <label>Cenários</label>
-      <div id="grafgenCenGrp" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+      <label>Tipo</label>
+      <div id="grafgenTypeGrp" style="display:flex;gap:4px">
+        <button class="btn-hdr on" data-t="line" onclick="setGrafgenType(this)">Linha</button>
+        <button class="btn-hdr"    data-t="bar"  onclick="setGrafgenType(this)">Barra</button>
+      </div>
+    </div>
+    <!-- Scenarios: click to toggle on/off; click type-icon to toggle line/bar per scenario -->
+    <div>
+      <label>Cenários <span style="font-size:9px;color:var(--muted)">(ícone alterna linha↔barra)</span></label>
+      <div id="grafgenCenGrp" style="display:flex;gap:6px;flex-wrap:wrap"></div>
     </div>
   </div>
-  <!-- Metrics selector -->
+  <!-- Metrics + P&L rows -->
   <div id="grafgenMetricsBar"
     style="background:var(--card);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
     <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-right:4px">Métricas</span>
     <div id="grafgenMetricPills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <div id="grafgenPnlPills"    style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <button id="grafgenPnlBtn" onclick="toggleGrafgenPnl()"
+      style="padding:3px 10px;font-size:10px;border:1.5px dashed var(--border);border-radius:20px;
+             background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap">
+      + P&L Detalhado
+    </button>
   </div>
-  <!-- Chart -->
+  <!-- P&L granular tree (hidden until toggled) -->
+  <div id="grafgenPnlPanel" style="display:none;background:var(--card);border-bottom:1px solid var(--border)"></div>
+  <!-- Chart area -->
   <div style="padding:24px">
     <div id="grafgenChartWrap" style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);
          box-shadow:var(--sh-md);padding:20px 24px">
-      <div id="grafgenChartMsg" style="height:400px;display:flex;align-items:center;justify-content:center;
+      <div id="grafgenChartMsg" style="height:420px;display:flex;align-items:center;justify-content:center;
            font-size:13px;color:var(--muted);text-align:center;padding:40px">
         Selecione pelo menos uma métrica e um cenário para gerar o gráfico.
       </div>
-      <div id="grafgenChartContainer" style="display:none;height:400px;position:relative">
+      <div id="grafgenChartContainer" style="display:none;height:420px;position:relative">
         <canvas id="grafgenChart"></canvas>
       </div>
     </div>
@@ -6966,76 +6983,121 @@ function _periodLabel(p, gran) {
     .replace(' de ',"'").replace('.','').toUpperCase();
 }
 
-// Metric definitions
+// Quick-metric definitions
 const GRAFGEN_METRICS = [
-  { key:'__tpv__',               label:'TPV',            color:'#B8960C', tpv:true      },
-  { key:'__nmv__',               label:'NMV',            color:'#D97706', nmv:true      },
-  { key:'Product Monetization',  label:'Product Mon.',   color:'#1565C0'                },
-  { key:'Net Monetization',      label:'Net Mon.',       color:'#1976D2'                },
-  { key:'__takerate__',          label:'Take Rate',      color:'#2E7D32', takerate:true },
-  { key:'Variable Contribution', label:'VC',             color:'#00897B'                },
-  { key:'Direct Contribution',   label:'DC',             color:'#7B1FA2'                },
-  { key:'Business Contribution', label:'Business Cont.', color:'#AD1457'                },
-  { key:'Business Margin',       label:'BM',             color:'#E53935'                },
-  { key:'EBIT',                  label:'EBIT',           color:'#37474F'                },
+  { key:'__tpv__',               label:'TPV',       color:'#B8960C', tpv:true      },
+  { key:'__nmv__',               label:'NMV',       color:'#D97706', nmv:true      },
+  { key:'Product Monetization',  label:'PM',        color:'#1565C0'                },
+  { key:'Net Monetization',      label:'NM',        color:'#1976D2'                },
+  { key:'__takerate__',          label:'Take Rate', color:'#2E7D32', takerate:true },
+  { key:'Variable Contribution', label:'VC',        color:'#00897B'                },
+  { key:'Direct Contribution',   label:'DC',        color:'#7B1FA2'                },
+  { key:'Business Contribution', label:'BC',        color:'#AD1457'                },
+  { key:'Business Margin',       label:'BM',        color:'#E53935'                },
+  { key:'EBIT',                  label:'EBIT',      color:'#37474F'                },
 ];
 
-// Scenario dash styles
+// Color palette for granular P&L rows
+const GRAFGEN_ROW_COLORS = [
+  '#0277BD','#00695C','#558B2F','#9E7D00','#BF360C','#4A148C',
+  '#880E4F','#006064','#1A237E','#37474F','#3E2723','#E65100',
+];
+let _ggRCI = 0;
+const _ggRCM = new Map();
+function _ggRowColor(k) {
+  if(!_ggRCM.has(k)) _ggRCM.set(k, GRAFGEN_ROW_COLORS[_ggRCI++ % GRAFGEN_ROW_COLORS.length]);
+  return _ggRCM.get(k);
+}
+
+// Scenario dash/label constants
 const GRAFGEN_CEN_DASH = {
-  'Realizado'            : [],
-  'Plan'                 : [6,3],
-  'Forecast'             : [3,3],
-  'Actual Sin Distribuir': [8,3,2,3],
+  'Realizado':[], 'Plan':[6,3], 'Forecast':[3,3], 'Actual Sin Distribuir':[8,3,2,3]
 };
 const GRAFGEN_CEN_LABEL = {
   'Realizado':'Real', 'Plan':'Plan', 'Forecast':'Fcst', 'Actual Sin Distribuir':'Prévia'
 };
 
-// State
-let grafgenBU      = 'Acquiring';
-let grafgenGran    = 'monthly';
-let grafgenFromMes = null; // initialised on first render
-let grafgenToMes   = null;
-let grafgenCens    = new Set(['Plan','Forecast']);
-let grafgenMetrics = new Set(['__takerate__']);
-let grafgenDisplay = 'abs'; // 'abs' | 'pct' | 'abs_pct'
-let _grafgenChart  = null;
-let _grafgenInitDone = false;
+// ── State ──────────────────────────────────────────────────
+let grafgenBU        = 'Acquiring';
+let grafgenGran      = 'monthly';
+let grafgenFromMes   = null;
+let grafgenToMes     = null;
+let grafgenCens      = new Set(['Plan','Forecast']);
+let grafgenMetrics   = new Set(['__takerate__']);  // quick metric keys
+let grafgenPnlRows   = new Set();                  // 'row::MNG1::MNG2' keys
+let grafgenDisplay   = 'abs';
+let grafgenChartMode = 'line';   // 'line' | 'bar'
+let grafgenCenStyle  = {};       // per-scenario override: { 'Forecast':'bar' }
+let _grafgenChart    = null;
+let _grafgenPnlOpen  = false;
 
-function _grafgenGetVal(buKey, m, cen, metric) {
-  // Returns null when no rows match (so chart shows a gap instead of zero)
+// ── Metric definition resolver ──────────────────────────────
+function _ggMetricDef(key) {
+  const m = GRAFGEN_METRICS.find(m => m.key === key);
+  if(m) return m;
+  if(key.startsWith('row::')) {
+    const p = key.split('::');
+    return { key, label: p[2]||p[1], color: _ggRowColor(key), rowMng1: p[1], rowMng2: p[2]||null };
+  }
+  return null;
+}
+function _ggAllMetrics() {
+  const out = [];
+  for(const k of grafgenMetrics) { const d=_ggMetricDef(k); if(d) out.push(d); }
+  for(const k of grafgenPnlRows)  { const d=_ggMetricDef(k); if(d) out.push(d); }
+  return out;
+}
+
+// Returns value or null (null = no data rows matched)
+function _grafgenGetVal(buKey, m, cen, def) {
   const buses = KN_BU_MAP[buKey] || [buKey];
-  if(metric.tpv) {
+  if(def.tpv) {
     let s=null;
     for(const d of allData)
-      if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2==='TPV')
-        s = (s||0) + (d.Value||0);
+      if(d.MES===m&&d.Cenario===cen&&buses.includes(d.Product)&&d.MNG_1==='Metrics'&&d.MNG_2==='TPV')
+        s=(s||0)+(d.Value||0);
     return s;
   }
-  if(metric.nmv) {
+  if(def.nmv) {
     let s=null;
     for(const d of allData)
-      if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2==='NMV')
-        s = (s||0) + (d.Value||0);
+      if(d.MES===m&&d.Cenario===cen&&buses.includes(d.Product)&&d.MNG_1==='Metrics'&&d.MNG_2==='NMV')
+        s=(s||0)+(d.Value||0);
     return s;
   }
-  if(metric.takerate) {
+  if(def.takerate) {
     let s=null;
     for(const d of allData) {
       if(d.MES!==m||d.Cenario!==cen||!buses.includes(d.Product)) continue;
-      if(d.MNG_1==='Product Monetization'||d.MNG_1==='Net Monetization')
-        s = (s||0) + (d.Value||0);
-      if(d.MNG_1==='Variable Contribution'&&d.MNG_2==='Collection Fees')
-        s = (s||0) + (d.Value||0);
+      if(d.MNG_1==='Product Monetization'||d.MNG_1==='Net Monetization') s=(s||0)+(d.Value||0);
+      if(d.MNG_1==='Variable Contribution'&&d.MNG_2==='Collection Fees') s=(s||0)+(d.Value||0);
     }
     return s;
   }
-  const sections = knCumSections(metric.key);
+  if(def.rowMng1) {
+    let s=null;
+    for(const d of allData) {
+      if(d.MES!==m||d.Cenario!==cen||!buses.includes(d.Product)) continue;
+      if(d.MNG_1===def.rowMng1&&(def.rowMng2===null||d.MNG_2===def.rowMng2)) s=(s||0)+(d.Value||0);
+    }
+    return s;
+  }
+  const sections = knCumSections(def.key);
   let s=null;
   for(const d of allData)
-    if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && sections.has(d.MNG_1))
-      s = (s||0) + (d.Value||0);
+    if(d.MES===m&&d.Cenario===cen&&buses.includes(d.Product)&&sections.has(d.MNG_1)) s=(s||0)+(d.Value||0);
   return s;
+}
+
+// Forecast blended with Realizado for past months
+// Returns { value, isReal } — isReal=true means value filled from Realizado
+function _ggBlended(buKey, m, cen, def) {
+  const v = _grafgenGetVal(buKey, m, cen, def);
+  if(cen==='Forecast' && v===null) {
+    const vr = _grafgenGetVal(buKey, m, 'Realizado', def);
+    if(vr !== null) return { value: vr, isReal: true };
+  }
+  return { value: v, isReal: false };
 }
 
 function _grafgenGetVol(buKey, m, cen) {
@@ -7115,38 +7177,144 @@ function buildGrafgenCenPills() {
   const ORDER = ['Plan','Forecast','Realizado','Actual Sin Distribuir'];
   const sorted = [...ORDER.filter(c=>avail.includes(c)), ...avail.filter(c=>!ORDER.includes(c))];
   sorted.forEach(cen=>{
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:0';
+
+    // Main scenario toggle button
     const btn = document.createElement('button');
-    btn.className = 'btn-hdr' + (grafgenCens.has(cen)?' on':'');
+    btn.className = 'btn-hdr' + (grafgenCens.has(cen) ? ' on' : '');
     btn.textContent = GRAFGEN_CEN_LABEL[cen]||cen;
     btn.title = cen;
+    btn.style.borderRadius = 'var(--r-sm) 0 0 var(--r-sm)';
     btn.onclick = () => {
       if(grafgenCens.has(cen)) grafgenCens.delete(cen); else grafgenCens.add(cen);
       btn.classList.toggle('on', grafgenCens.has(cen));
+      typeBtn.classList.toggle('on', grafgenCens.has(cen));
       renderGrafgenTab();
     };
-    grp.appendChild(btn);
+
+    // Type toggle: line ↔ bar (only meaningful when scenario is active)
+    const typeBtn = document.createElement('button');
+    typeBtn.className = 'btn-hdr' + (grafgenCens.has(cen) ? ' on' : '');
+    typeBtn.dataset.cen = cen;
+    typeBtn.dataset.typeToggle = '1';
+    const curT = grafgenCenStyle[cen] || grafgenChartMode;
+    typeBtn.textContent = curT === 'bar' ? '▮' : '━';
+    typeBtn.title = 'Alternar linha/barra para ' + (GRAFGEN_CEN_LABEL[cen]||cen);
+    typeBtn.style.cssText = 'border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:9px;padding:3px 6px;border-left:none';
+    typeBtn.onclick = (e) => {
+      e.stopPropagation();
+      if(!grafgenCens.has(cen)) { // also activate scenario on type-click
+        grafgenCens.add(cen); btn.classList.add('on'); typeBtn.classList.add('on');
+      }
+      const next = (grafgenCenStyle[cen] || grafgenChartMode) === 'bar' ? 'line' : 'bar';
+      grafgenCenStyle[cen] = next;
+      typeBtn.textContent = next === 'bar' ? '▮' : '━';
+      renderGrafgenTab();
+    };
+
+    wrap.appendChild(btn);
+    wrap.appendChild(typeBtn);
+    grp.appendChild(wrap);
   });
 }
 
 function buildGrafgenMetricPills() {
   const wrap = document.getElementById('grafgenMetricPills');
   if(!wrap || wrap.children.length) return;
-  GRAFGEN_METRICS.forEach(m=>{
+  GRAFGEN_METRICS.forEach(m => {
     const btn = document.createElement('button');
-    btn.className = 'btn-hdr' + (grafgenMetrics.has(m.key)?' on':'');
+    const on = grafgenMetrics.has(m.key);
+    btn.className = 'btn-hdr' + (on ? ' on' : '');
     btn.textContent = m.label;
-    btn.style.cssText = grafgenMetrics.has(m.key)
-      ? `border-color:${m.color};background:${m.color}22;color:${m.color};font-weight:700`
-      : '';
+    btn.style.cssText = on ? `border-color:${m.color};background:${m.color}22;color:${m.color};font-weight:700` : '';
     btn.onclick = () => {
       if(grafgenMetrics.has(m.key)) grafgenMetrics.delete(m.key); else grafgenMetrics.add(m.key);
-      const on = grafgenMetrics.has(m.key);
-      btn.classList.toggle('on', on);
-      btn.style.cssText = on ? `border-color:${m.color};background:${m.color}22;color:${m.color};font-weight:700` : '';
+      const isOn = grafgenMetrics.has(m.key);
+      btn.classList.toggle('on', isOn);
+      btn.style.cssText = isOn ? `border-color:${m.color};background:${m.color}22;color:${m.color};font-weight:700` : '';
       renderGrafgenTab();
     };
     wrap.appendChild(btn);
   });
+}
+
+// ── P&L granular tree ──────────────────────────────────────
+function buildGrafgenPnlTree() {
+  const panel = document.getElementById('grafgenPnlPanel');
+  if(!panel || panel.dataset.built) return;
+  panel.dataset.built = '1';
+
+  const tree = new Map();
+  const PNL_ORDER = ['Product Monetization','Net Monetization','Variable Contribution',
+    'Direct Contribution','Business Contribution','Business Margin','EBIT'];
+  for(const d of allData) {
+    if(!d.MNG_1||!d.MNG_2||d.MNG_1==='Metrics') continue;
+    if(!tree.has(d.MNG_1)) tree.set(d.MNG_1, []);
+    const arr = tree.get(d.MNG_1);
+    if(!arr.includes(d.MNG_2)) arr.push(d.MNG_2);
+  }
+  const mng1Keys = [...PNL_ORDER.filter(k=>tree.has(k)),
+    ...[...tree.keys()].filter(k=>!PNL_ORDER.includes(k)).sort()];
+
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:16px;padding:12px 24px 16px">';
+  for(const mng1 of mng1Keys) {
+    const rows = (tree.get(mng1)||[]).sort();
+    html += `<div style="min-width:190px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;
+                  letter-spacing:.5px;margin-bottom:6px">${mng1}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">`;
+    for(const mng2 of rows) {
+      const rk = `row::${mng1}::${mng2}`;
+      const on = grafgenPnlRows.has(rk);
+      const color = _ggRowColor(rk);
+      html += `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;
+                              color:${on ? color : 'var(--text)'}">
+        <input type="checkbox" data-rk="${rk}" ${on?'checked':''}
+          style="accent-color:${color};cursor:pointer"
+          onchange="grafgenPnlRows[this.checked?'add':'delete'](this.dataset.rk);
+                    this.parentElement.style.color=this.checked?'${color}':'var(--text)';
+                    _grafgenUpdatePnlPills();renderGrafgenTab()">
+        ${mng2}
+      </label>`;
+    }
+    html += '</div></div>';
+  }
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+function _grafgenUpdatePnlPills() {
+  const bar = document.getElementById('grafgenPnlPills');
+  if(!bar) return;
+  bar.innerHTML = '';
+  for(const rk of grafgenPnlRows) {
+    const def = _ggMetricDef(rk);
+    if(!def) continue;
+    const pill = document.createElement('span');
+    pill.style.cssText = `display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
+      border-radius:20px;border:1.5px solid ${def.color};background:${def.color}22;
+      color:${def.color};font-size:11px;font-weight:600;cursor:pointer`;
+    pill.title = `${def.rowMng1} > ${def.rowMng2}`;
+    pill.innerHTML = `${def.label} <span style="font-size:9px;opacity:.7">✕</span>`;
+    pill.onclick = () => {
+      grafgenPnlRows.delete(rk);
+      const cb = document.querySelector(`input[data-rk="${CSS.escape(rk)}"]`);
+      if(cb) { cb.checked = false; cb.parentElement.style.color = 'var(--text)'; }
+      _grafgenUpdatePnlPills();
+      renderGrafgenTab();
+    };
+    bar.appendChild(pill);
+  }
+}
+
+function toggleGrafgenPnl() {
+  _grafgenPnlOpen = !_grafgenPnlOpen;
+  const panel = document.getElementById('grafgenPnlPanel');
+  const btn   = document.getElementById('grafgenPnlBtn');
+  if(panel) panel.style.display = _grafgenPnlOpen ? '' : 'none';
+  if(btn)   btn.textContent     = _grafgenPnlOpen ? '− P&L Detalhado' : '+ P&L Detalhado';
+  if(_grafgenPnlOpen) buildGrafgenPnlTree();
 }
 
 function setGrafgenGran(btn) {
@@ -7159,6 +7327,16 @@ function setGrafgenDisplay(btn) {
   document.querySelectorAll('#grafgenDisplayGrp button').forEach(b=>b.classList.toggle('on',b===btn));
   renderGrafgenTab();
 }
+function setGrafgenType(btn) {
+  grafgenChartMode = btn.dataset.t;
+  document.querySelectorAll('#grafgenTypeGrp button').forEach(b=>b.classList.toggle('on',b===btn));
+  // Sync per-scenario type icons that are still using the old default
+  document.querySelectorAll('#grafgenCenGrp [data-type-toggle]').forEach(tb=>{
+    const cen = tb.dataset.cen;
+    if(!grafgenCenStyle[cen]) tb.textContent = grafgenChartMode === 'bar' ? '▮' : '━';
+  });
+  renderGrafgenTab();
+}
 
 function renderGrafgenTab() {
   if(!allData||!allData.length) return;
@@ -7167,204 +7345,273 @@ function renderGrafgenTab() {
   buildGrafgenCenPills();
   buildGrafgenMetricPills();
 
-  const ud    = 1_000_000;
-  const udLbl = 'R$ M';
-  const from  = grafgenFromMes, to = grafgenToMes;
+  const ud = 1_000_000, udLbl = 'R$ M';
+  const from = grafgenFromMes, to = grafgenToMes;
+  const isAbsPct = grafgenDisplay==='abs_pct';
+  const isPct    = grafgenDisplay==='pct';
 
-  // Build allMeses in range, then period keys
   const allMeses = [...new Set(allData.map(d=>d.MES))].sort().filter(m=>m>=from&&m<=to);
   if(!allMeses.length) { _grafgenShowMsg('Sem dados para o período selecionado.'); return; }
 
   const allPeriods = [...new Set(allMeses.map(m=>_toPeriodKey(m,grafgenGran)))];
   const labels     = allPeriods.map(p=>_periodLabel(p,grafgenGran));
 
-  const selMetrics = GRAFGEN_METRICS.filter(m=>grafgenMetrics.has(m.key));
+  const selMetrics = _ggAllMetrics();
   const selCens    = [...grafgenCens];
 
   if(!selMetrics.length||!selCens.length) {
-    _grafgenShowMsg('Selecione pelo menos uma métrica e um cenário para gerar o gráfico.');
+    _grafgenShowMsg('Selecione pelo menos uma métrica e um cenário.');
     return;
   }
 
-  // Aggregate values per metric × scenario × period
-  const agg = new Map(); // `${metric.key}::${cen}` → Map<periodKey, number|null>
-  for(const metric of selMetrics) {
+  // TPV/NMV separate axis: if volume metric AND non-volume metric are both selected
+  const hasTpvNmv = selMetrics.some(m=>m.tpv||m.nmv);
+  const hasOther  = selMetrics.some(m=>!m.tpv&&!m.nmv);
+  const tpvAxis   = hasTpvNmv && hasOther;  // true → TPV on y1
+
+  // ── Aggregate values per metric × scenario × period ──────
+  // agg: serKey → { vals: Map<period,number|null>, isReal: Map<period,bool> }
+  const agg = new Map();
+  for(const def of selMetrics) {
     for(const cen of selCens) {
-      const serKey = `${metric.key}::${cen}`;
-      const byPer  = new Map();
-      allPeriods.forEach(p=>byPer.set(p,null));
+      const serKey = `${def.key}::${cen}`;
+      const vals = new Map(), realMap = new Map();
+      allPeriods.forEach(p=>{ vals.set(p,null); realMap.set(p,false); });
       for(const m of allMeses) {
-        const p = _toPeriodKey(m,grafgenGran);
-        const v = _grafgenGetVal(grafgenBU,m,cen,metric);
-        // Use explicit null check so zero values are preserved correctly
-        const cur = byPer.get(p);
-        byPer.set(p, cur===null ? v : cur+v);
+        const p = _toPeriodKey(m, grafgenGran);
+        const { value, isReal } = _ggBlended(grafgenBU, m, cen, def);
+        if(value !== null) {
+          const cur = vals.get(p);
+          vals.set(p, cur===null ? value : cur+value);
+        }
+        if(isReal) realMap.set(p, true);
       }
-      agg.set(serKey, byPer);
+      agg.set(serKey, { vals, realMap });
     }
   }
 
-  // Volume per scenario × period (for % display)
-  const volAgg = new Map(); // cen → Map<period, number>
-  if(grafgenDisplay!=='abs') {
+  // Volume agg for % modes (use blended Forecast values for vol too)
+  const volAgg = new Map();
+  if(grafgenDisplay !== 'abs') {
     for(const cen of selCens) {
-      const byPer = new Map();
-      allPeriods.forEach(p=>byPer.set(p,0));
+      const byPer = new Map(); allPeriods.forEach(p=>byPer.set(p,0));
       for(const m of allMeses) {
-        const p = _toPeriodKey(m,grafgenGran);
-        byPer.set(p,(byPer.get(p)||0)+_grafgenGetVol(grafgenBU,m,cen));
+        const p = _toPeriodKey(m, grafgenGran);
+        let vol = _grafgenGetVol(grafgenBU, m, cen);
+        if(cen==='Forecast' && vol===0) vol = _grafgenGetVol(grafgenBU, m, 'Realizado');
+        byPer.set(p, (byPer.get(p)||0)+vol);
       }
       volAgg.set(cen, byPer);
     }
   }
 
-  // Build Chart.js datasets
-  // Use 'y' (left) and 'y1' (right) — Chart.js v4 built-in IDs, no type declaration needed
+  // ── Build datasets ─────────────────────────────────────────
   const datasets = [];
-  const isAbsPct = grafgenDisplay==='abs_pct';
-  const isPct    = grafgenDisplay==='pct';
 
-  selMetrics.forEach(metric=>{
-    selCens.forEach(cen=>{
-      const serKey = `${metric.key}::${cen}`;
-      const byPer  = agg.get(serKey);
+  selMetrics.forEach(def => {
+    const yID = tpvAxis ? ((def.tpv||def.nmv) ? 'y1' : 'y') : 'y';
+
+    selCens.forEach(cen => {
+      const serKey = `${def.key}::${cen}`;
+      const { vals, realMap } = agg.get(serKey);
       const dash   = GRAFGEN_CEN_DASH[cen]||[];
       const cenLbl = GRAFGEN_CEN_LABEL[cen]||cen;
+      const cenType = grafgenCenStyle[cen] || grafgenChartMode;
 
-      // Absolute dataset (abs or abs_pct mode)
-      if(!isPct) {
-        const data = allPeriods.map(p=>{
-          const v = byPer.get(p);
-          return (v===null||v===undefined) ? null : v/ud;
+      // Helper: convert raw stored value to display value
+      const toDisplay = (v, p) => {
+        if(v===null||v===undefined) return null;
+        if(isPct) {
+          const vol = volAgg.get(cen)?.get(p)||0;
+          return vol ? v/vol*100 : null;
+        }
+        return v/ud;
+      };
+
+      // ── abs_pct: add secondary % line on y1 ──────────────
+      if(isAbsPct && !def.tpv && !def.nmv) {
+        const pctData = allPeriods.map(p=>{
+          const v = vals.get(p);
+          if(v===null) return null;
+          const vol = volAgg.get(cen)?.get(p)||0;
+          return vol ? v/vol*100 : null;
         });
+        const pctDash = dash.length ? [...dash,2,2] : [2,4];
         datasets.push({
-          label: `${metric.label} · ${cenLbl}`,
-          data,
-          borderColor: metric.color,
-          backgroundColor: metric.color+'18',
-          borderWidth: 2.5,
-          borderDash: dash,
-          pointBackgroundColor: metric.color,
-          pointBorderColor: '#fff',
-          pointBorderWidth: 1.5,
-          pointRadius: 4,
-          tension: 0.25,
-          spanGaps: false,
-          yAxisID: 'y',
-          _metricKey: metric.key,
-          _cen: cen,
+          label:`_${def.label} · ${cenLbl} %`,
+          data: pctData, type:'line',
+          borderColor: def.color, backgroundColor:'transparent',
+          borderWidth:1.5, borderDash: pctDash,
+          pointRadius:2, tension:0.25, spanGaps:false,
+          yAxisID:'y1', _metricKey:def.key, _cen:cen, _isPct:true,
         });
       }
 
-      // Percentage dataset (pct or abs_pct mode)
-      if(isPct||isAbsPct) {
-        const volByPer = volAgg.get(cen);
-        const data = allPeriods.map(p=>{
-          const v   = byPer.get(p);
-          const vol = volByPer ? (volByPer.get(p)||0) : 0;
-          if(!vol || v===null || v===undefined) return null;
-          return (v/vol)*100;
-        });
-        const pctDash = isPct ? dash : (dash.length ? [...dash,2,2] : [2,4]);
-        datasets.push({
-          label: isPct ? `${metric.label} · ${cenLbl} %vol` : `${metric.label} · ${cenLbl} %`,
-          data,
-          borderColor: metric.color,
-          backgroundColor: 'transparent',
-          borderWidth: isPct ? 2.5 : 1.5,
-          borderDash: pctDash,
-          pointBackgroundColor: metric.color,
-          pointBorderColor: '#fff',
-          pointBorderWidth: 1.5,
-          pointRadius: isPct ? 4 : 2.5,
-          tension: 0.25,
-          spanGaps: false,
-          yAxisID: isPct ? 'y' : 'y1',
-          _metricKey: metric.key,
-          _cen: cen,
-          _isPct: true,
-        });
+      // ── Main dataset(s) ──────────────────────────────────
+      const rawData = allPeriods.map(p => toDisplay(vals.get(p), p));
+
+      if(cen === 'Forecast') {
+        // Split: solid for Realizado-filled months, dashed for true Forecast
+        if(cenType === 'bar') {
+          // Bar chart: full opacity for real months, lighter for forecast
+          datasets.push({
+            label: `${def.label} · ${cenLbl}`,
+            data: rawData, type:'bar',
+            backgroundColor: allPeriods.map(p => realMap.get(p) ? def.color+'CC' : def.color+'55'),
+            borderColor:     allPeriods.map(p => realMap.get(p) ? def.color       : def.color+'88'),
+            borderWidth:1, borderRadius:3,
+            yAxisID: yID, _metricKey:def.key, _cen:cen,
+          });
+        } else {
+          // Line chart: two datasets — solid real part + dashed forecast part
+          const solidData = allPeriods.map((p,i) => realMap.get(p)  ? rawData[i] : null);
+          const dashData  = allPeriods.map((p,i) => !realMap.get(p) ? rawData[i] : null);
+
+          // Overlap by 1 point at the real→forecast transition for visual continuity
+          const lastRealI = solidData.reduce((a,v,i)=>v!==null?i:a, -1);
+          if(lastRealI >= 0 && lastRealI+1 < rawData.length) solidData[lastRealI+1] = rawData[lastRealI+1];
+          const firstDashI = dashData.findIndex(v=>v!==null);
+          if(firstDashI > 0) dashData[firstDashI-1] = rawData[firstDashI-1];
+
+          if(solidData.some(v=>v!==null)) datasets.push({
+            label: `${def.label} · ${cenLbl}`,
+            data: solidData, type:'line',
+            borderColor:def.color, backgroundColor:def.color+'18',
+            borderWidth:2.5, borderDash:[],
+            pointBackgroundColor:def.color, pointBorderColor:'#fff',
+            pointBorderWidth:1.5, pointRadius:4, tension:0.25, spanGaps:false,
+            yAxisID:yID, _metricKey:def.key, _cen:cen,
+          });
+          if(dashData.some(v=>v!==null)) datasets.push({
+            label: `_${def.label} · ${cenLbl}`,
+            data: dashData, type:'line',
+            borderColor:def.color, backgroundColor:'transparent',
+            borderWidth:2.5, borderDash: dash.length ? dash : [3,3],
+            pointBackgroundColor:def.color, pointBorderColor:'#fff',
+            pointBorderWidth:1.5, pointRadius:3, tension:0.25, spanGaps:false,
+            yAxisID:yID, _metricKey:def.key, _cen:cen,
+          });
+        }
+
+      } else {
+        // Plan / Realizado / Prévia — single dataset
+        const isSolid = (cen === 'Realizado');
+        if(cenType === 'bar') {
+          datasets.push({
+            label: `${def.label} · ${cenLbl}`,
+            data: rawData, type:'bar',
+            backgroundColor: def.color + (isSolid ? 'CC' : '66'),
+            borderColor: def.color, borderWidth: isSolid ? 0 : 1.5,
+            borderDash: isSolid ? [] : dash,
+            borderRadius:3,
+            yAxisID:yID, _metricKey:def.key, _cen:cen,
+          });
+        } else {
+          datasets.push({
+            label: `${def.label} · ${cenLbl}`,
+            data: rawData, type:'line',
+            borderColor: def.color, backgroundColor: def.color+'18',
+            borderWidth:2.5, borderDash: isSolid ? [] : dash,
+            pointBackgroundColor: def.color, pointBorderColor:'#fff',
+            pointBorderWidth:1.5, pointRadius:4, tension:0.25, spanGaps:false,
+            yAxisID:yID, _metricKey:def.key, _cen:cen,
+          });
+        }
       }
     });
   });
 
   if(!datasets.length) { _grafgenShowMsg('Sem dados.'); return; }
+  if(!datasets.some(ds=>ds.data.some(v=>v!==null)))
+    { _grafgenShowMsg('Sem dados para o período e cenários selecionados.'); return; }
 
-  // Guard: if every data point is null, nothing to show
-  const hasAnyValue = datasets.some(ds => ds.data.some(v => v !== null));
-  if(!hasAnyValue) { _grafgenShowMsg('Sem dados para o período e cenários selecionados.'); return; }
-
-  // Scales — use built-in 'y' / 'y1' IDs (no need for type:'linear')
+  // ── Scales ─────────────────────────────────────────────────
   const scales = {
     x:{ grid:{display:false}, ticks:{font:{size:10},color:'#888'} },
     y:{
+      display: true,
       position:'left',
-      grid:{color:'rgba(0,0,0,.06)'},
-      ticks:{font:{size:10},color:'#888',
-        callback: v => isPct
-          ? (v>=0?'+':'')+v.toFixed(2)+'%'
-          : v.toLocaleString('pt-BR',{maximumFractionDigits:1})},
-      title:{ display:true, text: isPct?'% do Volume':udLbl, font:{size:10}, color:'#888' }
+      grid:{ color:'rgba(0,0,0,.06)' },
+      ticks:{ display:false },  // hide tick labels — data labels carry the values
+      border:{ display:false },
     },
   };
-  if(isAbsPct) {
+  if(tpvAxis || isAbsPct) {
     scales.y1 = {
+      display: tpvAxis || isAbsPct,
       position:'right',
       grid:{ drawOnChartArea:false },
-      ticks:{ font:{size:10}, color:'#888',
-        callback:v=>(v>=0?'+':'')+v.toFixed(2)+'%' },
-      title:{ display:true, text:'% do Volume', font:{size:10}, color:'#888' }
+      ticks:{ display:false },
+      border:{ display:false },
     };
   }
 
-  // Destroy previous chart and recreate the canvas to avoid stale state
-  if(_grafgenChart) { try{_grafgenChart.destroy()}catch(e){} _grafgenChart=null; }
+  // ── Data labels (chartjs-plugin-datalabels) ────────────────
+  const dlCfg = {
+    display: ctx => {
+      if(ctx.dataset.label?.startsWith('_')) return false;
+      const v = ctx.dataset.data[ctx.dataIndex];
+      return v !== null && v !== undefined;
+    },
+    formatter: (v, ctx) => {
+      if(v === null) return null;
+      if(ctx.dataset._isPct) return (v>=0?'+':'')+v.toFixed(1)+'%';
+      const isTpv = ctx.dataset._metricKey==='__tpv__'||ctx.dataset._metricKey==='__nmv__';
+      if(isPct) return (v>=0?'+':'')+v.toFixed(1)+'%';
+      return isTpv ? v.toLocaleString('pt-BR',{maximumFractionDigits:0})
+                   : v.toFixed(1);
+    },
+    font:{ size:8, weight:'600' },
+    color: ctx => ctx.dataset.borderColor||ctx.dataset.backgroundColor||'#555',
+    anchor: ctx => ctx.dataset.type==='bar' ? 'end'  : 'end',
+    align:  ctx => ctx.dataset.type==='bar' ? 'top'  : 'top',
+    offset: 2, clamp:false, clip:false,
+  };
 
+  // ── Destroy + recreate canvas ──────────────────────────────
+  if(_grafgenChart) { try{_grafgenChart.destroy()}catch(e){} _grafgenChart=null; }
   const msgEl = document.getElementById('grafgenChartMsg');
   const ctEl  = document.getElementById('grafgenChartContainer');
-  if(!ctEl) { console.error('grafgenChartContainer not found'); return; }
+  if(!ctEl) return;
   if(msgEl) msgEl.style.display='none';
   ctEl.style.display='block';
-
-  // Recreate canvas to avoid Chart.js stale-instance issues
   ctEl.innerHTML = '<canvas id="grafgenChart"></canvas>';
   const cvs = document.getElementById('grafgenChart');
-
-  // Fix: set explicit pixel dimensions on the canvas so Chart.js doesn't
-  // enter a responsive-resize loop that misaligns element positions.
-  const containerW = ctEl.clientWidth  || 800;
-  const containerH = ctEl.clientHeight || 400;
-  cvs.width  = containerW;
-  cvs.height = containerH;
+  cvs.width  = ctEl.clientWidth  || 800;
+  cvs.height = ctEl.clientHeight || 420;
 
   try {
+    const hasDL = typeof ChartDataLabels !== 'undefined';
     _grafgenChart = new Chart(cvs, {
-      type:'line',
-      data:{ labels, datasets },
-      options:{
-        responsive:false, maintainAspectRatio:false,
-        animation:false,
-        layout:{ padding:{ top:8, right:isAbsPct?8:0 } },
+      type: 'line',
+      plugins: hasDL ? [ChartDataLabels] : [],
+      data: { labels, datasets },
+      options: {
+        responsive:false, maintainAspectRatio:false, animation:false,
+        layout:{ padding:{ top:30, right: tpvAxis||isAbsPct ? 12 : 4, bottom:4, left:4 } },
         interaction:{ mode:'index', intersect:false },
         plugins:{
           legend:{
-            display:true,
-            position:'bottom',
-            labels:{ font:{size:10}, boxWidth:14, padding:12 }
+            display:true, position:'bottom',
+            labels:{ font:{size:10}, boxWidth:14, padding:12,
+              filter: item => !item.text.startsWith('_') }
           },
           tooltip:{
+            filter: item => !item.dataset.label?.startsWith('_'),
             callbacks:{
               label: ctx => {
-                const v=ctx.parsed.y;
-                if(v===null||v===undefined) return null;
+                const v = ctx.parsed.y;
+                if(v===null||v===undefined||ctx.dataset.label?.startsWith('_')) return null;
                 const isPctDs = ctx.dataset._isPct;
-                const fv = isPctDs
-                  ? (v>=0?'+':'')+v.toFixed(2)+'%'
-                  : v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+udLbl;
+                const isTpv   = ctx.dataset._metricKey==='__tpv__'||ctx.dataset._metricKey==='__nmv__';
+                let fv;
+                if(isPct||isPctDs) fv = (v>=0?'+':'')+v.toFixed(2)+'%';
+                else fv = v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+udLbl;
                 return `${ctx.dataset.label}: ${fv}`;
               }
             }
-          }
+          },
+          datalabels: hasDL ? dlCfg : undefined,
         },
         scales
       }
