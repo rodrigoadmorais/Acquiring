@@ -1,271 +1,747 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mercado Pago - Performance Canais TPV</title>
-    
-    <!-- Integração do Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Configuração de identidade visual do Mercado Pago -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        mpBlue: '#009EE3',
-                        mpDark: '#2D3277',
-                        mpBg: '#F5F5F5',
-                        mpGreen: '#00a650',
-                        mpRed: '#FF6060'
-                    },
-                    fontFamily: {
-                        sans: ['"Proxima Nova"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Integração do Chart.js e DataLabels -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <title>Mercado Pago — Performance Canais TPV</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <style>
+        /* ================================================
+           DESIGN SYSTEM — Mercado Pago Style
+        ================================================ */
+        :root {
+            --mp-blue:    #009EE3;
+            --mp-dark:    #2D3277;
+            --mp-green:   #00a650;
+            --mp-red:     #FF6060;
+            --mp-orange:  #FF9F1C;
+            --bg:         #F5F7FA;
+            --bg-soft:    #EEF2F7;
+            --card:       #FFFFFF;
+            --text:       #1F2937;
+            --muted:      #6B7280;
+            --border:     #E5E7EB;
+            --shadow:     0 18px 45px rgba(15, 23, 42, 0.07);
+            --radius-xl:  28px;
+            --radius-lg:  22px;
+            --radius-md:  16px;
+        }
+
+        [data-theme="dark"] {
+            --bg:      #0F1829;
+            --bg-soft: #1A2540;
+            --card:    #1A2540;
+            --text:    #E8EBF3;
+            --muted:   #8896B3;
+            --border:  #2A3550;
+            --shadow:  0 18px 45px rgba(0, 0, 0, 0.35);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background-color: #F5F5F5;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            position: relative;
         }
-        .card-shadow {
-            box-shadow: 0 1px 2px 0 rgba(0,0,0,.15);
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at -10% -10%, rgba(0,158,227,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 110% -5%, rgba(45,50,119,0.05) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
         }
-        /* Estilos do Loader */
+
+        h1, h2, h3 { letter-spacing: -0.065em; font-weight: 800; }
+
+        /* ---- LOADER ---- */
         #loader {
             position: fixed;
             inset: 0;
-            background: rgba(255,255,255,0.8);
-            z-index: 50;
+            background: var(--bg);
+            z-index: 1000;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            gap: 16px;
         }
+
         .spinner {
-            border: 4px solid rgba(0, 158, 227, 0.3);
-            width: 50px;
-            height: 50px;
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(0, 158, 227, 0.2);
+            border-top-color: var(--mp-blue);
             border-radius: 50%;
-            border-left-color: #009EE3;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loader-text {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: -0.02em;
+        }
+
+        /* ---- HEADER ---- */
+        .header {
+            background: linear-gradient(135deg, #1a1f5e 0%, var(--mp-dark) 45%, #0a4e80 100%);
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header-logo {
+            width: 38px;
+            height: 38px;
+            background: var(--mp-blue);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.85rem;
+            color: #fff;
+            letter-spacing: -0.04em;
+            box-shadow: 0 4px 12px rgba(0, 158, 227, 0.45);
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.04em;
+        }
+
+        .header-subtitle {
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-badge {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 5px 14px;
+            border-radius: 999px;
+            font-size: 0.73rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .theme-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .theme-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* ---- WRAPPER ---- */
+        .wrapper {
+            width: min(1440px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 28px 0 52px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ---- FILTER BAR ---- */
+        .filter-bar {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 20px 28px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+        }
+
+        .filter-select {
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.83rem;
+            font-weight: 500;
+            border-radius: var(--radius-md);
+            padding: 8px 32px 8px 12px;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        .filter-select:focus { border-color: var(--mp-blue); box-shadow: 0 0 0 3px rgba(0, 158, 227, 0.15); }
+
+        .divider-v {
+            width: 1px;
+            height: 28px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+        }
+
+        .toggle-item input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--mp-blue);
+            cursor: pointer;
+        }
+
+        .toggle-item label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .btn-export {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--mp-green);
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 10px 22px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.83rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(0, 166, 80, 0.28);
+            flex-shrink: 0;
+        }
+        .btn-export:hover { background: #009040; transform: translateY(-1px); }
+
+        /* ---- KPI GRID ---- */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 22px 22px 20px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 28px 60px rgba(15, 23, 42, 0.12); }
+
+        .kpi-card-plan  { border-top: 3px solid var(--border); }
+        .kpi-card-actual { border-top: 3px solid var(--mp-blue); }
+
+        .kpi-card-actual::after {
+            content: '';
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: rgba(0, 158, 227, 0.05);
+            top: -45px;
+            right: -35px;
+            pointer-events: none;
+        }
+
+        .kpi-year-badge {
+            display: inline-flex;
+            align-items: center;
+            background: var(--bg-soft);
+            color: var(--muted);
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-bottom: 10px;
+        }
+
+        .kpi-card-actual .kpi-year-badge {
+            background: rgba(0, 158, 227, 0.1);
+            color: var(--mp-blue);
+        }
+
+        .kpi-label {
+            font-size: 0.73rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .kpi-value-row {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.075em;
+            line-height: 1;
+        }
+        .kpi-card-actual .kpi-value { color: var(--mp-blue); }
+
+        .kpi-var {
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: var(--bg-soft);
+            color: var(--muted);
+        }
+
+        /* ---- ACHIEVEMENT SECTION ---- */
+        .kpi-plan-section { margin-top: 2px; }
+
+        .kpi-plan-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .kpi-plan-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .kpi-ating-badge {
+            font-size: 0.8rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 999px;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+        }
+
+        .badge-green   { background: rgba(0, 166, 80, 0.12);  color: var(--mp-green); }
+        .badge-orange  { background: rgba(255, 159, 28, 0.12); color: var(--mp-orange); }
+        .badge-red     { background: rgba(255, 96, 96, 0.12);  color: var(--mp-red); }
+        .badge-neutral { background: var(--bg-soft); color: var(--muted); }
+
+        .progress-track {
+            height: 7px;
+            background: var(--bg-soft);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--muted);
+            transition: width 0.65s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+            width: 0%;
+        }
+
+        /* ---- CHARTS GRID ---- */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 24px 28px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .chart-card:hover { transform: translateY(-2px); box-shadow: 0 28px 60px rgba(15, 23, 42, 0.1); }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.04em;
+        }
+
+        .chart-year-chip {
+            background: rgba(0, 158, 227, 0.1);
+            color: var(--mp-blue);
+            padding: 4px 14px;
+            border-radius: 999px;
+            font-size: 0.73rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 310px;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 700px)  { .kpi-grid, .charts-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 640px)  {
+            .filter-bar { flex-direction: column; align-items: flex-start; }
+            .filter-group { flex-direction: column; align-items: flex-start; }
+            .wrapper { padding: 16px 0 32px; }
+            .header { padding: 0 16px; }
+            .header-badge { display: none; }
         }
     </style>
 </head>
-<body class="text-gray-800 antialiased h-screen flex flex-col">
+<body>
 
-    <!-- Tela de carregamento enquanto consome os dados do GitHub -->
+    <!-- Loader -->
     <div id="loader">
-        <div class="spinner mb-4"></div>
-        <h2 class="text-xl font-bold text-gray-700">Carregando base de dados do GitHub...</h2>
+        <div class="spinner"></div>
+        <p class="loader-text">Carregando dados do GitHub...</p>
     </div>
 
-    <!-- Cabeçalho (Header) -->
-    <header class="bg-mpBlue text-white p-4 shadow-md flex justify-between items-center shrink-0">
-        <div class="flex items-center space-x-3">
-            <!-- Ícone simplificado do Mercado Pago -->
-            <svg class="w-8 h-8 fill-current text-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9c0-.28.22-.5.5-.5h1c.28 0 .5.22.5.5v9c0 .28-.22.5-.5.5h-1c-.28 0-.5-.22-.5-.5z" opacity="0.3"/>
-                <path d="M14.5 9h-5c-.28 0-.5.22-.5.5v9c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-4h3.5c1.93 0 3.5-1.57 3.5-3.5S16.43 9 14.5 9zm0 5.5h-3.5v-4H14.5c1.1 0 2 .9 2 2s-.9 2-2 2z"/>
-            </svg>
-            <h1 class="text-xl font-bold tracking-wide">Performance Canais TPV</h1>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="header-logo">MP</div>
+            <div>
+                <div class="header-title">Performance Canais TPV</div>
+                <div class="header-subtitle">Mercado Pago Acquiring</div>
+            </div>
         </div>
-        <div class="text-sm font-medium bg-blue-600 px-3 py-1 rounded">
-            Plano vs Actual
+        <div class="header-right">
+            <span class="header-badge">Plano vs Actual</span>
+            <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
         </div>
     </header>
 
-    <!-- Conteúdo Principal -->
-    <main class="flex-grow p-6 overflow-auto hidden" id="mainContent">
-        
-        <!-- Controles de Filtros e Exportação -->
-        <div class="bg-white p-5 rounded-lg card-shadow mb-6 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-            <div class="flex flex-wrap items-center gap-6">
-                <!-- Filtro de Canais -->
-                <div class="flex items-center space-x-2">
-                    <label for="channelSelector" class="font-semibold text-gray-700 text-sm md:text-base">Canal:</label>
-                    <select id="channelSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
-                        <option value="ALL">Visão Geral (Todos)</option>
-                        <option value="CANAIS DIGITAIS">Canais Digitais</option>
-                        <option value="FDV PROPRIA">FDV Própria</option>
-                        <option value="FDV TERCEIRA">FDV Terceira</option>
-                        <option value="MGM">MGM</option>
-                        <option value="PARTNERS ONLINE">Partners Online</option>
-                        <option value="RESELLERS">Resellers</option>
-                        <option value="TELEVENDAS">Televendas</option>
-                    </select>
-                </div>
-                
-                <!-- Filtro de Ciclo de Vida -->
-                <div class="flex items-center space-x-2">
-                    <label for="cicloSelector" class="font-semibold text-gray-700 text-sm md:text-base">Ciclo Vida:</label>
-                    <select id="cicloSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
-                        <option value="ALL">Todos (M0 + M1 + Triângulo)</option>
-                        <option value="M0">Apenas M0</option>
-                        <option value="M1">Apenas M1</option>
-                        <option value="TRIANGLE">Apenas Triângulo</option>
-                    </select>
-                </div>
+    <!-- Main Content -->
+    <div id="mainContent" style="display:none;">
+        <div class="wrapper">
 
-                <!-- Seletor de Magnitude (Unidade de Milhar) -->
-                <div class="flex items-center space-x-2">
-                    <label for="magnitudeSelector" class="font-semibold text-gray-700 text-sm md:text-base">Unidade:</label>
-                    <select id="magnitudeSelector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm md:text-base rounded-lg focus:ring-mpBlue focus:border-mpBlue block p-2 outline-none transition-colors">
-                        <option value="1">R$ Unidades</option>
-                        <option value="1000">R$ Milhares (K)</option>
-                        <option value="1000000">R$ Milhões (M)</option>
-                        <option value="1000000000">R$ Bilhões (B)</option>
-                    </select>
-                </div>
-
-                <!-- Toggles Visuais -->
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-1">
-                        <input type="checkbox" id="toggleJanuary" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
-                        <label for="toggleJanuary" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Ocultar Janeiro</label>
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <span class="filter-label">Canal</span>
+                        <select id="channelSelector" class="filter-select">
+                            <option value="ALL">Visão Geral (Todos)</option>
+                            <option value="CANAIS DIGITAIS">Canais Digitais</option>
+                            <option value="FDV PROPRIA">FDV Própria</option>
+                            <option value="FDV TERCEIRA">FDV Terceira</option>
+                            <option value="MGM">MGM</option>
+                            <option value="PARTNERS ONLINE">Partners Online</option>
+                            <option value="RESELLERS">Resellers</option>
+                            <option value="TELEVENDAS">Televendas</option>
+                        </select>
                     </div>
-                    <div class="flex items-center space-x-1">
-                        <input type="checkbox" id="toggleFebruary" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
-                        <label for="toggleFebruary" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Ocultar Fevereiro</label>
+
+                    <div class="filter-item">
+                        <span class="filter-label">Ciclo Vida</span>
+                        <select id="cicloSelector" class="filter-select">
+                            <option value="ALL">Todos (M0 + M1 + Triângulo)</option>
+                            <option value="M0">Apenas M0</option>
+                            <option value="M1">Apenas M1</option>
+                            <option value="TRIANGLE">Apenas Triângulo</option>
+                        </select>
                     </div>
-                    <div class="flex items-center space-x-1">
-                        <input type="checkbox" id="toggleDataLabels" class="w-4 h-4 text-mpBlue bg-gray-100 border-gray-300 rounded focus:ring-mpBlue cursor-pointer">
-                        <label for="toggleDataLabels" class="font-semibold text-gray-700 cursor-pointer select-none text-sm md:text-base">Mostrar Rótulos</label>
+
+                    <div class="filter-item">
+                        <span class="filter-label">Unidade</span>
+                        <select id="magnitudeSelector" class="filter-select">
+                            <option value="1">R$ Unidades</option>
+                            <option value="1000">R$ Milhares (K)</option>
+                            <option value="1000000">R$ Milhões (M)</option>
+                            <option value="1000000000">R$ Bilhões (B)</option>
+                        </select>
+                    </div>
+
+                    <div class="divider-v"></div>
+
+                    <div class="toggle-group">
+                        <div class="toggle-item">
+                            <input type="checkbox" id="toggleJanuary">
+                            <label for="toggleJanuary">Ocultar Jan</label>
+                        </div>
+                        <div class="toggle-item">
+                            <input type="checkbox" id="toggleFebruary">
+                            <label for="toggleFebruary">Ocultar Fev</label>
+                        </div>
+                        <div class="toggle-item">
+                            <input type="checkbox" id="toggleDataLabels">
+                            <label for="toggleDataLabels">Mostrar Rótulos</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnExport" class="btn-export">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Exportar CSV
+                </button>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+
+                <!-- Plan 2025 -->
+                <div class="kpi-card kpi-card-plan">
+                    <div class="kpi-year-badge">2025 · Plano</div>
+                    <div class="kpi-label">TPV Total Anual</div>
+                    <div class="kpi-value-row">
+                        <p class="kpi-value" id="kpiPlan2025">R$ 0</p>
+                    </div>
+                </div>
+
+                <!-- Actual 2025 -->
+                <div class="kpi-card kpi-card-actual">
+                    <div class="kpi-year-badge">2025 · Actual</div>
+                    <div class="kpi-label">TPV Total Realizado</div>
+                    <div class="kpi-value-row">
+                        <p class="kpi-value" id="kpiActual2025">R$ 0</p>
+                        <span id="kpiVar2025" class="kpi-var">0%</span>
+                    </div>
+                    <div class="kpi-plan-section">
+                        <div class="kpi-plan-header">
+                            <span class="kpi-plan-label">Atingimento do Plano</span>
+                            <span id="kpiAting2025" class="kpi-ating-badge badge-neutral">–</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="kpiAting2025-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plan 2026 -->
+                <div class="kpi-card kpi-card-plan">
+                    <div class="kpi-year-badge">2026 · Plano YTD</div>
+                    <div class="kpi-label">TPV YTD Pareado</div>
+                    <div class="kpi-value-row">
+                        <p class="kpi-value" id="kpiPlan2026">R$ 0</p>
+                    </div>
+                </div>
+
+                <!-- Actual 2026 -->
+                <div class="kpi-card kpi-card-actual">
+                    <div class="kpi-year-badge">2026 · Actual YTD</div>
+                    <div class="kpi-label">TPV YTD Realizado</div>
+                    <div class="kpi-value-row">
+                        <p class="kpi-value" id="kpiActual2026">R$ 0</p>
+                        <span id="kpiVar2026" class="kpi-var">0%</span>
+                    </div>
+                    <div class="kpi-plan-section">
+                        <div class="kpi-plan-header">
+                            <span class="kpi-plan-label">Atingimento do Plano</span>
+                            <span id="kpiAting2026" class="kpi-ating-badge badge-neutral">–</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="kpiAting2026-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <span class="chart-title">Evolução Mensal TPV</span>
+                        <span class="chart-year-chip">2025</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart2025"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <span class="chart-title">Evolução Mensal TPV</span>
+                        <span class="chart-year-chip">2026</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart2026"></canvas>
                     </div>
                 </div>
             </div>
-            
-            <!-- Botão de Exportar -->
-            <button id="btnExport" class="bg-mpGreen hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors card-shadow shrink-0 mt-4 xl:mt-0">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-                <span>Exportar CSV</span>
-            </button>
+
         </div>
+    </div>
 
-        <!-- Indicadores Chave (KPIs) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <!-- KPI 1 -->
-            <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-gray-400">
-                <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV Total 2025 (Plano)</h3>
-                <p id="kpiPlan2025" class="text-2xl font-bold text-gray-800">R$ 0</p>
-            </div>
-            <!-- KPI 2 -->
-            <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-mpBlue">
-                <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV Total 2025 (Actual)</h3>
-                <div class="flex items-end space-x-2">
-                    <p id="kpiActual2025" class="text-2xl font-bold text-mpBlue">R$ 0</p>
-                    <span id="kpiVar2025" class="text-sm font-semibold mb-1">0%</span>
-                </div>
-            </div>
-            <!-- KPI 3 -->
-            <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-gray-400">
-                <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV 2026 YTD (Plano Pareado)</h3>
-                <p id="kpiPlan2026" class="text-2xl font-bold text-gray-800">R$ 0</p>
-            </div>
-            <!-- KPI 4 -->
-            <div class="bg-white p-5 rounded-lg card-shadow border-l-4 border-mpBlue">
-                <h3 class="text-gray-500 font-semibold text-sm uppercase tracking-wider mb-1">TPV 2026 YTD (Actual)</h3>
-                <div class="flex items-end space-x-2">
-                    <p id="kpiActual2026" class="text-2xl font-bold text-mpBlue">R$ 0</p>
-                    <span id="kpiVar2026" class="text-sm font-semibold mb-1">0%</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Gráficos -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white p-5 rounded-lg card-shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolução Mensal TPV - 2025</h2>
-                <div class="relative h-[350px]">
-                    <canvas id="chart2025"></canvas>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-lg card-shadow">
-                <h2 class="text-lg font-bold text-gray-800 mb-4 text-center">Evolução Mensal TPV - 2026</h2>
-                <div class="relative h-[350px]">
-                    <canvas id="chart2026"></canvas>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Lógica JavaScript e Manipulação de Dados -->
     <script>
-        // Registar o plugin de DataLabels globalmente
-        Chart.register(ChartDataLabels);
+        // ---- DARK / LIGHT MODE ----
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            document.getElementById('theme-toggle').textContent = isDark ? '🌙' : '☀️';
+            if (chartInst2025 || chartInst2026) updateDashboard();
+        }
 
-        // Meses para os eixos X
-        const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        // ---- CHART.JS GLOBAL CONFIG ----
+        Chart.register(ChartDataLabels);
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        const tooltipStyle = {
+            backgroundColor: '#111827',
+            titleColor: '#F9FAFB',
+            bodyColor: '#D1D5DB',
+            padding: 14,
+            cornerRadius: 14,
+            titleFont: { size: 13, weight: '700', family: "'Inter', sans-serif" },
+            bodyFont: { size: 12, family: "'Inter', sans-serif" },
+            displayColors: true,
+            boxPadding: 4,
+        };
+
+        // ---- DATA & STATE ----
+        const months   = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
         const channels = ["CANAIS DIGITAIS", "FDV PROPRIA", "FDV TERCEIRA", "MGM", "PARTNERS ONLINE", "RESELLERS", "TELEVENDAS"];
 
-        // Base de dados global vazia, será preenchida via fetch
-        let rawData = {};
-
-        // Estados da aplicação
-        let currentChannel = 'ALL';
-        let currentCiclo = 'ALL';
-        let currentMagnitude = 1; // 1, 1000 (K), 1000000 (M), 1000000000 (B)
-        let hideJanuary = false;
-        let hideFebruary = false;
+        let rawData        = {};
+        let currentChannel  = 'ALL';
+        let currentCiclo    = 'ALL';
+        let currentMagnitude = 1;
+        let hideJanuary    = false;
+        let hideFebruary   = false;
         let showDataLabels = false;
+        let chartInst2025  = null;
+        let chartInst2026  = null;
 
-        // Instâncias dos gráficos
-        let chartInst2025 = null;
-        let chartInst2026 = null;
-
-        // Função para interpretar e agrupar o JSON do GitHub
+        // ---- FETCH & PARSE ----
         async function fetchAndParseData() {
             try {
-                // URL Raw do JSON no GitHub
                 const response = await fetch('https://raw.githubusercontent.com/rodrigoadmorais/Acquiring/main/data/tpvcanais.json');
                 const data = await response.json();
 
-                // Inicializar a estrutura
                 channels.forEach(c => {
                     rawData[c] = {
-                        "M0": { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) },
-                        "M1": { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) },
+                        "M0":       { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) },
+                        "M1":       { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) },
                         "TRIANGLE": { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) }
                     };
                 });
 
-                let currentSection = null;
-                let actual2026ColCount = 0; // detectado dinamicamente a partir do header
+                let currentSection    = null;
+                let actual2026ColCount = 0;
 
                 data.forEach(row => {
-                    const canal = row["Plano 2026"]; // Usa-se esta coluna como nome do canal
+                    const canal = row["Plano 2026"];
 
-                    // Detetar em que secção da tabela nos encontramos (Plano 26, Plano 25, Actual)
-                    // A baseando no row_number para evitar confusões com blocos de nomes repetidos
                     if (canal === "SUM de TPV") {
                         if (row["col_3"] === "ANOMES") {
-                            if (row["row_number"] < 20) {
-                                currentSection = "plano2026";
-                            } else {
-                                currentSection = "plano2025";
-                            }
+                            currentSection = row["row_number"] < 20 ? "plano2026" : "plano2025";
                         } else if (row["col_3"] === "TIM_MONTH") {
                             currentSection = "actual";
                         }
                         return;
                     }
 
-                    // Capturar header do actual para detectar quantos meses de 2026 existem
                     if (currentSection === "actual" && canal === "CANAL") {
                         actual2026ColCount = 0;
                         let colIdx = 15;
@@ -276,9 +752,8 @@
                         return;
                     }
 
-                    // Filtrar apenas os canais solicitados e ciclos válidos
                     if (!channels.includes(canal)) return;
-                    let ciclo = row["col_2"];
+                    const ciclo = row["col_2"];
                     if (!["M0", "M1", "TRIANGLE"].includes(ciclo)) return;
 
                     const parseVal = (val) => {
@@ -287,352 +762,322 @@
                         return isNaN(num) ? null : num;
                     };
 
-                    // Preencher os arrays correspondentes conforme a secção
                     if (currentSection === "plano2026") {
-                        for(let i = 0; i < 12; i++) rawData[canal][ciclo].plano2026[i] = parseVal(row[`col_${i+3}`]);
-                    }
-                    else if (currentSection === "plano2025") {
-                        for(let i = 0; i < 12; i++) rawData[canal][ciclo].plano2025[i] = parseVal(row[`col_${i+3}`]);
-                    }
-                    else if (currentSection === "actual") {
-                        // Meses de 2025
-                        for(let i = 0; i < 12; i++) rawData[canal][ciclo].actual2025[i] = parseVal(row[`col_${i+3}`]);
-                        // Meses de 2026: lidos dinamicamente conforme colunas disponíveis no JSON
-                        for(let i = 0; i < actual2026ColCount; i++) rawData[canal][ciclo].actual2026[i] = parseVal(row[`col_${i+15}`]);
+                        for (let i = 0; i < 12; i++) rawData[canal][ciclo].plano2026[i] = parseVal(row[`col_${i+3}`]);
+                    } else if (currentSection === "plano2025") {
+                        for (let i = 0; i < 12; i++) rawData[canal][ciclo].plano2025[i] = parseVal(row[`col_${i+3}`]);
+                    } else if (currentSection === "actual") {
+                        for (let i = 0; i < 12; i++) rawData[canal][ciclo].actual2025[i] = parseVal(row[`col_${i+3}`]);
+                        for (let i = 0; i < actual2026ColCount; i++) rawData[canal][ciclo].actual2026[i] = parseVal(row[`col_${i+15}`]);
                     }
                 });
 
-                // Ocultar Loader e mostrar conteúdo
                 document.getElementById('loader').style.display = 'none';
-                document.getElementById('mainContent').classList.remove('hidden');
-
-                // Renderizar
+                document.getElementById('mainContent').style.display = 'block';
                 updateDashboard();
 
             } catch (error) {
                 console.error("Erro ao carregar dados:", error);
-                document.getElementById('loader').innerHTML = `<h2 class="text-xl font-bold text-red-600">Erro ao carregar dados JSON</h2><p class="mt-2 text-gray-700">${error.message}</p>`;
+                const loaderEl = document.getElementById('loader');
+                const errEl = document.createElement('p');
+                errEl.style.cssText = 'color:#FF6060;font-weight:700;font-size:0.95rem;margin-top:8px;';
+                errEl.textContent = 'Erro ao carregar dados: ' + error.message;
+                loaderEl.appendChild(errEl);
             }
         }
 
-        // Função utilitária para somar arrays lidando com valores nulos
+        // ---- HELPERS ----
         const sumArrays = (arrays) => {
-            const length = 12;
-            const result = Array(length).fill(null);
-            for(let i = 0; i < length; i++) {
-                let hasValue = false;
-                let sum = 0;
+            const result = Array(12).fill(null);
+            for (let i = 0; i < 12; i++) {
+                let hasValue = false, sum = 0;
                 arrays.forEach(arr => {
-                    if (arr && arr[i] !== null && arr[i] !== undefined) {
-                        hasValue = true;
-                        sum += arr[i];
-                    }
+                    if (arr && arr[i] !== null && arr[i] !== undefined) { hasValue = true; sum += arr[i]; }
                 });
                 if (hasValue) result[i] = sum;
             }
             return result;
         };
 
-        // Função para agrupar dados baseados nos filtros
         function getProcessedData(selectedChannel, selectedCiclo) {
-            const result = {
-                plano2025: Array(12).fill(null),
-                actual2025: Array(12).fill(null),
-                plano2026: Array(12).fill(null),
-                actual2026: Array(12).fill(null)
-            };
+            const result = { plano2025: Array(12).fill(null), actual2025: Array(12).fill(null), plano2026: Array(12).fill(null), actual2026: Array(12).fill(null) };
+            const chList  = selectedChannel === 'ALL' ? Object.keys(rawData) : [selectedChannel];
+            const cicList = selectedCiclo   === 'ALL' ? ['M0', 'M1', 'TRIANGLE'] : [selectedCiclo];
+            const arrays  = { plano2025: [], actual2025: [], plano2026: [], actual2026: [] };
 
-            const channelsToProcess = selectedChannel === 'ALL' ? Object.keys(rawData) : [selectedChannel];
-            const ciclosToProcess = selectedCiclo === 'ALL' ? ['M0', 'M1', 'TRIANGLE'] : [selectedCiclo];
-
-            const arraysToSum = { plano2025: [], actual2025: [], plano2026: [], actual2026: [] };
-
-            channelsToProcess.forEach(channel => {
-                ciclosToProcess.forEach(ciclo => {
-                    const dataObj = rawData[channel][ciclo];
-                    arraysToSum.plano2025.push(dataObj.plano2025);
-                    arraysToSum.actual2025.push(dataObj.actual2025);
-                    arraysToSum.plano2026.push(dataObj.plano2026);
-                    arraysToSum.actual2026.push(dataObj.actual2026);
+            chList.forEach(ch => {
+                cicList.forEach(cic => {
+                    const d = rawData[ch][cic];
+                    arrays.plano2025.push(d.plano2025);
+                    arrays.actual2025.push(d.actual2025);
+                    arrays.plano2026.push(d.plano2026);
+                    arrays.actual2026.push(d.actual2026);
                 });
             });
 
-            result.plano2025 = sumArrays(arraysToSum.plano2025);
-            result.actual2025 = sumArrays(arraysToSum.actual2025);
-            result.plano2026 = sumArrays(arraysToSum.plano2026);
-            result.actual2026 = sumArrays(arraysToSum.actual2026);
-
+            result.plano2025  = sumArrays(arrays.plano2025);
+            result.actual2025 = sumArrays(arrays.actual2025);
+            result.plano2026  = sumArrays(arrays.plano2026);
+            result.actual2026 = sumArrays(arrays.actual2026);
             return result;
         }
 
-        // Utilidade para formatar moeda respeitando a magnitude escolhida
         const formatCurrencyWithMagnitude = (value) => {
             if (value === null || value === undefined) return '';
-            
             let suffix = '';
-            let val = value / currentMagnitude;
-            
-            if (currentMagnitude == 1000) suffix = ' K';
-            else if (currentMagnitude == 1000000) suffix = ' M';
+            const val  = value / currentMagnitude;
+            if (currentMagnitude == 1000)       suffix = ' K';
+            else if (currentMagnitude == 1000000)    suffix = ' M';
             else if (currentMagnitude == 1000000000) suffix = ' B';
-
-            return 'R$ ' + new Intl.NumberFormat('pt-BR', { 
+            return 'R$ ' + new Intl.NumberFormat('pt-BR', {
                 minimumFractionDigits: currentMagnitude > 1 ? 1 : 0,
                 maximumFractionDigits: currentMagnitude > 1 ? 1 : 0
             }).format(val) + suffix;
         };
 
-        // Formato para variação %
-        const formatVar = (plan, actual, elementId) => {
-            const el = document.getElementById(elementId);
+        const formatAting = (plan, actual, elementId) => {
+            const el    = document.getElementById(elementId);
+            const barEl = document.getElementById(elementId + '-bar');
             if (!plan || plan === 0) {
-                el.innerText = "-";
-                el.className = "text-sm font-semibold mb-1 text-gray-500";
+                el.innerText  = '–';
+                el.className  = 'kpi-ating-badge badge-neutral';
+                if (barEl) { barEl.style.width = '0%'; barEl.style.background = 'var(--muted)'; }
                 return;
             }
-            const variance = ((actual / plan) - 1) * 100;
-            const sign = variance >= 0 ? '+' : '';
-            el.innerText = `${sign}${variance.toFixed(1)}%`;
-            
-            if (variance > 0) {
-                el.className = "text-sm font-semibold mb-1 text-[#00a650]"; 
+            const pct = (actual / plan) * 100;
+            el.innerText = pct.toFixed(1).replace('.', ',') + '%';
+
+            let barColor;
+            if (pct >= 100) {
+                el.className = 'kpi-ating-badge badge-green';
+                barColor     = 'var(--mp-green)';
+            } else if (pct >= 90) {
+                el.className = 'kpi-ating-badge badge-orange';
+                barColor     = 'var(--mp-orange)';
             } else {
-                el.className = "text-sm font-semibold mb-1 text-[#FF6060]"; 
+                el.className = 'kpi-ating-badge badge-red';
+                barColor     = 'var(--mp-red)';
+            }
+
+            if (barEl) {
+                barEl.style.width      = Math.min(pct, 100) + '%';
+                barEl.style.background = barColor;
             }
         };
 
-        // Função principal para atualizar KPIs e Gráficos
-        function updateDashboard() {
-            // 1. Cálculos de KPI (Respeitando pareamento exato maçã com maçã)
-            let plan25Total = 0;
-            let actual25Total = 0;
-            let plan26YTD = 0;
-            let actual26YTD = 0;
+        const formatVar = (plan, actual, elementId) => {
+            const el = document.getElementById(elementId);
+            if (!plan || plan === 0) {
+                el.innerText          = '–';
+                el.style.background   = 'var(--bg-soft)';
+                el.style.color        = 'var(--muted)';
+                return;
+            }
+            const variance = ((actual / plan) - 1) * 100;
+            const sign     = variance >= 0 ? '+' : '';
+            el.innerText   = `${sign}${variance.toFixed(1)}%`;
+            if (variance > 0) {
+                el.style.background = 'rgba(0,166,80,0.12)';
+                el.style.color      = 'var(--mp-green)';
+            } else {
+                el.style.background = 'rgba(255,96,96,0.12)';
+                el.style.color      = 'var(--mp-red)';
+            }
+        };
 
-            const channelsToProcess = currentChannel === 'ALL' ? Object.keys(rawData) : [currentChannel];
-            const ciclosToProcess = currentCiclo === 'ALL' ? ['M0', 'M1', 'TRIANGLE'] : [currentCiclo];
+        // ---- BUILD LINE CHART ----
+        function buildLineChart(canvasId, actualArr, planArr, actualLabel, planLabel) {
+            const canvas = document.getElementById(canvasId);
+            const ctx    = canvas.getContext('2d');
 
-            channelsToProcess.forEach(channel => {
-                ciclosToProcess.forEach(ciclo => {
-                    const dataObj = rawData[channel][ciclo];
-                    for (let i = 0; i < 12; i++) {
-                        // Filtros de mês
-                        if (i === 0 && hideJanuary) continue;
-                        if (i === 1 && hideFebruary) continue;
+            const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+            gradient.addColorStop(0, 'rgba(0,158,227,0.18)');
+            gradient.addColorStop(1, 'rgba(0,158,227,0.00)');
 
-                        if (dataObj.actual2025[i] !== null && dataObj.actual2025[i] !== undefined) {
-                            plan25Total += dataObj.plano2025[i] || 0;
-                            actual25Total += dataObj.actual2025[i] || 0;
+            const filterFn = (_, i) => {
+                if (i === 0 && hideJanuary)  return false;
+                if (i === 1 && hideFebruary) return false;
+                return true;
+            };
+            const scale = (arr) => arr.filter(filterFn).map(v => v === null ? null : v / currentMagnitude);
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months.filter(filterFn),
+                    datasets: [
+                        {
+                            label: actualLabel,
+                            data: scale(actualArr),
+                            borderColor: '#009EE3',
+                            backgroundColor: gradient,
+                            borderWidth: 2.5,
+                            tension: 0.42,
+                            fill: true,
+                            spanGaps: false,
+                            pointRadius: 4,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#009EE3',
+                            pointBorderWidth: 2.5,
+                            datalabels: { align: 'top' }
+                        },
+                        {
+                            label: planLabel,
+                            data: scale(planArr),
+                            borderColor: '#9CA3AF',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.8,
+                            borderDash: [6, 4],
+                            tension: 0.42,
+                            fill: false,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#9CA3AF',
+                            pointBorderWidth: 0,
+                            datalabels: { align: 'bottom' }
                         }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        tooltip: {
+                            ...tooltipStyle,
+                            callbacks: {
+                                label(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += formatCurrencyWithMagnitude(context.parsed.y * currentMagnitude);
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { size: 12, weight: '600', family: "'Inter', sans-serif" },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#1F2937'
+                            }
+                        },
+                        datalabels: {
+                            display: showDataLabels,
+                            color: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#6B7280',
+                            font: { weight: '700', size: 10, family: "'Inter', sans-serif" },
+                            formatter(value) {
+                                if (value === null || value === 0) return '';
+                                let f = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
+                                if (currentMagnitude == 1000)       f += 'K';
+                                else if (currentMagnitude == 1000000)    f += 'M';
+                                else if (currentMagnitude == 1000000000) f += 'B';
+                                return f;
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(229,231,235,0.5)' },
+                            border: { display: false },
+                            ticks: {
+                                font: { size: 11, family: "'Inter', sans-serif" },
+                                color: '#6B7280',
+                                callback(value) {
+                                    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: { font: { size: 11, family: "'Inter', sans-serif" }, color: '#6B7280' }
+                        }
+                    }
+                }
+            });
+        }
 
-                        if (dataObj.actual2026[i] !== null && dataObj.actual2026[i] !== undefined) {
-                            plan26YTD += dataObj.plano2026[i] || 0;
-                            actual26YTD += dataObj.actual2026[i] || 0;
+        // ---- UPDATE DASHBOARD ----
+        function updateDashboard() {
+            let plan25Total = 0, actual25Total = 0, plan26YTD = 0, actual26YTD = 0;
+
+            const chList  = currentChannel === 'ALL' ? Object.keys(rawData) : [currentChannel];
+            const cicList = currentCiclo   === 'ALL' ? ['M0', 'M1', 'TRIANGLE'] : [currentCiclo];
+
+            chList.forEach(ch => {
+                cicList.forEach(cic => {
+                    const d = rawData[ch][cic];
+                    for (let i = 0; i < 12; i++) {
+                        if (i === 0 && hideJanuary)  continue;
+                        if (i === 1 && hideFebruary) continue;
+                        if (d.actual2025[i] !== null && d.actual2025[i] !== undefined) {
+                            plan25Total   += d.plano2025[i] || 0;
+                            actual25Total += d.actual2025[i] || 0;
+                        }
+                        if (d.actual2026[i] !== null && d.actual2026[i] !== undefined) {
+                            plan26YTD   += d.plano2026[i] || 0;
+                            actual26YTD += d.actual2026[i] || 0;
                         }
                     }
                 });
             });
 
-            // Atualiza os cartões KPI com o valor bruto e a função gere a divisão de magnitude internamente
-            document.getElementById('kpiPlan2025').innerText = formatCurrencyWithMagnitude(plan25Total);
+            document.getElementById('kpiPlan2025').innerText   = formatCurrencyWithMagnitude(plan25Total);
             document.getElementById('kpiActual2025').innerText = formatCurrencyWithMagnitude(actual25Total);
             formatVar(plan25Total, actual25Total, 'kpiVar2025');
+            formatAting(plan25Total, actual25Total, 'kpiAting2025');
 
-            document.getElementById('kpiPlan2026').innerText = formatCurrencyWithMagnitude(plan26YTD);
+            document.getElementById('kpiPlan2026').innerText   = formatCurrencyWithMagnitude(plan26YTD);
             document.getElementById('kpiActual2026').innerText = formatCurrencyWithMagnitude(actual26YTD);
             formatVar(plan26YTD, actual26YTD, 'kpiVar2026');
+            formatAting(plan26YTD, actual26YTD, 'kpiAting2026');
 
-            // 2. Preparar Dados para o Gráfico
-            const rawGraphData = getProcessedData(currentChannel, currentCiclo);
+            const gd = getProcessedData(currentChannel, currentCiclo);
 
-            const filterFn = (_, i) => {
-                if (i === 0 && hideJanuary) return false;
-                if (i === 1 && hideFebruary) return false;
-                return true;
-            };
-
-            const chartLabels = months.filter(filterFn);
-            
-            // Função para processar e ESCALAR os dados do gráfico para a magnitude escolhida
-            const processAndScaleData = (arr) => {
-                return arr.filter(filterFn).map(val => val === null ? null : val / currentMagnitude);
-            };
-
-            // Opções Partilhadas dos Gráficos
-            const commonOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) label += ': ';
-                                if (context.parsed.y !== null) {
-                                    // Multiplica-se porque a função espera o valor base para poder anexar ' M' ou ' B'
-                                    label += formatCurrencyWithMagnitude(context.parsed.y * currentMagnitude);
-                                }
-                                return label;
-                            }
-                        }
-                    },
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, padding: 20, font: { family: 'sans-serif', size: 13 } }
-                    },
-                    datalabels: {
-                        display: showDataLabels,
-                        align: 'top',
-                        color: '#4B5563',
-                        font: { weight: 'bold', size: 10 },
-                        formatter: function(value) {
-                            if (value === null || value === 0) return '';
-                            let formatted = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value);
-                            
-                            // Adicionar sufixo no rótulo para clareza
-                            if (currentMagnitude == 1000) formatted += 'K';
-                            else if (currentMagnitude == 1000000) formatted += 'M';
-                            else if (currentMagnitude == 1000000000) formatted += 'B';
-                            
-                            return formatted;
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { display: false }, // Remove as linhas de grade
-                        ticks: {
-                            callback: function(value) {
-                                return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
-                            }
-                        }
-                    },
-                    x: {
-                        grid: { display: false } // Remove as linhas de grade verticais
-                    }
-                }
-            };
-
-            // 3. Gráfico 2025
-            const ctx2025 = document.getElementById('chart2025').getContext('2d');
             if (chartInst2025) chartInst2025.destroy();
-            chartInst2025 = new Chart(ctx2025, {
-                type: 'line',
-                data: {
-                    labels: chartLabels,
-                    datasets: [
-                        {
-                            label: 'Actual 2025',
-                            data: processAndScaleData(rawGraphData.actual2025),
-                            borderColor: '#009EE3', 
-                            backgroundColor: '#009EE3',
-                            borderWidth: 3,
-                            tension: 0.3,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            datalabels: { align: 'top' }
-                        },
-                        {
-                            label: 'Plano 2025',
-                            data: processAndScaleData(rawGraphData.plano2025),
-                            borderColor: '#9CA3AF', 
-                            backgroundColor: '#9CA3AF',
-                            borderWidth: 2,
-                            borderDash: [5, 5], 
-                            tension: 0.3,
-                            pointRadius: 3,
-                            datalabels: { align: 'bottom' }
-                        }
-                    ]
-                },
-                options: commonOptions
-            });
-
-            // 4. Gráfico 2026
-            const ctx2026 = document.getElementById('chart2026').getContext('2d');
             if (chartInst2026) chartInst2026.destroy();
-            chartInst2026 = new Chart(ctx2026, {
-                type: 'line',
-                data: {
-                    labels: chartLabels,
-                    datasets: [
-                        {
-                            label: 'Actual 2026',
-                            data: processAndScaleData(rawGraphData.actual2026),
-                            borderColor: '#009EE3', 
-                            backgroundColor: '#009EE3',
-                            borderWidth: 3,
-                            tension: 0.3,
-                            spanGaps: false, 
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            datalabels: { align: 'top' }
-                        },
-                        {
-                            label: 'Plano 2026',
-                            data: processAndScaleData(rawGraphData.plano2026),
-                            borderColor: '#9CA3AF', 
-                            backgroundColor: '#9CA3AF',
-                            borderWidth: 2,
-                            borderDash: [5, 5], 
-                            tension: 0.3,
-                            pointRadius: 3,
-                            datalabels: { align: 'bottom' }
-                        }
-                    ]
-                },
-                options: commonOptions
-            });
+            chartInst2025 = buildLineChart('chart2025', gd.actual2025, gd.plano2025, 'Actual 2025', 'Plano 2025');
+            chartInst2026 = buildLineChart('chart2026', gd.actual2026, gd.plano2026, 'Actual 2026', 'Plano 2026');
         }
 
-        // Interação dos Elementos UI
-        document.getElementById('channelSelector').addEventListener('change', e => { currentChannel = e.target.value; updateDashboard(); });
-        document.getElementById('cicloSelector').addEventListener('change', e => { currentCiclo = e.target.value; updateDashboard(); });
+        // ---- EVENT LISTENERS ----
+        document.getElementById('channelSelector').addEventListener('change',  e => { currentChannel   = e.target.value;        updateDashboard(); });
+        document.getElementById('cicloSelector').addEventListener('change',    e => { currentCiclo     = e.target.value;        updateDashboard(); });
         document.getElementById('magnitudeSelector').addEventListener('change', e => { currentMagnitude = Number(e.target.value); updateDashboard(); });
-        document.getElementById('toggleJanuary').addEventListener('change', e => { hideJanuary = e.target.checked; updateDashboard(); });
-        document.getElementById('toggleFebruary').addEventListener('change', e => { hideFebruary = e.target.checked; updateDashboard(); });
-        document.getElementById('toggleDataLabels').addEventListener('change', e => { showDataLabels = e.target.checked; updateDashboard(); });
+        document.getElementById('toggleJanuary').addEventListener('change',    e => { hideJanuary      = e.target.checked;       updateDashboard(); });
+        document.getElementById('toggleFebruary').addEventListener('change',   e => { hideFebruary     = e.target.checked;       updateDashboard(); });
+        document.getElementById('toggleDataLabels').addEventListener('change', e => { showDataLabels   = e.target.checked;       updateDashboard(); });
 
-        // Exportar para CSV (exporta sempre os valores brutos totais)
+        // ---- CSV EXPORT ----
         document.getElementById('btnExport').addEventListener('click', () => {
-            let csvContent = `Filtro de Canal:;${currentChannel}\n`;
-            csvContent += `Filtro de Ciclo Vida:;${currentCiclo}\n\n`;
-            csvContent += "Cenario;" + months.join(";") + "\n";
-            
-            const dataToExport = getProcessedData(currentChannel, currentCiclo);
+            let csv = `Filtro de Canal:;${currentChannel}\nFiltro de Ciclo Vida:;${currentCiclo}\n\n`;
+            csv    += 'Cenario;' + months.join(';') + '\n';
 
-            const p25 = dataToExport.plano2025.map(v => v === null ? "" : v).join(";");
-            const a25 = dataToExport.actual2025.map(v => v === null ? "" : v).join(";");
-            const p26 = dataToExport.plano2026.map(v => v === null ? "" : v).join(";");
-            const a26 = dataToExport.actual2026.map(v => v === null ? "" : v).join(";");
+            const d  = getProcessedData(currentChannel, currentCiclo);
+            const s  = (arr) => arr.map(v => v === null ? '' : v).join(';');
+            csv += `Plano 2025;${s(d.plano2025)}\n`;
+            csv += `Actual 2025;${s(d.actual2025)}\n`;
+            csv += `Plano 2026;${s(d.plano2026)}\n`;
+            csv += `Actual 2026;${s(d.actual2026)}\n`;
 
-            csvContent += `Plano 2025;${p25}\n`;
-            csvContent += `Actual 2025;${a25}\n`;
-            csvContent += `Plano 2026;${p26}\n`;
-            csvContent += `Actual 2026;${a26}\n`;
-
-            const bom = "\uFEFF";
-            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `performance_tpv_${currentChannel}_${currentCiclo}.csv`);
+            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `performance_tpv_${currentChannel}_${currentCiclo}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         });
 
-        // Inicialização: Dispara o Fetch assim que carregar a página
-        window.onload = () => {
-            fetchAndParseData();
-        };
-
+        // ---- INIT ----
+        window.onload = () => { fetchAndParseData(); };
     </script>
 </body>
 </html>
