@@ -7003,32 +7003,38 @@ let _grafgenChart  = null;
 let _grafgenInitDone = false;
 
 function _grafgenGetVal(buKey, m, cen, metric) {
+  // Returns null when no rows match (so chart shows a gap instead of zero)
   const buses = KN_BU_MAP[buKey] || [buKey];
   if(metric.tpv) {
-    let s=0;
+    let s=null;
     for(const d of allData)
-      if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2==='TPV') s+=d.Value||0;
+      if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2==='TPV')
+        s = (s||0) + (d.Value||0);
     return s;
   }
   if(metric.nmv) {
-    let s=0;
+    let s=null;
     for(const d of allData)
-      if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2==='NMV') s+=d.Value||0;
+      if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2==='NMV')
+        s = (s||0) + (d.Value||0);
     return s;
   }
   if(metric.takerate) {
-    let s=0;
+    let s=null;
     for(const d of allData) {
       if(d.MES!==m||d.Cenario!==cen||!buses.includes(d.Product)) continue;
-      if(d.MNG_1==='Product Monetization'||d.MNG_1==='Net Monetization') s+=d.Value||0;
-      if(d.MNG_1==='Variable Contribution'&&d.MNG_2==='Collection Fees') s+=d.Value||0;
+      if(d.MNG_1==='Product Monetization'||d.MNG_1==='Net Monetization')
+        s = (s||0) + (d.Value||0);
+      if(d.MNG_1==='Variable Contribution'&&d.MNG_2==='Collection Fees')
+        s = (s||0) + (d.Value||0);
     }
     return s;
   }
   const sections = knCumSections(metric.key);
-  let s=0;
+  let s=null;
   for(const d of allData)
-    if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && sections.has(d.MNG_1)) s+=d.Value||0;
+    if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && sections.has(d.MNG_1))
+      s = (s||0) + (d.Value||0);
   return s;
 }
 
