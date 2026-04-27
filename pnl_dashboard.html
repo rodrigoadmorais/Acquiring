@@ -7181,7 +7181,7 @@ function renderGrafgenTab() {
   }
 
   // Aggregate values per metric × scenario × period
-  const agg = new Map(); // `${metric.key}::${cen}` → Map<periodKey, number>
+  const agg = new Map(); // `${metric.key}::${cen}` → Map<periodKey, number|null>
   for(const metric of selMetrics) {
     for(const cen of selCens) {
       const serKey = `${metric.key}::${cen}`;
@@ -7190,7 +7190,9 @@ function renderGrafgenTab() {
       for(const m of allMeses) {
         const p = _toPeriodKey(m,grafgenGran);
         const v = _grafgenGetVal(grafgenBU,m,cen,metric);
-        byPer.set(p,(byPer.get(p)||0)+v);
+        // Use explicit null check so zero values are preserved correctly
+        const cur = byPer.get(p);
+        byPer.set(p, cur===null ? v : cur+v);
       }
       agg.set(serKey, byPer);
     }
@@ -7211,6 +7213,7 @@ function renderGrafgenTab() {
   }
 
   // Build Chart.js datasets
+  // Use 'y' (left) and 'y1' (right) — Chart.js v4 built-in IDs, no type declaration needed
   const datasets = [];
   const isAbsPct = grafgenDisplay==='abs_pct';
   const isPct    = grafgenDisplay==='pct';
@@ -7222,16 +7225,15 @@ function renderGrafgenTab() {
       const dash   = GRAFGEN_CEN_DASH[cen]||[];
       const cenLbl = GRAFGEN_CEN_LABEL[cen]||cen;
 
-      // Absolute dataset (always when abs or abs_pct)
+      // Absolute dataset (abs or abs_pct mode)
       if(!isPct) {
         const data = allPeriods.map(p=>{
           const v = byPer.get(p);
           return (v===null||v===undefined) ? null : v/ud;
         });
         datasets.push({
-          label:`${metric.label} · ${cenLbl}`,
+          label: `${metric.label} · ${cenLbl}`,
           data,
-          type:'line',
           borderColor: metric.color,
           backgroundColor: metric.color+'18',
           borderWidth: 2.5,
@@ -7242,36 +7244,36 @@ function renderGrafgenTab() {
           pointRadius: 4,
           tension: 0.25,
           spanGaps: false,
-          yAxisID: 'yAbs',
+          yAxisID: 'y',
           _metricKey: metric.key,
           _cen: cen,
         });
       }
 
-      // Percentage dataset (pct or abs_pct)
+      // Percentage dataset (pct or abs_pct mode)
       if(isPct||isAbsPct) {
         const volByPer = volAgg.get(cen);
         const data = allPeriods.map(p=>{
           const v   = byPer.get(p);
-          const vol = volByPer?.get(p)||0;
-          if(!vol||v===null||v===undefined) return null;
+          const vol = volByPer ? (volByPer.get(p)||0) : 0;
+          if(!vol || v===null || v===undefined) return null;
           return (v/vol)*100;
         });
+        const pctDash = isPct ? dash : (dash.length ? [...dash,2,2] : [2,4]);
         datasets.push({
           label: isPct ? `${metric.label} · ${cenLbl} %vol` : `${metric.label} · ${cenLbl} %`,
           data,
-          type:'line',
           borderColor: metric.color,
           backgroundColor: 'transparent',
           borderWidth: isPct ? 2.5 : 1.5,
-          borderDash: isPct ? dash : [...dash,2,2].filter(Boolean).length?[...(dash.length?dash:[6,2]),2,2]:[2,4],
+          borderDash: pctDash,
           pointBackgroundColor: metric.color,
-          pointBorderColor:'#fff',
-          pointBorderWidth:1.5,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
           pointRadius: isPct ? 4 : 2.5,
-          tension:0.25,
-          spanGaps:false,
-          yAxisID: isPct ? 'yAbs' : 'yPct',
+          tension: 0.25,
+          spanGaps: false,
+          yAxisID: isPct ? 'y' : 'y1',
           _metricKey: metric.key,
           _cen: cen,
           _isPct: true,
@@ -7282,15 +7284,14 @@ function renderGrafgenTab() {
 
   if(!datasets.length) { _grafgenShowMsg('Sem dados.'); return; }
 
-  // If every value across all datasets is null, there's truly no data in range
+  // Guard: if every data point is null, nothing to show
   const hasAnyValue = datasets.some(ds => ds.data.some(v => v !== null));
   if(!hasAnyValue) { _grafgenShowMsg('Sem dados para o período e cenários selecionados.'); return; }
 
-  // Scales — Chart.js v4 requires explicit type:'linear' for non-default scale IDs
+  // Scales — use built-in 'y' / 'y1' IDs (no need for type:'linear')
   const scales = {
     x:{ grid:{display:false}, ticks:{font:{size:10},color:'#888'} },
-    yAbs:{
-      type:'linear',
+    y:{
       position:'left',
       grid:{color:'rgba(0,0,0,.06)'},
       ticks:{font:{size:10},color:'#888',
@@ -7301,8 +7302,7 @@ function renderGrafgenTab() {
     },
   };
   if(isAbsPct) {
-    scales.yPct = {
-      type:'linear',
+    scales.y1 = {
       position:'right',
       grid:{ drawOnChartArea:false },
       ticks:{ font:{size:10}, color:'#888',
@@ -7311,46 +7311,54 @@ function renderGrafgenTab() {
     };
   }
 
-  // Destroy previous chart
+  // Destroy previous chart and recreate the canvas to avoid stale state
   if(_grafgenChart) { try{_grafgenChart.destroy()}catch(e){} _grafgenChart=null; }
 
-  const msgEl  = document.getElementById('grafgenChartMsg');
-  const ctEl   = document.getElementById('grafgenChartContainer');
-  const cvs    = document.getElementById('grafgenChart');
+  const msgEl = document.getElementById('grafgenChartMsg');
+  const ctEl  = document.getElementById('grafgenChartContainer');
+  if(!ctEl) { console.error('grafgenChartContainer not found'); return; }
   if(msgEl) msgEl.style.display='none';
-  if(ctEl)  ctEl.style.display='block';
+  ctEl.style.display='block';
 
-  _grafgenChart = new Chart(cvs.getContext('2d'),{
-    type:'line',
-    data:{ labels, datasets },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ top:8, right:isAbsPct?8:0 } },
-      interaction:{ mode:'index', intersect:false },
-      plugins:{
-        legend:{
-          display:true,
-          position:'bottom',
-          labels:{ font:{size:10}, boxWidth:14, padding:12,
-            filter: item => !item.label.startsWith('_') }
-        },
-        tooltip:{
-          callbacks:{
-            label: ctx => {
-              const v=ctx.parsed.y;
-              if(v===null||v===undefined) return null;
-              const isPctDs = ctx.dataset._isPct;
-              const fv = isPctDs
-                ? (v>=0?'+':'')+v.toFixed(2)+'%'
-                : v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+udLbl;
-              return `${ctx.dataset.label}: ${fv}`;
+  // Recreate canvas to avoid Chart.js stale-instance issues
+  ctEl.innerHTML = '<canvas id="grafgenChart"></canvas>';
+  const cvs = document.getElementById('grafgenChart');
+
+  try {
+    _grafgenChart = new Chart(cvs, {
+      type:'line',
+      data:{ labels, datasets },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ top:8, right:isAbsPct?8:0 } },
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{
+            display:true,
+            position:'bottom',
+            labels:{ font:{size:10}, boxWidth:14, padding:12 }
+          },
+          tooltip:{
+            callbacks:{
+              label: ctx => {
+                const v=ctx.parsed.y;
+                if(v===null||v===undefined) return null;
+                const isPctDs = ctx.dataset._isPct;
+                const fv = isPctDs
+                  ? (v>=0?'+':'')+v.toFixed(2)+'%'
+                  : v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' '+udLbl;
+                return `${ctx.dataset.label}: ${fv}`;
+              }
             }
           }
-        }
-      },
-      scales
-    }
-  });
+        },
+        scales
+      }
+    });
+  } catch(err) {
+    console.error('GrafGen chart error:', err);
+    _grafgenShowMsg('Erro ao gerar gráfico: ' + err.message);
+  }
 }
 
 function _grafgenShowMsg(msg) {
