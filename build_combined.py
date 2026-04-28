@@ -121,6 +121,7 @@ cart_map = {
 }
 df_combined['CARTEIRA'] = df_combined['CARTEIRA'].map(lambda x: cart_map.get(x, x))
 
+df_combined = df_combined[df_combined['MES'] >= '202601']
 df_combined = df_combined.sort_values(['CENARIO','MES','PRODUTO','CARTEIRA','CANAL'])
 
 out_path = r'C:\Users\rdmorais\Desktop\Teste\tpv_combinado.tsv'
