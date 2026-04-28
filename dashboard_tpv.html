@@ -464,18 +464,6 @@ function render(){
     const bPC={};for(const r of D){const k=r.PRODUTO||"(vazio)";if(!bPC[k])bPC[k]={ACTUAL:0,"FORECAST 4+8":0,PLANO:0};bPC[k][r.CENARIO]=(bPC[k][r.CENARIO]||0)+r.VALOR}
   const prods=Object.keys(bPC).sort();
   const bSeg=grp(acD,"SEGMENTO");const sK=Object.keys(bSeg);
-  const rows=[];
-  for(const m of meses){
-    for(const c of SCEN){
-      const v=bsm[c][m];if(!v)continue;
-      const md=D.filter(r=>r.CENARIO===c&&r.MES===m);
-      const tCan=Object.entries(grp(md,"CANAL")).sort((a,b)=>b[1]-a[1])[0];
-      const tProd=Object.entries(grp(md,"PRODUTO")).sort((a,b)=>b[1]-a[1])[0];
-      const tSeg=Object.entries(grp(md,"SEGMENTO")).sort((a,b)=>b[1]-a[1])[0];
-      rows.push(`<tr><td>${mLbl(m)}</td><td><span class="badge ${BD[c]}">${c}</span></td><td class="num">${fmt(v)}</td><td>${tCan?.[0]||"—"}</td><td>${tProd?.[0]||"—"}</td><td>${tSeg?.[0]||"—"}</td></tr>`);
-    }
-  }
-  document.getElementById("tblBody").innerHTML=rows.join("");
   /* MOP Charts */
   const selP2=getSelProds();const allP2=document.querySelectorAll("#msProdDrop input.prod-cb").length;const useP2=selP2.length>0&&selP2.length<allP2;
   const selM2=getSelMops();
