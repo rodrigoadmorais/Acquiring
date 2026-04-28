@@ -1,6 +1,6 @@
 import pandas as pd
 
-# ── 1. FORECAST 3+9: read wide format, melt to long ──────────────────────────
+# ── 1. FORECAST 4+8: read wide format, melt to long ──────────────────────────
 
 df_fc = pd.read_csv(
     r'C:\Users\rdmorais\Desktop\Teste\forecast_39_raw.tsv',
@@ -22,12 +22,12 @@ df_fc_long = df_fc.melt(
 )
 
 df_fc_long = df_fc_long.rename(columns={'Produto': 'PRODUTO'})
-df_fc_long['CENARIO'] = 'FORECAST 3+9'
+df_fc_long['CENARIO'] = 'FORECAST 4+8'
 df_fc_long['VALOR'] = (df_fc_long['VALOR']
     .str.replace('.', '', regex=False)
     .str.replace(',', '.', regex=False))
 
-print(f"FORECAST 3+9 rows: {len(df_fc_long)}")
+print(f"FORECAST 4+8 rows: {len(df_fc_long)}")
 
 # ── 2. PLANO: already long format ─────────────────────────────────────────────
 
