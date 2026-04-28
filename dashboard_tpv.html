@@ -171,7 +171,7 @@
 </div>
 <div class="tr-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 24px 0">
   <div class="card">
-    <div class="card-title">Take Rate M&#233;dio por MOP &mdash; FC vs Plano (Mai em diante)</div>
+    <div class="card-title">Take Rate M&#233;dio por Produto &mdash; FC vs Plano (Mai em diante)</div>
     <canvas id="cTR" style="max-height:320px"></canvas>
   </div>
   <div class="card">
@@ -449,7 +449,7 @@ function render(){
   const pctScenLabels=SCEN.filter(c=>Object.values(pctByCenMop[c]).some(v=>v>0));
   const pctDs=mopsAll.map(mo=>({label:mo,data:pctScenLabels.map(c=>{const tot=Object.values(pctByCenMop[c]).reduce((a,b)=>a+b,0);return tot>0?Math.round(pctByCenMop[c][mo]/tot*1000)/10:0;}),backgroundColor:mopColors2[mo]||"#999",stack:"s"}));
   mk("cMopPct",{type:"bar",data:{labels:pctScenLabels,datasets:pctDs},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:9},boxWidth:12}},datalabels:{display:false}},scales:{x:{stacked:true},y:{stacked:true,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
-  /* Take Rate Projection — FC vs PL (Mai em diante) */
+  /* Take Rate Projection — FC vs PL (Mai em diante) using real MOP from RAW_MOP */
   function getTR(seg,prod,mop){
     if(TR[seg+"|"+prod+"|"+mop]) return TR[seg+"|"+prod+"|"+mop];
     if(TR[seg+"||"+mop]) return TR[seg+"||"+mop];
@@ -457,37 +457,32 @@ function render(){
     for(const s of segs){if(TR[s+"|"+prod+"|"+mop])return TR[s+"|"+prod+"|"+mop];if(TR[s+"||"+mop])return TR[s+"||"+mop];}
     return 0;
   }
-  /* FC vs PL: May onward, weighted average TR per MOP */
   const ytgFilter=r=>r.MES>="202605"&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP||""));
-  const fcYTG=RAW.filter(r=>r.CENARIO==="FORECAST 4+8"&&ytgFilter(r));
-  const plYTG=RAW.filter(r=>r.CENARIO==="PLANO"&&ytgFilter(r));
-  function weightedTR(rows){
-    const byMop={};
-    for(const r of rows){
-      const mo=r.MOP||"N/A";
-      if(!byMop[mo])byMop[mo]={tpv:0,gmr:0};
-      const rate=getTR(r.SEGMENTO||"",r.PRODUTO||"",mo);
-      byMop[mo].tpv+=r.VALOR;
-      byMop[mo].gmr+=r.VALOR*rate;
-    }
-    return byMop;
-  }
-  const fcTR=weightedTR(fcYTG);
-  const plTR=weightedTR(plYTG);
-  const trMops=[...new Set([...Object.keys(fcTR),...Object.keys(plTR)])].filter(m=>m!=="N/A"&&(fcTR[m]?.tpv||0)+(plTR[m]?.tpv||0)>0).sort();
-  const trDsFc=trMops.map(m=>fcTR[m]&&fcTR[m].tpv>0?Math.round(fcTR[m].gmr/fcTR[m].tpv*10000)/100:null);
-  const trDsPl=trMops.map(m=>plTR[m]&&plTR[m].tpv>0?Math.round(plTR[m].gmr/plTR[m].tpv*10000)/100:null);
-  mk("cTR",{type:"bar",data:{labels:trMops,datasets:[
+  const fcYTG=RAW_MOP.filter(r=>r.CENARIO==="FORECAST 4+8"&&ytgFilter(r));
+  const plYTG=RAW_MOP.filter(r=>r.CENARIO==="PLANO"&&ytgFilter(r));
+  /* By MOP — both FC and PL use real MOP from RAW_MOP */
+  const fcTR={};const plTRmopMap={};
+  for(const r of fcYTG){const mo=r.MOP||"N/A";if(!fcTR[mo])fcTR[mo]={tpv:0,gmr:0};fcTR[mo].tpv+=r.VALOR;fcTR[mo].gmr+=r.VALOR*getTR("",r.PRODUTO||"",mo);}
+  for(const r of plYTG){const mo=r.MOP||"N/A";if(!plTRmopMap[mo])plTRmopMap[mo]={tpv:0,gmr:0};plTRmopMap[mo].tpv+=r.VALOR;plTRmopMap[mo].gmr+=r.VALOR*getTR("",r.PRODUTO||"",mo);}
+  const trMops=[...new Set([...Object.keys(fcTR),...Object.keys(plTRmopMap)])].filter(m=>m!=="N/A").sort();
+  /* By PRODUTO — FC vs PL weighted avg TR% */
+  const fcTRprod={};const plTRprod={};
+  for(const r of fcYTG){const p=r.PRODUTO||"N/A";if(!fcTRprod[p])fcTRprod[p]={tpv:0,gmr:0};fcTRprod[p].tpv+=r.VALOR;fcTRprod[p].gmr+=r.VALOR*getTR("",p,r.MOP||"");}
+  for(const r of plYTG){const p=r.PRODUTO||"N/A";if(!plTRprod[p])plTRprod[p]={tpv:0,gmr:0};plTRprod[p].tpv+=r.VALOR;plTRprod[p].gmr+=r.VALOR*getTR("",p,r.MOP||"");}
+  const trProds=[...new Set([...Object.keys(fcTRprod),...Object.keys(plTRprod)])].filter(p=>p!=="N/A").sort();
+  const trDsFc=trProds.map(p=>fcTRprod[p]&&fcTRprod[p].tpv>0?Math.round(fcTRprod[p].gmr/fcTRprod[p].tpv*10000)/100:null);
+  const trDsPl=trProds.map(p=>plTRprod[p]&&plTRprod[p].tpv>0?Math.round(plTRprod[p].gmr/plTRprod[p].tpv*10000)/100:null);
+  mk("cTR",{type:"bar",data:{labels:trProds,datasets:[
     {label:"Forecast 4+8",data:trDsFc,backgroundColor:"rgba(249,115,22,.8)",borderRadius:4},
-    {label:"Plano",data:trDsPl,backgroundColor:"rgba(22,163,74,.5)",borderRadius:4}
+    {label:"Plano",data:trDsPl,backgroundColor:"rgba(22,163,74,.6)",borderRadius:4}
   ]},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{anchor:"end",align:"end",color:"#555",font:{size:9},formatter:v=>v!=null?v.toFixed(2)+"%":""}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
-  /* GMR projetado FC vs PL por MOP */
+  /* GMR por MOP — FC e PL lado a lado */
   const gmrFc=trMops.map(m=>fcTR[m]?.gmr||0);
-  const gmrPl=trMops.map(m=>plTR[m]?.gmr||0);
+  const gmrPl=trMops.map(m=>plTRmopMap[m]?.gmr||0);
   mk("cTRmop",{type:"bar",data:{labels:trMops,datasets:[
     {label:"Forecast 4+8",data:gmrFc,backgroundColor:trMops.map(m=>mopColors2[m]||"#999"),borderRadius:4},
-    {label:"Plano",data:gmrPl,backgroundColor:trMops.map(m=>(mopColors2[m]||"#999").replace(".8",".35")),borderRadius:4}
-  ]},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
+    {label:"Plano",data:gmrPl,backgroundColor:trMops.map(m=>(mopColors2[m]||"#999").replace(".8","0.4")),borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{anchor:"end",align:"end",color:"#555",font:{size:9},formatter:v=>fmt(v)}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}})
 
 }
 function toggleMobile(){
