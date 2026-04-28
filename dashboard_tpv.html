@@ -509,8 +509,10 @@ function render(){
   const mops=[...new Set(mopD.map(r=>r.MOP))].sort();
   const mopByCen={};for(const c of SCEN){mopByCen[c]={};for(const mo of mops)mopByCen[c][mo]=0;}
   for(const r of mopD){if(acMesM.includes(r.MES)&&mopByCen[r.CENARIO])mopByCen[r.CENARIO][r.MOP]=(mopByCen[r.CENARIO][r.MOP]||0)+r.VALOR;}
+  /* Use D (filtered RAW with MOP) for trend — respects segment filter like main chart */
+  const trendMopD=D.filter(r=>r.MOP&&(!useM2||selM2.includes(r.MOP)));
   const acMopBym={};const fcMopBym={};
-  for(const r of mopD){
+  for(const r of trendMopD){
     if(r.CENARIO==="ACTUAL"){if(!acMopBym[r.MOP])acMopBym[r.MOP]={};acMopBym[r.MOP][r.MES]=(acMopBym[r.MOP][r.MES]||0)+r.VALOR;}
     if(r.CENARIO==="FORECAST 4+8"){if(!fcMopBym[r.MOP])fcMopBym[r.MOP]={};fcMopBym[r.MOP][r.MES]=(fcMopBym[r.MOP][r.MES]||0)+r.VALOR;}
   }
