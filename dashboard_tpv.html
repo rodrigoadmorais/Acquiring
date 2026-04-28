@@ -409,6 +409,7 @@ function render(){
   const mopColors=["#2563EB","#F97316","#16A34A","#9333EA","#0891B2"];
   mk("cMopTrend",{type:"line",data:{labels:acMesM.map(mLbl),datasets:topMops.map((mo,i)=>({label:mo,data:acMesM.map(m=>(acMopBym[mo]||{})[m]||null),borderColor:mopColors[i],borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:true}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
   /* MOP Share Evolution — FORECAST vs PLANO, monthly % */
+  const mopColors2={"BANK_TRANSFER":"rgba(22,163,74,.8)","CREDIT_CARD":"rgba(249,115,22,.8)","ACCOUNT_MONEY":"rgba(37,99,235,.8)","DEBIT_CARD":"rgba(147,51,234,.8)","DIGITAL_CURRENCY":"rgba(8,145,178,.8)","PIX":"rgba(21,128,61,.8)","TICKET":"rgba(220,38,38,.8)","PREPAID_CARD":"rgba(202,138,4,.8)","VOUCHER_CARD":"rgba(20,184,166,.8)"};
   const evoScens=["FORECAST 4+8","PLANO"];
   const evoMes=[...new Set(RAW_MOP.filter(r=>evoScens.includes(r.CENARIO)).map(r=>r.MES))].sort();
   const evoRaw=RAW_MOP.filter(r=>evoScens.includes(r.CENARIO)&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP)));
@@ -428,7 +429,6 @@ function render(){
   }
   mk("cMopShareEvo",{type:"line",data:{labels:evoMes.map(mLbl),datasets:evoDs},options:{responsive:true,plugins:{legend:{position:"top",labels:{font:{size:9},boxWidth:12}},datalabels:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}},x:{grid:{color:"rgba(0,0,0,.04)"}}}}});
   /* MOP% full year all scenarios */
-  const mopColors2={"BANK_TRANSFER":"rgba(22,163,74,.8)","CREDIT_CARD":"rgba(249,115,22,.8)","ACCOUNT_MONEY":"rgba(37,99,235,.8)","DEBIT_CARD":"rgba(147,51,234,.8)","DIGITAL_CURRENCY":"rgba(8,145,178,.8)","PIX":"rgba(21,128,61,.8)","TICKET":"rgba(220,38,38,.8)","PREPAID_CARD":"rgba(202,138,4,.8)","VOUCHER_CARD":"rgba(20,184,166,.8)"};
   const mopsAll=[...new Set(RAW_MOP.map(r=>r.MOP).filter(Boolean))].sort();
   const mIniV=document.getElementById("fMesIni").value;
   const mFimV=document.getElementById("fMesFim").value;
@@ -449,7 +449,13 @@ function render(){
   const acForTR=RAW.filter(r=>r.CENARIO==="FORECAST 4+8"&&(!useP2||selP2.includes(r.PRODUTO))&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP||"")));
   const segForTR=["BIG SELLERS","SMB","LONGTAIL"];
   const prodsForTR=[...new Set(acForTR.map(r=>r.PRODUTO))].filter(Boolean).sort();
-  const trByProd={};prodsForTR.forEach(p=>{trByProd[p]={};segForTR.forEach(s=>{trByProd[p][s]=acForTR.filter(r=>r.PRODUTO===p&&(r.SEGMENTO||"")===(s||r.SEGMENTO||"")).reduce((a,r)=>{return a+r.VALOR*(getTR(r.SEGMENTO||"",r.PRODUTO,r.MOP||"")||0);},0);});});
+  const trByProd={};prodsForTR.forEach(p=>{
+    trByProd[p]={};
+    segForTR.forEach(s=>{
+      trByProd[p][s]=acForTR.filter(r=>r.PRODUTO===p&&(r.SEGMENTO||"")===(s))
+        .reduce((a,r)=>a+r.VALOR*(getTR(r.SEGMENTO||"",r.PRODUTO,r.MOP||"")||0),0);
+    });
+  });
   mk("cTR",{type:"bar",data:{labels:prodsForTR,datasets:segForTR.map((s,i)=>({label:s,data:prodsForTR.map(p=>trByProd[p][s]||0),backgroundColor:["rgba(37,99,235,.8)","rgba(249,115,22,.8)","rgba(22,163,74,.8)"][i],borderRadius:4}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
   const mopsForTR=[...new Set(acForTR.map(r=>r.MOP))].sort();
   const gmrByMop2={};mopsForTR.forEach(mo=>{gmrByMop2[mo]=acForTR.filter(r=>r.MOP===mo).reduce((a,r)=>{const seg=r.SEGMENTO||"";return a+r.VALOR*(getTR(seg,r.PRODUTO,mo)||0);},0);});
