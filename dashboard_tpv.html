@@ -156,12 +156,6 @@
   
 </div>
 
-<div style="padding:14px 24px 0">
-  <div class="card">
-    <div class="card-title">&#128200; Evolu&#231;&#227;o do Share por MOP &mdash; Forecast vs Plano (% do TPV mensal)</div>
-    <canvas id="cMopShareEvo" style="max-height:340px"></canvas>
-  </div>
-</div>
 <div class="mop-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 24px 0">
   <div class="card">
     <div class="card-title">MOP Trend &mdash; Actual + Forecast (AC sólido, FC tracejado)</div>
@@ -510,7 +504,6 @@ function render(){
         tension:.3,fill:false,spanGaps:true});
     }
   }
-  mk("cMopShareEvo",{type:"line",data:{labels:evoMes.map(mLbl),datasets:evoDs},options:{responsive:true,plugins:{legend:{position:"top",labels:{font:{size:9},boxWidth:12}},datalabels:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}},x:{grid:{color:"rgba(0,0,0,.04)"}}}}});
   /* MOP% full year all scenarios */
   const mopsAll=[...new Set(RAW_MOP.map(r=>r.MOP).filter(Boolean))].sort();
   const mIniV=document.getElementById("fMesIni").value;
