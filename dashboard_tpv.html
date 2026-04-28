@@ -151,7 +151,7 @@
   </div>
 </div>
 <div class="bottom-row">
-  <div class="card"><div class="card-title">&#127970; TPV por Canal (Actual YTD)</div><canvas id="cCanal"></canvas></div>
+  
   <div class="card"><div class="card-title">&#128230; TPV por Produto &#8212; 3 Cen&aacute;rios</div><canvas id="cProd"></canvas></div>
   <div class="card"><div class="card-title">&#128311; Mix por Segmento (Actual YTD)</div><canvas id="cSeg"></canvas></div>
 </div>
@@ -374,8 +374,7 @@ function render(){
   const acD=D.filter(r=>r.CENARIO==="ACTUAL");
   const bCan=grp(acD,"CANAL");
   const topCan=Object.entries(bCan).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  mk("cCanal",{type:"bar",data:{labels:topCan.map(e=>e[0]),datasets:[{data:topCan.map(e=>e[1]),backgroundColor:"rgba(37,99,235,.7)",borderRadius:5}]},options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false},datalabels:{anchor:"end",align:"end",color:"#555",font:{size:10},formatter:v=>fmt(v)}},scales:{x:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
-  const bPC={};for(const r of D){const k=r.PRODUTO||"(vazio)";if(!bPC[k])bPC[k]={ACTUAL:0,"FORECAST 4+8":0,PLANO:0};bPC[k][r.CENARIO]=(bPC[k][r.CENARIO]||0)+r.VALOR}
+    const bPC={};for(const r of D){const k=r.PRODUTO||"(vazio)";if(!bPC[k])bPC[k]={ACTUAL:0,"FORECAST 4+8":0,PLANO:0};bPC[k][r.CENARIO]=(bPC[k][r.CENARIO]||0)+r.VALOR}
   const prods=Object.keys(bPC).sort();
   mk("cProd",{type:"bar",data:{labels:prods,datasets:SCEN.map(c=>({label:c,data:prods.map(p=>bPC[p][c]||0),backgroundColor:CA[c].replace(".15",".8"),borderColor:CC[c],borderWidth:1,borderRadius:4}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}},x:{ticks:{font:{size:10}}}}}});
   const bSeg=grp(acD,"SEGMENTO");const sK=Object.keys(bSeg);
