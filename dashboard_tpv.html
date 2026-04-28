@@ -341,11 +341,12 @@ function render(){
   }
   document.getElementById("tblBody").innerHTML=rows.join("");
   /* MOP Charts */
+  const selP2=getSelProds();const allP2=document.querySelectorAll("#msProdDrop input.prod-cb").length;const useP2=selP2.length>0&&selP2.length<allP2;
   const selM2=getSelMops();
   const allM2=document.querySelectorAll("#msMopDrop input.mop-cb").length;
   const useM2=selM2.length>0&&selM2.length<allM2;
   const fCart2=document.getElementById("fCart").value;
-  const mopD=RAW_MOP.filter(r=>(!useP||selP.includes(r.PRODUTO))&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP)));
+  const mopD=RAW_MOP.filter(r=>(!useP2||selP2.includes(r.PRODUTO))&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP)));
   const acMesM=[...new Set(RAW_MOP.filter(r=>r.CENARIO==="ACTUAL").map(r=>r.MES))].sort();
   const mops=[...new Set(mopD.map(r=>r.MOP))].sort();
   const mopByCen={};for(const c of SCEN){mopByCen[c]={};for(const mo of mops)mopByCen[c][mo]=0;}
