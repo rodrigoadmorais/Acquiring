@@ -161,7 +161,7 @@
     <canvas id="cMop" style="max-height:300px"></canvas>
   </div>
   <div class="card">
-    <div class="card-title">MOP Trend &mdash; Actual (mensalizado)</div>
+    <div class="card-title">MOP Trend &mdash; Actual + Forecast (AC sólido, FC tracejado)</div>
     <canvas id="cMopTrend" style="max-height:300px"></canvas>
   </div>
   <div class="card">
@@ -171,11 +171,11 @@
 </div>
 <div class="tr-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 24px 0">
   <div class="card">
-    <div class="card-title">Take Rate Projetado por Produto &amp; Segmento (Forecast 4+8)</div>
+    <div class="card-title">Take Rate M&#233;dio por MOP &mdash; FC vs Plano (Mai em diante)</div>
     <canvas id="cTR" style="max-height:320px"></canvas>
   </div>
   <div class="card">
-    <div class="card-title">GMR Projetado por MOP (Forecast 4+8)</div>
+    <div class="card-title">GMR Projetado por MOP &mdash; FC vs Plano (Mai em diante)</div>
     <canvas id="cTRmop" style="max-height:320px"></canvas>
   </div>
 </div>
@@ -403,10 +403,22 @@ function render(){
   const mopByCen={};for(const c of SCEN){mopByCen[c]={};for(const mo of mops)mopByCen[c][mo]=0;}
   for(const r of mopD){if(acMesM.includes(r.MES)&&mopByCen[r.CENARIO])mopByCen[r.CENARIO][r.MOP]=(mopByCen[r.CENARIO][r.MOP]||0)+r.VALOR;}
   mk("cMop",{type:"bar",data:{labels:mops,datasets:SCEN.map(c=>({label:c,data:mops.map(mo=>mopByCen[c][mo]||0),backgroundColor:CA[c].replace(".15",".8"),borderColor:CC[c],borderWidth:1,borderRadius:4}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}},x:{ticks:{font:{size:9}}}}}});
-  const acMopBym={};for(const r of mopD){if(r.CENARIO==="ACTUAL"){if(!acMopBym[r.MOP])acMopBym[r.MOP]={};acMopBym[r.MOP][r.MES]=(acMopBym[r.MOP][r.MES]||0)+r.VALOR;}}
+  const acMopBym={};const fcMopBym={};
+  for(const r of mopD){
+    if(r.CENARIO==="ACTUAL"){if(!acMopBym[r.MOP])acMopBym[r.MOP]={};acMopBym[r.MOP][r.MES]=(acMopBym[r.MOP][r.MES]||0)+r.VALOR;}
+    if(r.CENARIO==="FORECAST 4+8"){if(!fcMopBym[r.MOP])fcMopBym[r.MOP]={};fcMopBym[r.MOP][r.MES]=(fcMopBym[r.MOP][r.MES]||0)+r.VALOR;}
+  }
+  const allTrendMes=[...new Set([...Object.values(acMopBym),...Object.values(fcMopBym)].flatMap(o=>Object.keys(o)))].sort();
+  const acCutoffIdx=acMesM.length-1;
   const topMops=Object.entries(acMopBym).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).slice(0,5).map(e=>e[0]);
   const mopColors=["#2563EB","#F97316","#16A34A","#9333EA","#0891B2"];
-  mk("cMopTrend",{type:"line",data:{labels:acMesM.map(mLbl),datasets:topMops.map((mo,i)=>({label:mo,data:acMesM.map(m=>(acMopBym[mo]||{})[m]||null),borderColor:mopColors[i],borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:true}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
+  const trendDs=topMops.map((mo,i)=>({
+    label:mo,
+    data:allTrendMes.map(m=>(acMopBym[mo]||{})[m]!==undefined?(acMopBym[mo]||{})[m]:(fcMopBym[mo]||{})[m]||null),
+    borderColor:mopColors[i],borderWidth:2.5,pointRadius:3,tension:.3,fill:false,spanGaps:false,
+    segment:{borderDash:ctx=>ctx.p1DataIndex>acCutoffIdx?[6,3]:[]}
+  }));
+  mk("cMopTrend",{type:"line",data:{labels:allTrendMes.map(mLbl),datasets:trendDs},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
   /* MOP Share Evolution — FORECAST vs PLANO, monthly % */
   const mopColors2={"BANK_TRANSFER":"rgba(22,163,74,.8)","CREDIT_CARD":"rgba(249,115,22,.8)","ACCOUNT_MONEY":"rgba(37,99,235,.8)","DEBIT_CARD":"rgba(147,51,234,.8)","DIGITAL_CURRENCY":"rgba(8,145,178,.8)","PIX":"rgba(21,128,61,.8)","TICKET":"rgba(220,38,38,.8)","PREPAID_CARD":"rgba(202,138,4,.8)","VOUCHER_CARD":"rgba(20,184,166,.8)"};
   const evoScens=["FORECAST 4+8","PLANO"];
@@ -437,7 +449,7 @@ function render(){
   const pctScenLabels=SCEN.filter(c=>Object.values(pctByCenMop[c]).some(v=>v>0));
   const pctDs=mopsAll.map(mo=>({label:mo,data:pctScenLabels.map(c=>{const tot=Object.values(pctByCenMop[c]).reduce((a,b)=>a+b,0);return tot>0?Math.round(pctByCenMop[c][mo]/tot*1000)/10:0;}),backgroundColor:mopColors2[mo]||"#999",stack:"s"}));
   mk("cMopPct",{type:"bar",data:{labels:pctScenLabels,datasets:pctDs},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:9},boxWidth:12}},datalabels:{display:false}},scales:{x:{stacked:true},y:{stacked:true,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
-  /* Take Rate Projection */
+  /* Take Rate Projection — FC vs PL (Mai em diante) */
   function getTR(seg,prod,mop){
     if(TR[seg+"|"+prod+"|"+mop]) return TR[seg+"|"+prod+"|"+mop];
     if(TR[seg+"||"+mop]) return TR[seg+"||"+mop];
@@ -445,20 +457,37 @@ function render(){
     for(const s of segs){if(TR[s+"|"+prod+"|"+mop])return TR[s+"|"+prod+"|"+mop];if(TR[s+"||"+mop])return TR[s+"||"+mop];}
     return 0;
   }
-  const acForTR=RAW.filter(r=>r.CENARIO==="FORECAST 4+8"&&(!useP2||selP2.includes(r.PRODUTO))&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP||"")));
-  const segForTR=["BIG SELLERS","SMB","LONGTAIL"];
-  const prodsForTR=[...new Set(acForTR.map(r=>r.PRODUTO))].filter(Boolean).sort();
-  const trByProd={};prodsForTR.forEach(p=>{
-    trByProd[p]={};
-    segForTR.forEach(s=>{
-      trByProd[p][s]=acForTR.filter(r=>r.PRODUTO===p&&(r.SEGMENTO||"")===(s))
-        .reduce((a,r)=>a+r.VALOR*(getTR(r.SEGMENTO||"",r.PRODUTO,r.MOP||"")||0),0);
-    });
-  });
-  mk("cTR",{type:"bar",data:{labels:prodsForTR,datasets:segForTR.map((s,i)=>({label:s,data:prodsForTR.map(p=>trByProd[p][s]||0),backgroundColor:["rgba(37,99,235,.8)","rgba(249,115,22,.8)","rgba(22,163,74,.8)"][i],borderRadius:4}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
-  const mopsForTR=[...new Set(acForTR.map(r=>r.MOP))].sort();
-  const gmrByMop2={};mopsForTR.forEach(mo=>{gmrByMop2[mo]=acForTR.filter(r=>r.MOP===mo).reduce((a,r)=>{const seg=r.SEGMENTO||"";return a+r.VALOR*(getTR(seg,r.PRODUTO,mo)||0);},0);});
-  mk("cTRmop",{type:"bar",data:{labels:mopsForTR,datasets:[{label:"GMR Projetado",data:mopsForTR.map(m=>gmrByMop2[m]||0),backgroundColor:mopsForTR.map(m=>mopColors2[m]||"#999"),borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false},datalabels:{anchor:"end",align:"end",color:"#555",font:{size:9},formatter:v=>fmt(v)}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
+  /* FC vs PL: May onward, weighted average TR per MOP */
+  const ytgFilter=r=>r.MES>="202605"&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP||""));
+  const fcYTG=RAW.filter(r=>r.CENARIO==="FORECAST 4+8"&&ytgFilter(r));
+  const plYTG=RAW.filter(r=>r.CENARIO==="PLANO"&&ytgFilter(r));
+  function weightedTR(rows){
+    const byMop={};
+    for(const r of rows){
+      const mo=r.MOP||"N/A";
+      if(!byMop[mo])byMop[mo]={tpv:0,gmr:0};
+      const rate=getTR(r.SEGMENTO||"",r.PRODUTO||"",mo);
+      byMop[mo].tpv+=r.VALOR;
+      byMop[mo].gmr+=r.VALOR*rate;
+    }
+    return byMop;
+  }
+  const fcTR=weightedTR(fcYTG);
+  const plTR=weightedTR(plYTG);
+  const trMops=[...new Set([...Object.keys(fcTR),...Object.keys(plTR)])].filter(m=>m!=="N/A"&&(fcTR[m]?.tpv||0)+(plTR[m]?.tpv||0)>0).sort();
+  const trDsFc=trMops.map(m=>fcTR[m]&&fcTR[m].tpv>0?Math.round(fcTR[m].gmr/fcTR[m].tpv*10000)/100:null);
+  const trDsPl=trMops.map(m=>plTR[m]&&plTR[m].tpv>0?Math.round(plTR[m].gmr/plTR[m].tpv*10000)/100:null);
+  mk("cTR",{type:"bar",data:{labels:trMops,datasets:[
+    {label:"Forecast 4+8",data:trDsFc,backgroundColor:"rgba(249,115,22,.8)",borderRadius:4},
+    {label:"Plano",data:trDsPl,backgroundColor:"rgba(22,163,74,.5)",borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{anchor:"end",align:"end",color:"#555",font:{size:9},formatter:v=>v!=null?v.toFixed(2)+"%":""}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
+  /* GMR projetado FC vs PL por MOP */
+  const gmrFc=trMops.map(m=>fcTR[m]?.gmr||0);
+  const gmrPl=trMops.map(m=>plTR[m]?.gmr||0);
+  mk("cTRmop",{type:"bar",data:{labels:trMops,datasets:[
+    {label:"Forecast 4+8",data:gmrFc,backgroundColor:trMops.map(m=>mopColors2[m]||"#999"),borderRadius:4},
+    {label:"Plano",data:gmrPl,backgroundColor:trMops.map(m=>(mopColors2[m]||"#999").replace(".8",".35")),borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
 
 }
 function toggleMobile(){
