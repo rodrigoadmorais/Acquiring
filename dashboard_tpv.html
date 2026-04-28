@@ -168,15 +168,15 @@
 </div>
 <div class="gmr-kpi-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 24px 0">
   <div class="card" style="text-align:center;padding:16px">
-    <div class="card-title" style="margin-bottom:6px">GMR Total Forecast 4+8 (Mai&ndash;Dez)</div>
+    <div class="card-title" style="margin-bottom:6px">Take Rate Total FC 4+8 (Mai&ndash;Dez)</div>
     <div id="kGMRfc" style="font-size:1.7rem;font-weight:800;color:rgba(249,115,22,1)">&#8212;</div>
   </div>
   <div class="card" style="text-align:center;padding:16px">
-    <div class="card-title" style="margin-bottom:6px">GMR Total Plano (Mai&ndash;Dez)</div>
+    <div class="card-title" style="margin-bottom:6px">Take Rate Total Plano (Mai&ndash;Dez)</div>
     <div id="kGMRpl" style="font-size:1.7rem;font-weight:800;color:rgba(22,163,74,1)">&#8212;</div>
   </div>
   <div class="card" style="text-align:center;padding:16px">
-    <div class="card-title" style="margin-bottom:6px">FC vs Plano &mdash; GMR YTG</div>
+    <div class="card-title" style="margin-bottom:6px">FC vs Plano &mdash; Take Rate YTG</div>
     <div id="kGMRdelta" style="font-size:1.7rem;font-weight:800">&#8212;</div>
   </div>
 </div>
@@ -186,7 +186,7 @@
     <canvas id="cTR" style="max-height:320px"></canvas>
   </div>
   <div class="card">
-    <div class="card-title">GMR Projetado por MOP &mdash; FC vs Plano (Mai em diante)</div>
+    <div class="card-title">Take Rate Projetado por MOP &mdash; FC vs Plano (Mai em diante)</div>
     <canvas id="cTRmop" style="max-height:320px"></canvas>
   </div>
 </div>
@@ -530,6 +530,24 @@ function render(){
   const trProds=[...new Set([...Object.keys(fcTRprod),...Object.keys(plTRprod)])].filter(p=>p!=="N/A").sort();
   const trDsFc=trProds.map(p=>fcTRprod[p]&&fcTRprod[p].tpv>0?Math.round(fcTRprod[p].gmr/fcTRprod[p].tpv*10000)/100:null);
   const trDsPl=trProds.map(p=>plTRprod[p]&&plTRprod[p].tpv>0?Math.round(plTRprod[p].gmr/plTRprod[p].tpv*10000)/100:null);
+  /* MOP share per product for tooltip */
+  const fcMopShareByProd={};const plMopShareByProd={};
+  for(const r of fcYTG){
+    const p=r.PRODUTO||"N/A",mo=r.MOP||"";
+    if(!fcMopShareByProd[p])fcMopShareByProd[p]={};
+    fcMopShareByProd[p][mo]=(fcMopShareByProd[p][mo]||0)+r.VALOR;
+  }
+  for(const r of plYTG){
+    const p=r.PRODUTO||"N/A",mo=r.MOP||"";
+    if(!plMopShareByProd[p])plMopShareByProd[p]={};
+    plMopShareByProd[p][mo]=(plMopShareByProd[p][mo]||0)+r.VALOR;
+  }
+  [fcMopShareByProd,plMopShareByProd].forEach(map=>{
+    for(const p of Object.keys(map)){
+      const tot=Object.values(map[p]).reduce((a,b)=>a+b,0);
+      for(const mo of Object.keys(map[p]))map[p][mo]=Math.round(map[p][mo]/tot*1000)/10;
+    }
+  });
   const totGMRfc=Object.values(fcTRprod).reduce((a,p)=>a+p.gmr,0);
   const totGMRpl=Object.values(plTRprod).reduce((a,p)=>a+p.gmr,0);
   document.getElementById("kGMRfc").textContent=fmt(totGMRfc);
@@ -538,7 +556,15 @@ function render(){
   mk("cTR",{type:"bar",data:{labels:trProds,datasets:[
     {label:"Forecast 4+8",data:trDsFc,backgroundColor:"rgba(249,115,22,.8)",borderRadius:4},
     {label:"Plano",data:trDsPl,backgroundColor:"rgba(22,163,74,.6)",borderRadius:4}
-  ]},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{anchor:"end",align:"end",color:"#555",font:{size:9},formatter:v=>v!=null?v.toFixed(2)+"%":""}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
+  ]},options:{responsive:true,plugins:{legend:{position:"top"},
+    tooltip:{callbacks:{afterBody:function(items){
+      const it=items[0];const prod=it.label;
+      const map=it.datasetIndex===0?fcMopShareByProd[prod]:plMopShareByProd[prod];
+      if(!map)return[];
+      return["Mix MOP:"].concat(Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([mo,pct])=>"  "+mo+": "+pct+"%"));
+    }}},
+    datalabels:{anchor:"end",align:"end",color:"#555",font:{size:9},formatter:v=>v!=null?v.toFixed(2)+"%":""}},
+    scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
   /* GMR por MOP — FC e PL lado a lado */
   const gmrFc=trMops.map(m=>fcTR[m]?.gmr||0);
   const gmrPl=trMops.map(m=>plTRmopMap[m]?.gmr||0);
