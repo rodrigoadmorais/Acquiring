@@ -355,7 +355,7 @@ function render(){
   const acMopBym={};for(const r of mopD){if(r.CENARIO==="ACTUAL"){if(!acMopBym[r.MOP])acMopBym[r.MOP]={};acMopBym[r.MOP][r.MES]=(acMopBym[r.MOP][r.MES]||0)+r.VALOR;}}
   const topMops=Object.entries(acMopBym).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).slice(0,5).map(e=>e[0]);
   const mopColors=["#2563EB","#F97316","#16A34A","#9333EA","#0891B2"];
-  mk("cMopTrend",{type:"line",data:{labels:acMesM.map(mLbl),datasets:topMops.map((mo,i)=>({label:mo,data:acMesM.map(m=>(acMopBym[mo]||{})[m]||null),borderColor:mopColors[i],borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:true}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}}});
+  mk("cMopTrend",{type:"line",data:{labels:acMesM.map(mLbl),datasets:topMops.map((mo,i)=>({label:mo,data:acMesM.map(m=>(acMopBym[mo]||{})[m]||null),borderColor:mopColors[i],borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:true}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
 }
 function toggleTheme(){document.documentElement.dataset.theme=document.documentElement.dataset.theme==="dark"?"":"dark"}
 pop("fCart","CARTEIRA");pop("fCanal","CANAL");
