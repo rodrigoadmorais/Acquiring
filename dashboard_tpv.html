@@ -133,15 +133,22 @@
   <button class="rbtn" onclick="resetFilters()">&#8635; Limpar</button>
 </div>
 <div class="kpi-grid">
+  <div class="kpi kfc"><div class="kpi-lbl">Forecast 4+8 &mdash; Ano Completo</div><div class="kpi-val" id="kFcFull">&#8212;</div><div class="kpi-delta" id="kFcFullM"></div></div>
+  <div class="kpi kpl"><div class="kpi-lbl">Plano &mdash; Ano Completo</div><div class="kpi-val" id="kPlFull">&#8212;</div><div class="kpi-delta" id="kPlFullD">vs Forecast</div></div>
+  <div class="kpi kvs"><div class="kpi-lbl">FC vs Plano</div><div class="kpi-val" id="kFCvsPL">&#8212;</div><div class="kpi-delta">desvio % (ano completo)</div></div>
   <div class="kpi kac"><div class="kpi-lbl">Actual YTD</div><div class="kpi-val" id="kAc">&#8212;</div><div class="kpi-delta" id="kAcM"></div></div>
-  <div class="kpi kfc"><div class="kpi-lbl">Forecast (mesmo per&iacute;odo)</div><div class="kpi-val" id="kFc">&#8212;</div><div class="kpi-delta" id="kFcD">vs Actual</div></div>
-  <div class="kpi kpl"><div class="kpi-lbl">Plano (mesmo per&iacute;odo)</div><div class="kpi-val" id="kPl">&#8212;</div><div class="kpi-delta" id="kPlD">vs Actual</div></div>
-  <div class="kpi kvs"><div class="kpi-lbl">Actual vs Plano</div><div class="kpi-val" id="kVsPl">&#8212;</div><div class="kpi-delta">desvio %</div></div>
-  <div class="kpi kvs2"><div class="kpi-lbl">Actual vs Forecast</div><div class="kpi-val" id="kVsFc">&#8212;</div><div class="kpi-delta">desvio %</div></div>
+  <div class="kpi kvs2"><div class="kpi-lbl">Actual vs Plano (mesmo per&iacute;odo)</div><div class="kpi-val" id="kVsPl">&#8212;</div><div class="kpi-delta">desvio %</div></div>
 </div>
 <div class="charts-row">
   <div class="card"><div class="card-title">&#128200; Evolu&ccedil;&atilde;o Mensal de TPV &#8212; 3 Cen&aacute;rios</div><canvas id="cTrend"></canvas></div>
   <div class="card"><div class="card-title">&#127919; Atingimento do Plano por M&ecirc;s</div><canvas id="cAting"></canvas></div>
+</div>
+
+<div style="padding:14px 24px 0">
+  <div class="card">
+    <div class="card-title">&#128200; Evolu&#231;&#227;o do Share por MOP &mdash; Forecast vs Plano (% do TPV mensal)</div>
+    <canvas id="cMopShareEvo" style="max-height:340px"></canvas>
+  </div>
 </div>
 <div class="bottom-row">
   <div class="card"><div class="card-title">&#127970; TPV por Canal (Actual YTD)</div><canvas id="cCanal"></canvas></div>
@@ -164,11 +171,11 @@
 </div>
 <div class="tr-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 24px 0">
   <div class="card">
-    <div class="card-title">Take Rate Projetado por Produto &amp; Segmento (Actual)</div>
+    <div class="card-title">Take Rate Projetado por Produto &amp; Segmento (Forecast 4+8)</div>
     <canvas id="cTR" style="max-height:320px"></canvas>
   </div>
   <div class="card">
-    <div class="card-title">GMR Projetado por MOP (Actual)</div>
+    <div class="card-title">GMR Projetado por MOP (Forecast 4+8)</div>
     <canvas id="cTRmop" style="max-height:320px"></canvas>
   </div>
 </div>
@@ -348,17 +355,19 @@ function render(){
   for(const c of SCEN){bsm[c]={};for(const m of meses)bsm[c][m]=0}
   for(const r of D){if(bsm[r.CENARIO])bsm[r.CENARIO][r.MES]=(bsm[r.CENARIO][r.MES]||0)+r.VALOR}
   const acM=[...new Set(D.filter(r=>r.CENARIO==="ACTUAL").map(r=>r.MES))].sort();
-  const sAc=Object.values(bsm["ACTUAL"]).reduce((a,v)=>a+v,0);
-  const sFc=acM.reduce((a,m)=>a+(bsm["FORECAST 4+8"][m]||0),0);
-  const sPl=acM.reduce((a,m)=>a+(bsm["PLANO"][m]||0),0);
+  const allM=[...new Set(D.map(r=>r.MES))].sort();
+  const sAc=Object.values(bsm["ACTUAL"]||{}).reduce((a,v)=>a+v,0);
+  const sFcFull=allM.reduce((a,m)=>a+(bsm["FORECAST 4+8"]||{})[m]||0,0);
+  const sPlFull=allM.reduce((a,m)=>a+(bsm["PLANO"]||{})[m]||0,0);
+  const sPlAcPer=acM.reduce((a,m)=>a+(bsm["PLANO"]||{})[m]||0,0);
+  document.getElementById("kFcFull").textContent=fmt(sFcFull);
+  document.getElementById("kFcFullM").textContent=allM.length+" meses";
+  document.getElementById("kPlFull").textContent=fmt(sPlFull);
+  document.getElementById("kPlFullD").innerHTML=pct(sPlFull,sFcFull)+" vs Forecast";
+  document.getElementById("kFCvsPL").innerHTML=pct(sFcFull,sPlFull);
   document.getElementById("kAc").textContent=fmt(sAc);
-  document.getElementById("kAcM").textContent=acM.map(mLbl).join(", ")||"—";
-  document.getElementById("kFc").textContent=fmt(sFc);
-  document.getElementById("kFcD").innerHTML=pct(sFc,sAc)+" vs Actual";
-  document.getElementById("kPl").textContent=fmt(sPl);
-  document.getElementById("kPlD").innerHTML=pct(sPl,sAc)+" vs Actual";
-  document.getElementById("kVsPl").innerHTML=pct(sAc,sPl);
-  document.getElementById("kVsFc").innerHTML=pct(sAc,sFc);
+  document.getElementById("kAcM").textContent=acM.map(mLbl).join(", ")||"-";
+  document.getElementById("kVsPl").innerHTML=pct(sAc,sPlAcPer);
   mk("cTrend",{type:"line",data:{labels:meses.map(mLbl),datasets:SCEN.map(c=>({label:c,data:meses.map(m=>bsm[c][m]||null),borderColor:CC[c],backgroundColor:CA[c],borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:true}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
   const atV=acM.map(m=>{const a=bsm["ACTUAL"][m]||0,p=bsm["PLANO"][m]||0;return p?+(a/p*100).toFixed(1):null});
   mk("cAting",{type:"bar",data:{labels:acM.map(mLbl),datasets:[{label:"Atingimento %",data:atV,backgroundColor:atV.map(v=>v===null?"#ccc":v>=100?"rgba(22,163,74,.75)":"rgba(220,38,38,.75)"),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false},datalabels:{color:"#fff",font:{weight:700,size:12},formatter:v=>v?v.toFixed(0)+"%":""}},scales:{y:{ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
@@ -399,6 +408,25 @@ function render(){
   const topMops=Object.entries(acMopBym).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).slice(0,5).map(e=>e[0]);
   const mopColors=["#2563EB","#F97316","#16A34A","#9333EA","#0891B2"];
   mk("cMopTrend",{type:"line",data:{labels:acMesM.map(mLbl),datasets:topMops.map((mo,i)=>({label:mo,data:acMesM.map(m=>(acMopBym[mo]||{})[m]||null),borderColor:mopColors[i],borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:true}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
+  /* MOP Share Evolution — FORECAST vs PLANO, monthly % */
+  const evoScens=["FORECAST 4+8","PLANO"];
+  const evoMes=[...new Set(RAW_MOP.filter(r=>evoScens.includes(r.CENARIO)).map(r=>r.MES))].sort();
+  const evoRaw=RAW_MOP.filter(r=>evoScens.includes(r.CENARIO)&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP)));
+  const evoBySMop={};for(const r of evoRaw){const k=r.CENARIO+"|"+r.MES;if(!evoBySMop[k])evoBySMop[k]={};evoBySMop[k][r.MOP]=(evoBySMop[k][r.MOP]||0)+r.VALOR;}
+  const topEvoMops=[...new Set(evoRaw.filter(r=>r.CENARIO==="FORECAST 4+8").map(r=>r.MOP))].filter(Boolean)
+    .sort((a,b)=>{const ta=evoMes.reduce((s,m)=>(evoBySMop["FORECAST 4+8|"+m]||{})[a]||0+s,0);const tb=evoMes.reduce((s,m)=>(evoBySMop["FORECAST 4+8|"+m]||{})[b]||0+s,0);return tb-ta;}).slice(0,6);
+  const evoDs=[];
+  for(const mo of topEvoMops){
+    const col=mopColors2[mo]||"#999";
+    for(const sc of evoScens){
+      evoDs.push({label:mo+" ("+(sc==="FORECAST 4+8"?"FC":"PL")+")",
+        data:evoMes.map(m=>{const b=evoBySMop[sc+"|"+m];if(!b)return null;const tot=Object.values(b).reduce((a,v)=>a+v,0);return tot>0?Math.round((b[mo]||0)/tot*1000)/10:null;}),
+        borderColor:col,borderWidth:sc==="FORECAST 4+8"?2.5:1.5,
+        borderDash:sc==="PLANO"?[5,3]:[],pointRadius:sc==="FORECAST 4+8"?3:2,
+        tension:.3,fill:false,spanGaps:true});
+    }
+  }
+  mk("cMopShareEvo",{type:"line",data:{labels:evoMes.map(mLbl),datasets:evoDs},options:{responsive:true,plugins:{legend:{position:"top",labels:{font:{size:9},boxWidth:12}},datalabels:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}},x:{grid:{color:"rgba(0,0,0,.04)"}}}}});
   /* MOP% full year all scenarios */
   const mopColors2={"BANK_TRANSFER":"rgba(22,163,74,.8)","CREDIT_CARD":"rgba(249,115,22,.8)","ACCOUNT_MONEY":"rgba(37,99,235,.8)","DEBIT_CARD":"rgba(147,51,234,.8)","DIGITAL_CURRENCY":"rgba(8,145,178,.8)","PIX":"rgba(21,128,61,.8)","TICKET":"rgba(220,38,38,.8)","PREPAID_CARD":"rgba(202,138,4,.8)","VOUCHER_CARD":"rgba(20,184,166,.8)"};
   const mopsAll=[...new Set(RAW_MOP.map(r=>r.MOP).filter(Boolean))].sort();
@@ -411,11 +439,17 @@ function render(){
   const pctDs=mopsAll.map(mo=>({label:mo,data:pctScenLabels.map(c=>{const tot=Object.values(pctByCenMop[c]).reduce((a,b)=>a+b,0);return tot>0?Math.round(pctByCenMop[c][mo]/tot*1000)/10:0;}),backgroundColor:mopColors2[mo]||"#999",stack:"s"}));
   mk("cMopPct",{type:"bar",data:{labels:pctScenLabels,datasets:pctDs},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:9},boxWidth:12}},datalabels:{display:false}},scales:{x:{stacked:true},y:{stacked:true,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
   /* Take Rate Projection */
-  function getTR(seg,prod,mop){return TR[seg+"|"+prod+"|"+mop]||TR[seg+"||"+mop]||0;}
-  const acForTR=RAW_MOP.filter(r=>r.CENARIO==="ACTUAL"&&(!useP2||selP2.includes(r.PRODUTO))&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP)));
+  function getTR(seg,prod,mop){
+    if(TR[seg+"|"+prod+"|"+mop]) return TR[seg+"|"+prod+"|"+mop];
+    if(TR[seg+"||"+mop]) return TR[seg+"||"+mop];
+    const segs=["SMB","BIG SELLERS","LONGTAIL"];
+    for(const s of segs){if(TR[s+"|"+prod+"|"+mop])return TR[s+"|"+prod+"|"+mop];if(TR[s+"||"+mop])return TR[s+"||"+mop];}
+    return 0;
+  }
+  const acForTR=RAW.filter(r=>r.CENARIO==="FORECAST 4+8"&&(!useP2||selP2.includes(r.PRODUTO))&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP||"")));
   const segForTR=["BIG SELLERS","SMB","LONGTAIL"];
-  const prodsForTR=[...new Set(acForTR.map(r=>r.PRODUTO))].sort();
-  const trByProd={};prodsForTR.forEach(p=>{trByProd[p]={};segForTR.forEach(s=>{trByProd[p][s]=acForTR.filter(r=>r.PRODUTO===p).reduce((a,r)=>{const seg=r.SEGMENTO||"";return a+r.VALOR*(getTR(seg,r.PRODUTO,r.MOP)||0);},0);});});
+  const prodsForTR=[...new Set(acForTR.map(r=>r.PRODUTO))].filter(Boolean).sort();
+  const trByProd={};prodsForTR.forEach(p=>{trByProd[p]={};segForTR.forEach(s=>{trByProd[p][s]=acForTR.filter(r=>r.PRODUTO===p&&(r.SEGMENTO||"")===(s||r.SEGMENTO||"")).reduce((a,r)=>{return a+r.VALOR*(getTR(r.SEGMENTO||"",r.PRODUTO,r.MOP||"")||0);},0);});});
   mk("cTR",{type:"bar",data:{labels:prodsForTR,datasets:segForTR.map((s,i)=>({label:s,data:prodsForTR.map(p=>trByProd[p][s]||0),backgroundColor:["rgba(37,99,235,.8)","rgba(249,115,22,.8)","rgba(22,163,74,.8)"][i],borderRadius:4}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
   const mopsForTR=[...new Set(acForTR.map(r=>r.MOP))].sort();
   const gmrByMop2={};mopsForTR.forEach(mo=>{gmrByMop2[mo]=acForTR.filter(r=>r.MOP===mo).reduce((a,r)=>{const seg=r.SEGMENTO||"";return a+r.VALOR*(getTR(seg,r.PRODUTO,mo)||0);},0);});
