@@ -178,6 +178,7 @@
   <div class="card" style="text-align:center;padding:16px">
     <div class="card-title" style="margin-bottom:6px">FC vs Plano &mdash; Take Rate YTG</div>
     <div id="kGMRdelta" style="font-size:1.7rem;font-weight:800">&#8212;</div>
+    <div id="kGMRdeltaAbs" style="font-size:1rem;font-weight:600;color:var(--sub);margin-top:4px">&#8212;</div>
   </div>
 </div>
 <div class="tr-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 24px 0">
@@ -194,6 +195,8 @@
   <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 14px;flex-wrap:wrap;gap:8px">
     <span style="font-weight:700;font-size:14px">Take Rate por Produto / Segmento / MOP &mdash; edit&aacute;vel para simula&ccedil;&otilde;es</span>
     <div style="display:flex;gap:8px">
+      <button id="btnBS" class="btn-tr-reset" onclick="toggleBigSellers()">Mostrar Big Sellers</button>
+      <button id="btnZ" class="btn-tr-reset" onclick="toggleZeroTR()">Incluir MOP zerados</button>
       <button class="btn-tr-reset" onclick="resetTR()">Resetar TR</button>
       <button class="btn-tr-export" onclick="exportData()">&#8595; Exportar dados</button>
     </div>
@@ -378,27 +381,64 @@ function setTrendView(v,btn){
 }
 
 function getTR(seg,prod,mop){
-  if(TRcustom[seg+"|"+prod+"|"+mop]) return TRcustom[seg+"|"+prod+"|"+mop];
-  if(TRcustom[seg+"||"+mop]) return TRcustom[seg+"||"+mop];
+  if(seg&&TRcustom[seg+"|"+prod+"|"+mop]) return TRcustom[seg+"|"+prod+"|"+mop];
+  if(seg&&TRcustom[seg+"||"+mop]) return TRcustom[seg+"||"+mop];
   const segs=["SMB","BIG SELLERS","LONGTAIL"];
+  if(!seg&&prod&&mop){
+    const rates=segs.map(s=>TRcustom[s+"|"+prod+"|"+mop]).filter(v=>v>0);
+    if(rates.length) return rates.reduce((a,b)=>a+b,0)/rates.length;
+    const rates2=segs.map(s=>TRcustom[s+"||"+mop]).filter(v=>v>0);
+    if(rates2.length) return rates2.reduce((a,b)=>a+b,0)/rates2.length;
+  }
   for(const s of segs){
     if(TRcustom[s+"|"+prod+"|"+mop]) return TRcustom[s+"|"+prod+"|"+mop];
     if(TRcustom[s+"||"+mop]) return TRcustom[s+"||"+mop];
   }
   return 0;
 }
+let showBigSellers=false;
+let showZeroTR=false;
 function buildTRTable(){
   const tbody=document.getElementById("trEditBody");
   if(!tbody) return;
-  tbody.innerHTML=Object.keys(TRcustom).sort().map(function(key){
+  const segOrder={"LONGTAIL":0,"SMB":1,"BIG SELLERS":2};
+  const keys=Object.keys(TRcustom).filter(function(k){
+    const p=k.split("|"); return p[2]&&p[2].length>0;
+  }).sort(function(a,b){
+    const pa=a.split("|"),pb=b.split("|");
+    const sa=(segOrder[pa[0]]!==undefined?segOrder[pa[0]]:3);
+    const sb=(segOrder[pb[0]]!==undefined?segOrder[pb[0]]:3);
+    if(sa!==sb) return sa-sb;
+    if(pa[1]!==pb[1]) return pa[1]<pb[1]?-1:1;
+    return pa[2]<pb[2]?-1:1;
+  });
+  tbody.innerHTML=keys.map(function(key){
     const p=key.split("|");
     const seg=p[0]||"&mdash;",prod=p[1]||"&mdash;",mop=p[2]||"";
-    if(!mop) return "";
-    return "<tr><td>"+prod+"</td><td>"+seg+"</td><td>"+mop+"</td>"
+    const isBig=seg==="BIG SELLERS";
+    const isZero=TRcustom[key]===0;
+    const rowClass=(isBig?"tr-bs-row ":"")+(isZero?"tr-zero-row":"");
+    const hide=(isBig&&!showBigSellers)||(isZero&&!showZeroTR);
+    const rowStyle=hide?"display:none":"";
+    return "<tr class='"+rowClass.trim()+"' style='"+rowStyle+"'><td>"+prod+"</td><td>"+seg+"</td><td>"+mop+"</td>"
       +"<td style='text-align:right'><input type='number' step='0.001' min='0' max='100' "
       +"value='"+(TRcustom[key]*100).toFixed(3)+"' data-key='"+key+"' "
-      +"onchange='updateTR(this)'> %</td></tr>";
+      +"oninput='updateTR(this)'> %</td></tr>";
   }).join("");
+}
+function toggleBigSellers(){
+  showBigSellers=!showBigSellers;
+  document.querySelectorAll(".tr-bs-row").forEach(function(r){
+    r.style.display=showBigSellers?"":"none";
+  });
+  document.getElementById("btnBS").textContent=showBigSellers?"Ocultar Big Sellers":"Mostrar Big Sellers";
+}
+function toggleZeroTR(){
+  showZeroTR=!showZeroTR;
+  document.querySelectorAll(".tr-zero-row").forEach(function(r){
+    r.style.display=showZeroTR?"":"none";
+  });
+  document.getElementById("btnZ").textContent=showZeroTR?"Ocultar zeros":"Incluir MOP zerados";
 }
 function updateTR(inp){
   TRcustom[inp.dataset.key]=parseFloat(inp.value||0)/100;
@@ -553,6 +593,8 @@ function render(){
   document.getElementById("kGMRfc").textContent=fmt(totGMRfc);
   document.getElementById("kGMRpl").textContent=fmt(totGMRpl);
   document.getElementById("kGMRdelta").innerHTML=pct(totGMRfc,totGMRpl)+" vs Plano";
+  const absD=totGMRfc-totGMRpl;
+  document.getElementById("kGMRdeltaAbs").textContent=(absD>=0?"+":"")+fmt(absD)+" absoluto";
   mk("cTR",{type:"bar",data:{labels:trProds,datasets:[
     {label:"Forecast 4+8",data:trDsFc,backgroundColor:"rgba(249,115,22,.8)",borderRadius:4},
     {label:"Plano",data:trDsPl,backgroundColor:"rgba(22,163,74,.6)",borderRadius:4}
