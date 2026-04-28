@@ -153,7 +153,6 @@
 <div class="bottom-row">
   
   <div class="card"><div class="card-title">&#128230; TPV por Produto &#8212; 3 Cen&aacute;rios</div><canvas id="cProd"></canvas></div>
-  <div class="card"><div class="card-title">&#128311; Mix por Segmento (Actual YTD)</div><canvas id="cSeg"></canvas></div>
 </div>
 <div class="mop-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:14px 24px 0">
   <div class="card">
@@ -378,7 +377,6 @@ function render(){
   const prods=Object.keys(bPC).sort();
   mk("cProd",{type:"bar",data:{labels:prods,datasets:SCEN.map(c=>({label:c,data:prods.map(p=>bPC[p][c]||0),backgroundColor:CA[c].replace(".15",".8"),borderColor:CC[c],borderWidth:1,borderRadius:4}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}},x:{ticks:{font:{size:10}}}}}});
   const bSeg=grp(acD,"SEGMENTO");const sK=Object.keys(bSeg);
-  mk("cSeg",{type:"doughnut",data:{labels:sK,datasets:[{data:sK.map(k=>bSeg[k]),backgroundColor:["rgba(37,99,235,.75)","rgba(249,115,22,.75)","rgba(22,163,74,.75)","rgba(147,51,234,.75)"],borderWidth:2}]},options:{responsive:true,plugins:{legend:{position:"bottom"},datalabels:{color:"#fff",font:{weight:700,size:11},formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return(v/t*100).toFixed(1)+"%"}}}}});
   const rows=[];
   for(const m of meses){
     for(const c of SCEN){
