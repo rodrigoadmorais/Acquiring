@@ -153,7 +153,7 @@
 </div>
 <div class="charts-row">
   <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px"><div class="card-title" style="margin:0">&#128200; Evolu&ccedil;&atilde;o Mensal de TPV</div><div id="trendToggle" style="display:flex;gap:6px"><button class="btn-trend active" onclick="setTrendView('all',this)">3 Cen&aacute;rios</button><button class="btn-trend" onclick="setTrendView('fc',this)">Actual + FC</button><button class="btn-trend" onclick="setTrendView('pl',this)">Actual + Plano</button></div></div><canvas id="cTrend" style="max-height:400px"></canvas></div>
-  <div class="card"><div class="card-title">&#127919; Atingimento do Plano por M&ecirc;s</div><canvas id="cAting"></canvas></div>
+  
 </div>
 
 <div style="padding:14px 24px 0">
@@ -458,7 +458,6 @@ function render(){
   const trendScen=trendView==="fc"?["ACTUAL","FORECAST 4+8"]:trendView==="pl"?["ACTUAL","PLANO"]:SCEN;
   mk("cTrend",{type:"line",data:{labels:meses.map(mLbl),datasets:trendScen.map(c=>({label:c,data:meses.map(m=>bsm[c][m]||null),borderColor:CC[c],backgroundColor:CA[c],borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:true}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
   const atV=acM.map(m=>{const a=bsm["ACTUAL"][m]||0,p=bsm["PLANO"][m]||0;return p?+(a/p*100).toFixed(1):null});
-  mk("cAting",{type:"bar",data:{labels:acM.map(mLbl),datasets:[{label:"Atingimento %",data:atV,backgroundColor:atV.map(v=>v===null?"#ccc":v>=100?"rgba(22,163,74,.75)":"rgba(220,38,38,.75)"),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false},datalabels:{color:"#fff",font:{weight:700,size:12},formatter:v=>v?v.toFixed(0)+"%":""}},scales:{y:{ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
   const acD=D.filter(r=>r.CENARIO==="ACTUAL");
   const bCan=grp(acD,"CANAL");
   const topCan=Object.entries(bCan).sort((a,b)=>b[1]-a[1]).slice(0,10);
