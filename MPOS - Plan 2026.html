@@ -123,9 +123,6 @@
             <button onclick="switchTab('pl')" id="tab-btn-pl" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
                 <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Simulação P&amp;L
             </button>
-            <button onclick="switchTab('tpv')" id="tab-btn-tpv" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
-                <i data-lucide="zap" class="w-3.5 h-3.5"></i> TPV M0
-            </button>
             <button onclick="switchTab('estoque')" id="tab-btn-estoque" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
                 <i data-lucide="package" class="w-3.5 h-3.5"></i> Estoque
             </button>
@@ -447,159 +444,9 @@
             </div>
         </div> <!-- end tab-content-pl -->
 
-        <!-- TPV M0 por Device Tab Content -->
-        <div id="tab-content-tpv" style="display:none;" class="space-y-6">
-
-            <!-- Comparison Engine -->
-            <div class="card overflow-hidden">
-                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex items-center gap-4 flex-wrap">
-                        <h2 id="tpv-section-title" class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
-                            <i data-lucide="zap" class="w-4 h-4 text-blue-500"></i> TPV M0 por Device — Comparação de Períodos
-                        </h2>
-                        <div class="flex bg-gray-100 border border-gray-200 rounded-lg p-1 shadow-inner">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="tpv-view-mode" value="by_device" checked onchange="renderTPVTab()" class="peer sr-only">
-                                <div class="px-3 py-1 text-[11px] font-black text-gray-500 rounded-md peer-checked:bg-blue-600 peer-checked:text-white peer-checked:shadow-sm transition-all flex items-center gap-1">
-                                    <i data-lucide="smartphone" class="w-3 h-3"></i> Por Device
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="tpv-view-mode" value="total" onchange="renderTPVTab()" class="peer sr-only">
-                                <div class="px-3 py-1 text-[11px] font-black text-gray-500 rounded-md peer-checked:bg-blue-600 peer-checked:text-white peer-checked:shadow-sm transition-all flex items-center gap-1">
-                                    <i data-lucide="sigma" class="w-3 h-3"></i> TPV Total
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="tpv-comp-type" value="MONTH" checked onchange="handleTPVTypeChange()" class="peer sr-only">
-                            <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Mês a Mês</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="tpv-comp-type" value="YTD" onchange="handleTPVTypeChange()" class="peer sr-only">
-                            <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTD (Acumulado)</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="tpv-comp-type" value="YTG" onchange="handleTPVTypeChange()" class="peer sr-only">
-                            <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">YTG (A Realizar)</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="tpv-comp-type" value="YEAR" onchange="handleTPVTypeChange()" class="peer sr-only">
-                            <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Anos (Fechado)</div>
-                        </label>
-                    </div>
-                </div>
-                <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-white">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Referência (A)</label>
-                        <div class="flex gap-2">
-                            <select id="tpv-scenario-a" onchange="handleTPVScenarioChange('a')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                            <select id="tpv-month-a" onchange="renderTPVTab()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
-                        </div>
-                    </div>
-                    <div class="flex justify-center pt-5">
-                        <div class="bg-blue-50 p-3 rounded-full border border-blue-100 shadow-sm">
-                            <i data-lucide="swords" class="w-6 h-6 text-blue-500"></i>
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Base Comparação (B)</label>
-                        <div class="flex gap-2">
-                            <select id="tpv-scenario-b" onchange="handleTPVScenarioChange('b')" class="flex-1 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                            <select id="tpv-month-b" onchange="renderTPVTab()" class="w-28 bg-white border border-gray-300 text-gray-800 text-sm font-bold rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer text-center"></select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Info Banner -->
-            <div id="tpv-info-banner-device" class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-5 py-3">
-                <i data-lucide="info" class="w-4 h-4 text-blue-500 shrink-0"></i>
-                <p class="text-xs text-blue-800 font-semibold">TPV realizado dividido pelas Devices vendidas no período selecionado. <strong>Engagement excluído</strong> (trocas, não vendas). <span class="font-black text-blue-900">Forecast de TPV por Device não disponível no momento.</span></p>
-            </div>
-            <div id="tpv-info-banner-total" style="display:none;" class="flex items-center gap-3 bg-violet-50 border border-violet-200 rounded-xl px-5 py-3">
-                <i data-lucide="info" class="w-4 h-4 text-violet-500 shrink-0"></i>
-                <p class="text-xs text-violet-800 font-semibold">TPV total do período selecionado, <strong>sem divisão por devices</strong>. Aberturas por canal mantidas. Comparações refletem o volume absoluto de TPV.</p>
-            </div>
-
-            <!-- KPI Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="card p-6 border-l-4 border-l-gray-400">
-                    <p id="tpv-label-kpi-a" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 truncate">TPV M0 (A)</p>
-                    <h3 id="tpv-val-kpi-a" class="text-2xl font-black text-gray-800">R$ 0</h3>
-                    <p id="tpv-sub-kpi-a" class="text-[10px] text-gray-400 font-bold mt-1">por device</p>
-                </div>
-                <div class="card p-6 border-l-4" id="tpv-kpi-b-container">
-                    <p id="tpv-label-kpi-b" class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-2 truncate">TPV M0 (B)</p>
-                    <h3 id="tpv-val-kpi-b" class="text-2xl font-black text-gray-800">R$ 0</h3>
-                    <p id="tpv-sub-kpi-b" class="text-[10px] text-gray-400 font-bold mt-1">por device</p>
-                </div>
-                <div class="card p-6" id="tpv-card-delta-pct">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (%) B vs A</p>
-                    <div class="flex items-center gap-2">
-                        <h3 id="tpv-val-delta-pct" class="text-2xl font-black text-gray-800">0%</h3>
-                        <i id="tpv-icon-delta-pct" data-lucide="minus" class="w-6 h-6 text-gray-400"></i>
-                    </div>
-                </div>
-                <div class="card p-6">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Variação (Absoluta)</p>
-                    <h3 id="tpv-val-delta-abs" class="text-2xl font-black text-gray-800">R$ 0</h3>
-                    <p id="tpv-sub-delta-abs" class="text-[10px] text-gray-400 font-bold mt-1">por device</p>
-                </div>
-            </div>
-
-            <!-- Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="card p-6 lg:col-span-2">
-                    <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
-                        <i data-lucide="line-chart" class="w-4 h-4 text-gray-400"></i> <span id="tpv-timeline-title">Evolução TPV M0 (A vs B)</span>
-                    </h4>
-                    <div class="h-80"><canvas id="tpvTimelineChart"></canvas></div>
-                </div>
-                <div class="card p-6">
-                    <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
-                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-gray-400"></i> <span id="tpv-bar-title">TPV M0 por Canal (Top 5)</span>
-                    </h4>
-                    <div class="h-80"><canvas id="tpvBarChart"></canvas></div>
-                </div>
-            </div>
-
-            <!-- Table -->
-            <div class="card overflow-hidden">
-                <div class="bg-gray-50 px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                        <i data-lucide="table" class="w-4 h-4 text-gray-400"></i> <span id="tpv-table-title">Detalhamento TPV M0 por Canal e Modelo</span>
-                    </h4>
-                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Clique no canal para expandir</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-white border-b border-gray-200">
-                            <tr class="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                <th class="p-4 w-1/3">Canal de Origem</th>
-                                <th class="p-4" id="tpv-th-a">TPV M0 (A)</th>
-                                <th class="p-4" id="tpv-th-b">TPV M0 (B)</th>
-                                <th class="p-4">Var (%)</th>
-                                <th class="p-4">Var (Abs)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tpv-tbody" class="divide-y divide-gray-100 bg-white"></tbody>
-                        <tfoot class="bg-gray-50">
-                            <tr class="border-t border-gray-200">
-                                <td class="p-4 font-black text-xs text-gray-800 uppercase tracking-widest">Total Geral</td>
-                                <td class="p-4 text-xs font-black text-gray-800" id="tpv-total-a">R$ 0/device</td>
-                                <td class="p-4 text-xs font-black" id="tpv-total-b">R$ 0/device</td>
-                                <td class="p-4 text-xs font-black" id="tpv-total-pct">0%</td>
-                                <td class="p-4 text-xs font-black" id="tpv-total-abs">R$ 0</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-
-        </div> <!-- end tab-content-tpv -->
+        <!-- TPV M0 tab hidden (removed) -->
+        <!-- TPV M0 tab — hidden/removed temporarily -->
+        <div id="tab-content-tpv" style="display:none;"></div>
 
         <!-- ══════════════════════════════════════════════════════
              ESTOQUE TAB
@@ -1573,7 +1420,7 @@
             const dataA = extractValue(typeA, periodA, filterCanal, filterDevice);
             const dataB = extractValue(typeB, periodB, filterCanal, filterDevice);
 
-            window.currentExportData = { dataA, dataB, nameA, nameB, typeB };
+            window.currentExportData = { dataA, dataB, nameA, nameB, typeA, typeB, compType, yearA, moA_val, yearB, moB_val, filterCanal, filterDevice };
 
             updateKPIs(dataA.total, dataB.total, nameA, nameB, typeB);
             
@@ -1611,9 +1458,6 @@
 
             if (document.getElementById('tab-content-pl') && document.getElementById('tab-content-pl').style.display !== 'none') {
                 renderPLTab();
-            }
-            if (document.getElementById('tab-content-tpv') && document.getElementById('tab-content-tpv').style.display !== 'none') {
-                renderTPVTab();
             }
         }
 
@@ -1950,79 +1794,118 @@
             const plTabActive = document.getElementById('tab-content-pl').style.display !== 'none';
             if (plTabActive) { exportPLExcel(); return; }
             if(!window.currentExportData) return;
-            const { dataA, dataB, nameA, nameB } = window.currentExportData;
-            const allCanals = Array.from(new Set([...Object.keys(dataA.byCanal), ...Object.keys(dataB.byCanal)]));
-            allCanals.sort((a,b) => (dataB.byCanal[b] || 0) - (dataB.byCanal[a] || 0));
-            let rows = [["Canal", "Modelo", nameA, nameB, "Var (%)", "Var (Abs)"]];
-            allCanals.forEach(canal => {
-                const cA = dataA.byCanal[canal] || 0; const cB = dataB.byCanal[canal] || 0;
-                const cAbs = cB - cA; const cPct = cA > 0 ? (cAbs/cA)*100 : (cB > 0 ? 100 : 0);
-                rows.push([canal, "TOTAL CANAL", Math.round(cA), Math.round(cB), cPct.toFixed(1).replace('.',',') + '%', Math.round(cAbs)]);
-                const devicesA = dataA.byCanalDevice[canal] || {}; const devicesB = dataB.byCanalDevice[canal] || {};
-                Array.from(new Set([...Object.keys(devicesA), ...Object.keys(devicesB)])).sort((a,b)=>(devicesB[b]||0)-(devicesB[a]||0)).forEach(dev => {
-                    const dA = devicesA[dev]||0, dB = devicesB[dev]||0, dAbs=dB-dA, dPct=dA>0?(dAbs/dA)*100:(dB>0?100:0);
-                    rows.push([canal, dev, Math.round(dA), Math.round(dB), dPct.toFixed(1).replace('.',',')+'%', Math.round(dAbs)]);
+            const { typeA, typeB, compType, yearA, moA_val, yearB, moB_val, filterCanal, filterDevice, nameA, nameB } = window.currentExportData;
+
+            const PT_M_S = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+            // Returns sorted month numbers to iterate for a given compType + moVal
+            function getMonths(ct, moVal) {
+                if (ct === 'YEAR')  return [1,2,3,4,5,6,7,8,9,10,11,12];
+                if (ct === 'MONTH') return [parseInt(moVal)];
+                if (ct === 'YTD')   return Array.from({length: parseInt(moVal)}, (_,i) => i+1);
+                if (ct === 'YTG')   { const s=parseInt(moVal); return Array.from({length:12-s+1},(_,i)=>s+i); }
+                if (ct === 'QTR')   return (QTR_MONTHS[moVal] || [1,2,3]).slice();
+                if (ct === 'HALF')  return (HALF_MONTHS[moVal] || [1,2,3,4,5,6]).slice();
+                return [parseInt(moVal)];
+            }
+
+            // Human-readable period label
+            function periodLbl(ct, year, moVal) {
+                if (ct === 'YEAR')  return `Ano ${year}`;
+                if (ct === 'MONTH') return `${PT_M_S[parseInt(moVal)-1]}/${year.substring(2)}`;
+                if (ct === 'YTD')   return `YTD ${PT_M_S[parseInt(moVal)-1]}/${year.substring(2)}`;
+                if (ct === 'YTG')   return `YTG ${PT_M_S[parseInt(moVal)-1]}/${year.substring(2)}`;
+                return `${moVal} ${year}`;  // QTR/HALF: "Q1 2026", "H1 2026"
+            }
+
+            const rows = [['Cenário', 'Tipo Período', 'Período', 'Mês', 'Ano', 'Canal', 'Device', 'Quantidade']];
+
+            function emitRows(type, year, moVal, scenarioName) {
+                const months = getMonths(compType, moVal);
+                const plbl   = periodLbl(compType, year, moVal);
+                months.forEach(m => {
+                    const mmStr = String(m).padStart(2,'0');
+                    const data  = extractValue(type, `MONTH|${year}${mmStr}`, filterCanal, filterDevice);
+                    const mLbl  = `${PT_M_S[m-1]}/${year.substring(2)}`;
+                    // One row per canal × device
+                    Object.keys(data.byCanalDevice || {}).forEach(canal => {
+                        Object.entries(data.byCanalDevice[canal] || {}).forEach(([dev, qty]) => {
+                            if (!qty) return;
+                            rows.push([scenarioName, compType, plbl, mLbl, year, canal, dev, Math.round(qty)]);
+                        });
+                    });
                 });
-            });
+            }
+
+            emitRows(typeA, yearA, moA_val, nameA);
+            emitRows(typeB, yearB, moB_val, nameB);
+
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Quantidade");
-            XLSX.writeFile(wb, `MPOS_Analytics_${new Date().getTime()}.xlsx`);
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            // Auto-width hint
+            ws['!cols'] = [20,14,18,10,6,22,12,12].map(w => ({wch:w}));
+            XLSX.utils.book_append_sheet(wb, ws, 'Volume');
+            XLSX.writeFile(wb, `MPOS_Volume_${new Date().getTime()}.xlsx`);
         }
 
         function exportPLExcel() {
             if(!window.currentPLExportData) return;
-            const { plA, plB, nameA, nameB } = window.currentPLExportData;
-            const metricLabel = PL_METRIC_LABELS[plMetric];
-            const unitSuffix = plUnitMode ? '/un' : '';
-            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
-            allCanals.sort((a,b) => Math.abs(getMetricVal(plB.byCanal[b]||{})) - Math.abs(getMetricVal(plB.byCanal[a]||{})));
+            const { nameA, nameB, typeA, typeB, compType, yearA, moA_val, yearB, moB_val, filterCanal, filterDevice } = window.currentPLExportData;
 
-            // Sheet 1: Selected metric
-            const metricRows = [['Canal', 'Device', 'Qtd A', 'Qtd B', `${metricLabel} A${unitSuffix}`, `${metricLabel} B${unitSuffix}`, 'Var (%)', 'Var (Abs)']];
-            allCanals.forEach(canal => {
-                const cA = plA.byCanal[canal] || { qty:0, resultado:0, receita:0, cmv:0, salesTaxes:0, devices:{} };
-                const cB = plB.byCanal[canal] || { qty:0, resultado:0, receita:0, cmv:0, salesTaxes:0, devices:{} };
-                const mA = getMetricVal(cA), mB = getMetricVal(cB);
-                if (mA === 0 && mB === 0) return;
-                const uA = (plUnitMode && cA.qty > 0) ? mA/cA.qty : mA;
-                const uB = (plUnitMode && cB.qty > 0) ? mB/cB.qty : mB;
-                const pct = uA !== 0 ? ((uB-uA)/Math.abs(uA))*100 : (uB !== 0 ? 100 : 0);
-                metricRows.push([canal, 'TOTAL CANAL', Math.round(cA.qty), Math.round(cB.qty), parseFloat(uA.toFixed(2)), parseFloat(uB.toFixed(2)), pct.toFixed(1).replace('.',',')+'%', plUnitMode ? '—' : Math.round(mB-mA)]);
-                const allDevs = Array.from(new Set([...Object.keys(cA.devices||{}), ...Object.keys(cB.devices||{})]));
-                allDevs.sort((a,b) => Math.abs(getMetricVal(cB.devices[b]||{})) - Math.abs(getMetricVal(cA.devices[a]||{})));
-                allDevs.forEach(dev => {
-                    const dA = cA.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
-                    const dB = cB.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
-                    const dmA = getMetricVal(dA), dmB = getMetricVal(dB);
-                    if (dmA === 0 && dmB === 0) return;
-                    const duA = (plUnitMode && dA.qty>0) ? dmA/dA.qty : dmA;
-                    const duB = (plUnitMode && dB.qty>0) ? dmB/dB.qty : dmB;
-                    const dPct = duA !== 0 ? ((duB-duA)/Math.abs(duA))*100 : (duB !== 0 ? 100 : 0);
-                    metricRows.push([canal, dev, Math.round(dA.qty), Math.round(dB.qty), parseFloat(duA.toFixed(2)), parseFloat(duB.toFixed(2)), dPct.toFixed(1).replace('.',',')+'%', plUnitMode ? '—' : Math.round(dmB-dmA)]);
-                });
-            });
+            const PT_M_S = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-            // Sheet 2: Full P&L
-            const plRows = [['Canal', 'Device', 'Qtd A', 'Qtd B', 'Receita A', 'Receita B', 'Sales Taxes A', 'Sales Taxes B', 'CMV A', 'CMV B', 'Resultado A', 'Resultado B', 'Var Resultado (%)']];
-            allCanals.forEach(canal => {
-                const cA = plA.byCanal[canal] || { qty:0, resultado:0, receita:0, cmv:0, salesTaxes:0, devices:{} };
-                const cB = plB.byCanal[canal] || { qty:0, resultado:0, receita:0, cmv:0, salesTaxes:0, devices:{} };
-                if (cA.receita === 0 && cB.receita === 0) return;
-                const varRes = cA.resultado !== 0 ? ((cB.resultado-cA.resultado)/Math.abs(cA.resultado))*100 : (cB.resultado !== 0 ? 100 : 0);
-                plRows.push([canal, 'TOTAL CANAL', Math.round(cA.qty), Math.round(cB.qty), Math.round(cA.receita), Math.round(cB.receita), Math.round(cA.salesTaxes), Math.round(cB.salesTaxes), Math.round(cA.cmv), Math.round(cB.cmv), Math.round(cA.resultado), Math.round(cB.resultado), varRes.toFixed(1).replace('.',',')+'%']);
-                Object.keys(cA.devices||{}).concat(Object.keys(cB.devices||{})).filter((v,i,a)=>a.indexOf(v)===i).forEach(dev => {
-                    const dA = cA.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
-                    const dB = cB.devices[dev]||{qty:0,resultado:0,receita:0,cmv:0,salesTaxes:0};
-                    if (dA.qty === 0 && dB.qty === 0) return;
-                    const dVar = dA.resultado !== 0 ? ((dB.resultado-dA.resultado)/Math.abs(dA.resultado))*100 : 0;
-                    plRows.push([canal, dev, Math.round(dA.qty), Math.round(dB.qty), Math.round(dA.receita), Math.round(dB.receita), Math.round(dA.salesTaxes), Math.round(dB.salesTaxes), Math.round(dA.cmv), Math.round(dB.cmv), Math.round(dA.resultado), Math.round(dB.resultado), dVar.toFixed(1).replace('.',',')+'%']);
+            function getMonths(ct, moVal) {
+                if (ct === 'YEAR')  return [1,2,3,4,5,6,7,8,9,10,11,12];
+                if (ct === 'MONTH') return [parseInt(moVal)];
+                if (ct === 'YTD')   return Array.from({length: parseInt(moVal)}, (_,i) => i+1);
+                if (ct === 'YTG')   { const s=parseInt(moVal); return Array.from({length:12-s+1},(_,i)=>s+i); }
+                if (ct === 'QTR')   return (QTR_MONTHS[moVal] || [1,2,3]).slice();
+                if (ct === 'HALF')  return (HALF_MONTHS[moVal] || [1,2,3,4,5,6]).slice();
+                return [parseInt(moVal)];
+            }
+
+            function periodLbl(ct, year, moVal) {
+                if (ct === 'YEAR')  return `Ano ${year}`;
+                if (ct === 'MONTH') return `${PT_M_S[parseInt(moVal)-1]}/${year.substring(2)}`;
+                if (ct === 'YTD')   return `YTD ${PT_M_S[parseInt(moVal)-1]}/${year.substring(2)}`;
+                if (ct === 'YTG')   return `YTG ${PT_M_S[parseInt(moVal)-1]}/${year.substring(2)}`;
+                return `${moVal} ${year}`;
+            }
+
+            const rows = [['Cenário', 'Tipo Período', 'Período', 'Mês', 'Ano', 'Canal', 'Device', 'Qtd', 'Receita', 'Sales Taxes', 'CMV', 'Resultado']];
+
+            function emitPLRows(type, year, moVal, scenarioName) {
+                const months = getMonths(compType, moVal);
+                const plbl   = periodLbl(compType, year, moVal);
+                months.forEach(m => {
+                    const mmStr = String(m).padStart(2,'0');
+                    const pl    = computePLPeriod(type, `MONTH|${year}${mmStr}`, filterCanal, filterDevice);
+                    const mLbl  = `${PT_M_S[m-1]}/${year.substring(2)}`;
+                    Object.keys(pl.byCanal || {}).forEach(canal => {
+                        const cData = pl.byCanal[canal];
+                        Object.entries(cData.devices || {}).forEach(([dev, d]) => {
+                            if (!d || !d.qty) return;
+                            rows.push([
+                                scenarioName, compType, plbl, mLbl, year, canal, dev,
+                                Math.round(d.qty),
+                                Math.round(d.receita || 0),
+                                Math.round(d.salesTaxes || 0),
+                                Math.round(d.cmv || 0),
+                                Math.round(d.resultado || 0)
+                            ]);
+                        });
+                    });
                 });
-            });
+            }
+
+            emitPLRows(typeA, yearA, moA_val, nameA);
+            emitPLRows(typeB, yearB, moB_val, nameB);
 
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(metricRows), `P&L ${metricLabel}`);
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(plRows), 'P&L Completo');
-            XLSX.writeFile(wb, `MPOS_PL_${metricLabel.replace(/\s/g,'_')}_${new Date().getTime()}.xlsx`);
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            ws['!cols'] = [20,14,18,10,6,22,12,10,14,14,12,14].map(w => ({wch:w}));
+            XLSX.utils.book_append_sheet(wb, ws, 'P&L');
+            XLSX.writeFile(wb, `MPOS_PL_${new Date().getTime()}.xlsx`);
         }
 
         function exportJoinedCSV() {
@@ -2510,14 +2393,11 @@
         function switchTab(tab) {
             document.getElementById('tab-content-comparison').style.display = tab === 'comparison' ? '' : 'none';
             document.getElementById('tab-content-pl').style.display = tab === 'pl' ? '' : 'none';
-            document.getElementById('tab-content-tpv').style.display = tab === 'tpv' ? '' : 'none';
             document.getElementById('tab-content-estoque').style.display = tab === 'estoque' ? '' : 'none';
             document.getElementById('tab-btn-comparison').classList.toggle('active', tab === 'comparison');
             document.getElementById('tab-btn-pl').classList.toggle('active', tab === 'pl');
-            document.getElementById('tab-btn-tpv').classList.toggle('active', tab === 'tpv');
             document.getElementById('tab-btn-estoque').classList.toggle('active', tab === 'estoque');
             if (tab === 'pl') renderPLTab();
-            if (tab === 'tpv') renderTPVTab();
             if (tab === 'estoque') renderEstoqueTab();
             lucide.createIcons();
         }
@@ -3221,7 +3101,7 @@
 
             generatePLAI(plA, plB, nameA, nameB, typeB);
             drawPLTable(plA, plB, typeB);
-            window.currentPLExportData = { plA, plB, nameA, nameB, dataA, dataB };
+            window.currentPLExportData = { plA, plB, nameA, nameB, dataA, dataB, typeA, typeB, compType, yearA, moA_val, yearB, moB_val, filterCanal, filterDevice };
             drawPLCharts(plA, plB, typeA, typeB, nameA, nameB, compType, yearA, moA_val, yearB, moB_val, filterCanal, filterDevice);
             lucide.createIcons();
         }
