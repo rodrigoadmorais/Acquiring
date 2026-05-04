@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    DESIGN SYSTEM — P&L Brasil · MELI Style
@@ -839,8 +840,15 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <button class="tab-btn" data-tab="keynums" onclick="switchTab(this)">Key-numbers</button>
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">MPOS</button>
   <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
+  <button id="exportXlsxBtn" onclick="exportXlsx(currentTab)"
+    title="Exportar dados da aba atual em Excel (.xlsx)"
+    style="margin-left:auto;padding:4px 12px;border-radius:6px;border:1.5px solid #00A650;
+           background:var(--card);color:#00A650;cursor:pointer;font-size:12px;
+           font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap">
+    ↓ Excel
+  </button>
   <button id="filterToggleBtn" onclick="toggleFilterBar()" title="Recolher/expandir filtros"
-    style="margin-left:auto;padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);
+    style="padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);
            background:var(--card);color:var(--muted);cursor:pointer;font-size:12px;
            font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap">
     <span id="filterToggleIcon">▲</span> Filtros
@@ -3653,6 +3661,101 @@ function switchTab(btn) {
   if(isMbu)     renderMbuTab();
   if(isBridges) renderBridgesTab();
   if(isGrafgen) renderGrafgenTab();
+}
+
+// ── Excel export ────────────────────────────────────────────────
+function exportXlsx(tabId) {
+  if(!allData || !allData.length) { alert('Sem dados carregados.'); return; }
+  if(typeof XLSX === 'undefined') { alert('Biblioteca XLSX não carregada.'); return; }
+
+  // Format MES (YYYYMM) → "jan./2026"
+  const mesLbl = m => {
+    const yr=Math.floor(m/100), mo=m%100;
+    return new Date(yr,mo-1,1).toLocaleDateString('pt-BR',{month:'short',year:'numeric'})
+      .replace(' de ','/');
+  };
+  const buBuses = key => key==='__ALL__' ? null : (KN_BU_MAP[key] || [key]);
+  const inBU    = (d, buses) => !buses || buses.includes(d.Product);
+
+  let rows;
+  switch(tabId) {
+    case 'pnl':
+      rows = allData.filter(d => {
+        if(selAnos.length  && !selAnos.includes(String(d.ANO)))   return false;
+        if(selCen.length   && !selCen.includes(d.Cenario))        return false;
+        if(selSecao.length && !selSecao.includes(d.MNG_1))        return false;
+        if(selMacro.length && !selMacro.includes(d.Macro_BU))     return false;
+        if(selProd.length  && !selProd.includes(d.Product))       return false;
+        return true;
+      });
+      break;
+    case 'evo':
+      rows = allData.filter(d => inBU(d, buBuses(evoBU)));
+      break;
+    case 'bridges':
+      rows = allData.filter(d => inBU(d, buBuses(bridgeMacro)));
+      break;
+    case 'mbu':
+      rows = allData.filter(d => inBU(d, buBuses(mbuMacro)));
+      break;
+    case 'grafgen': {
+      const buses = buBuses(grafgenBU);
+      const from  = grafgenFromMes || 0;
+      const to    = grafgenToMes   || 999999;
+      rows = allData.filter(d =>
+        inBU(d, buses) && d.MES >= from && d.MES <= to && grafgenCens.has(d.Cenario)
+      );
+      break;
+    }
+    case 'cpa':
+      rows = allData.filter(d => inBU(d, buBuses(cpaMacroBU)));
+      break;
+    case 'mpos':
+      rows = allData.filter(d => inBU(d, buBuses(mposMacroBU)));
+      break;
+    case 'keynums':
+    default:
+      rows = allData.slice();
+  }
+
+  if(!rows.length) { alert('Nenhum dado para exportar com os filtros ativos.'); return; }
+
+  const headers = ['Macro BU','Produto','Cenário','Mês','Ano','Quarter',
+                   'MNG_1','MNG_2','MNG_3','MNG_4','Valor'];
+  const wsData = [
+    headers,
+    ...rows.map(d => [
+      d.Macro_BU || '',
+      d.Product  || '',
+      d.Cenario  || '',
+      mesLbl(d.MES),
+      d.ANO      || '',
+      d.QUARTER  || '',
+      d.MNG_1    || '',
+      d.MNG_2    || '',
+      d.MNG_3    || '',
+      d.MNG_4    || '',
+      d.Value
+    ])
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:18},{wch:22},{wch:14},{wch:10},{wch:6},{wch:7},
+    {wch:28},{wch:32},{wch:28},{wch:28},{wch:14}
+  ];
+  // Auto-filter on header row
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range(
+    {s:{r:0,c:0}, e:{r:0,c:headers.length-1}}) };
+  // Freeze header row
+  ws['!freeze'] = { xSplit:0, ySplit:1, topLeftCell:'A2', activePane:'bottomLeft' };
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Dados');
+  const date = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `pnl_${tabId}_${date}.xlsx`);
 }
 
 function setCpaUnit(btn) {
