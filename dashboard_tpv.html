@@ -69064,15 +69064,15 @@ function render(){
   const mops=[...new Set(mopD.map(r=>r.MOP))].sort();
   const mopByCen={};for(const c of SCEN){mopByCen[c]={};for(const mo of mops)mopByCen[c][mo]=0;}
   for(const r of mopD){if(acMesM.includes(r.MES)&&mopByCen[r.CENARIO])mopByCen[r.CENARIO][r.MOP]=(mopByCen[r.CENARIO][r.MOP]||0)+r.VALOR;}
-  /* Use D (filtered RAW with MOP) for trend — respects segment filter like main chart */
-  const trendMopD=D.filter(r=>r.MOP&&(!useM2||selM2.includes(r.MOP)));
+  /* MOP Trend: use mopD (from RAW_MOP) — RAW has no MOP field */
+  const trendMopD=mopD;
   const acMopBym={};const fcMopBym={};
   for(const r of trendMopD){
     if(r.CENARIO==="ACTUAL"){if(!acMopBym[r.MOP])acMopBym[r.MOP]={};acMopBym[r.MOP][r.MES]=(acMopBym[r.MOP][r.MES]||0)+r.VALOR;}
     if(r.CENARIO==="FORECAST 4+8 VF"){if(!fcMopBym[r.MOP])fcMopBym[r.MOP]={};fcMopBym[r.MOP][r.MES]=(fcMopBym[r.MOP][r.MES]||0)+r.VALOR;}
   }
   const allTrendMes=[...new Set([...Object.values(acMopBym),...Object.values(fcMopBym)].flatMap(o=>Object.keys(o)))].sort();
-  const acCutoffIdx=acMesM.length-1;
+  const acCutoffIdx=acMesM.length>0?allTrendMes.indexOf(acMesM[acMesM.length-1]):-1;
   const topMops=Object.entries(acMopBym).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).slice(0,5).map(e=>e[0]);
   const mopColors=["#2563EB","#F97316","#16A34A","#9333EA","#0891B2"];
   /* totals per month for share % */
@@ -69082,11 +69082,12 @@ function render(){
     fcTotM[m]=Object.values(fcMopBym).reduce((s,v)=>s+(v[m]||0),0);
   }
   function getMopVal(mo,m){
-    const isAc=(acMopBym[mo]||{})[m]!==undefined;
-    const raw=isAc?(acMopBym[mo]||{})[m]:(fcMopBym[mo]||{})[m];
+    const acVal=(acMopBym[mo]||{})[m];
+    const fcVal=(fcMopBym[mo]||{})[m];
+    const raw=acVal!==undefined?acVal:fcVal;
     if(raw===undefined||raw===null) return null;
     if(mopTrendMode==="pct"){
-      const tot=isAc?(acTotM[m]||0):(fcTotM[m]||0);
+      const tot=acVal!==undefined?(acTotM[m]||0):(fcTotM[m]||0);
       return tot>0?Math.round(raw/tot*1000)/10:null;
     }
     return raw;
@@ -69098,7 +69099,25 @@ function render(){
     segment:{borderDash:ctx=>ctx.p1DataIndex>acCutoffIdx?[6,3]:[]}
   }));
   const mopYTick=mopTrendMode==="pct"?v=>v+"%":v=>fmt(v);
-  mk("cMopTrend",{type:"line",data:{labels:allTrendMes.map(mLbl),datasets:trendDs},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:mopYTick},grid:{color:"rgba(0,0,0,.06)"}}}}});
+  mk("cMopTrend",{type:"line",data:{labels:allTrendMes.map(mLbl),datasets:trendDs},options:{
+    responsive:true,
+    layout:{padding:{right:70}},
+    plugins:{
+      legend:{position:"top"},
+      datalabels:{
+        display:ctx=>{
+          const data=ctx.dataset.data;
+          let last=-1;for(let i=data.length-1;i>=0;i--){if(data[i]!==null&&data[i]!==undefined){last=i;break;}}
+          return ctx.dataIndex===last;
+        },
+        align:'right',anchor:'end',
+        formatter:(v)=>mopTrendMode==="pct"?v+"%":fmt(v),
+        font:{size:10,weight:'bold'},
+        color:ctx=>mopColors[ctx.datasetIndex]
+      }
+    },
+    scales:{y:{ticks:{callback:mopYTick},grid:{color:"rgba(0,0,0,.06)"}}}
+  }});
   /* MOP Share Evolution — FORECAST vs PLANO, monthly % */
   const mopColors2={"BANK_TRANSFER":"rgba(22,163,74,.8)","CREDIT_CARD":"rgba(249,115,22,.8)","ACCOUNT_MONEY":"rgba(37,99,235,.8)","DEBIT_CARD":"rgba(147,51,234,.8)","DIGITAL_CURRENCY":"rgba(8,145,178,.8)","PIX":"rgba(21,128,61,.8)","TICKET":"rgba(220,38,38,.8)","PREPAID_CARD":"rgba(202,138,4,.8)","VOUCHER_CARD":"rgba(20,184,166,.8)"};
   const evoScens=["FORECAST 4+8 VF","PLANO"];
