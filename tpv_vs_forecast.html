@@ -121,6 +121,14 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
       <button class="rb" data-yr="2025" onclick="setYr(this)">2025</button>
       <button class="rb on" data-yr="2026" onclick="setYr(this)">2026</button>
       <button class="rb" data-yr="all" onclick="setYr(this)">Todos</button>
+      <button class="rb" data-yr="2025q1" onclick="setYr(this)">Q1 25</button>
+      <button class="rb" data-yr="2025q2" onclick="setYr(this)">Q2 25</button>
+      <button class="rb" data-yr="2025q3" onclick="setYr(this)">Q3 25</button>
+      <button class="rb" data-yr="2025q4" onclick="setYr(this)">Q4 25</button>
+      <button class="rb" data-yr="2026q1" onclick="setYr(this)">Q1 26</button>
+      <button class="rb" data-yr="2026q2" onclick="setYr(this)">Q2 26</button>
+      <button class="rb" data-yr="2026q3" onclick="setYr(this)">Q3 26</button>
+      <button class="rb" data-yr="2026q4" onclick="setYr(this)">Q4 26</button>
     </div>
   </div>
   <div class="sep"></div>
@@ -294,8 +302,16 @@ const pctN  = (a,b) => b ? (a/b-1)*100 : null;
 const sa    = arr => arr ? arr.reduce((s,v)=>s+(v||0),0) : 0;
 
 function getRange() {
-  if (activeYr==='2025') return [0,12];
-  if (activeYr==='2026') return [12,24];
+  if (activeYr==='2025')   return [0,12];
+  if (activeYr==='2026')   return [12,24];
+  if (activeYr==='2025q1') return [0,3];
+  if (activeYr==='2025q2') return [3,6];
+  if (activeYr==='2025q3') return [6,9];
+  if (activeYr==='2025q4') return [9,12];
+  if (activeYr==='2026q1') return [12,15];
+  if (activeYr==='2026q2') return [15,18];
+  if (activeYr==='2026q3') return [18,21];
+  if (activeYr==='2026q4') return [21,24];
   return [0,24];
 }
 
@@ -364,8 +380,9 @@ function renderKPIs() {
   const fmt  = v => v===null?'—':(v>=0?'+':'')+v.toFixed(1)+'%';
 
   const yrLabel = activeYr==='all'?'Todos':activeYr;
-  const f48fy = sa(getSeries('f48').slice(activeYr==='2025'?0:12, activeYr==='2025'?12:24));
-  const plfy  = sa(getSeries('plano2026').slice(activeYr==='2025'?0:12, activeYr==='2025'?12:24));
+  const [klo,khi] = getRange();
+  const f48fy = sa(getSeries('f48').slice(klo,khi));
+  const plfy  = sa(getSeries('plano2026').slice(klo,khi));
 
   $id('kg').innerHTML = `
     <div class="kpi kac"><div class="kl">Actual ${lbl}</div><div class="kv">R$ ${fmtB(ac)}</div><div class="kd">YTD ${acRange.length}m</div></div>
@@ -428,7 +445,7 @@ function renderCmp() {
     const pstr = v!==null ? ` <span class="${v>=0?'pos':'neg'}">(${v>=0?'+':''}${v.toFixed(1)}%)</span>` : '';
     return fmtBs(a)+pstr;
   };
-  const sh = (v,tot) => tot>0 ? (v/tot*100).toFixed(0)+'%' : '';
+  const sh = (v,tot) => tot>0 ? (v/tot*100).toFixed(1)+'%' : '';
 
   const lA = $id('cA').options[$id('cA').selectedIndex].text.replace(' — ',' ');
   const lB = $id('cB').options[$id('cB').selectedIndex].text.replace(' — ',' ');
