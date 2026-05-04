@@ -51,6 +51,8 @@ select:focus{outline:2px solid var(--y)}
 .rb.on{background:var(--y);color:#111;border-color:var(--y)}
 .rb:hover:not(.on){border-color:var(--sub)}
 .sep{width:1px;background:var(--brd);margin:0 2px;align-self:stretch}
+.rsep{width:1px;background:var(--brd);margin:0 3px;align-self:stretch}
+.brow-ctrl{display:flex;justify-content:flex-end;padding:0 2px 6px}
 .fnote{font-size:9.5px;color:var(--sub);padding:3px 24px;font-style:italic;min-height:18px}
 /* kpis */
 .kg{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;padding:14px 24px 0}
@@ -121,14 +123,19 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
       <button class="rb" data-yr="2025" onclick="setYr(this)">2025</button>
       <button class="rb on" data-yr="2026" onclick="setYr(this)">2026</button>
       <button class="rb" data-yr="all" onclick="setYr(this)">Todos</button>
+      <span class="rsep"></span>
       <button class="rb" data-yr="2025q1" onclick="setYr(this)">Q1 25</button>
       <button class="rb" data-yr="2025q2" onclick="setYr(this)">Q2 25</button>
       <button class="rb" data-yr="2025q3" onclick="setYr(this)">Q3 25</button>
       <button class="rb" data-yr="2025q4" onclick="setYr(this)">Q4 25</button>
+      <span class="rsep"></span>
       <button class="rb" data-yr="2026q1" onclick="setYr(this)">Q1 26</button>
       <button class="rb" data-yr="2026q2" onclick="setYr(this)">Q2 26</button>
       <button class="rb" data-yr="2026q3" onclick="setYr(this)">Q3 26</button>
       <button class="rb" data-yr="2026q4" onclick="setYr(this)">Q4 26</button>
+      <span class="rsep"></span>
+      <button class="rb" data-yr="2026ytd" onclick="setYr(this)">YTD 26</button>
+      <button class="rb" data-yr="2026ytg" onclick="setYr(this)">YTG 26</button>
     </div>
   </div>
   <div class="sep"></div>
@@ -148,6 +155,14 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
       <option value="POINT">Device (Point)</option>
       <option value="QR">QR</option>
       <option value="TTP">TTP</option>
+    </select>
+  </div>
+  <div class="fg"><label>Segmento</label>
+    <select id="fSeg" onchange="render()">
+      <option value="">Todos</option>
+      <option value="BIG SELLERS">Big Sellers</option>
+      <option value="LONGTAIL">Longtail</option>
+      <option value="SMB">SMB</option>
     </select>
   </div>
   <div class="fg"><label>MOP</label>
@@ -184,14 +199,6 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
       <option value="ENGAJAMENTO">Engajamento</option>
     </select>
   </div>
-  <div class="fg"><label>Segmento</label>
-    <select id="fSeg" onchange="render()">
-      <option value="">Todos</option>
-      <option value="BIG SELLERS">Big Sellers</option>
-      <option value="LONGTAIL">Longtail</option>
-      <option value="SMB">SMB</option>
-    </select>
-  </div>
 </div>
 <div class="fnote" id="fnote"></div>
 
@@ -218,23 +225,43 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
         <option value="actual|2025|q3">Actual — Q3 2025</option>
         <option value="actual|2025|q4">Actual — Q4 2025</option>
         <option value="f48|2026|full">F 4+8 — 2026 Ano</option>
+        <option value="f48|2026|ytd">F 4+8 — 2026 YTD</option>
+        <option value="f48|2026|ytg">F 4+8 — 2026 YTG</option>
         <option value="f48|2026|h1">F 4+8 — H1 2026</option>
         <option value="f48|2026|h2">F 4+8 — H2 2026</option>
+        <option value="f48|2026|q1">F 4+8 — Q1 2026</option>
+        <option value="f48|2026|q2">F 4+8 — Q2 2026</option>
+        <option value="f48|2026|q3">F 4+8 — Q3 2026</option>
+        <option value="f48|2026|q4">F 4+8 — Q4 2026</option>
         <option value="f39|2026|full">F 3+9 — 2026 Ano</option>
+        <option value="f39|2026|ytd">F 3+9 — 2026 YTD</option>
+        <option value="f39|2026|ytg">F 3+9 — 2026 YTG</option>
         <option value="f39|2026|h1">F 3+9 — H1 2026</option>
         <option value="f39|2026|h2">F 3+9 — H2 2026</option>
         <option value="plano2026|2026|full">Plano — 2026 Ano</option>
+        <option value="plano2026|2026|ytd">Plano — 2026 YTD</option>
+        <option value="plano2026|2026|ytg">Plano — 2026 YTG</option>
         <option value="plano2026|2026|h1">Plano — H1 2026</option>
         <option value="plano2026|2026|h2">Plano — H2 2026</option>
       </select>
       <select id="cB" onchange="renderCmp()">
         <option value="plano2026|2026|full">Plano — 2026 Ano</option>
+        <option value="plano2026|2026|ytd">Plano — 2026 YTD</option>
+        <option value="plano2026|2026|ytg">Plano — 2026 YTG</option>
         <option value="plano2026|2026|h1">Plano — H1 2026</option>
         <option value="plano2026|2026|h2">Plano — H2 2026</option>
         <option value="f48|2026|full">F 4+8 — 2026 Ano</option>
+        <option value="f48|2026|ytd">F 4+8 — 2026 YTD</option>
+        <option value="f48|2026|ytg">F 4+8 — 2026 YTG</option>
         <option value="f48|2026|h1">F 4+8 — H1 2026</option>
         <option value="f48|2026|h2">F 4+8 — H2 2026</option>
+        <option value="f48|2026|q1">F 4+8 — Q1 2026</option>
+        <option value="f48|2026|q2">F 4+8 — Q2 2026</option>
+        <option value="f48|2026|q3">F 4+8 — Q3 2026</option>
+        <option value="f48|2026|q4">F 4+8 — Q4 2026</option>
         <option value="f39|2026|full">F 3+9 — 2026 Ano</option>
+        <option value="f39|2026|ytd">F 3+9 — 2026 YTD</option>
+        <option value="f39|2026|ytg">F 3+9 — 2026 YTG</option>
         <option value="f39|2026|h1">F 3+9 — H1 2026</option>
         <option value="f39|2026|h2">F 3+9 — H2 2026</option>
         <option value="actual|2026|ytd">Actual — 2026 YTD</option>
@@ -252,10 +279,13 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
   </div>
 </div>
 
+<div class="brow-ctrl">
+  <button id="chartModeBtn" class="rb" onclick="toggleChartMode()">% Share</button>
+</div>
 <div class="brow">
   <div class="card"><div class="ct">BU Breakdown</div><canvas id="cBU" height="190"></canvas></div>
   <div class="card"><div class="ct">Segmento Breakdown</div><canvas id="cSeg" height="190"></canvas></div>
-  <div class="card"><div class="ct">Meio de Pagamento (2026)</div><canvas id="cMop" height="190"></canvas></div>
+  <div class="card"><div class="ct">Meio de Pagamento</div><canvas id="cMop" height="190"></canvas></div>
 </div>
 
 <div class="tw">
@@ -283,9 +313,10 @@ const BU_KEY = {
 };
 
 // ── STATE ────────────────────────────────────────────────────────────────────
-let activeYr = '2026';
-let hidden   = new Set();
-let charts   = {};
+let activeYr   = '2026';
+let hidden     = new Set();
+let charts     = {};
+let chartMode  = 'abs';
 
 const $id = id => document.getElementById(id);
 const gBU    = () => $id('fBU').value;
@@ -301,18 +332,28 @@ const fmtBs = v => v>=1e9 ? (v/1e9).toFixed(1)+'B' : v>=1e6 ? (v/1e6).toFixed(0)
 const pctN  = (a,b) => b ? (a/b-1)*100 : null;
 const sa    = arr => arr ? arr.reduce((s,v)=>s+(v||0),0) : 0;
 
+const MONTH_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
 function getRange() {
-  if (activeYr==='2025')   return [0,12];
-  if (activeYr==='2026')   return [12,24];
-  if (activeYr==='2025q1') return [0,3];
-  if (activeYr==='2025q2') return [3,6];
-  if (activeYr==='2025q3') return [6,9];
-  if (activeYr==='2025q4') return [9,12];
-  if (activeYr==='2026q1') return [12,15];
-  if (activeYr==='2026q2') return [15,18];
-  if (activeYr==='2026q3') return [18,21];
-  if (activeYr==='2026q4') return [21,24];
+  if (activeYr==='2025')    return [0,12];
+  if (activeYr==='2026')    return [12,24];
+  if (activeYr==='2025q1')  return [0,3];
+  if (activeYr==='2025q2')  return [3,6];
+  if (activeYr==='2025q3')  return [6,9];
+  if (activeYr==='2025q4')  return [9,12];
+  if (activeYr==='2026q1')  return [12,15];
+  if (activeYr==='2026q2')  return [15,18];
+  if (activeYr==='2026q3')  return [18,21];
+  if (activeYr==='2026q4')  return [21,24];
+  if (activeYr==='2026ytd') return [12, LAST_AC+1];
+  if (activeYr==='2026ytg') return [LAST_AC+1, 24];
   return [0,24];
+}
+
+function getLabels() {
+  const [lo,hi] = getRange();
+  if (activeYr==='all') return D.labels.slice(lo,hi);
+  return Array.from({length: hi-lo}, (_,i) => MONTH_SHORT[(lo+i)%12]);
 }
 
 // Main series getter — respects all filters with priority order
@@ -398,15 +439,16 @@ function parseSpec(spec) {
   const base = yr==='2025' ? 0 : 12;
   let lo,hi;
   switch(period) {
-    case 'full': lo=base;   hi=base+12; break;
-    case 'ytd':  lo=base;   hi=Math.min(base+12, LAST_AC+1); break;
-    case 'q1':   lo=base;   hi=base+3;  break;
-    case 'q2':   lo=base+3; hi=base+6;  break;
-    case 'q3':   lo=base+6; hi=base+9;  break;
-    case 'q4':   lo=base+9; hi=base+12; break;
-    case 'h1':   lo=base;   hi=base+6;  break;
-    case 'h2':   lo=base+6; hi=base+12; break;
-    default:     lo=base;   hi=base+12;
+    case 'full': lo=base;            hi=base+12; break;
+    case 'ytd':  lo=base;            hi=Math.min(base+12, LAST_AC+1); break;
+    case 'ytg':  lo=Math.min(base+12, LAST_AC+1); hi=base+12; break;
+    case 'q1':   lo=base;            hi=base+3;  break;
+    case 'q2':   lo=base+3;          hi=base+6;  break;
+    case 'q3':   lo=base+6;          hi=base+9;  break;
+    case 'q4':   lo=base+9;          hi=base+12; break;
+    case 'h1':   lo=base;            hi=base+6;  break;
+    case 'h2':   lo=base+6;          hi=base+12; break;
+    default:     lo=base;            hi=base+12;
   }
   return {scen, lo, hi};
 }
@@ -421,23 +463,9 @@ function renderCmp() {
   const totA = slc(getSeries(A.scen), A.lo, A.hi);
   const totB = slc(getSeries(B.scen), B.lo, B.hi);
 
-  // BU breakdown
-  const bus = ['OP','POINT','QR'];
-  const buSum = (sc,scen,bu) => {
-    const key = (BU_KEY[scen]||{})[bu]||bu;
-    return slc(sc.by_bu[key], A.lo, A.hi);
-  };
-  const buSumB = (sc,scen,bu) => {
-    const key = (BU_KEY[scen]||{})[bu]||bu;
-    return slc(sc.by_bu[key], B.lo, B.hi);
-  };
-
-  // MOP
-  const mops = ['CREDIT_CARD','DEBIT_CARD','BANK_TRANSFER','ACCOUNT_MONEY','TICKET'];
-  const mopA = m => slc(scA.by_mop[m], A.lo, A.hi);
-  const mopB = m => slc(scB.by_mop[m], B.lo, B.hi);
-  const mtA  = mops.reduce((s,m)=>s+mopA(m),0);
-  const mtB  = mops.reduce((s,m)=>s+mopB(m),0);
+  const prod=gProd(), mop=gMop(), canal=gCanal(), cart=gCart(), seg=gSeg(), bu=gBU();
+  const NA = `<td colspan="3" style="color:var(--sub);font-style:italic;font-size:10px">— filtro ativo —</td>`;
+  const ND = `<td colspan="3" style="color:var(--sub);font-style:italic;font-size:10px">— sem dados —</td>`;
 
   const diff = (a,b) => {
     if (!a&&!b) return '<span style="color:var(--sub)">—</span>';
@@ -447,33 +475,74 @@ function renderCmp() {
   };
   const sh = (v,tot) => tot>0 ? (v/tot*100).toFixed(1)+'%' : '';
 
+  // ── BU section ──────────────────────────────────────────────────────────────
+  let buRows = '';
+  if (prod||mop||canal||cart||seg) {
+    buRows = `<tr>${NA}</tr>`;
+  } else {
+    const showBus = bu ? [bu] : buses;
+    buRows = showBus.map(b_=>{
+      const kA=(BU_KEY[A.scen]||{})[b_]||b_, kB=(BU_KEY[B.scen]||{})[b_]||b_;
+      const a=slc(scA.by_bu[kA],A.lo,A.hi), b=slc(scB.by_bu[kB],B.lo,B.hi);
+      return `<tr><td>${b_}</td><td>${diff(a,b)}</td><td>${fmtBs(b)}</td></tr>`;
+    }).join('');
+  }
+
+  // ── Seg section ─────────────────────────────────────────────────────────────
+  const segsK=['BIG SELLERS','LONGTAIL','SMB'];
+  const segLbl={'BIG SELLERS':'Big Sellers','LONGTAIL':'Longtail','SMB':'SMB'};
+  const segAf=k=>slc(scA.by_segment[k],A.lo,A.hi), segBf=k=>slc(scB.by_segment[k],B.lo,B.hi);
+  const stA=segsK.reduce((s,k)=>s+segAf(k),0), stB=segsK.reduce((s,k)=>s+segBf(k),0);
+  let segRows = '';
+  if (prod||mop||canal||cart||bu) {
+    segRows = `<tr>${NA}</tr>`;
+  } else if (!stA&&!stB) {
+    segRows = `<tr>${ND}</tr>`;
+  } else {
+    const showSegs = seg ? [seg] : segsK;
+    segRows = showSegs.map(k=>{
+      const a=segAf(k), b=segBf(k);
+      if(!a&&!b) return '';
+      const saStr=stA>0?` <em>${sh(a,stA)}</em>`:'';
+      const sbStr=stB>0?` <em>${sh(b,stB)}</em>`:'';
+      return `<tr><td>${segLbl[k]||k}</td><td>${fmtBs(a)}${saStr}</td><td>${fmtBs(b)}${sbStr}</td></tr>`;
+    }).join('');
+  }
+
+  // ── MOP section ─────────────────────────────────────────────────────────────
+  const mops=['CREDIT_CARD','DEBIT_CARD','BANK_TRANSFER','ACCOUNT_MONEY','TICKET'];
+  const mopAf=m=>slc(scA.by_mop[m],A.lo,A.hi), mopBf=m=>slc(scB.by_mop[m],B.lo,B.hi);
+  const mtA=mops.reduce((s,m)=>s+mopAf(m),0), mtB=mops.reduce((s,m)=>s+mopBf(m),0);
+  let mopRows = '';
+  if (prod||canal||cart||seg||bu) {
+    mopRows = `<tr>${NA}</tr>`;
+  } else if (!mtA&&!mtB) {
+    mopRows = `<tr>${ND}</tr>`;
+  } else if (mop) {
+    const a=mopAf(mop), b=mopBf(mop);
+    mopRows = `<tr><td>${MOP_LBL[mop]||mop}</td><td>${diff(a,b)}</td><td>${fmtBs(b)}</td></tr>`;
+  } else {
+    mopRows = mops.map(m=>{
+      const a=mopAf(m), b=mopBf(m);
+      if(!a&&!b) return '';
+      const saStr=mtA>0?` <em>${sh(a,mtA)}</em>`:'';
+      const sbStr=mtB>0?` <em>${sh(b,mtB)}</em>`:'';
+      return `<tr><td>${MOP_LBL[m]||m}</td><td>${fmtBs(a)}${saStr}</td><td>${fmtBs(b)}${sbStr}</td></tr>`;
+    }).join('');
+  }
+
   const lA = $id('cA').options[$id('cA').selectedIndex].text.replace(' — ',' ');
   const lB = $id('cB').options[$id('cB').selectedIndex].text.replace(' — ',' ');
 
-  let rows = `<tr class="sep"><td colspan="3">Total</td></tr>
-    <tr><td>TPV</td><td>${diff(totA,totB)}</td><td>${fmtBs(totB)}</td></tr>
-    <tr class="sep"><td colspan="3">Por BU</td></tr>`;
-
-  buses.forEach(bu => {
-    const a=buSum(scA,A.scen,bu), b=buSumB(scB,B.scen,bu);
-    rows += `<tr><td>${bu}</td><td>${diff(a,b)}</td><td>${fmtBs(b)}</td></tr>`;
-  });
-
-  const hasMop = mtA>0||mtB>0;
-  rows += `<tr class="sep"><td colspan="3">Share MOP${!hasMop?' — sem dados 2025':''}</td></tr>`;
-  if (hasMop) {
-    mops.forEach(m => {
-      const a=mopA(m), b=mopB(m);
-      if (!a&&!b) return;
-      const saStr = mtA>0?` <em>${sh(a,mtA)}</em>`:'';
-      const sbStr = mtB>0?` <em>${sh(b,mtB)}</em>`:'';
-      rows += `<tr><td>${MOP_LBL[m]||m}</td><td>${fmtBs(a)}${saStr}</td><td>${fmtBs(b)}${sbStr}</td></tr>`;
-    });
-  }
-
   $id('cmpDiv').innerHTML =
     `<table class="ctbl"><thead><tr><th>Métrica</th><th>A: ${lA}</th><th>B: ${lB}</th></tr></thead>
-    <tbody>${rows}</tbody></table>`;
+    <tbody>
+      <tr class="sep"><td colspan="3">Total</td></tr>
+      <tr><td>TPV</td><td>${diff(totA,totB)}</td><td>${fmtBs(totB)}</td></tr>
+      <tr class="sep"><td colspan="3">Por BU</td></tr>${buRows}
+      <tr class="sep"><td colspan="3">Segmento</td></tr>${segRows}
+      <tr class="sep"><td colspan="3">Share MOP</td></tr>${mopRows}
+    </tbody></table>`;
 }
 
 const buses = ['OP','POINT','QR'];
@@ -499,7 +568,7 @@ function renderMain() {
   }));
   charts.main = new Chart(ctx,{
     type:'line', plugins:[ChartDataLabels],
-    data:{labels:D.labels.slice(lo,hi), datasets},
+    data:{labels:getLabels(), datasets},
     options:{
       responsive:true, maintainAspectRatio:true,
       interaction:{mode:'index',intersect:false},
@@ -526,21 +595,28 @@ function renderBU() {
   const names = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano'};
   const bu = gBU();
   const hasOtherFilter = gProd()||gMop()||gCanal()||gCart()||gSeg();
-  let labels, getData;
+  const isPct = chartMode==='pct';
+  let labels, getRaw;
   if (hasOtherFilter) {
     labels = ['Filtrado'];
-    getData = s => [sa(getSeries(s).slice(lo,hi))/1e9];
+    getRaw = s => [sa(getSeries(s).slice(lo,hi))];
   } else if (bu) {
     labels = [bu];
-    getData = s => { const key=(BU_KEY[s]||{})[bu]||bu; const arr=D.scenarios[s].by_bu[key]; return [arr?sa(arr.slice(lo,hi))/1e9:0]; };
+    getRaw = s => { const key=(BU_KEY[s]||{})[bu]||bu; const arr=D.scenarios[s].by_bu[key]; return [arr?sa(arr.slice(lo,hi)):0]; };
   } else {
     labels = buses;
-    getData = s => buses.map(b => { const key=(BU_KEY[s]||{})[b]||b; const arr=D.scenarios[s].by_bu[key]; return arr?sa(arr.slice(lo,hi))/1e9:0; });
+    getRaw = s => buses.map(b => { const key=(BU_KEY[s]||{})[b]||b; const arr=D.scenarios[s].by_bu[key]; return arr?sa(arr.slice(lo,hi)):0; });
   }
+  const getData = s => {
+    const raw = getRaw(s);
+    if (!isPct) return raw.map(v=>v/1e9);
+    const tot = raw.reduce((a,b)=>a+b,0) || sa(getSeries(s).slice(lo,hi));
+    return raw.map(v=>tot>0?v/tot*100:0);
+  };
   charts.bu = new Chart(ctx,{
     type:'bar', plugins:[ChartDataLabels],
     data:{labels, datasets:scens.map(s=>({label:names[s],data:getData(s),backgroundColor:CC[s]+'AA',hidden:hidden.has(s)}))},
-    options:barOpts(),
+    options:barOpts(chartMode),
   });
 }
 
@@ -555,21 +631,28 @@ function renderSeg() {
   const names = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano'};
   const seg = gSeg();
   const hasOtherFilter = gProd()||gMop()||gCanal()||gCart()||gBU();
-  let labels, getData;
+  const isPct = chartMode==='pct';
+  let labels, getRaw;
   if (hasOtherFilter) {
     labels = ['Filtrado'];
-    getData = s => [sa(getSeries(s).slice(lo,hi))/1e9];
+    getRaw = s => [sa(getSeries(s).slice(lo,hi))];
   } else if (seg) {
     labels = [seg==='BIG SELLERS'?'Big Sellers':seg==='LONGTAIL'?'Longtail':'SMB'];
-    getData = s => { const arr=D.scenarios[s].by_segment[seg]; return [arr?sa(arr.slice(lo,hi))/1e9:0]; };
+    getRaw = s => { const arr=D.scenarios[s].by_segment[seg]; return [arr?sa(arr.slice(lo,hi)):0]; };
   } else {
     labels = slugs;
-    getData = s => segs.map(sg => { const arr=D.scenarios[s].by_segment[sg]; return arr?sa(arr.slice(lo,hi))/1e9:0; });
+    getRaw = s => segs.map(sg => { const arr=D.scenarios[s].by_segment[sg]; return arr?sa(arr.slice(lo,hi)):0; });
   }
+  const getData = s => {
+    const raw = getRaw(s);
+    if (!isPct) return raw.map(v=>v/1e9);
+    const tot = raw.reduce((a,b)=>a+b,0) || sa(getSeries(s).slice(lo,hi));
+    return raw.map(v=>tot>0?v/tot*100:0);
+  };
   charts.seg = new Chart(ctx,{
     type:'bar', plugins:[ChartDataLabels],
     data:{labels, datasets:scens.map(s=>({label:names[s],data:getData(s),backgroundColor:CC[s]+'AA',hidden:hidden.has(s)}))},
-    options:barOpts(),
+    options:barOpts(chartMode),
   });
 }
 
@@ -584,44 +667,53 @@ function renderMop() {
   const names = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano'};
   const mop = gMop();
   const hasOtherFilter = gProd()||gCanal()||gCart()||gBU()||gSeg();
-  let labels, getData;
+  const isPct = chartMode==='pct';
+  let labels, getRaw;
   if (hasOtherFilter) {
     labels = ['Filtrado'];
-    getData = s => [sa(getSeries(s).slice(lo,hi))/1e9];
+    getRaw = s => [sa(getSeries(s).slice(lo,hi))];
   } else if (mop) {
     labels = [MOP_LBL[mop]||mop];
-    getData = s => { const arr=D.scenarios[s].by_mop[mop]; return [arr?sa(arr.slice(lo,hi))/1e9:0]; };
+    getRaw = s => { const arr=D.scenarios[s].by_mop[mop]; return [arr?sa(arr.slice(lo,hi)):0]; };
   } else {
     labels = mlabs;
-    getData = s => mops.map(m => { const arr=D.scenarios[s].by_mop[m]; return arr?sa(arr.slice(lo,hi))/1e9:0; });
+    getRaw = s => mops.map(m => { const arr=D.scenarios[s].by_mop[m]; return arr?sa(arr.slice(lo,hi)):0; });
   }
+  const getData = s => {
+    const raw = getRaw(s);
+    if (!isPct) return raw.map(v=>v/1e9);
+    const tot = raw.reduce((a,b)=>a+b,0) || sa(getSeries(s).slice(lo,hi));
+    return raw.map(v=>tot>0?v/tot*100:0);
+  };
+  const isPct2 = chartMode==='pct';
   charts.mop = new Chart(ctx,{
     type:'bar', plugins:[ChartDataLabels],
     data:{labels, datasets:scens.map(s=>({label:names[s],data:getData(s),backgroundColor:CC[s]+'AA',hidden:hidden.has(s)}))},
-    options:{...barOpts(),
+    options:{...barOpts(chartMode),
       indexAxis:'y',
       scales:{
-        x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},callback:v=>v+'B'}},
+        x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},callback:v=>isPct2?v.toFixed(0)+'%':v+'B'}},
         y:{grid:{display:false},ticks:{font:{size:10}}}
       }
     },
   });
 }
 
-function barOpts() {
+function barOpts(mode) {
+  const isPct = mode==='pct';
   return {
     responsive:true,
     plugins:{
       legend:{display:true,labels:{font:{size:9.5},boxWidth:9,padding:6}},
       tooltip:{backgroundColor:'#111827',titleColor:'#F9FAFB',bodyColor:'#D1D5DB',padding:10,cornerRadius:10,
-        callbacks:{label:c=>` ${c.dataset.label}: R$ ${(c.parsed.y??c.parsed.x??0).toFixed(2)}B`}},
+        callbacks:{label:c=>` ${c.dataset.label}: ${isPct?(c.parsed.y??c.parsed.x??0).toFixed(1)+'%':'R$ '+(c.parsed.y??c.parsed.x??0).toFixed(2)+'B'}`}},
       datalabels:{anchor:'end',align:'end',font:{size:8.5,weight:700},
-        formatter:v=>v>0?v.toFixed(1):'',color:'#374151',
+        formatter:v=>v>0?(isPct?v.toFixed(1)+'%':v.toFixed(1)):'',color:'#374151',
         display:ctx=>ctx.chart.data.datasets.filter(d=>!d.hidden).length<=3},
     },
     scales:{
       x:{grid:{display:false},ticks:{font:{size:10}}},
-      y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},callback:v=>v+'B'}}
+      y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},callback:v=>isPct?v+'%':v+'B'}}
     }
   };
 }
@@ -669,6 +761,14 @@ function setYr(btn) {
   btn.classList.add('on');
   activeYr = btn.dataset.yr;
   render();
+}
+
+function toggleChartMode() {
+  chartMode = chartMode==='abs' ? 'pct' : 'abs';
+  const btn = $id('chartModeBtn');
+  btn.textContent = chartMode==='abs' ? '% Share' : 'Absoluto';
+  btn.classList.toggle('on', chartMode==='pct');
+  renderBU(); renderSeg(); renderMop();
 }
 
 function toggleScen(pill) {
