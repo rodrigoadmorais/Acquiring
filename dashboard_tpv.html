@@ -101,12 +101,13 @@
 <div class="hdr">
   <div class="hdr-left">
     <span class="hdr-logo">&#128202; TPV Dashboard</span>
-    <span class="hdr-sub">Forecast 4+8 &middot; Plano &middot; Actual</span>
+    <span class="hdr-sub">Forecast 4+8 VF &middot; Plano &middot; Actual</span>
   </div>
   <div style="display:flex;gap:8px"><button class="btn" id="btnMobile" onclick="toggleMobile()">&#128241; Mobile</button><button class="btn" onclick="toggleTheme()">&#9728; Tema</button></div>
 </div>
 <div class="legend">
   <div class="pill"><div class="dot" style="background:var(--ac)"></div>ACTUAL</div>
+  <div class="pill"><div class="dot" style="background:#7C3AED"></div>FORECAST 4+8 VF</div>
   <div class="pill"><div class="dot" style="background:var(--fc)"></div>FORECAST 4+8</div>
   <div class="pill"><div class="dot" style="background:var(--pl)"></div>PLANO</div>
 </div>
@@ -146,14 +147,14 @@
   <button class="rbtn" onclick="resetFilters()">&#8635; Limpar</button>
 </div>
 <div class="kpi-grid">
-  <div class="kpi kfc"><div class="kpi-lbl">Forecast 4+8 &mdash; Ano Completo</div><div class="kpi-val" id="kFcFull">&#8212;</div><div class="kpi-delta" id="kFcFullM"></div></div>
+  <div class="kpi kfc"><div class="kpi-lbl">Forecast 4+8 VF &mdash; Ano Completo</div><div class="kpi-val" id="kFcFull">&#8212;</div><div class="kpi-delta" id="kFcFullM"></div></div>
   <div class="kpi kpl"><div class="kpi-lbl">Plano &mdash; Ano Completo</div><div class="kpi-val" id="kPlFull">&#8212;</div><div class="kpi-delta" id="kPlFullD">vs Forecast</div></div>
   <div class="kpi kvs"><div class="kpi-lbl">FC vs Plano</div><div class="kpi-val" id="kFCvsPL">&#8212;</div><div class="kpi-delta">desvio % (ano completo)</div></div>
   <div class="kpi kac"><div class="kpi-lbl">Actual YTD</div><div class="kpi-val" id="kAc">&#8212;</div><div class="kpi-delta" id="kAcM"></div></div>
   <div class="kpi kvs2"><div class="kpi-lbl">Actual vs Plano (mesmo per&iacute;odo)</div><div class="kpi-val" id="kVsPl">&#8212;</div><div class="kpi-delta">desvio %</div></div>
 </div>
 <div class="charts-row">
-  <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px"><div class="card-title" style="margin:0">&#128200; Evolu&ccedil;&atilde;o Mensal de TPV</div><div id="trendToggle" style="display:flex;gap:6px"><button class="btn-trend active" onclick="setTrendView('all',this)">3 Cen&aacute;rios</button><button class="btn-trend" onclick="setTrendView('fc',this)">Actual + FC</button><button class="btn-trend" onclick="setTrendView('pl',this)">Actual + Plano</button></div></div><canvas id="cTrend" style="max-height:400px"></canvas></div>
+  <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px"><div class="card-title" style="margin:0">&#128200; Evolu&ccedil;&atilde;o Mensal de TPV</div><div id="trendToggle" style="display:flex;gap:6px"><button class="btn-trend active" onclick="setTrendView('all',this)">3 Cen&aacute;rios</button><button class="btn-trend" onclick="setTrendView('fc',this)">Actual + FC VF</button><button class="btn-trend" onclick="setTrendView('pl',this)">Actual + Plano</button></div></div><canvas id="cTrend" style="max-height:400px"></canvas></div>
   
 </div>
 
@@ -169,8 +170,8 @@
 </div>
 <div class="gmr-kpi-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 24px 0">
   <div class="card" style="text-align:center;padding:16px">
-    <div class="card-title" style="margin-bottom:6px">Take Rate Total FC 4+8 (Mai&ndash;Dez)</div>
-    <div id="kGMRfc" style="font-size:1.7rem;font-weight:800;color:rgba(249,115,22,1)">&#8212;</div>
+    <div class="card-title" style="margin-bottom:6px">Take Rate Total FC 4+8 VF (Mai&ndash;Dez)</div>
+    <div id="kGMRfc" style="font-size:1.7rem;font-weight:800;color:rgba(124,58,237,1)">&#8212;</div>
   </div>
   <div class="card" style="text-align:center;padding:16px">
     <div class="card-title" style="margin-bottom:6px">Take Rate Total Plano (Mai&ndash;Dez)</div>
@@ -219,7 +220,7 @@ RAW.forEach(r=>{if(r.CANAL==="FDV-P")r.CANAL="FDV PROPRIA";if(r.CANAL==="FDV-T")
 const CC={ACTUAL:"#2563EB","FORECAST 4+8":"#F97316","FORECAST 4+8 VF":"#7C3AED",PLANO:"#16A34A"};
 const CA={ACTUAL:"rgba(37,99,235,.15)","FORECAST 4+8":"rgba(249,115,22,.15)","FORECAST 4+8 VF":"rgba(124,58,237,.15)",PLANO:"rgba(22,163,74,.15)"};
 const BD={ACTUAL:"bac","FORECAST 4+8":"bfc","FORECAST 4+8 VF":"bvf",PLANO:"bpl"};
-const SCEN=["ACTUAL","FORECAST 4+8","FORECAST 4+8 VF","PLANO"];
+const SCEN=["ACTUAL","FORECAST 4+8 VF","FORECAST 4+8","PLANO"];
 let CH={};
 const ML=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 function mLbl(m){return ML[+m.slice(4,6)-1]+"/"+m.slice(2,4)}
@@ -479,7 +480,7 @@ function render(){
   const acM=[...new Set(D.filter(r=>r.CENARIO==="ACTUAL").map(r=>r.MES))].sort();
   const allM=[...new Set(D.map(r=>r.MES))].sort();
   const sAc=Object.values(bsm["ACTUAL"]||{}).reduce((a,v)=>a+v,0);
-  const sFcFull=allM.reduce((a,m)=>a+(bsm["FORECAST 4+8"]||{})[m]||0,0);
+  const sFcFull=allM.reduce((a,m)=>a+(bsm["FORECAST 4+8 VF"]||{})[m]||0,0);
   const sPlFull=allM.reduce((a,m)=>a+(bsm["PLANO"]||{})[m]||0,0);
   const sPlAcPer=acM.reduce((a,m)=>a+(bsm["PLANO"]||{})[m]||0,0);
   document.getElementById("kFcFull").textContent=fmt(sFcFull);
@@ -490,13 +491,13 @@ function render(){
   document.getElementById("kAc").textContent=fmt(sAc);
   document.getElementById("kAcM").textContent=acM.map(mLbl).join(", ")||"-";
   document.getElementById("kVsPl").innerHTML=pct(sAc,sPlAcPer);
-  const trendScen=trendView==="fc"?["ACTUAL","FORECAST 4+8"]:trendView==="pl"?["ACTUAL","PLANO"]:SCEN;
+  const trendScen=trendView==="fc"?["ACTUAL","FORECAST 4+8 VF"]:trendView==="pl"?["ACTUAL","PLANO"]:SCEN;
   mk("cTrend",{type:"line",data:{labels:meses.map(mLbl),datasets:trendScen.map(c=>({label:c,data:meses.map(m=>bsm[c][m]||null),borderColor:CC[c],backgroundColor:CA[c],borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:true}))},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
   const atV=acM.map(m=>{const a=bsm["ACTUAL"][m]||0,p=bsm["PLANO"][m]||0;return p?+(a/p*100).toFixed(1):null});
   const acD=D.filter(r=>r.CENARIO==="ACTUAL");
   const bCan=grp(acD,"CANAL");
   const topCan=Object.entries(bCan).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    const bPC={};for(const r of D){const k=r.PRODUTO||"(vazio)";if(!bPC[k])bPC[k]={ACTUAL:0,"FORECAST 4+8":0,PLANO:0};bPC[k][r.CENARIO]=(bPC[k][r.CENARIO]||0)+r.VALOR}
+    const bPC={};for(const r of D){const k=r.PRODUTO||"(vazio)";if(!bPC[k])bPC[k]={ACTUAL:0,"FORECAST 4+8 VF":0,PLANO:0};bPC[k][r.CENARIO]=(bPC[k][r.CENARIO]||0)+r.VALOR}
   const prods=Object.keys(bPC).sort();
   const bSeg=grp(acD,"SEGMENTO");const sK=Object.keys(bSeg);
   /* MOP Charts */
@@ -515,7 +516,7 @@ function render(){
   const acMopBym={};const fcMopBym={};
   for(const r of trendMopD){
     if(r.CENARIO==="ACTUAL"){if(!acMopBym[r.MOP])acMopBym[r.MOP]={};acMopBym[r.MOP][r.MES]=(acMopBym[r.MOP][r.MES]||0)+r.VALOR;}
-    if(r.CENARIO==="FORECAST 4+8"){if(!fcMopBym[r.MOP])fcMopBym[r.MOP]={};fcMopBym[r.MOP][r.MES]=(fcMopBym[r.MOP][r.MES]||0)+r.VALOR;}
+    if(r.CENARIO==="FORECAST 4+8 VF"){if(!fcMopBym[r.MOP])fcMopBym[r.MOP]={};fcMopBym[r.MOP][r.MES]=(fcMopBym[r.MOP][r.MES]||0)+r.VALOR;}
   }
   const allTrendMes=[...new Set([...Object.values(acMopBym),...Object.values(fcMopBym)].flatMap(o=>Object.keys(o)))].sort();
   const acCutoffIdx=acMesM.length-1;
@@ -530,20 +531,20 @@ function render(){
   mk("cMopTrend",{type:"line",data:{labels:allTrendMes.map(mLbl),datasets:trendDs},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}});
   /* MOP Share Evolution — FORECAST vs PLANO, monthly % */
   const mopColors2={"BANK_TRANSFER":"rgba(22,163,74,.8)","CREDIT_CARD":"rgba(249,115,22,.8)","ACCOUNT_MONEY":"rgba(37,99,235,.8)","DEBIT_CARD":"rgba(147,51,234,.8)","DIGITAL_CURRENCY":"rgba(8,145,178,.8)","PIX":"rgba(21,128,61,.8)","TICKET":"rgba(220,38,38,.8)","PREPAID_CARD":"rgba(202,138,4,.8)","VOUCHER_CARD":"rgba(20,184,166,.8)"};
-  const evoScens=["FORECAST 4+8","PLANO"];
+  const evoScens=["FORECAST 4+8 VF","PLANO"];
   const evoMes=[...new Set(RAW_MOP.filter(r=>evoScens.includes(r.CENARIO)).map(r=>r.MES))].sort();
   const evoRaw=RAW_MOP.filter(r=>evoScens.includes(r.CENARIO)&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP)));
   const evoBySMop={};for(const r of evoRaw){const k=r.CENARIO+"|"+r.MES;if(!evoBySMop[k])evoBySMop[k]={};evoBySMop[k][r.MOP]=(evoBySMop[k][r.MOP]||0)+r.VALOR;}
-  const topEvoMops=[...new Set(evoRaw.filter(r=>r.CENARIO==="FORECAST 4+8").map(r=>r.MOP))].filter(Boolean)
-    .sort((a,b)=>{const ta=evoMes.reduce((s,m)=>(evoBySMop["FORECAST 4+8|"+m]||{})[a]||0+s,0);const tb=evoMes.reduce((s,m)=>(evoBySMop["FORECAST 4+8|"+m]||{})[b]||0+s,0);return tb-ta;}).slice(0,6);
+  const topEvoMops=[...new Set(evoRaw.filter(r=>r.CENARIO==="FORECAST 4+8 VF").map(r=>r.MOP))].filter(Boolean)
+    .sort((a,b)=>{const ta=evoMes.reduce((s,m)=>(evoBySMop["FORECAST 4+8 VF|"+m]||{})[a]||0+s,0);const tb=evoMes.reduce((s,m)=>(evoBySMop["FORECAST 4+8|"+m]||{})[b]||0+s,0);return tb-ta;}).slice(0,6);
   const evoDs=[];
   for(const mo of topEvoMops){
     const col=mopColors2[mo]||"#999";
     for(const sc of evoScens){
-      evoDs.push({label:mo+" ("+(sc==="FORECAST 4+8"?"FC":"PL")+")",
+      evoDs.push({label:mo+" ("+(sc==="FORECAST 4+8 VF"?"VF":"PL")+")",
         data:evoMes.map(m=>{const b=evoBySMop[sc+"|"+m];if(!b)return null;const tot=Object.values(b).reduce((a,v)=>a+v,0);return tot>0?Math.round((b[mo]||0)/tot*1000)/10:null;}),
-        borderColor:col,borderWidth:sc==="FORECAST 4+8"?2.5:1.5,
-        borderDash:sc==="PLANO"?[5,3]:[],pointRadius:sc==="FORECAST 4+8"?3:2,
+        borderColor:col,borderWidth:sc==="FORECAST 4+8 VF"?2.5:1.5,
+        borderDash:sc==="PLANO"?[5,3]:[],pointRadius:sc==="FORECAST 4+8 VF"?3:2,
         tension:.3,fill:false,spanGaps:true});
     }
   }
@@ -559,7 +560,7 @@ function render(){
   mk("cMopPct",{type:"bar",data:{labels:pctScenLabels,datasets:pctDs},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:9},boxWidth:12}},datalabels:{display:false}},scales:{x:{stacked:true},y:{stacked:true,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
   /* Take Rate Projection — FC vs PL (Mai em diante) using real MOP from RAW_MOP */
   const ytgFilter=r=>r.MES>="202605"&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP||""));
-  const fcYTG=RAW_MOP.filter(r=>r.CENARIO==="FORECAST 4+8"&&ytgFilter(r));
+  const fcYTG=RAW_MOP.filter(r=>r.CENARIO==="FORECAST 4+8 VF"&&ytgFilter(r));
   const plYTG=RAW_MOP.filter(r=>r.CENARIO==="PLANO"&&ytgFilter(r));
   /* By MOP — both FC and PL use real MOP from RAW_MOP */
   const fcTR={};const plTRmopMap={};
