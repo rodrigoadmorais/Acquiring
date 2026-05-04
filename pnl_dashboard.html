@@ -3759,7 +3759,7 @@ function switchTab(btn) {
 //  PROJ. EFICIÊNCIAS TAB
 // ═══════════════════════════════════════════════════════════
 
-let eficBU        = 'Acquiring';
+let eficBU        = 'Fintech';   // default: Acquiring + Fintech Services
 let eficUnitDiv   = 1_000_000;
 let eficAnoA      = 2024;
 let eficAnoB      = 2025;
@@ -3769,19 +3769,21 @@ let eficSignInvert = false;   // true → invert var color (cost mode: reduction
 let eficCollapsed = new Set();// group keys that are collapsed
 
 // ── Row structure (mirrors the Excel layout from the image) ──────
+// mng2: exact MNG_2 value in the database
+// mng2extra: additional MNG_2 names to also sum (useful when a line spans multiple sub-items)
 const EFIC_GROUPS = [
   { key:'var_neg', label:'Variáveis Negócio', items: [
     { label:'Bad Debt',                       mng2:'Bad Debt' },
     { label:'Funding & Financing',            mng2:'Funding & Financing' },
     { label:'Collection Fees',                mng2:'Collection Fees' },
     { label:'Sales Taxes',                    mng2:'Sales Taxes' },
-    { label:'Hosting',                        mng2:'Hosting Variável' },
+    { label:'Hosting',                        mng2:'Hosting Variable' },
     { label:'Investimentos',                  mng2:'Investimentos' },
     { label:'Servicios de Cobranzas Credits', mng2:'Servicios de Cobranzas Credits' },
     { label:'Chargebacks',                    mng2:'Chargebacks' },
-    { label:'Fraud Prevention',               mng2:'Fraud Prevention' },
+    { label:'Fraud Prevention',               mng2:'Fraud Prevention Variable' },
     { label:'Promotions',                     mng2:'Promotions' },
-    { label:'CX',                             mng2:'CX' },
+    { label:'CX',                             mng2:'CX Variable' },
     { label:'Telemetria',                     mng2:'Telemetria' },
     { label:'Bandeiras',                      mng2:'Bandeiras' },
     { label:'Money-In/Out',                   mng2:'Money-In/Out' },
@@ -3794,7 +3796,7 @@ const EFIC_GROUPS = [
     { label:'FDV Propria',         mng2:'FDV Propria' },
     { label:'Marketing Branding',  mng2:'Marketing Branding' },
     { label:'S&M Local DC',        mng2:'S&M Local DC' },
-    { label:'Hosting',             mng2:'Hosting Fixo' },
+    { label:'Hosting',             mng2:'Hosting Fixed' },
     { label:'Marketing Fixed',     mng2:'Marketing Fixed' },
     { label:'Cards Issuing Costs', mng2:'Cards Issuing Costs' },
     { label:'POM',                 mng2:'POM' },
@@ -3896,14 +3898,16 @@ function renderEficTab() {
   const ud    = eficUnitDiv;
   const udLbl = ud===1 ? 'R$' : ud===1000 ? 'R$ mil' : 'R$ M';
 
-  // Sum for an item (mng2 match, optional mng1 filter, year + scenario)
-  const sumItem = (mng2, mng1filter, ano, cen) => {
+  // Sum for an item — mng2 can be a string or array of strings (all summed together)
+  const sumItem = (item, ano, cen) => {
+    const mng2names = Array.isArray(item.mng2) ? item.mng2 : [item.mng2 || item.label];
+    const mng1f = item.mng1 || null;
     let s = null;
     for(const d of allData) {
       if(!inBU(d)) continue;
       if(d.ANO !== ano || d.Cenario !== cen) continue;
-      if(d.MNG_2 !== mng2) continue;
-      if(mng1filter && d.MNG_1 !== mng1filter) continue;
+      if(!mng2names.includes(d.MNG_2)) continue;
+      if(mng1f && d.MNG_1 !== mng1f) continue;
       s = (s||0) + (d.Value||0);
     }
     return s;
@@ -3950,10 +3954,8 @@ function renderEficTab() {
     let detailHtml = '';
 
     for(const item of grp.items) {
-      const mng2 = item.mng2 || item.label;
-      const mng1 = item.mng1 || null;
-      const vA   = sumItem(mng2, mng1, eficAnoA, eficCenarioA);
-      const vB   = sumItem(mng2, mng1, eficAnoB, eficCenarioB);
+      const vA = sumItem(item, eficAnoA, eficCenarioA);
+      const vB = sumItem(item, eficAnoB, eficCenarioB);
       if(vA !== null) grpA = (grpA||0) + vA;
       if(vB !== null) grpB = (grpB||0) + vB;
       const hidden = eficCollapsed.has(grp.key) ? 'style="display:none"' : '';
