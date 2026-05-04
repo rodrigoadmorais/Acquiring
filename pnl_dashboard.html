@@ -7053,7 +7053,10 @@ function _ggMetricDef(key) {
   if(m) return m;
   if(key.startsWith('row::')) {
     const p = key.split('::');
-    return { key, label: p[2]||p[1], color: _ggRowColor(key), rowMng1: p[1], rowMng2: p[2]||null };
+    // p[0]='row', p[1]=MNG_1, p[2]=MNG_2, p[3]=MNG_3 (opt), p[4]=MNG_4 (opt)
+    return { key, label: p[p.length-1], color: _ggRowColor(key),
+             rowMng1: p[1]||null, rowMng2: p[2]||null,
+             rowMng3: p[3]||null, rowMng4: p[4]||null };
   }
   return null;
 }
@@ -7096,7 +7099,11 @@ function _grafgenGetVal(buKey, m, cen, def) {
     let s=null;
     for(const d of allData) {
       if(d.MES!==m||d.Cenario!==cen||!inBU(d)) continue;
-      if(d.MNG_1===def.rowMng1&&(def.rowMng2===null||d.MNG_2===def.rowMng2)) s=(s||0)+(d.Value||0);
+      if(d.MNG_1!==def.rowMng1) continue;
+      if(def.rowMng2!==null && d.MNG_2!==def.rowMng2) continue;
+      if(def.rowMng3!==null && (d.MNG_3||null)!==def.rowMng3) continue;
+      if(def.rowMng4!==null && (d.MNG_4||null)!==def.rowMng4) continue;
+      s=(s||0)+(d.Value||0);
     }
     return s;
   }
@@ -7277,46 +7284,96 @@ function buildGrafgenPnlTree() {
   panel.dataset.built = '1';
   panel.dataset.buKey = grafgenBU;
 
+  // Build full 4-level tree: MNG_1 → Map(MNG_2 → Map(MNG_3 → Set(MNG_4)))
   const tree = new Map();
   const PNL_ORDER = ['Product Monetization','Net Monetization','Variable Contribution',
     'Direct Contribution','Business Contribution','Business Margin','EBIT'];
-  // Filter data by currently selected BU so only relevant rows appear
   const buses = grafgenBU === '__ALL__' ? null : (KN_BU_MAP[grafgenBU] || [grafgenBU]);
   for(const d of allData) {
     if(!d.MNG_1||!d.MNG_2||d.MNG_1==='Metrics') continue;
     if(buses && !buses.includes(d.Product)) continue;
-    if(!tree.has(d.MNG_1)) tree.set(d.MNG_1, []);
-    const arr = tree.get(d.MNG_1);
-    if(!arr.includes(d.MNG_2)) arr.push(d.MNG_2);
+    if(!tree.has(d.MNG_1)) tree.set(d.MNG_1, new Map());
+    const l2 = tree.get(d.MNG_1);
+    if(!l2.has(d.MNG_2)) l2.set(d.MNG_2, new Map());
+    if(d.MNG_3) {
+      const l3 = l2.get(d.MNG_2);
+      if(!l3.has(d.MNG_3)) l3.set(d.MNG_3, new Set());
+      if(d.MNG_4) l3.get(d.MNG_3).add(d.MNG_4);
+    }
   }
   const mng1Keys = [...PNL_ORDER.filter(k=>tree.has(k)),
     ...[...tree.keys()].filter(k=>!PNL_ORDER.includes(k)).sort()];
 
-  let html = '<div style="display:flex;flex-wrap:wrap;gap:16px;padding:12px 24px 16px">';
-  for(const mng1 of mng1Keys) {
-    const rows = (tree.get(mng1)||[]).sort();
-    html += `<div style="min-width:190px">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;
-                  letter-spacing:.5px;margin-bottom:6px">${mng1}</div>
-      <div style="display:flex;flex-direction:column;gap:4px">`;
-    for(const mng2 of rows) {
-      const rk = `row::${mng1}::${mng2}`;
-      const on = grafgenPnlRows.has(rk);
-      const color = _ggRowColor(rk);
-      html += `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;
-                              color:${on ? color : 'var(--text)'}">
+  // Helper: checkbox row at a given indent level, with optional expand toggle
+  let _ggUID = 0;
+  const mkRow = (rk, label, color, indent, expandId) => {
+    const on = grafgenPnlRows.has(rk);
+    const toggle = expandId
+      ? `<button id="btn_${expandId}" onclick="_ggToggle('${expandId}')"
+           style="background:none;border:none;cursor:pointer;font-size:9px;color:var(--muted);
+                  padding:0 2px;line-height:1;flex-shrink:0">▶</button>`
+      : `<span style="display:inline-block;width:14px;flex-shrink:0"></span>`;
+    return `<div style="display:flex;align-items:center;gap:2px;padding:1px 0 1px ${indent}px">
+      ${toggle}
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;
+                    color:${on ? color : 'var(--text)'}">
         <input type="checkbox" data-rk="${rk}" ${on?'checked':''}
-          style="accent-color:${color};cursor:pointer"
+          style="accent-color:${color};cursor:pointer;flex-shrink:0"
           onchange="grafgenPnlRows[this.checked?'add':'delete'](this.dataset.rk);
-                    this.parentElement.style.color=this.checked?'${color}':'var(--text)';
+                    this.closest('label').style.color=this.checked?'${color}':'var(--text)';
                     _grafgenUpdatePnlPills();renderGrafgenTab()">
-        ${mng2}
-      </label>`;
+        ${label}
+      </label>
+    </div>`;
+  };
+
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:20px;padding:12px 24px 16px">';
+  for(const mng1 of mng1Keys) {
+    const l2Map = tree.get(mng1);
+    html += `<div style="min-width:230px;max-width:340px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;
+                  letter-spacing:.5px;margin-bottom:6px">${mng1}</div>`;
+    for(const [mng2, l3Map] of l2Map) {
+      const rk2  = `row::${mng1}::${mng2}`;
+      const c2   = _ggRowColor(rk2);
+      const hasL3 = l3Map.size > 0;
+      const eid2  = hasL3 ? `gg${++_ggUID}` : null;
+      html += mkRow(rk2, mng2, c2, 0, eid2);
+      if(hasL3) {
+        html += `<div id="${eid2}" style="display:none">`;
+        for(const [mng3, l4Set] of l3Map) {
+          const rk3  = `row::${mng1}::${mng2}::${mng3}`;
+          const c3   = _ggRowColor(rk3);
+          const hasL4 = l4Set.size > 0;
+          const eid3  = hasL4 ? `gg${++_ggUID}` : null;
+          html += mkRow(rk3, mng3, c3, 14, eid3);
+          if(hasL4) {
+            html += `<div id="${eid3}" style="display:none">`;
+            for(const mng4 of [...l4Set].sort()) {
+              const rk4 = `row::${mng1}::${mng2}::${mng3}::${mng4}`;
+              const c4  = _ggRowColor(rk4);
+              html += mkRow(rk4, mng4, c4, 28, null);
+            }
+            html += '</div>';
+          }
+        }
+        html += '</div>';
+      }
     }
-    html += '</div></div>';
+    html += '</div>';
   }
   html += '</div>';
   panel.innerHTML = html;
+}
+
+// Toggle expand/collapse for P&L tree nodes
+function _ggToggle(id) {
+  const el  = document.getElementById(id);
+  const btn = document.getElementById('btn_'+id);
+  if(!el) return;
+  const willOpen = el.style.display === 'none' || el.style.display === '';
+  el.style.display = willOpen ? 'block' : 'none';
+  if(btn) btn.textContent = willOpen ? '▼' : '▶';
 }
 
 function _grafgenUpdatePnlPills() {
@@ -7330,7 +7387,7 @@ function _grafgenUpdatePnlPills() {
     pill.style.cssText = `display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
       border-radius:20px;border:1.5px solid ${def.color};background:${def.color}22;
       color:${def.color};font-size:11px;font-weight:600;cursor:pointer`;
-    pill.title = `${def.rowMng1} > ${def.rowMng2}`;
+    pill.title = [def.rowMng1, def.rowMng2, def.rowMng3, def.rowMng4].filter(Boolean).join(' › ');
     pill.innerHTML = `${def.label} <span style="font-size:9px;opacity:.7">✕</span>`;
     pill.onclick = () => {
       grafgenPnlRows.delete(rk);
