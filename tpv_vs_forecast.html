@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TPV — Actual vs Forecasts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root {
+  --yellow: #FFE600;
+  --blue:   #2563EB;
+  --bg:     #F5F7FA;
+  --card:   #FFFFFF;
+  --border: #E5E7EB;
+  --text:   #1F2937;
+  --sub:    #6B7280;
+  --c-ac:   #2563EB;
+  --c-f48:  #F97316;
+  --c-f39:  #DC2626;
+  --c-pl:   #16A34A;
+  --a-ac:   rgba(37,99,235,.12);
+  --a-f48:  rgba(249,115,22,.12);
+  --a-f39:  rgba(220,38,38,.12);
+  --a-pl:   rgba(22,163,74,.12);
+}
+[data-theme=dark] {
+  --bg:     #111827;
+  --card:   #1F2937;
+  --border: #374151;
+  --text:   #F9FAFB;
+  --sub:    #9CA3AF;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(circle at top left,  rgba(255,230,0,.24),   transparent 34%),
+    radial-gradient(circle at top right, rgba(52,131,250,.16),  transparent 30%),
+    var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+/* Header */
+.hdr {
+  background: var(--yellow);
+  padding: 12px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,.10);
+}
+.hdr-left { display: flex; align-items: center; gap: 14px; }
+.hdr-title { font-size: 18px; font-weight: 800; color: #111; letter-spacing: -.3px; }
+.hdr-sub   { font-size: 12px; font-weight: 600; color: #444; }
+.hdr-right { display: flex; align-items: center; gap: 10px; }
+.icon-btn {
+  background: rgba(0,0,0,.08); border: none; border-radius: 8px;
+  width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: background .15s;
+}
+.icon-btn:hover { background: rgba(0,0,0,.16); }
+/* Legend */
+.legend-bar {
+  background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 8px 28px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+}
+.pill {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+  border: 2px solid transparent; cursor: pointer; transition: all .15s; user-select: none;
+}
+.pill.muted { opacity: .35; }
+.pill:hover { opacity: .85; }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.pill-ac  { border-color: var(--a-ac);  background: var(--a-ac);  color: var(--c-ac);  }
+.pill-f48 { border-color: var(--a-f48); background: var(--a-f48); color: var(--c-f48); }
+.pill-f39 { border-color: var(--a-f39); background: var(--a-f39); color: var(--c-f39); }
+.pill-pl  { border-color: var(--a-pl);  background: var(--a-pl);  color: var(--c-pl);  }
+/* Filters */
+.filters {
+  background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 10px 28px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+}
+.fgrp { display: flex; align-items: center; gap: 7px; }
+.fgrp label { font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .4px; }
+select {
+  padding: 5px 10px; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--bg); color: var(--text); font-size: 12px; font-family: inherit; cursor: pointer;
+}
+select:focus { outline: 2px solid var(--yellow); }
+.rbtn-grp { display: flex; gap: 4px; }
+.rbtn {
+  background: transparent; color: var(--sub); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 11px; font-size: 11px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all .12s;
+}
+.rbtn.active { background: var(--yellow); color: #111; border-color: var(--yellow); }
+.rbtn:hover:not(.active) { border-color: var(--sub); }
+/* KPIs */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 12px; padding: 18px 28px 0;
+}
+.kpi {
+  background: var(--card); border-radius: 12px; padding: 16px 18px 14px;
+  border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  transition: box-shadow .15s;
+}
+.kpi:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.kpi-lbl { font-size: 10px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.kpi-val { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.kpi-delta { font-size: 11px; font-weight: 600; margin-top: 5px; color: var(--sub); }
+.kpi.kac  { border-top: 3px solid var(--c-ac);  }
+.kpi.kf48 { border-top: 3px solid var(--c-f48); }
+.kpi.kf39 { border-top: 3px solid var(--c-f39); }
+.kpi.kpl  { border-top: 3px solid var(--c-pl);  }
+.kpi.kvar { border-top: 3px solid #9333EA; }
+.pos { color: #16A34A; } .neg { color: #DC2626; }
+/* Charts */
+.chart-wrap { padding: 18px 28px 0; }
+.card {
+  background: var(--card); border-radius: 14px; padding: 20px 22px 16px;
+  border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  transition: box-shadow .15s;
+}
+.card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.card-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+.bottom-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 14px; padding: 14px 28px 0;
+}
+canvas { max-width: 100%; }
+/* Table */
+.tbl-wrap {
+  margin: 14px 28px 28px; background: var(--card);
+  border-radius: 14px; border: 1px solid var(--border);
+  overflow-x: auto; max-height: 340px; overflow-y: auto;
+}
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th {
+  background: var(--yellow); color: #111; padding: 9px 12px;
+  text-align: left; font-weight: 700; position: sticky; top: 0;
+  white-space: nowrap; z-index: 1;
+}
+tbody td { padding: 7px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody tr:hover td { background: rgba(255,230,0,.06); }
+.num { text-align: right; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 700;
+}
+.bac  { background: var(--a-ac);  color: var(--c-ac);  }
+.bf48 { background: var(--a-f48); color: #C2410C; }
+.bf39 { background: var(--a-f39); color: #991B1B; }
+.bpl  { background: var(--a-pl);  color: #15803D; }
+/* Responsive */
+@media (max-width: 1180px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .bottom-row { grid-template-columns: 1fr; }
+  .hdr-sub { display: none; }
+}
+@media (max-width: 520px) {
+  .hdr, .legend-bar, .filters, .kpi-grid, .chart-wrap, .bottom-row, .tbl-wrap {
+    padding-left: 14px; padding-right: 14px;
+  }
+  .kpi-val { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="hdr">
+  <div class="hdr-left">
+    <div>
+      <div class="hdr-title">TPV — Actual vs Forecasts</div>
+      <div class="hdr-sub">Acquiring Brasil · Atualizado em 04/05/2026</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="icon-btn" id="themeBtn" title="Alternar tema">🌙</button>
+  </div>
+</header>
+
+<!-- Legend / scenario toggles -->
+<div class="legend-bar">
+  <div class="pill pill-ac"  data-scen="ac"  onclick="toggleScen(this)"><div class="dot" style="background:var(--c-ac)"></div>Actual</div>
+  <div class="pill pill-f48" data-scen="f48" onclick="toggleScen(this)"><div class="dot" style="background:var(--c-f48)"></div>Forecast 4+8</div>
+  <div class="pill pill-f39" data-scen="f39" onclick="toggleScen(this)"><div class="dot" style="background:var(--c-f39)"></div>Forecast 3+9</div>
+  <div class="pill pill-pl"  data-scen="pl"  onclick="toggleScen(this)"><div class="dot" style="background:var(--c-pl)"></div>Plano 2026</div>
+  <span style="font-size:11px;color:var(--sub);margin-left:auto">Último Actual completo: <strong>Abr/26</strong></span>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+  <div class="fgrp">
+    <label>Período</label>
+    <div class="rbtn-grp">
+      <button class="rbtn" data-yr="2025" onclick="setYear(this)">2025</button>
+      <button class="rbtn active" data-yr="2026" onclick="setYear(this)">2026</button>
+      <button class="rbtn" data-yr="all" onclick="setYear(this)">Todos</button>
+    </div>
+  </div>
+  <div class="fgrp">
+    <label>BU</label>
+    <select id="buFilter" onchange="render()">
+      <option value="all">Todos</option>
+      <option value="OP">OP</option>
+      <option value="POINT">POINT</option>
+      <option value="QR">QR</option>
+    </select>
+  </div>
+  <div class="fgrp">
+    <label>Segmento</label>
+    <select id="segFilter" onchange="render()">
+      <option value="all">Todos</option>
+      <option value="BIG SELLERS">Big Sellers</option>
+      <option value="LONGTAIL">Longtail</option>
+      <option value="SMB">SMB</option>
+    </select>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid" id="kpiGrid"></div>
+
+<!-- Main line chart -->
+<div class="chart-wrap">
+  <div class="card">
+    <div class="card-title">Evolução Mensal do TPV (R$ bi)</div>
+    <canvas id="mainChart" height="110"></canvas>
+  </div>
+</div>
+
+<!-- Bottom row -->
+<div class="bottom-row">
+  <div class="card">
+    <div class="card-title">Breakdown por BU</div>
+    <canvas id="buChart" height="200"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Breakdown por Segmento</div>
+    <canvas id="segChart" height="200"></canvas>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="tbl-wrap">
+  <table id="dataTable">
+    <thead><tr id="tableHead"></tr></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const D = {"months":["202501","202502","202503","202504","202505","202506","202507","202508","202509","202510","202511","202512","202601","202602","202603","202604","202605","202606","202607","202608","202609","202610","202611","202612"],"labels":["01/25","02/25","03/25","04/25","05/25","06/25","07/25","08/25","09/25","10/25","11/25","12/25","01/26","02/26","03/26","04/26","05/26","06/26","07/26","08/26","09/26","10/26","11/26","12/26"],"actual":{"total":[18302910836,17819032110,19130234729,18646960278,20128596924,19849935367,21130466210,21490705591,21239639435,21975717040,23129786484,24493367368,22154307614,20669478688,23449081960,23684028043,1458227182,0,0,0,0,0,0,0],"by_bu":{"OP":[5322313207,5129769897,5094329308,4968108883,5293946019,5194582645,5521197822,5481089891,5621228466,5488375361,6300242343,5454492539,5577944274,4924667258,5858457678,6134333578,266418512,0,0,0,0,0,0,0],"POINT":[10131169605,9950851083,10990267423,10717058921,11637142517,11497960601,12267593773,12565183933,12341716313,12927748926,13032040819,14293153181,12733341557,12160239727,13535801437,13431345473,868182770,0,0,0,0,0,0,0],"QR":[2849428024,2738411131,3045637998,2961792474,3197508388,3157392121,3341674614,3444431767,3276694656,3559592753,3797503322,4745721647,3843021782,3584571703,4054822845,4118348992,323625900,0,0,0,0,0,0,0]},"by_segment":{"BIG SELLERS":[4279269161,3958715718,3885934563,3770797216,3981545454,3921692647,4143922722,4054089619,4094506826,3927594770,4662696341,3995664988,4009738087,3470667166,4112863448,4519720071,227780845,0,0,0,0,0,0,0],"LONGTAIL":[7890228905,7893814102,8593746708,8379293093,8849295670,8538243242,8914401952,8911860977,8707613454,8996707942,8933875397,9572525862,8535180933,8159132548,8979554636,8920466106,618916965,0,0,0,0,0,0,0],"SMB":[6133412770,5966502290,6650553458,6496869968,7297755799,7389999478,8072141536,8524754994,8437519155,9051414328,9533214746,10925176518,9609353700,9039678974,10356663877,10243841866,611529372,0,0,0,0,0,0,0]}},"f48":{"total":[18269089986,17784463499,19095293232,18632398773,20110193481,19784843793,21048419441,21393446594,21096258388,21847000570,22075321388,23348166362,22099036564,20615945473,23382700482,23172020857,25090681268,25226663639,26458683164,27091289795,27226854341,28965265579,30546043781,32417303486],"by_bu":{"POINT":[10131169604,9950851083,10990323966,10717061321,11637163710,11497971961,12267593773,12565183932,12341742671,12927764638,12139582720,13301620837,12733341557,12160239727,13535801436,13272132847,14344099498,14402460453,15182940149,15568372248,15608679719,16467034297,16869237371,18520684134],"QR SELLERS":[2849372446,2738317062,3045636625,2961785407,3197499386,3157380780,3341666982,3444427328,3276689689,3559939755,3797499063,4745717698,3843017103,3584568830,4054818629,3917736981,4112926138,4099922033,4289595940,4420465647,4339563772,4562291429,4779394539,5790476868],"OP":[5288547935,5095295353,5059332642,4953552045,5275530385,5129491052,5439158686,5383835334,5477826027,5359296177,6138239605,5300827827,5522677904,4871136916,5792080416,5982151028,6633655632,6724281153,6986147075,7102451900,7278610850,7935939853,8897411871,8106142484]},"by_segment":{"LONGTAIL":[7884961323,7889378160,8589475135,8421379645,8845993739,8537582473,8913915730,8906047385,8700177891,8984553384,8371609594,8964365892,8518970541,8142641669,8961514461,8737215355,9234533741,9125117412,9445689934,9521069369,9384666118,9714431653,9868598084,10585732325],"SMB":[6105117175,5936484322,6619967503,6440295197,7284159447,7372901041,8051265093,8499103278,8405820259,9011325283,9137137636,10472777609,9572206804,9004404874,10310552299,10000505508,10826231944,10954319767,11654364097,12040583284,12134966725,12880352667,13308739531,14814240410],"BIG SELLERS":[4279011489,3958601017,3885850595,3770723931,3980040295,3874360279,4083238618,3988295931,3990260238,3851121903,4566574158,3911022860,4007859220,3468898930,4110633722,4434299993,5029915583,5147226460,5358629132,5529637142,5707221498,6370481259,7368706166,7017330751]}},"f39":{"total":[18297485892,17814386481,19125165423,18641627349,20120611281,19795160157,21060288576,21411329128,21116263546,21873120099,22103362524,23381208831,22154303583,20669476457,23449045482,22926995412,24486452304,24300238270,25694234716,26422044569,26331294752,28148670278,29681554154,30909678198],"by_bu":{"QR SELLERS":[2849372446,2738317062,3045636625,2961785407,3197499386,3157380780,3341666982,3444427328,3276689689,3559939755,3797499063,4745717698,3843017103,3584568830,4054787787,4103936213,4163732644,4039475003,4289300366,4326681064,4201483042,4469877079,4559962475,5209782473],"POINT":[10131169604,9950851083,10990323966,10717061321,11637163710,11497971961,12267593773,12565183932,12341742671,12927764638,12139582720,13301620837,12733341557,12160239727,13535801436,13338610160,14445481548,14252762117,15023449975,15446458548,15296800642,16127217184,16604591383,18216153474],"OP":[5316943842,5125218335,5089204832,4962780621,5285948185,5139807417,5451027821,5401717867,5497831185,5385415706,6166280741,5333870296,5577944922,4924667900,5858456259,5484449039,5877238111,6008001150,6381484375,6648904957,6833011069,7551576015,8517000296,7483742250]},"by_segment":{"LONGTAIL":[7895759593,7899876204,8600846680,8426356861,8851507812,8543119909,8920370352,8918671149,8715061488,9005060232,8393595454,8992544280,8544988537,8169163248,8993533635,8734987089,9242874259,8903992699,9198125160,9247562146,9033642623,9494130229,9633929719,10413647303],"SMB":[6122714811,5955909259,6638468148,6444546557,7289063174,7377679970,8056679606,8504362047,8410941819,9016937964,9143192912,10477641690,9601455826,9031414280,10344909818,10164458155,11014438388,10984719243,11817271966,12273269924,12320380711,13062506410,13492304552,14379712448],"BIG SELLERS":[4279011489,3958601017,3885850595,3770723931,3980040295,3874360279,4083238618,3988295931,3990260238,3851121903,4566574158,3911022860,4007859220,3468898930,4110602029,4027550168,4229139656,4411526328,4678837590,4901212499,4977271418,5592033639,6555319883,6116318447]}},"plano2026":{"total":[0,0,0,0,0,0,0,0,0,0,0,0,21506421446,21125231595,23520185736,23179208110,24756671980,24449259083,25727288382,26299337936,26056453642,27829100193,29370467919,31039296993],"by_bu":{"OP":[0,0,0,0,0,0,0,0,0,0,0,0,5078629446,4974060196,5456166673,5472551908,5771242469,5826572582,6107501656,6216577988,6290387060,6924156367,7878243962,7153036250],"POINT":[0,0,0,0,0,0,0,0,0,0,0,0,11368999726,11133765091,12453020343,12154625952,13004725409,12738136150,13336032847,13675547997,13423382588,14251399061,14519808821,16134995207],"QR SELLERS":[0,0,0,0,0,0,0,0,0,0,0,0,3470078336,3343140597,3716335392,3642426437,3913367136,3808358153,4053117530,4112301395,4012638759,4270814268,4357643879,4977005138],"TAP":[0,0,0,0,0,0,0,0,0,0,0,0,1588713938,1674265711,1894663329,1909603812,2067336966,2076192198,2230636348,2294910556,2330045235,2382730497,2614771257,2774260398]},"by_segment":{"BIG SELLERS":[0,0,0,0,0,0,0,0,0,0,0,0,3809647192,3675436826,4042975917,4132283180,4357529494,4471352248,4681185871,4812265826,4860761781,5451634840,6421165850,6078130658],"LONGTAIL":[0,0,0,0,0,0,0,0,0,0,0,0,8772629449,8693670006,9594696600,9296585885,9748527274,9331321494,9656235322,9656619606,9412857771,9889422480,10063367946,10881810528],"SMB":[0,0,0,0,0,0,0,0,0,0,0,0,8924144805,8756124763,9882513219,9750339045,10650615212,10646585342,11389867188,11830452503,11782834090,12488042874,12885934123,14079355807]}}};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const LAST_ACTUAL_IDX = 15; // Apr 2026
+let activeYear = '2026';
+let activeBU   = 'all';
+let activeSeg  = 'all';
+let hiddenScen = new Set();
+let charts     = {};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const fmt  = v => v >= 1e9 ? (v/1e9).toFixed(2)+'B' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : (v/1e3).toFixed(0)+'K';
+const fmtB = v => (v/1e9).toFixed(2);
+const pct  = (a,b) => b ? ((a-b)/b*100).toFixed(1)+'%' : '—';
+const sum  = arr => arr.reduce((a,b)=>a+b,0);
+
+function getIdxRange() {
+  const months = D.months;
+  if (activeYear === '2025') return { start: 0,  end: 12 };
+  if (activeYear === '2026') return { start: 12, end: 24 };
+  return { start: 0, end: 24 };
+}
+
+// Get series array for a given scenario + current BU/Seg filters
+function getSeries(scen) {
+  const bu  = activeBU;
+  const seg = activeSeg;
+  let src;
+  if (scen === 'actual')    src = D.actual;
+  else if (scen === 'f48')  src = D.f48;
+  else if (scen === 'f39')  src = D.f39;
+  else                      src = D.plano2026;
+
+  if (bu !== 'all' && seg !== 'all') {
+    // Both filters: need intersection — approximate by min(buShare, segShare) * total
+    // Better: just show total and note filters
+    return getSeries_buSeg(scen, bu, seg);
+  }
+  if (bu !== 'all') {
+    const key = bu === 'QR'
+      ? (scen === 'actual' ? 'QR' : 'QR SELLERS')
+      : bu;
+    return src.by_bu[key] || new Array(24).fill(0);
+  }
+  if (seg !== 'all') {
+    return src.by_segment[seg] || new Array(24).fill(0);
+  }
+  return src.total;
+}
+
+function getSeries_buSeg(scen, bu, seg) {
+  // Both BU and Seg filtered: data not pre-aggregated at this level.
+  // Show the smaller of the two (conservative estimate) — a known limitation.
+  // For now, show total (the dashboard note will explain).
+  return getSeries_bu(scen, bu);
+}
+function getSeries_bu(scen, bu) {
+  const src = scen === 'actual' ? D.actual : scen === 'f48' ? D.f48 : scen === 'f39' ? D.f39 : D.plano2026;
+  const key = bu === 'QR' ? (scen === 'actual' ? 'QR' : 'QR SELLERS') : bu;
+  return src.by_bu[key] || new Array(24).fill(0);
+}
+
+function getVisibleMonths() {
+  const { start, end } = getIdxRange();
+  return D.months.slice(start, end);
+}
+function getVisibleLabels() {
+  const { start, end } = getIdxRange();
+  return D.labels.slice(start, end);
+}
+function getVisibleSeries(scen) {
+  const { start, end } = getIdxRange();
+  return getSeries(scen).slice(start, end);
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────────
+function renderKPIs() {
+  const { start, end } = getIdxRange();
+  const months = D.months.slice(start, end);
+
+  // For Actual, only count up to LAST_ACTUAL_IDX
+  const acEnd = Math.min(end, LAST_ACTUAL_IDX + 1);
+  const acIdxs = [];
+  for (let i = start; i < acEnd; i++) acIdxs.push(i);
+
+  const acSeries  = getSeries('actual');
+  const f48Series = getSeries('f48');
+  const f39Series = getSeries('f39');
+  const plSeries  = getSeries('plano2026');
+
+  const acTotal  = acIdxs.reduce((s,i) => s + acSeries[i],  0);
+  const f48Total = acIdxs.reduce((s,i) => s + f48Series[i], 0);
+  const f39Total = acIdxs.reduce((s,i) => s + f39Series[i], 0);
+  const plTotal  = acIdxs.reduce((s,i) => s + plSeries[i],  0);
+
+  const acVsPlPct  = plTotal  ? (acTotal/plTotal  - 1)*100 : null;
+  const acVsF48Pct = f48Total ? (acTotal/f48Total - 1)*100 : null;
+  const monthLabel = acIdxs.length > 0
+    ? `(${D.labels[start]}–${D.labels[acEnd-1]})`
+    : '(sem dados)';
+
+  const grid = document.getElementById('kpiGrid');
+  grid.innerHTML = `
+    <div class="kpi kac">
+      <div class="kpi-lbl">Actual ${monthLabel}</div>
+      <div class="kpi-val">R$ ${fmtB(acTotal)}B</div>
+      <div class="kpi-delta">YTD ${acIdxs.length}m</div>
+    </div>
+    <div class="kpi kf48">
+      <div class="kpi-lbl">F 4+8 ${monthLabel}</div>
+      <div class="kpi-val">R$ ${fmtB(f48Total)}B</div>
+      <div class="kpi-delta ${acVsF48Pct !== null ? (acVsF48Pct>=0?'pos':'neg') : ''}">
+        Actual ${acVsF48Pct !== null ? (acVsF48Pct>=0?'+':'')+acVsF48Pct.toFixed(1)+'%' : '—'} vs F4+8
+      </div>
+    </div>
+    <div class="kpi kf39">
+      <div class="kpi-lbl">F 3+9 ${monthLabel}</div>
+      <div class="kpi-val">R$ ${fmtB(f39Total)}B</div>
+      <div class="kpi-delta">Mesmo período</div>
+    </div>
+    <div class="kpi kpl">
+      <div class="kpi-lbl">Plano 2026 ${monthLabel}</div>
+      <div class="kpi-val">R$ ${fmtB(plTotal)}B</div>
+      <div class="kpi-delta ${acVsPlPct !== null ? (acVsPlPct>=0?'pos':'neg') : ''}">
+        Actual ${acVsPlPct !== null ? (acVsPlPct>=0?'+':'')+acVsPlPct.toFixed(1)+'%' : '—'} vs Plano
+      </div>
+    </div>
+    <div class="kpi kvar">
+      <div class="kpi-lbl">F 4+8 Full Year 2026</div>
+      <div class="kpi-val">R$ ${fmtB(sum(getSeries('f48').slice(12)))+'B'}</div>
+      <div class="kpi-delta">Plano: R$ ${fmtB(sum(getSeries('plano2026').slice(12)))+'B'}</div>
+    </div>`;
+}
+
+// ── MAIN LINE CHART ───────────────────────────────────────────────────────────
+function makeDataset(label, scen, color, dash) {
+  const data = getVisibleSeries(scen).map(v => v ? parseFloat(fmtB(v)) : null);
+  const ds = {
+    label, data,
+    borderColor: color,
+    backgroundColor: color.replace(')', ',.08)').replace('rgb', 'rgba'),
+    borderWidth: 2.5,
+    tension: 0.42,
+    pointRadius: 3,
+    pointHoverRadius: 6,
+    hidden: hiddenScen.has(scen),
+  };
+  if (dash) { ds.borderDash = dash; ds.pointRadius = 2; }
+  if (scen === 'actual') {
+    ds.spanGaps = false;
+  }
+  return ds;
+}
+
+function renderMainChart() {
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  if (charts.main) charts.main.destroy();
+
+  const labels = getVisibleLabels();
+
+  // Mark last actual with a vertical annotation via a dummy dataset
+  const { start } = getIdxRange();
+  const acEnd = Math.min(LAST_ACTUAL_IDX - start + 1, labels.length);
+
+  charts.main = new Chart(ctx, {
+    type: 'line',
+    plugins: [ChartDataLabels],
+    data: {
+      labels,
+      datasets: [
+        makeDataset('Actual',       'actual', '#2563EB', null),
+        makeDataset('Forecast 4+8', 'f48',    '#F97316', [6,3]),
+        makeDataset('Forecast 3+9', 'f39',    '#DC2626', [4,4]),
+        makeDataset('Plano 2026',   'pl',     '#16A34A', [8,4]),
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#111827',
+          titleColor: '#F9FAFB',
+          bodyColor: '#D1D5DB',
+          padding: 14,
+          cornerRadius: 12,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: R$ ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2)+'B' : '—'}`
+          }
+        },
+        datalabels: { display: false },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(0,0,0,.05)' },
+          ticks: { font: { size: 11 }, color: '#6B7280' }
+        },
+        y: {
+          display: true,
+          grid: { color: 'rgba(0,0,0,.05)' },
+          ticks: {
+            font: { size: 11 }, color: '#6B7280',
+            callback: v => v + 'B'
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── BU CHART ──────────────────────────────────────────────────────────────────
+function renderBUChart() {
+  const ctx = document.getElementById('buChart').getContext('2d');
+  if (charts.bu) charts.bu.destroy();
+
+  const bus  = ['OP', 'POINT', 'QR'];
+  const { start } = getIdxRange();
+  const acEnd = Math.min(LAST_ACTUAL_IDX + 1, start === 0 ? 12 : 24);
+
+  function buSum(scen, bu) {
+    const key = bu === 'QR' ? (scen === 'actual' ? 'QR' : 'QR SELLERS') : bu;
+    const src  = scen === 'actual' ? D.actual : scen === 'f48' ? D.f48 : scen === 'f39' ? D.f39 : D.plano2026;
+    const idxs = [];
+    const lo = start === 0 ? 0 : 12;
+    const hi = start === 0 ? 12 : 24;
+    for (let i = lo; i < hi; i++) idxs.push(i);
+    return idxs.reduce((s,i) => s + (src.by_bu[key]?.[i] || 0), 0) / 1e9;
+  }
+
+  charts.bu = new Chart(ctx, {
+    type: 'bar',
+    plugins: [ChartDataLabels],
+    data: {
+      labels: bus,
+      datasets: [
+        { label:'Actual',       data: bus.map(b=>buSum('actual',b)), backgroundColor:'rgba(37,99,235,.75)',   hidden: hiddenScen.has('actual') },
+        { label:'F 4+8',        data: bus.map(b=>buSum('f48',b)),    backgroundColor:'rgba(249,115,22,.75)',  hidden: hiddenScen.has('f48') },
+        { label:'F 3+9',        data: bus.map(b=>buSum('f39',b)),    backgroundColor:'rgba(220,38,38,.75)',   hidden: hiddenScen.has('f39') },
+        { label:'Plano 2026',   data: bus.map(b=>buSum('pl',b)),     backgroundColor:'rgba(22,163,74,.75)',   hidden: hiddenScen.has('pl') },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true, labels: { font: { size: 11 }, boxWidth: 12 } },
+        tooltip: {
+          backgroundColor: '#111827', titleColor: '#F9FAFB', bodyColor: '#D1D5DB',
+          padding: 12, cornerRadius: 12,
+          callbacks: { label: c => ` ${c.dataset.label}: R$ ${c.parsed.y.toFixed(2)}B` }
+        },
+        datalabels: {
+          anchor: 'end', align: 'top', font: { size: 10, weight: 700 },
+          formatter: v => v > 0 ? v.toFixed(1) : '',
+          color: '#374151',
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 12 } } },
+        y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { font: { size: 11 }, callback: v => v+'B' } }
+      }
+    }
+  });
+}
+
+// ── SEGMENT CHART ─────────────────────────────────────────────────────────────
+function renderSegChart() {
+  const ctx = document.getElementById('segChart').getContext('2d');
+  if (charts.seg) charts.seg.destroy();
+
+  const segs = ['BIG SELLERS', 'LONGTAIL', 'SMB'];
+  const { start } = getIdxRange();
+
+  function segSum(scen, seg) {
+    const src  = scen === 'actual' ? D.actual : scen === 'f48' ? D.f48 : scen === 'f39' ? D.f39 : D.plano2026;
+    const lo = start, hi = start === 0 ? 12 : 24;
+    return Array.from({length: hi - lo}, (_,k) => lo+k)
+      .reduce((s,i) => s + (src.by_segment[seg]?.[i] || 0), 0) / 1e9;
+  }
+
+  charts.seg = new Chart(ctx, {
+    type: 'bar',
+    plugins: [ChartDataLabels],
+    data: {
+      labels: segs.map(s => s === 'BIG SELLERS' ? 'Big Sellers' : s === 'LONGTAIL' ? 'Longtail' : s),
+      datasets: [
+        { label:'Actual',     data: segs.map(s=>segSum('actual',s)), backgroundColor:'rgba(37,99,235,.75)',  hidden: hiddenScen.has('actual') },
+        { label:'F 4+8',      data: segs.map(s=>segSum('f48',s)),    backgroundColor:'rgba(249,115,22,.75)', hidden: hiddenScen.has('f48') },
+        { label:'F 3+9',      data: segs.map(s=>segSum('f39',s)),    backgroundColor:'rgba(220,38,38,.75)',  hidden: hiddenScen.has('f39') },
+        { label:'Plano 2026', data: segs.map(s=>segSum('pl',s)),     backgroundColor:'rgba(22,163,74,.75)',  hidden: hiddenScen.has('pl') },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true, labels: { font: { size: 11 }, boxWidth: 12 } },
+        tooltip: {
+          backgroundColor: '#111827', titleColor: '#F9FAFB', bodyColor: '#D1D5DB',
+          padding: 12, cornerRadius: 12,
+          callbacks: { label: c => ` ${c.dataset.label}: R$ ${c.parsed.y.toFixed(2)}B` }
+        },
+        datalabels: {
+          anchor: 'end', align: 'top', font: { size: 10, weight: 700 },
+          formatter: v => v > 0 ? v.toFixed(1) : '',
+          color: '#374151',
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { font: { size: 11 }, callback: v => v+'B' } }
+      }
+    }
+  });
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────────────────
+function renderTable() {
+  const { start, end } = getIdxRange();
+  const labels  = D.labels.slice(start, end);
+  const acSer   = getSeries('actual').slice(start, end);
+  const f48Ser  = getSeries('f48').slice(start, end);
+  const f39Ser  = getSeries('f39').slice(start, end);
+  const plSer   = getSeries('plano2026').slice(start, end);
+
+  document.getElementById('tableHead').innerHTML =
+    '<th>Mês</th><th>Actual</th><th>F 4+8</th><th>F 3+9</th><th>Plano 2026</th><th>Δ Actual vs F4+8</th><th>Δ Actual vs Plano</th>';
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = labels.map((lbl, i) => {
+    const ac = acSer[i], f48 = f48Ser[i], f39 = f39Ser[i], pl = plSer[i];
+    const isActual = (start + i) <= LAST_ACTUAL_IDX;
+    const vsF48 = ac && f48 ? ((ac/f48-1)*100) : null;
+    const vsPl  = ac && pl  ? ((ac/pl-1)*100)  : null;
+    const fmtDelta = v => v === null ? '<span style="color:var(--sub)">—</span>'
+      : `<span class="${v>=0?'pos':'neg'}">${v>=0?'+':''}${v.toFixed(1)}%</span>`;
+    return `<tr>
+      <td><strong>${lbl}</strong>${isActual ? ' <span class="badge bac">A</span>' : ''}</td>
+      <td class="num">${ac ? 'R$ '+fmtB(ac)+'B' : '<span style="color:var(--sub)">—</span>'}</td>
+      <td class="num">${f48 ? 'R$ '+fmtB(f48)+'B' : '<span style="color:var(--sub)">—</span>'}</td>
+      <td class="num">${f39 ? 'R$ '+fmtB(f39)+'B' : '<span style="color:var(--sub)">—</span>'}</td>
+      <td class="num">${pl ? 'R$ '+fmtB(pl)+'B' : '<span style="color:var(--sub)">—</span>'}</td>
+      <td class="num">${fmtDelta(vsF48)}</td>
+      <td class="num">${fmtDelta(vsPl)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  activeBU  = document.getElementById('buFilter').value;
+  activeSeg = document.getElementById('segFilter').value;
+  renderKPIs();
+  renderMainChart();
+  renderBUChart();
+  renderSegChart();
+  renderTable();
+}
+
+// ── INTERACTIONS ──────────────────────────────────────────────────────────────
+function setYear(btn) {
+  document.querySelectorAll('.rbtn[data-yr]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeYear = btn.dataset.yr;
+  render();
+}
+
+function toggleScen(pill) {
+  const scen = pill.dataset.scen;
+  if (hiddenScen.has(scen)) {
+    hiddenScen.delete(scen);
+    pill.classList.remove('muted');
+  } else {
+    hiddenScen.add(scen);
+    pill.classList.add('muted');
+  }
+  render();
+}
+
+// Dark mode
+const themeBtn = document.getElementById('themeBtn');
+themeBtn.onclick = () => {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? '' : 'dark');
+  themeBtn.textContent = dark ? '🌙' : '☀️';
+  render();
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+Chart.register(ChartDataLabels);
+render();
+</script>
+</body>
+</html>
