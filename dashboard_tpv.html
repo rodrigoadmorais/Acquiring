@@ -137,6 +137,13 @@
       </div>
     </div>
   </div>
+  <div class="fgrp">
+    <label>Cen&#225;rios</label>
+    <div class="ms-wrap" id="msScen">
+      <button class="ms-btn" id="msScenBtn" onclick="toggleMs('msScen')" style="min-width:120px">Vis&#237;veis</button>
+      <div class="ms-dropdown" id="msScenDrop"></div>
+    </div>
+  </div>
   <button class="rbtn" onclick="resetFilters()">&#8635; Limpar</button>
 </div>
 <div class="kpi-grid">
@@ -154,8 +161,9 @@
 <div class="mop-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 24px 0">
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-      <div class="card-title" style="margin:0">MOP Trend &mdash; Actual + Forecast (AC sólido, FC tracejado)</div>
-      <div style="display:flex;gap:6px">
+      <div class="card-title" style="margin:0">MOP Trend &mdash; Actual + <span id="mopFcLabel">FC VF</span></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <select id="selMopFc" onchange="mopTrendFc=this.value;document.getElementById('mopFcLabel').textContent=this.options[this.selectedIndex].text;render()" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text)"></select>
         <button class="btn-trend active" id="btnMopAbs" onclick="setMopTrendMode('abs',this)">Volume</button>
         <button class="btn-trend" id="btnMopPct" onclick="setMopTrendMode('pct',this)">Share %</button>
       </div>
@@ -68854,6 +68862,21 @@ const CC={ACTUAL:"#2563EB","FORECAST 4+8":"#F97316","FORECAST 4+8 VF":"#7C3AED",
 const CA={ACTUAL:"rgba(37,99,235,.15)","FORECAST 4+8":"rgba(249,115,22,.15)","FORECAST 4+8 VF":"rgba(124,58,237,.15)","FORECAST 3+9 FINAL":"rgba(8,145,178,.15)",PLANO:"rgba(22,163,74,.15)"};
 const BD={ACTUAL:"bac","FORECAST 4+8":"bfc","FORECAST 4+8 VF":"bvf","FORECAST 3+9 FINAL":"b39",PLANO:"bpl"};
 const SCEN=["ACTUAL","FORECAST 4+8 VF","FORECAST 4+8","FORECAST 3+9 FINAL","PLANO"];
+const SC_LABELS={"ACTUAL":"Actual","FORECAST 4+8 VF":"FC 4+8 VF","FORECAST 4+8":"FC 4+8","FORECAST 3+9 FINAL":"3+9 Final","PLANO":"Plano"};
+const COMP_PERIODS=[{key:"ytd",label:"YTD"},{key:"ytg",label:"YTG"},{key:"2026",label:"2026 Ano"},{key:"2025",label:"2025 Ano"}];
+let visScens=new Set(["ACTUAL","FORECAST 4+8 VF","FORECAST 3+9 FINAL","PLANO"]);
+let acMonthsGlobal=[];
+function toggleScen(sc,cb){if(cb.checked)visScens.add(sc);else visScens.delete(sc);updateScenBtn();render();}
+function updateScenBtn(){const b=document.getElementById("msScenBtn");if(b)b.textContent=SCEN.filter(s=>visScens.has(s)).map(s=>SC_LABELS[s]).join(", ")||"Nenhum";}
+const YOY_OPTS=[
+  {key:"ACTUAL|2025",label:"Actual 2025",sc:"ACTUAL",yr:"2025",color:"#93C5FD",dash:[]},
+  {key:"ACTUAL|2026",label:"Actual 2026",sc:"ACTUAL",yr:"2026",color:"#2563EB",dash:[]},
+  {key:"FORECAST 4+8 VF|2026",label:"FC VF 2026",sc:"FORECAST 4+8 VF",yr:"2026",color:"#7C3AED",dash:[5,3]},
+  {key:"FORECAST 3+9 FINAL|2025",label:"3+9 Final 2025",sc:"FORECAST 3+9 FINAL",yr:"2025",color:"#67E8F9",dash:[3,3]},
+  {key:"FORECAST 3+9 FINAL|2026",label:"3+9 Final 2026",sc:"FORECAST 3+9 FINAL",yr:"2026",color:"#0891B2",dash:[5,3]},
+  {key:"PLANO|2026",label:"Plano 2026",sc:"PLANO",yr:"2026",color:"#16A34A",dash:[5,3]},
+];
+let visYoy=new Set(["ACTUAL|2025","ACTUAL|2026","FORECAST 4+8 VF|2026"]);
 let CH={};
 const ML=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 function mLbl(m){return ML[+m.slice(4,6)-1]+"/"+m.slice(2,4)}
@@ -68998,6 +69021,7 @@ function filt(){
   const mIni=document.getElementById("fMesIni").value;
   const mFim=document.getElementById("fMesFim").value;
   return RAW.filter(r=>
+    visScens.has(r.CENARIO)&&
     (!useP||selP.includes(r.PRODUTO))&&
     (!c||r.CARTEIRA===c)&&
     (!cn||r.CANAL===cn)&&
@@ -69005,6 +69029,12 @@ function filt(){
     (!useM||!r.MOP||selM.includes(r.MOP))&&
     (!mIni||r.MES>=mIni)&&(!mFim||r.MES<=mFim)
   );
+}
+function filtNoDate(){
+  const selP=getSelProds();const allP=document.querySelectorAll("#msProdDrop input.prod-cb").length;const useP=selP.length>0&&selP.length<allP;
+  const c=document.getElementById("fCart").value;const cn=document.getElementById("fCanal").value;
+  const selS=getSelSegs();const allS=document.querySelectorAll("#msSegDrop input.seg-cb").length;const useS=selS.length>0&&selS.length<allS;
+  return RAW.filter(r=>(!useP||selP.includes(r.PRODUTO))&&(!c||r.CARTEIRA===c)&&(!cn||r.CANAL===cn)&&(!useS||selS.includes(r.SEGMENTO)));
 }
 function mk(id,cfg){if(CH[id])CH[id].destroy();CH[id]=new Chart(document.getElementById(id),cfg)}
 let trendView="all";
@@ -69016,7 +69046,7 @@ function setTrendView(v,btn){
 }
 
 
-let mopTrendMode='abs';
+let mopTrendMode='abs';let mopTrendFc='FORECAST 4+8 VF';
 function setMopTrendMode(v,btn){
   mopTrendMode=v;
   document.querySelectorAll('#btnMopAbs,#btnMopPct').forEach(b=>b.classList.remove('active'));
@@ -69069,7 +69099,7 @@ function render(){
   const acMopBym={};const fcMopBym={};
   for(const r of trendMopD){
     if(r.CENARIO==="ACTUAL"){if(!acMopBym[r.MOP])acMopBym[r.MOP]={};acMopBym[r.MOP][r.MES]=(acMopBym[r.MOP][r.MES]||0)+r.VALOR;}
-    if(r.CENARIO==="FORECAST 4+8 VF"){if(!fcMopBym[r.MOP])fcMopBym[r.MOP]={};fcMopBym[r.MOP][r.MES]=(fcMopBym[r.MOP][r.MES]||0)+r.VALOR;}
+    if(r.CENARIO===mopTrendFc){if(!fcMopBym[r.MOP])fcMopBym[r.MOP]={};fcMopBym[r.MOP][r.MES]=(fcMopBym[r.MOP][r.MES]||0)+r.VALOR;}
   }
   const allTrendMes=[...new Set([...Object.values(acMopBym),...Object.values(fcMopBym)].flatMap(o=>Object.keys(o)))].sort();
   const acCutoffIdx=acMesM.length>0?allTrendMes.indexOf(acMesM[acMesM.length-1]):-1;
@@ -69119,7 +69149,7 @@ function render(){
     scales:{y:{ticks:{callback:mopYTick},grid:{color:"rgba(0,0,0,.06)"}}}
   }});
   /* MOP Share Evolution — FORECAST vs PLANO, monthly % */
-  const mopColors2={"BANK_TRANSFER":"rgba(22,163,74,.8)","CREDIT_CARD":"rgba(249,115,22,.8)","ACCOUNT_MONEY":"rgba(37,99,235,.8)","DEBIT_CARD":"rgba(147,51,234,.8)","DIGITAL_CURRENCY":"rgba(8,145,178,.8)","PIX":"rgba(21,128,61,.8)","TICKET":"rgba(220,38,38,.8)","PREPAID_CARD":"rgba(202,138,4,.8)","VOUCHER_CARD":"rgba(20,184,166,.8)"};
+  const mopColors2={"CREDIT_CARD":"#6366F1","DEBIT_CARD":"#F59E0B","PIX":"#10B981","ACCOUNT_MONEY":"#3B82F6","TICKET":"#F43F5E","BANK_TRANSFER":"#14B8A6","DIGITAL_CURRENCY":"#06B6D4","PREPAID_CARD":"#EC4899","VOUCHER_CARD":"#FB923C","OTHERS":"#94A3B8"};
   const evoScens=["FORECAST 4+8 VF","PLANO"];
   const evoMes=[...new Set(RAW_MOP.filter(r=>evoScens.includes(r.CENARIO)).map(r=>r.MES))].sort();
   const evoRaw=RAW_MOP.filter(r=>evoScens.includes(r.CENARIO)&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP)));
@@ -69144,10 +69174,81 @@ function render(){
   const mopPctD=RAW_MOP.filter(r=>(!useP2||selP2.includes(r.PRODUTO))&&(!fCart2||r.CARTEIRA===fCart2)&&(!useM2||selM2.includes(r.MOP))&&(!mIniV||r.MES>=mIniV)&&(!mFimV||r.MES<=mFimV));
   const pctByCenMop={};for(const c of SCEN){pctByCenMop[c]={};for(const mo of mopsAll)pctByCenMop[c][mo]=0;}
   for(const r of mopPctD){if(pctByCenMop[r.CENARIO])pctByCenMop[r.CENARIO][r.MOP]=(pctByCenMop[r.CENARIO][r.MOP]||0)+r.VALOR;}
-  const pctScenLabels=SCEN.filter(c=>Object.values(pctByCenMop[c]).some(v=>v>0));
+  const activeScen=SCEN.filter(c=>visScens.has(c));
+  const pctScenLabels=activeScen.filter(c=>Object.values(pctByCenMop[c]||{}).some(v=>v>0));
   const pctDs=mopsAll.map(mo=>({label:mo,data:pctScenLabels.map(c=>{const tot=Object.values(pctByCenMop[c]).reduce((a,b)=>a+b,0);return tot>0?Math.round(pctByCenMop[c][mo]/tot*1000)/10:0;}),backgroundColor:mopColors2[mo]||"#999",stack:"s"}));
-  mk("cMopPct",{type:"bar",data:{labels:pctScenLabels,datasets:pctDs},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:9},boxWidth:12}},datalabels:{display:false}},scales:{x:{stacked:true},y:{stacked:true,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
+  mk("cMopPct",{type:"bar",data:{labels:pctScenLabels,datasets:pctDs},options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:9},boxWidth:12}},datalabels:{display:ctx=>ctx.dataset.data[ctx.dataIndex]>=4,formatter:v=>v.toFixed(0)+"%",color:"#fff",font:{size:10,weight:"bold"},anchor:"center",align:"center"}},scales:{x:{stacked:true},y:{stacked:true,max:100,ticks:{callback:v=>v+"%"},grid:{color:"rgba(0,0,0,.06)"}}}}});
 
+  /* YoY Chart */
+  const YOY_MM=["01","02","03","04","05","06","07","08","09","10","11","12"];
+  const YOY_LBL=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  const yoyBase=filtNoDate();
+  const yoyDs=YOY_OPTS.filter(o=>visYoy.has(o.key)).map(o=>{
+    const byMM={};
+    for(const r of yoyBase){if(r.CENARIO===o.sc&&r.MES.startsWith(o.yr)){const mm=r.MES.slice(4);byMM[mm]=(byMM[mm]||0)+r.VALOR;}}
+    return{label:o.label,data:YOY_MM.map(mm=>byMM[mm]||null),borderColor:o.color,borderDash:o.dash,borderWidth:2.5,pointRadius:4,tension:.3,fill:false,spanGaps:false};
+  });
+  mk("cYoY",{type:"line",data:{labels:YOY_LBL,datasets:yoyDs},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{display:false}},scales:{y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}},x:{grid:{color:"rgba(0,0,0,.04)"}}}}});
+
+  /* Comparison Table */
+  renderComp();
+
+}
+function getMesRange(pk){
+  const acLast=acMonthsGlobal[acMonthsGlobal.length-1]||"202604";
+  const y=parseInt(acLast.slice(0,4)), m=parseInt(acLast.slice(4));
+  const nm=m===12?1:m+1, ny=m===12?y+1:y;
+  const ytgFirst=String(ny*100+nm).padStart(6,"0");
+  if(pk==="ytd")return["202601",acLast];
+  if(pk==="ytg")return[ytgFirst,"202612"];
+  if(pk==="2026")return["202601","202612"];
+  if(pk==="2025")return["202501","202512"];
+  return["202601","202612"];
+}
+function renderComp(){
+  const selA=document.getElementById("selCompA");
+  const selB=document.getElementById("selCompB");
+  if(!selA||!selB||!selA.value||!selB.value)return;
+  const [scA,pkA]=selA.value.split("|");
+  const [scB,pkB]=selB.value.split("|");
+  const pA=COMP_PERIODS.find(p=>p.key===pkA)||COMP_PERIODS[2];
+  const pB=COMP_PERIODS.find(p=>p.key===pkB)||COMP_PERIODS[2];
+  function compute(sc,p){
+    const [mI,mF]=getMesRange(p.key);
+    const base=filtNoDate().filter(r=>r.CENARIO===sc&&r.MES>=mI&&r.MES<=mF);
+    const total=base.reduce((s,r)=>s+r.VALOR,0);
+    const bu={OP:0,POINT:0,QR:0};
+    for(const r of base){
+      if(r.PRODUTO==="QR")bu.QR+=r.VALOR;
+      else if(["POINT","TTP"].includes(r.PRODUTO))bu.POINT+=r.VALOR;
+      else bu.OP+=r.VALOR;
+    }
+    const mopBase=RAW_MOP.filter(r=>r.CENARIO===sc&&r.MES>=mI&&r.MES<=mF);
+    const mopTot=mopBase.reduce((s,r)=>s+r.VALOR,0);
+    const mopMap={};
+    for(const r of mopBase){const m=r.MOP==="BANK_TRANSFER"?"PIX":r.MOP;mopMap[m]=(mopMap[m]||0)+r.VALOR;}
+    return{total,bu,mopMap,mopTot};
+  }
+  const dA=compute(scA,pA), dB=compute(scB,pB);
+  const fv=v=>v>=1e12?(v/1e12).toFixed(1)+"T":v>=1e9?(v/1e9).toFixed(1)+"B":v>=1e6?(v/1e6).toFixed(1)+"M":v>=1e3?(v/1e3).toFixed(0)+"K":Math.round(v)+"";
+  const dp=(a,b)=>{if(!b)return"";const p=((a/b-1)*100);return" <span class='"+(p>=0?"pos":"neg")+"'>("+(p>=0?"+":"")+p.toFixed(1)+"%)</span>"};
+  const sh=(v,t)=>t>0?Math.round(v/t*100)+"%":"—";
+  const MN={"CREDIT_CARD":"Crédito","DEBIT_CARD":"Débito","PIX":"PIX","ACCOUNT_MONEY":"Conta MP","TICKET":"Boleto","DIGITAL_CURRENCY":"Digital","PREPAID_CARD":"Pré-pago","VOUCHER_CARD":"Vale"};
+  const TOP_MOPS=["CREDIT_CARD","DEBIT_CARD","PIX","ACCOUNT_MONEY","TICKET"];
+  const hA=(SC_LABELS[scA]||scA)+" "+pA.label;
+  const hB=(SC_LABELS[scB]||scB)+" "+pB.label;
+  let t=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+<thead><tr style="background:var(--yellow)"><th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase">Métrica</th><th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700">A: ${hA.toUpperCase()}</th><th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700">B: ${hB.toUpperCase()}</th></tr></thead><tbody>`;
+  const sec=(lbl)=>`<tr style="background:rgba(0,0,0,.04)"><td colspan="3" style="padding:4px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sub)">${lbl}</td></tr>`;
+  const row=(lbl,vA,vB,pctA,totA,pctB,totB)=>`<tr><td style="padding:5px 10px">${lbl}</td><td style="padding:5px 10px;text-align:right">${fv(vA)}${dp(vA,vB)} <span style="color:var(--sub);font-size:10px">${pctA!==null?sh(vA,pctA):""}</span></td><td style="padding:5px 10px;text-align:right;color:var(--sub)">${fv(vB)} <span style="font-size:10px">${pctB!==null?sh(vB,pctB):""}</span></td></tr>`;
+  t+=sec("Total");
+  t+=row("TPV",dA.total,dB.total,null,null,null,null);
+  t+=sec("Por BU");
+  for(const bu of["OP","POINT","QR"])t+=row(bu,dA.bu[bu],dB.bu[bu],null,null,null,null);
+  t+=sec("Share MOP");
+  for(const mo of TOP_MOPS)t+=row(MN[mo]||mo,dA.mopMap[mo]||0,dB.mopMap[mo]||0,dA.mopTot,dA.mopTot,dB.mopTot,dB.mopTot);
+  t+="</tbody></table>";
+  const el=document.getElementById("compTable"); if(el)el.innerHTML=t;
 }
 function toggleMobile(){
   document.body.classList.toggle('mobile-mode');
@@ -69180,7 +69281,101 @@ function setYTG(){
 function toggleTheme(){document.documentElement.dataset.theme=document.documentElement.dataset.theme==="dark"?"":"dark"}
 pop("fCart","CARTEIRA");pop("fCanal","CANAL");
 popProd();popSeg();popMop();popPeriod();
+
+/* Populate scenario visibility checkboxes */
+(function(){
+  const drop=document.getElementById("msScenDrop");
+  if(!drop)return;
+  SCEN.forEach(sc=>{
+    const lbl=document.createElement("label");
+    lbl.className="ms-item";
+    const chk=document.createElement("input");
+    chk.type="checkbox"; chk.checked=visScens.has(sc);
+    chk.onchange=()=>toggleScen(sc,chk);
+    lbl.appendChild(chk);
+    lbl.appendChild(document.createTextNode(" "+(SC_LABELS[sc]||sc)));
+    drop.appendChild(lbl);
+  });
+  updateScenBtn();
+})();
+
+/* Populate MOP Trend FC selector */
+(function(){
+  const sel=document.getElementById("selMopFc");
+  if(!sel)return;
+  SCEN.filter(s=>s!=="ACTUAL"&&s!=="PLANO").forEach(sc=>{
+    const o=new Option(SC_LABELS[sc]||sc, sc);
+    if(sc===mopTrendFc)o.selected=true;
+    sel.add(o);
+  });
+})();
+
+/* Populate comparison dropdowns */
+(function(){
+  acMonthsGlobal=[...new Set(RAW.filter(r=>r.CENARIO==="ACTUAL").map(r=>r.MES))].sort();
+  function hasData(sc,pk){
+    const r=getMesRange(pk);
+    return RAW.some(x=>x.CENARIO===sc&&x.MES>=r[0]&&x.MES<=r[1]);
+  }
+  const opts=[];
+  for(const sc of SCEN){
+    for(const p of COMP_PERIODS){
+      if(hasData(sc,p.key)) opts.push({v:sc+"|"+p.key,l:(SC_LABELS[sc]||sc)+" — "+p.label});
+    }
+  }
+  ["selCompA","selCompB"].forEach(id=>{
+    const sel=document.getElementById(id); if(!sel)return;
+    opts.forEach(o=>sel.add(new Option(o.l,o.v)));
+  });
+  const sA=document.getElementById("selCompA");
+  const sB=document.getElementById("selCompB");
+  if(sA){sA.value="ACTUAL|ytd"; if(!sA.value)sA.selectedIndex=0;}
+  if(sB){sB.value="PLANO|2026"; if(!sB.value)sB.selectedIndex=Math.min(1,sB.options.length-1);}
+})();
+
+/* YoY toggle buttons */
+(function(){
+  const wrap=document.getElementById("yoyToggles");
+  if(!wrap)return;
+  YOY_OPTS.forEach(o=>{
+    const b=document.createElement("button");
+    b.className="btn-trend"+(visYoy.has(o.key)?" active":"");
+    b.textContent=o.label;
+    b.style.cssText="border-left:3px solid "+o.color+";padding-left:8px";
+    b.onclick=()=>{
+      if(visYoy.has(o.key))visYoy.delete(o.key);else visYoy.add(o.key);
+      b.classList.toggle("active",visYoy.has(o.key));
+      render();
+    };
+    wrap.appendChild(b);
+  });
+})();
+
 render();
 </script>
+<!-- ── YoY + Comparison Table ── -->
+<div style="display:grid;grid-template-columns:1fr 340px;gap:14px;padding:14px 24px 24px;align-items:start">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div class="card-title" style="margin:0">&#128200; 2025 vs 2026 &mdash; mesmo eixo de meses</div>
+      <div id="yoyToggles" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <canvas id="cYoY" style="max-height:280px"></canvas>
+  </div>
+  <div class="card">
+    <div style="font-size:13px;font-weight:800;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">&#9878; Comparativo A vs B</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+      <div>
+        <label style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;display:block;margin-bottom:3px">Cen&#225;rio A</label>
+        <select id="selCompA" onchange="renderComp()" style="width:100%;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text)"></select>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;display:block;margin-bottom:3px">Cen&#225;rio B</label>
+        <select id="selCompB" onchange="renderComp()" style="width:100%;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text)"></select>
+      </div>
+    </div>
+    <div id="compTable"></div>
+  </div>
+</div>
 </body>
 </html>
