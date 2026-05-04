@@ -600,7 +600,7 @@ function render(){
   const absD=totGMRfc-totGMRpl;
   document.getElementById("kGMRdeltaAbs").textContent=(absD>=0?"+":"")+fmt(absD)+" absoluto";
   mk("cTR",{type:"bar",data:{labels:trProds,datasets:[
-    {label:"Forecast 4+8",data:trDsFc,backgroundColor:"rgba(249,115,22,.8)",borderRadius:4},
+    {label:"Forecast 4+8 VF",data:trDsFc,backgroundColor:"rgba(124,58,237,.8)",borderRadius:4},
     {label:"Plano",data:trDsPl,backgroundColor:"rgba(22,163,74,.6)",borderRadius:4}
   ]},options:{responsive:true,plugins:{legend:{position:"top"},
     tooltip:{callbacks:{afterBody:function(items){
@@ -615,7 +615,7 @@ function render(){
   const gmrFc=trMops.map(m=>fcTR[m]?.gmr||0);
   const gmrPl=trMops.map(m=>plTRmopMap[m]?.gmr||0);
   mk("cTRmop",{type:"bar",data:{labels:trMops,datasets:[
-    {label:"Forecast 4+8",data:gmrFc,backgroundColor:trMops.map(m=>mopColors2[m]||"#999"),borderRadius:4},
+    {label:"Forecast 4+8 VF",data:gmrFc,backgroundColor:trMops.map(m=>mopColors2[m]||"#999"),borderRadius:4},
     {label:"Plano",data:gmrPl,backgroundColor:trMops.map(m=>(mopColors2[m]||"#999").replace(".8","0.4")),borderRadius:4}
   ]},options:{responsive:true,plugins:{legend:{position:"top"},datalabels:{anchor:"end",align:"end",color:"#555",font:{size:9},formatter:v=>fmt(v)}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>fmt(v)},grid:{color:"rgba(0,0,0,.06)"}}}}})
 
