@@ -1163,7 +1163,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <!-- BU -->
     <div>
       <label>BU</label>
-      <select id="grafgenBUSel" onchange="grafgenBU=this.value;renderGrafgenTab()"
+      <select id="grafgenBUSel" onchange="grafgenBU=this.value;rebuildGrafgenPnlTree();renderGrafgenTab()"
         style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:150px"></select>
     </div>
     <!-- From -->
@@ -1203,6 +1203,20 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <button class="btn-hdr on" data-t="line" onclick="setGrafgenType(this)">Linha</button>
         <button class="btn-hdr"    data-t="bar"  onclick="setGrafgenType(this)">Barra</button>
       </div>
+    </div>
+    <!-- Data label font size -->
+    <div>
+      <label>Rótulos</label>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="btn-hdr" onclick="setGrafgenDlSize(-1)" title="Diminuir fonte dos rótulos">A−</button>
+        <span id="grafgenDlSizeLbl" style="font-size:11px;color:var(--muted);min-width:18px;text-align:center">8</span>
+        <button class="btn-hdr" onclick="setGrafgenDlSize(+1)" title="Aumentar fonte dos rótulos">A+</button>
+      </div>
+    </div>
+    <!-- Invert Y axis -->
+    <div>
+      <label>Eixo Y</label>
+      <button id="grafgenInvertBtn" class="btn-hdr" onclick="toggleGrafgenInvert()" title="Inverter eixo vertical — útil para ver gastos crescendo para cima">↕ Inverter</button>
     </div>
     <!-- Scenarios: click to toggle on/off; click type-icon to toggle line/bar per scenario -->
     <div>
@@ -7026,10 +7040,12 @@ let grafgenCens      = new Set(['Plan','Forecast']);
 let grafgenMetrics   = new Set(['__takerate__']);  // quick metric keys
 let grafgenPnlRows   = new Set();                  // 'row::MNG1::MNG2' keys
 let grafgenDisplay   = 'abs';
-let grafgenChartMode = 'line';   // 'line' | 'bar'
-let grafgenCenStyle  = {};       // per-scenario override: { 'Forecast':'bar' }
-let _grafgenChart    = null;
-let _grafgenPnlOpen  = false;
+let grafgenChartMode  = 'line';   // 'line' | 'bar'
+let grafgenCenStyle   = {};       // per-scenario override: { 'Forecast':'bar' }
+let grafgenDlFontSize = 8;        // data label font size (px)
+let grafgenInvertY    = false;    // invert Y axis
+let _grafgenChart     = null;
+let _grafgenPnlOpen   = false;
 
 // ── Metric definition resolver ──────────────────────────────
 function _ggMetricDef(key) {
@@ -7049,26 +7065,28 @@ function _ggAllMetrics() {
 }
 
 // Returns value or null (null = no data rows matched)
+// buKey '__ALL__' means no BU filter (all products)
 function _grafgenGetVal(buKey, m, cen, def) {
-  const buses = KN_BU_MAP[buKey] || [buKey];
+  const buses = buKey === '__ALL__' ? null : (KN_BU_MAP[buKey] || [buKey]);
+  const inBU  = d => !buses || buses.includes(d.Product);
   if(def.tpv) {
     let s=null;
     for(const d of allData)
-      if(d.MES===m&&d.Cenario===cen&&buses.includes(d.Product)&&d.MNG_1==='Metrics'&&d.MNG_2==='TPV')
+      if(d.MES===m&&d.Cenario===cen&&inBU(d)&&d.MNG_1==='Metrics'&&d.MNG_2==='TPV')
         s=(s||0)+(d.Value||0);
     return s;
   }
   if(def.nmv) {
     let s=null;
     for(const d of allData)
-      if(d.MES===m&&d.Cenario===cen&&buses.includes(d.Product)&&d.MNG_1==='Metrics'&&d.MNG_2==='NMV')
+      if(d.MES===m&&d.Cenario===cen&&inBU(d)&&d.MNG_1==='Metrics'&&d.MNG_2==='NMV')
         s=(s||0)+(d.Value||0);
     return s;
   }
   if(def.takerate) {
     let s=null;
     for(const d of allData) {
-      if(d.MES!==m||d.Cenario!==cen||!buses.includes(d.Product)) continue;
+      if(d.MES!==m||d.Cenario!==cen||!inBU(d)) continue;
       if(d.MNG_1==='Product Monetization'||d.MNG_1==='Net Monetization') s=(s||0)+(d.Value||0);
       if(d.MNG_1==='Variable Contribution'&&d.MNG_2==='Collection Fees') s=(s||0)+(d.Value||0);
     }
@@ -7077,7 +7095,7 @@ function _grafgenGetVal(buKey, m, cen, def) {
   if(def.rowMng1) {
     let s=null;
     for(const d of allData) {
-      if(d.MES!==m||d.Cenario!==cen||!buses.includes(d.Product)) continue;
+      if(d.MES!==m||d.Cenario!==cen||!inBU(d)) continue;
       if(d.MNG_1===def.rowMng1&&(def.rowMng2===null||d.MNG_2===def.rowMng2)) s=(s||0)+(d.Value||0);
     }
     return s;
@@ -7085,7 +7103,7 @@ function _grafgenGetVal(buKey, m, cen, def) {
   const sections = knCumSections(def.key);
   let s=null;
   for(const d of allData)
-    if(d.MES===m&&d.Cenario===cen&&buses.includes(d.Product)&&sections.has(d.MNG_1)) s=(s||0)+(d.Value||0);
+    if(d.MES===m&&d.Cenario===cen&&inBU(d)&&sections.has(d.MNG_1)) s=(s||0)+(d.Value||0);
   return s;
 }
 
@@ -7101,12 +7119,11 @@ function _ggBlended(buKey, m, cen, def) {
 }
 
 function _grafgenGetVol(buKey, m, cen) {
-  // volume metric: TPV for Acquiring-related, NMV for Commerce, else TPV
-  const buses = KN_BU_MAP[buKey] || [buKey];
+  const buses = buKey === '__ALL__' ? null : (KN_BU_MAP[buKey] || [buKey]);
   const volKey = (buKey==='Commerce') ? 'NMV' : 'TPV';
   let s=0;
   for(const d of allData)
-    if(d.MES===m && d.Cenario===cen && buses.includes(d.Product) && d.MNG_1==='Metrics' && d.MNG_2===volKey) s+=d.Value||0;
+    if(d.MES===m && d.Cenario===cen && (!buses||buses.includes(d.Product)) && d.MNG_1==='Metrics' && d.MNG_2===volKey) s+=d.Value||0;
   return s;
 }
 
@@ -7131,6 +7148,10 @@ function buildGrafgenBUSel() {
     if(a==='Acquiring') return 1; if(b==='Acquiring') return -1; return a.localeCompare(b,'pt-BR');
   });
   sel.innerHTML='';
+  // "All BUs" super-total option
+  const allBuOpt = document.createElement('option');
+  allBuOpt.value = '__ALL__'; allBuOpt.textContent = '★ Todas as BUs';
+  sel.appendChild(allBuOpt);
   const addGroup=(lbl,items)=>{
     const grp=document.createElement('optgroup'); grp.label=lbl;
     items.forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;grp.appendChild(o);});
@@ -7240,16 +7261,30 @@ function buildGrafgenMetricPills() {
 }
 
 // ── P&L granular tree ──────────────────────────────────────
+function rebuildGrafgenPnlTree() {
+  const panel = document.getElementById('grafgenPnlPanel');
+  if(panel) { delete panel.dataset.built; delete panel.dataset.buKey; panel.innerHTML=''; }
+  grafgenPnlRows.clear();
+  _grafgenUpdatePnlPills();
+  if(_grafgenPnlOpen) buildGrafgenPnlTree();
+}
+
 function buildGrafgenPnlTree() {
   const panel = document.getElementById('grafgenPnlPanel');
-  if(!panel || panel.dataset.built) return;
+  if(!panel) return;
+  // Only rebuild if BU changed or not yet built
+  if(panel.dataset.built && panel.dataset.buKey === grafgenBU) return;
   panel.dataset.built = '1';
+  panel.dataset.buKey = grafgenBU;
 
   const tree = new Map();
   const PNL_ORDER = ['Product Monetization','Net Monetization','Variable Contribution',
     'Direct Contribution','Business Contribution','Business Margin','EBIT'];
+  // Filter data by currently selected BU so only relevant rows appear
+  const buses = grafgenBU === '__ALL__' ? null : (KN_BU_MAP[grafgenBU] || [grafgenBU]);
   for(const d of allData) {
     if(!d.MNG_1||!d.MNG_2||d.MNG_1==='Metrics') continue;
+    if(buses && !buses.includes(d.Product)) continue;
     if(!tree.has(d.MNG_1)) tree.set(d.MNG_1, []);
     const arr = tree.get(d.MNG_1);
     if(!arr.includes(d.MNG_2)) arr.push(d.MNG_2);
@@ -7335,6 +7370,18 @@ function setGrafgenType(btn) {
     const cen = tb.dataset.cen;
     if(!grafgenCenStyle[cen]) tb.textContent = grafgenChartMode === 'bar' ? '▮' : '━';
   });
+  renderGrafgenTab();
+}
+function setGrafgenDlSize(delta) {
+  grafgenDlFontSize = Math.max(6, Math.min(18, grafgenDlFontSize + delta));
+  const lbl = document.getElementById('grafgenDlSizeLbl');
+  if(lbl) lbl.textContent = grafgenDlFontSize;
+  renderGrafgenTab();
+}
+function toggleGrafgenInvert() {
+  grafgenInvertY = !grafgenInvertY;
+  const btn = document.getElementById('grafgenInvertBtn');
+  if(btn) btn.classList.toggle('on', grafgenInvertY);
   renderGrafgenTab();
 }
 
@@ -7531,6 +7578,7 @@ function renderGrafgenTab() {
     y:{
       display: true,
       position:'left',
+      reverse: grafgenInvertY,
       grid:{ color:'rgba(0,0,0,.06)' },
       ticks:{ display:false },  // hide tick labels — data labels carry the values
       border:{ display:false },
@@ -7540,6 +7588,7 @@ function renderGrafgenTab() {
     scales.y1 = {
       display: tpvAxis || isAbsPct,
       position:'right',
+      reverse: grafgenInvertY,
       grid:{ drawOnChartArea:false },
       ticks:{ display:false },
       border:{ display:false },
@@ -7555,13 +7604,13 @@ function renderGrafgenTab() {
     },
     formatter: (v, ctx) => {
       if(v === null) return null;
-      if(ctx.dataset._isPct) return (v>=0?'+':'')+v.toFixed(1)+'%';
+      if(ctx.dataset._isPct) return (v>=0?'+':'')+v.toFixed(2)+'%';
       const isTpv = ctx.dataset._metricKey==='__tpv__'||ctx.dataset._metricKey==='__nmv__';
-      if(isPct) return (v>=0?'+':'')+v.toFixed(1)+'%';
+      if(isPct) return (v>=0?'+':'')+v.toFixed(2)+'%';
       return isTpv ? v.toLocaleString('pt-BR',{maximumFractionDigits:0})
                    : v.toFixed(1);
     },
-    font:{ size:8, weight:'600' },
+    font:{ size: grafgenDlFontSize, weight:'600' },
     color: ctx => ctx.dataset.borderColor||ctx.dataset.backgroundColor||'#555',
     anchor: ctx => ctx.dataset.type==='bar' ? 'end'  : 'end',
     align:  ctx => ctx.dataset.type==='bar' ? 'top'  : 'top',
