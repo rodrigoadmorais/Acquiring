@@ -156,6 +156,14 @@
                         <input type="radio" name="comp-type" value="YEAR" onchange="handleTypeChange()" class="peer sr-only">
                         <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Anos (Fechado)</div>
                     </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="comp-type" value="QTR" onchange="handleTypeChange()" class="peer sr-only">
+                        <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Quarter</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="comp-type" value="HALF" onchange="handleTypeChange()" class="peer sr-only">
+                        <div class="px-4 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Semestre</div>
+                    </label>
                 </div>
             </div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-center bg-white">
@@ -286,6 +294,14 @@
                             <label class="cursor-pointer">
                                 <input type="radio" name="pl-comp-type" value="YEAR" onchange="handlePLTypeChange()" class="peer sr-only">
                                 <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">FY</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="pl-comp-type" value="QTR" onchange="handlePLTypeChange()" class="peer sr-only">
+                                <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Quarter</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="pl-comp-type" value="HALF" onchange="handlePLTypeChange()" class="peer sr-only">
+                                <div class="px-3 py-1.5 text-xs font-bold text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">Semestre</div>
                             </label>
                         </div>
                         <div class="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
@@ -874,6 +890,8 @@
         const URL_STOCK = "data/stock.json";
 
         const PT_MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const QTR_MONTHS = { Q1:[1,2,3], Q2:[4,5,6], Q3:[7,8,9], Q4:[10,11,12] };
+        const HALF_MONTHS = { H1:[1,2,3,4,5,6], H2:[7,8,9,10,11,12] };
         const EN_TO_NUM = { "Jan":"01", "Feb":"02", "Mar":"03", "Apr":"04", "May":"05", "Jun":"06", "Jul":"07", "Aug":"08", "Sep":"09", "Oct":"10", "Nov":"11", "Dec":"12" };
         const BR_MONTH_MAP = { "jan": "01", "fev": "02", "mar": "03", "abr": "04", "mai": "05", "jun": "06", "jul": "07", "ago": "08", "set": "09", "out": "10", "nov": "11", "dez": "12" };
 
@@ -1242,6 +1260,7 @@
                 monthA.style.display = 'block';
                 monthB.style.display = 'none';
             } else {
+                // MONTH, QTR, HALF: show both independently
                 monthA.style.display = 'block';
                 monthB.style.display = 'block';
             }
@@ -1288,11 +1307,20 @@
                 }
             }
 
-            handleScenarioChange('a', false); 
+            handleScenarioChange('a', false);
             handleScenarioChange('b', false);
 
-            // Default for Month: Always start at '01' (January) for both selectors
-            if (compType !== 'YEAR') {
+            // Override month selectors for QTR/HALF with period-specific options
+            if (compType === 'QTR') {
+                const qOpts = ['Q1','Q2','Q3','Q4'].map(q => `<option value="${q}">${q}</option>`).join('');
+                monthA.innerHTML = qOpts; monthB.innerHTML = qOpts;
+                monthA.value = 'Q1'; monthB.value = 'Q1';
+            } else if (compType === 'HALF') {
+                const hOpts = ['H1','H2'].map(h => `<option value="${h}">${h}</option>`).join('');
+                monthA.innerHTML = hOpts; monthB.innerHTML = hOpts;
+                monthA.value = 'H1'; monthB.value = 'H1';
+            } else if (compType !== 'YEAR') {
+                // Default for Month: Always start at '01' (January) for both selectors
                 if (Array.from(monthA.options).some(o => o.value === '01')) { monthA.value = '01'; }
                 if (Array.from(monthB.options).some(o => o.value === '01')) { monthB.value = '01'; }
             }
@@ -1303,14 +1331,18 @@
         function handleScenarioChange(side, runProcess = true) {
             const scSelect = document.getElementById(`scenario-${side}`);
             const moSelect = document.getElementById(`month-${side}`);
-            const scenario = scenarioList.find(s => s.id === scSelect.value);
-            if (scenario) {
-                let prevVal = moSelect.value;
-                moSelect.innerHTML = scenario.months.map(m => `<option value="${m}">${m} - ${PT_MONTHS[parseInt(m)-1].substring(0,3)}</option>`).join('');
-                if (Array.from(moSelect.options).some(o => o.value === prevVal)) {
-                    moSelect.value = prevVal;
-                } else if (scenario.months.length > 0) {
-                    moSelect.value = scenario.months[scenario.months.length - 1];
+            const compType = document.querySelector('input[name="comp-type"]:checked').value;
+            // Don't repopulate month selects for QTR/HALF (they have fixed period options)
+            if (compType !== 'QTR' && compType !== 'HALF') {
+                const scenario = scenarioList.find(s => s.id === scSelect.value);
+                if (scenario) {
+                    let prevVal = moSelect.value;
+                    moSelect.innerHTML = scenario.months.map(m => `<option value="${m}">${m} - ${PT_MONTHS[parseInt(m)-1].substring(0,3)}</option>`).join('');
+                    if (Array.from(moSelect.options).some(o => o.value === prevVal)) {
+                        moSelect.value = prevVal;
+                    } else if (scenario.months.length > 0) {
+                        moSelect.value = scenario.months[scenario.months.length - 1];
+                    }
                 }
             }
             if (runProcess) processDashboard();
@@ -1401,6 +1433,28 @@
                         if(k.startsWith(y)) {
                             const km = parseInt(k.substring(4,6), 10);
                             if(km >= targetM) rowSum += parseNum(row[k]);
+                        }
+                    });
+                } else if (periodType === 'QTR') {
+                    // periodValue = "2026Q1" → year "2026", key "Q1"
+                    const y = periodValue.substring(0,4);
+                    const qKey = periodValue.substring(4);
+                    const qRange = QTR_MONTHS[qKey] || [1,2,3];
+                    Object.keys(row).forEach(k => {
+                        if(k.startsWith(y)) {
+                            const km = parseInt(k.substring(4,6), 10);
+                            if(km >= qRange[0] && km <= qRange[qRange.length-1]) rowSum += parseNum(row[k]);
+                        }
+                    });
+                } else if (periodType === 'HALF') {
+                    // periodValue = "2026H1" → year "2026", key "H1"
+                    const y = periodValue.substring(0,4);
+                    const hKey = periodValue.substring(4);
+                    const hRange = HALF_MONTHS[hKey] || [1,2,3,4,5,6];
+                    Object.keys(row).forEach(k => {
+                        if(k.startsWith(y)) {
+                            const km = parseInt(k.substring(4,6), 10);
+                            if(km >= hRange[0] && km <= hRange[hRange.length-1]) rowSum += parseNum(row[k]);
                         }
                     });
                 }
@@ -1511,6 +1565,7 @@
             if (compType === 'YTD') labelPrefix = 'YTD até Mês ';
             if (compType === 'YTG') labelPrefix = 'YTG a partir do Mês ';
             if (compType === 'MONTH') labelPrefix = 'Mês ';
+            // QTR and HALF are self-descriptive (e.g. "Q1", "H1") — no prefix needed
 
             const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${labelPrefix}${moA_val})`;
             const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${labelPrefix}${moB_val})`;
@@ -1535,6 +1590,14 @@
             } else if (compType === 'YTG') {
                 aiStrB = `${pB} Restante (YTG) de ${PT_MONTHS[parseInt(moB_val)-1]} a Dezembro de ${yearB}`;
                 aiStrA = `${pA} Restante (YTG) de ${PT_MONTHS[parseInt(moA_val)-1]} a Dezembro de ${yearA}`;
+            } else if (compType === 'QTR') {
+                aiStrB = `${pB} ${moB_val} de ${yearB}`;
+                aiStrA = `${pA} ${moA_val} de ${yearA}`;
+            } else if (compType === 'HALF') {
+                const hLabelA = moA_val === 'H1' ? '1º Semestre' : '2º Semestre';
+                const hLabelB = moB_val === 'H1' ? '1º Semestre' : '2º Semestre';
+                aiStrB = `${pB} ${hLabelB} de ${yearB}`;
+                aiStrA = `${pA} ${hLabelA} de ${yearA}`;
             } else {
                 aiStrB = `${pB} de ${PT_MONTHS[parseInt(moB_val)-1]} de ${yearB}`;
                 aiStrA = `${pA} de ${PT_MONTHS[parseInt(moA_val)-1]} de ${yearA}`;
@@ -1723,12 +1786,32 @@
                     { label: nameB, data: cleanB, borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
                 ];
             } else if (compType === 'YTG') {
-                const startM = parseInt(moA); 
-                labels = Array.from({length: 12 - startM + 1}, (_, i) => PT_MONTHS[startM - 1 + i].substring(0,3)); 
+                const startM = parseInt(moA);
+                labels = Array.from({length: 12 - startM + 1}, (_, i) => PT_MONTHS[startM - 1 + i].substring(0,3));
 
                 const cleanA = labels.map((_, i) => extractValue(typeA, `MONTH|${yearA}${String(startM+i).padStart(2,'0')}`, filterCanal, filterDevice).total);
                 const cleanB = labels.map((_, i) => extractValue(typeB, `MONTH|${yearB}${String(startM+i).padStart(2,'0')}`, filterCanal, filterDevice).total);
 
+                datasets = [
+                    { label: nameA, data: cleanA, borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
+                    { label: nameB, data: cleanB, borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
+                ];
+            } else if (compType === 'QTR') {
+                // moA is a quarter key like "Q1"
+                const qMonths = QTR_MONTHS[moA] || [1,2,3];
+                labels = qMonths.map(m => PT_MONTHS[m-1].substring(0,3));
+                const cleanA = qMonths.map(m => extractValue(typeA, `MONTH|${yearA}${String(m).padStart(2,'0')}`, filterCanal, filterDevice).total);
+                const cleanB = qMonths.map(m => extractValue(typeB, `MONTH|${yearB}${String(m).padStart(2,'0')}`, filterCanal, filterDevice).total);
+                datasets = [
+                    { label: nameA, data: cleanA, borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
+                    { label: nameB, data: cleanB, borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
+                ];
+            } else if (compType === 'HALF') {
+                // moA is a half key like "H1"
+                const hMonths = HALF_MONTHS[moA] || [1,2,3,4,5,6];
+                labels = hMonths.map(m => PT_MONTHS[m-1].substring(0,3));
+                const cleanA = hMonths.map(m => extractValue(typeA, `MONTH|${yearA}${String(m).padStart(2,'0')}`, filterCanal, filterDevice).total);
+                const cleanB = hMonths.map(m => extractValue(typeB, `MONTH|${yearB}${String(m).padStart(2,'0')}`, filterCanal, filterDevice).total);
                 datasets = [
                     { label: nameA, data: cleanA, borderColor: '#9CA3AF', backgroundColor: 'transparent', fill: false, tension: 0.3, borderWidth: 3, borderDash: [5, 5], pointRadius: 4, pointBackgroundColor: '#fff' },
                     { label: nameB, data: cleanB, borderColor: getBaseColor(typeB, true), backgroundColor: getBaseBgColor(typeB), fill: true, tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#fff' }
@@ -2377,6 +2460,14 @@
             } else if (periodType === 'YTG') {
                 const cut = parseInt(periodValue.substring(4, 6));
                 months = months.filter(m => parseInt(m) >= cut);
+            } else if (periodType === 'QTR') {
+                const qKey = periodValue.substring(4); // "Q1"
+                const qRange = QTR_MONTHS[qKey] || [1,2,3];
+                months = months.filter(m => parseInt(m) >= qRange[0] && parseInt(m) <= qRange[qRange.length-1]);
+            } else if (periodType === 'HALF') {
+                const hKey = periodValue.substring(4); // "H1"
+                const hRange = HALF_MONTHS[hKey] || [1,2,3,4,5,6];
+                months = months.filter(m => parseInt(m) >= hRange[0] && parseInt(m) <= hRange[hRange.length-1]);
             }
 
             let result = null;
@@ -3014,12 +3105,16 @@
         function handlePLScenarioChange(side, runRender = true) {
             const scSel = document.getElementById(`pl-scenario-${side}`);
             const moSel = document.getElementById(`pl-month-${side}`);
-            const scenario = scenarioList.find(s => s.id === scSel.value);
-            if (scenario) {
-                let prevVal = moSel.value;
-                moSel.innerHTML = scenario.months.map(m => `<option value="${m}">${m} - ${PT_MONTHS[parseInt(m)-1].substring(0,3)}</option>`).join('');
-                if (Array.from(moSel.options).some(o => o.value === prevVal)) moSel.value = prevVal;
-                else if (scenario.months.length > 0) moSel.value = scenario.months[scenario.months.length - 1];
+            const plCompType = document.querySelector('input[name="pl-comp-type"]:checked').value;
+            // Don't repopulate month selects for QTR/HALF (they have fixed period options)
+            if (plCompType !== 'QTR' && plCompType !== 'HALF') {
+                const scenario = scenarioList.find(s => s.id === scSel.value);
+                if (scenario) {
+                    let prevVal = moSel.value;
+                    moSel.innerHTML = scenario.months.map(m => `<option value="${m}">${m} - ${PT_MONTHS[parseInt(m)-1].substring(0,3)}</option>`).join('');
+                    if (Array.from(moSel.options).some(o => o.value === prevVal)) moSel.value = prevVal;
+                    else if (scenario.months.length > 0) moSel.value = scenario.months[scenario.months.length - 1];
+                }
             }
             if (runRender) renderPLTab();
         }
@@ -3033,7 +3128,18 @@
             } else if (compType === 'YTD' || compType === 'YTG') {
                 moA.style.display = 'block'; moB.style.display = 'none';
             } else {
+                // MONTH, QTR, HALF: show both
                 moA.style.display = 'block'; moB.style.display = 'block';
+            }
+            // Override selects for QTR/HALF
+            if (compType === 'QTR') {
+                const qOpts = ['Q1','Q2','Q3','Q4'].map(q => `<option value="${q}">${q}</option>`).join('');
+                moA.innerHTML = qOpts; moB.innerHTML = qOpts;
+                moA.value = 'Q1'; moB.value = 'Q1';
+            } else if (compType === 'HALF') {
+                const hOpts = ['H1','H2'].map(h => `<option value="${h}">${h}</option>`).join('');
+                moA.innerHTML = hOpts; moB.innerHTML = hOpts;
+                moA.value = 'H1'; moB.value = 'H1';
             }
             renderPLTab();
         }
@@ -3058,6 +3164,7 @@
             if (compType === 'YTD') labelPrefix = 'YTD até Mês ';
             if (compType === 'YTG') labelPrefix = 'YTG a partir de ';
             if (compType === 'MONTH') labelPrefix = 'Mês ';
+            // QTR and HALF are self-descriptive — no prefix needed
 
             const nameA = compType === 'YEAR' ? scA.options[scA.selectedIndex].text : `${scA.options[scA.selectedIndex].text} (${labelPrefix}${moA_val})`;
             const nameB = compType === 'YEAR' ? scB.options[scB.selectedIndex].text : `${scB.options[scB.selectedIndex].text} (${labelPrefix}${moB_val})`;
@@ -3470,6 +3577,16 @@
                 tlLabels=Array.from({length:12-sm+1},(_,i)=>PT_MONTHS[sm-1+i].substring(0,3));
                 tlA=tlLabels.map((_,i)=>getPLMonthVal(typeA,yearA,sm+i));
                 tlB=tlLabels.map((_,i)=>getPLMonthVal(typeB,yearB,sm+i));
+            } else if (compType==='QTR') {
+                const qMonths = QTR_MONTHS[moA] || [1,2,3];
+                tlLabels = qMonths.map(m => PT_MONTHS[m-1].substring(0,3));
+                tlA = qMonths.map(m => getPLMonthVal(typeA,yearA,m));
+                tlB = qMonths.map(m => getPLMonthVal(typeB,yearB,m));
+            } else if (compType==='HALF') {
+                const hMonths = HALF_MONTHS[moA] || [1,2,3,4,5,6];
+                tlLabels = hMonths.map(m => PT_MONTHS[m-1].substring(0,3));
+                tlA = hMonths.map(m => getPLMonthVal(typeA,yearA,m));
+                tlB = hMonths.map(m => getPLMonthVal(typeB,yearB,m));
             } else {
                 tlLabels=[nameA,nameB];
                 const vA=getMetricTotal(plA); const vB=getMetricTotal(plB);
