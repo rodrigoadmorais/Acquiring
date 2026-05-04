@@ -3805,19 +3805,19 @@ const EFIC_GROUPS = [
     { label:'FDV 3o',              mng2:'FDV 3o' },
   ]},
   { key:'aloc_dir', label:'Alocação Direta', items: [
-    { label:'PD Directo Corp',    mng2:'PD Directo Corp' },
-    { label:'PD Directo Local',   mng2:'PD Directo Local' },
-    { label:'G&A Directo Local',  mng2:'G&A Directo Local' },
-    { label:'S&M Directo Corp',   mng2:'S&M Directo Corp' },
-    { label:'G&A Directo Corp',   mng2:'G&A Directo Corp' },
+    { label:'PD Directo Corp',    mng4:'PD Directo Corp' },
+    { label:'PD Directo Local',   mng4:'PD Directo Local' },
+    { label:'G&A Directo Local',  mng4:'G&A Directo Local' },
+    { label:'S&M Directo Corp',   mng4:'S&M Directo Corp' },
+    { label:'G&A Directo Corp',   mng4:'G&A Directo Corp' },
   ]},
   { key:'aloc_ind', label:'Alocação Indireta', items: [
-    { label:'PD Corp Indirecto',    mng2:'PD Corp Indirecto' },
-    { label:'PD Local Indirecto',   mng2:'PD Local Indirecto' },
-    { label:'G&A Corp Indirecto',   mng2:'G&A Corp Indirecto' },
-    { label:'G&A Local Indirecto',  mng2:'G&A Local Indirecto' },
-    { label:'S&M Local Indirecto',  mng2:'S&M Local Indirecto' },
-    { label:'S&M Corp Indirecto',   mng2:'S&M Corp Indirecto' },
+    { label:'PD Corp Indirecto',    mng4:'PD Corp Indirecto' },
+    { label:'PD Local Indirecto',   mng4:'PD Local Indirecto' },
+    { label:'G&A Corp Indirecto',   mng4:'G&A Corp Indirecto' },
+    { label:'G&A Local Indirecto',  mng4:'G&A Local Indirecto' },
+    { label:'S&M Local Indirecto',  mng4:'S&M Local Indirecto' },
+    { label:'S&M Corp Indirecto',   mng4:'S&M Corp Indirecto' },
   ]},
 ];
 
@@ -3898,16 +3898,22 @@ function renderEficTab() {
   const ud    = eficUnitDiv;
   const udLbl = ud===1 ? 'R$' : ud===1000 ? 'R$ mil' : 'R$ M';
 
-  // Sum for an item — mng2 can be a string or array of strings (all summed together)
+  // Sum for an item — supports matching by MNG_2 (default) or MNG_4 (when item.mng4 set)
+  // mng2/mng4 can be a string or array of strings (all summed together)
   const sumItem = (item, ano, cen) => {
-    const mng2names = Array.isArray(item.mng2) ? item.mng2 : [item.mng2 || item.label];
+    const useMng4  = !!item.mng4;
+    const names    = useMng4
+      ? (Array.isArray(item.mng4) ? item.mng4 : [item.mng4])
+      : (Array.isArray(item.mng2) ? item.mng2 : [item.mng2 || item.label]);
     const mng1f = item.mng1 || null;
+    const mng3f = item.mng3 || null;
     let s = null;
     for(const d of allData) {
       if(!inBU(d)) continue;
       if(d.ANO !== ano || d.Cenario !== cen) continue;
-      if(!mng2names.includes(d.MNG_2)) continue;
+      if(useMng4  ? !names.includes(d.MNG_4) : !names.includes(d.MNG_2)) continue;
       if(mng1f && d.MNG_1 !== mng1f) continue;
+      if(mng3f && d.MNG_3 !== mng3f) continue;
       s = (s||0) + (d.Value||0);
     }
     return s;
