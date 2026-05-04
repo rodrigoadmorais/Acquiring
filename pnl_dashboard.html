@@ -427,6 +427,31 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-table.kn-hide-adj-ytd th.kn-grp-ytdadj,
 .kn-table.kn-hide-adj-ytd th.kn-sub-ytdadj,
 .kn-table.kn-hide-adj-ytd td.kn-adj-ytd{display:none}
+/* ── Proj. Eficiências tab ── */
+.efic-panel{flex:1 1 0;min-height:0;overflow-y:auto;background:var(--bg)}
+.efic-wrap{padding:20px 24px 32px;overflow-x:auto}
+.efic-tbl{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
+.efic-tbl thead th{
+  background:var(--meli-blue);color:#fff;padding:8px 14px;
+  text-align:right;font-weight:700;font-size:11px;letter-spacing:.3px;
+  border:1px solid rgba(255,255,255,.12);white-space:nowrap}
+.efic-tbl thead th:first-child{text-align:left;min-width:240px;position:sticky;left:0;z-index:2}
+.efic-tbl td{padding:5px 14px;border-bottom:1px solid var(--border);
+  text-align:right;white-space:nowrap;transition:background .1s}
+.efic-tbl td:first-child{text-align:left;font-size:12px}
+.efic-grp>td{background:var(--l1bg)!important;font-weight:700;font-size:12px;
+  border-top:2px solid var(--border-strong)}
+.efic-grp>td:first-child{cursor:pointer;user-select:none}
+.efic-grp>td:first-child::before{content:'▾ ';font-size:10px;color:var(--muted)}
+.efic-grp.collapsed>td:first-child::before{content:'▸ ';font-size:10px;color:var(--muted)}
+.efic-det>td{background:var(--l3bg)}
+.efic-det>td:first-child{padding-left:28px;color:var(--text-2);font-size:11.5px}
+.efic-ttl>td{background:var(--meli-blue);color:#fff;font-weight:800;font-size:12.5px;
+  border-top:2px solid rgba(255,255,255,.3)}
+.efic-ttl>td:first-child{position:sticky;left:0}
+.efic-tbl .vpos{color:var(--green);font-weight:700}
+.efic-tbl .vneg{color:var(--red);font-weight:700}
+.efic-tbl .vnull{color:var(--muted-2)}
 /* ── Evolutivos tab ── */
 .evo-panel{flex:1 1 0;min-height:0;overflow-y:auto;padding:0 24px 32px;background:var(--bg)}
 .evo-filter-bar{background:var(--card);border-bottom:1px solid var(--border);
@@ -839,7 +864,8 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <button class="tab-btn" data-tab="grafgen" onclick="switchTab(this)">Graphic Generator</button>
   <button class="tab-btn" data-tab="keynums" onclick="switchTab(this)">Key-numbers</button>
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">MPOS</button>
-  <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
+  <button class="tab-btn" data-tab="cpa"  onclick="switchTab(this)">CPA</button>
+  <button class="tab-btn" data-tab="efic" onclick="switchTab(this)">Proj. Eficiências</button>
   <button id="exportXlsxBtn" onclick="exportXlsx(currentTab)"
     title="Exportar dados da aba atual em Excel (.xlsx)"
     style="margin-left:auto;padding:4px 12px;border-radius:6px;border:1.5px solid #00A650;
@@ -1681,6 +1707,68 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       </div>
       <div id="knOneoffList" class="kn-oneoff-list"></div>
     </div>
+  </div>
+</div>
+
+<!-- ── Proj. Eficiências Panel ── -->
+<div id="eficPanel" class="efic-panel" style="display:none">
+  <div class="evo-filter-bar" id="eficFilterBar" style="padding:10px 24px;gap:16px">
+    <!-- BU -->
+    <div>
+      <label>BU</label>
+      <select id="eficBUSel" onchange="eficBU=this.value;renderEficTab()"
+        style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+               background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:150px"></select>
+    </div>
+    <!-- Unidade -->
+    <div>
+      <label>Unidade</label>
+      <div style="display:flex;gap:4px">
+        <button class="btn-hdr" data-u="1"       onclick="setEficUnit(this)">R$</button>
+        <button class="btn-hdr" data-u="1000"    onclick="setEficUnit(this)">R$ mil</button>
+        <button class="btn-hdr on" data-u="1000000" onclick="setEficUnit(this)" id="eficUnitGrp_M">R$ M</button>
+      </div>
+    </div>
+    <!-- Coluna Base -->
+    <div>
+      <label>Base (Col. A)</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="eficAnoA" onchange="eficAnoA=+this.value;renderEficTab()"
+          style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+                 background:var(--card);color:var(--text);font-size:12px;cursor:pointer;width:80px"></select>
+        <select id="eficCenA" onchange="eficCenarioA=this.value;renderEficTab()"
+          style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+                 background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:110px"></select>
+      </div>
+    </div>
+    <!-- Coluna Comparativa -->
+    <div>
+      <label>Comparativo (Col. B)</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="eficAnoB" onchange="eficAnoB=+this.value;renderEficTab()"
+          style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+                 background:var(--card);color:var(--text);font-size:12px;cursor:pointer;width:80px"></select>
+        <select id="eficCenB" onchange="eficCenarioB=this.value;renderEficTab()"
+          style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+                 background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:110px"></select>
+      </div>
+    </div>
+    <!-- Sinal variação (toggle para itens de custo) -->
+    <div>
+      <label>Sinal Var.</label>
+      <button id="eficSignBtn" class="btn-hdr" onclick="toggleEficSign()"
+        title="Inverte a cor da variação — útil para linhas de custo onde redução é positivo">
+        Custo ↕
+      </button>
+    </div>
+  </div>
+  <div class="efic-wrap">
+    <table class="efic-tbl" id="eficTable">
+      <thead id="eficHead"></thead>
+      <tbody id="eficBody">
+        <tr><td colspan="5" style="padding:24px;color:var(--muted);text-align:center">⏳ Selecione a aba para carregar…</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -3607,6 +3695,7 @@ function _getTabFilterBar(tab) {
   if(tab === 'cpa')     return document.querySelector('#cpaPanel .cpa-filter-bar');
   if(tab === 'mpos')    return document.querySelector('#mposPanel .cpa-filter-bar');
   if(tab === 'keynums') return document.querySelector('#keyNumPanel .kn-filter-bar');
+  if(tab === 'efic')    return document.getElementById('eficFilterBar');
   return null;
 }
 
@@ -3631,6 +3720,7 @@ function switchTab(btn) {
   const isMbu     = currentTab === 'mbu';
   const isBridges = currentTab === 'bridges';
   const isGrafgen = currentTab === 'grafgen';
+  const isEfic    = currentTab === 'efic';
 
   // Apply per-tab filter bar visibility (respects per-tab collapsed state)
   // First hide the P&L global filterBar; each tab's own filter bar is inside its panel
@@ -3644,6 +3734,7 @@ function switchTab(btn) {
   document.getElementById('evoPanel').style.display     = isEvo     ? '' : 'none';
   document.getElementById('bridgesPanel').style.display = isBridges ? '' : 'none';
   document.getElementById('grafgenPanel').style.display = isGrafgen ? '' : 'none';
+  document.getElementById('eficPanel').style.display    = isEfic    ? '' : 'none';
 
   // Apply collapsed state for the newly active tab's filter bar
   const activeFilterBar = _getTabFilterBar(currentTab);
@@ -3661,6 +3752,233 @@ function switchTab(btn) {
   if(isMbu)     renderMbuTab();
   if(isBridges) renderBridgesTab();
   if(isGrafgen) renderGrafgenTab();
+  if(isEfic)    renderEficTab();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PROJ. EFICIÊNCIAS TAB
+// ═══════════════════════════════════════════════════════════
+
+let eficBU        = 'Acquiring';
+let eficUnitDiv   = 1_000_000;
+let eficAnoA      = 2024;
+let eficAnoB      = 2025;
+let eficCenarioA  = 'Realizado';
+let eficCenarioB  = 'Forecast';
+let eficSignInvert = false;   // true → invert var color (cost mode: reduction = green)
+let eficCollapsed = new Set();// group keys that are collapsed
+
+// ── Row structure (mirrors the Excel layout from the image) ──────
+const EFIC_GROUPS = [
+  { key:'var_neg', label:'Variáveis Negócio', items: [
+    { label:'Bad Debt',                       mng2:'Bad Debt' },
+    { label:'Funding & Financing',            mng2:'Funding & Financing' },
+    { label:'Collection Fees',                mng2:'Collection Fees' },
+    { label:'Sales Taxes',                    mng2:'Sales Taxes' },
+    { label:'Hosting',                        mng2:'Hosting Variável' },
+    { label:'Investimentos',                  mng2:'Investimentos' },
+    { label:'Servicios de Cobranzas Credits', mng2:'Servicios de Cobranzas Credits' },
+    { label:'Chargebacks',                    mng2:'Chargebacks' },
+    { label:'Fraud Prevention',               mng2:'Fraud Prevention' },
+    { label:'Promotions',                     mng2:'Promotions' },
+    { label:'CX',                             mng2:'CX' },
+    { label:'Telemetria',                     mng2:'Telemetria' },
+    { label:'Bandeiras',                      mng2:'Bandeiras' },
+    { label:'Money-In/Out',                   mng2:'Money-In/Out' },
+    { label:'Resellers & MGM',                mng2:'Resellers & MGM' },
+    { label:'Other CAC',                      mng2:'Other CAC' },
+    { label:'Others',                         mng2:'Others' },
+  ]},
+  { key:'fix_neg', label:'Fixos Negócios', items: [
+    { label:'Device Cost',         mng2:'Device Cost' },
+    { label:'FDV Propria',         mng2:'FDV Propria' },
+    { label:'Marketing Branding',  mng2:'Marketing Branding' },
+    { label:'S&M Local DC',        mng2:'S&M Local DC' },
+    { label:'Hosting',             mng2:'Hosting Fixo' },
+    { label:'Marketing Fixed',     mng2:'Marketing Fixed' },
+    { label:'Cards Issuing Costs', mng2:'Cards Issuing Costs' },
+    { label:'POM',                 mng2:'POM' },
+    { label:'Sales Expenses',      mng2:'Sales Expenses' },
+    { label:'Other Fixed Costs',   mng2:'Other Fixed Costs' },
+    { label:'FDV 3o',              mng2:'FDV 3o' },
+  ]},
+  { key:'aloc_dir', label:'Alocação Direta', items: [
+    { label:'PD Directo Corp',    mng2:'PD Directo Corp' },
+    { label:'PD Directo Local',   mng2:'PD Directo Local' },
+    { label:'G&A Directo Local',  mng2:'G&A Directo Local' },
+    { label:'S&M Directo Corp',   mng2:'S&M Directo Corp' },
+    { label:'G&A Directo Corp',   mng2:'G&A Directo Corp' },
+  ]},
+  { key:'aloc_ind', label:'Alocação Indireta', items: [
+    { label:'PD Corp Indirecto',    mng2:'PD Corp Indirecto' },
+    { label:'PD Local Indirecto',   mng2:'PD Local Indirecto' },
+    { label:'G&A Corp Indirecto',   mng2:'G&A Corp Indirecto' },
+    { label:'G&A Local Indirecto',  mng2:'G&A Local Indirecto' },
+    { label:'S&M Local Indirecto',  mng2:'S&M Local Indirecto' },
+    { label:'S&M Corp Indirecto',   mng2:'S&M Corp Indirecto' },
+  ]},
+];
+
+function buildEficBUSel() {
+  const sel = document.getElementById('eficBUSel');
+  if(!sel || sel.options.length || !allData || !allData.length) return;
+  const macroToProds = new Map();
+  for(const d of allData) {
+    if(!d.Macro_BU||!d.Product) continue;
+    if(!macroToProds.has(d.Macro_BU)) macroToProds.set(d.Macro_BU, new Set());
+    macroToProds.get(d.Macro_BU).add(d.Product);
+  }
+  for(const [macro,prods] of macroToProds) if(!KN_BU_MAP[macro]) KN_BU_MAP[macro]=[...prods];
+  const macroBUs = [...macroToProds.keys()].sort((a,b)=>{
+    if(a==='Acquiring')return -1;if(b==='Acquiring')return 1;return a.localeCompare(b,'pt-BR');
+  });
+  const knGrouped = Object.keys(KN_BU_MAP).filter(k=>!macroToProds.has(k)).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const allProds  = [...new Set(allData.map(d=>d.Product).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  sel.innerHTML = '';
+  const allOpt = document.createElement('option'); allOpt.value='__ALL__'; allOpt.textContent='★ Todas as BUs'; sel.appendChild(allOpt);
+  const addGrp=(lbl,items)=>{const g=document.createElement('optgroup');g.label=lbl;items.forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;g.appendChild(o);});sel.appendChild(g);};
+  addGrp('Macro BU',macroBUs);
+  if(knGrouped.length) addGrp('BU Agrupada',knGrouped);
+  addGrp('Produto',allProds);
+  sel.value = eficBU;
+}
+
+function buildEficYearCenSels() {
+  const years = [...new Set(allData.map(d=>d.ANO))].sort();
+  const cens  = [...new Set(allData.map(d=>d.Cenario))].filter(Boolean);
+  const CEN_ORDER = ['Realizado','Plan','Forecast','Actual Sin Distribuir'];
+  const censSorted = [...CEN_ORDER.filter(c=>cens.includes(c)), ...cens.filter(c=>!CEN_ORDER.includes(c))];
+
+  ['eficAnoA','eficAnoB'].forEach((id,i) => {
+    const sel = document.getElementById(id);
+    if(!sel || sel.options.length) return;
+    years.forEach(y=>{ const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o); });
+    sel.value = i===0 ? eficAnoA : eficAnoB;
+  });
+  ['eficCenA','eficCenB'].forEach((id,i) => {
+    const sel = document.getElementById(id);
+    if(!sel || sel.options.length) return;
+    censSorted.forEach(c=>{ const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o); });
+    sel.value = i===0 ? eficCenarioA : eficCenarioB;
+  });
+}
+
+function setEficUnit(btn) {
+  eficUnitDiv = parseFloat(btn.dataset.u);
+  document.querySelectorAll('#eficFilterBar [data-u]').forEach(b=>b.classList.toggle('on',b===btn));
+  renderEficTab();
+}
+
+function toggleEficSign() {
+  eficSignInvert = !eficSignInvert;
+  const btn = document.getElementById('eficSignBtn');
+  if(btn) btn.classList.toggle('on', eficSignInvert);
+  renderEficTab();
+}
+
+function toggleEficGroup(key) {
+  if(eficCollapsed.has(key)) eficCollapsed.delete(key); else eficCollapsed.add(key);
+  // Toggle visibility of detail rows for this group
+  document.querySelectorAll(`[data-efic-grp="${key}"]`).forEach(tr=>{
+    tr.style.display = eficCollapsed.has(key) ? 'none' : '';
+  });
+  const hdr = document.querySelector(`[data-efic-hdr="${key}"]`);
+  if(hdr) hdr.classList.toggle('collapsed', eficCollapsed.has(key));
+}
+
+function renderEficTab() {
+  if(!allData || !allData.length) return;
+  buildEficBUSel();
+  buildEficYearCenSels();
+
+  const buses = eficBU === '__ALL__' ? null : (KN_BU_MAP[eficBU] || [eficBU]);
+  const inBU  = d => !buses || buses.includes(d.Product);
+  const ud    = eficUnitDiv;
+  const udLbl = ud===1 ? 'R$' : ud===1000 ? 'R$ mil' : 'R$ M';
+
+  // Sum for an item (mng2 match, optional mng1 filter, year + scenario)
+  const sumItem = (mng2, mng1filter, ano, cen) => {
+    let s = null;
+    for(const d of allData) {
+      if(!inBU(d)) continue;
+      if(d.ANO !== ano || d.Cenario !== cen) continue;
+      if(d.MNG_2 !== mng2) continue;
+      if(mng1filter && d.MNG_1 !== mng1filter) continue;
+      s = (s||0) + (d.Value||0);
+    }
+    return s;
+  };
+
+  // Helpers
+  const fv = v => v === null ? `<td class="vnull">—</td>`
+    : `<td>${(v/ud).toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3})}</td>`;
+
+  const fvar = (a, b) => {
+    if(a === null || b === null) return '<td class="vnull">—</td><td class="vnull">—</td>';
+    const varAbs = b - a;
+    const varPct = a !== 0 ? (varAbs / Math.abs(a)) * 100 : null;
+    // Color: positive = green, negative = red; inverted when eficSignInvert (cost mode)
+    const isGood = eficSignInvert ? varAbs < 0 : varAbs > 0;
+    const isBad  = eficSignInvert ? varAbs > 0 : varAbs < 0;
+    const cls    = isGood ? 'vpos' : isBad ? 'vneg' : '';
+    const sign   = varAbs > 0 ? '+' : '';
+    const absStr = sign + (varAbs/ud).toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3});
+    const pctStr = varPct !== null
+      ? (varPct > 0 ? '+' : '') + varPct.toFixed(1) + '%'
+      : '—';
+    return `<td class="${cls}">${absStr}</td><td class="${cls}">${pctStr}</td>`;
+  };
+
+  // Build header
+  const cenLblA = `${eficAnoA} ${eficCenarioA}`;
+  const cenLblB = `${eficAnoB} ${eficCenarioB}`;
+  const thead = document.getElementById('eficHead');
+  if(thead) thead.innerHTML = `<tr>
+    <th>Linha P&L</th>
+    <th>${cenLblA} (${udLbl})</th>
+    <th>${cenLblB} (${udLbl})</th>
+    <th>Var Abs (${udLbl})</th>
+    <th>Var %</th>
+  </tr>`;
+
+  // Build body
+  let html = '';
+  let grandA = null, grandB = null;
+
+  for(const grp of EFIC_GROUPS) {
+    let grpA = null, grpB = null;
+    let detailHtml = '';
+
+    for(const item of grp.items) {
+      const mng2 = item.mng2 || item.label;
+      const mng1 = item.mng1 || null;
+      const vA   = sumItem(mng2, mng1, eficAnoA, eficCenarioA);
+      const vB   = sumItem(mng2, mng1, eficAnoB, eficCenarioB);
+      if(vA !== null) grpA = (grpA||0) + vA;
+      if(vB !== null) grpB = (grpB||0) + vB;
+      const hidden = eficCollapsed.has(grp.key) ? 'style="display:none"' : '';
+      detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
+        <td>${item.label}</td>${fv(vA)}${fv(vB)}${fvar(vA,vB)}
+      </tr>`;
+    }
+
+    if(grpA !== null) grandA = (grandA||0) + grpA;
+    if(grpB !== null) grandB = (grandB||0) + grpB;
+    const collCls = eficCollapsed.has(grp.key) ? ' collapsed' : '';
+    html += `<tr class="efic-grp${collCls}" data-efic-hdr="${grp.key}"
+        onclick="toggleEficGroup('${grp.key}')">
+      <td>${grp.label}</td>${fv(grpA)}${fv(grpB)}${fvar(grpA,grpB)}
+    </tr>`;
+    html += detailHtml;
+  }
+
+  // Grand Total
+  html += `<tr class="efic-ttl">
+    <td>Grand Total</td>${fv(grandA)}${fv(grandB)}${fvar(grandA,grandB)}
+  </tr>`;
+
+  const tbody = document.getElementById('eficBody');
+  if(tbody) tbody.innerHTML = html;
 }
 
 // ── Excel export ────────────────────────────────────────────────
@@ -3713,6 +4031,15 @@ function exportXlsx(tabId) {
     case 'mpos':
       rows = allData.filter(d => inBU(d, buBuses(mposMacroBU)));
       break;
+    case 'efic': {
+      const buses = buBuses(eficBU);
+      rows = allData.filter(d =>
+        inBU(d, buses) &&
+        ((d.ANO === eficAnoA && d.Cenario === eficCenarioA) ||
+         (d.ANO === eficAnoB && d.Cenario === eficCenarioB))
+      );
+      break;
+    }
     case 'keynums':
     default:
       rows = allData.slice();
