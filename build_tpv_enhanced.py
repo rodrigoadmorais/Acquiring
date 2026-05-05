@@ -1,12 +1,11 @@
 """
 Builds tpv_enhanced.json with full dimension breakdowns:
   actual   → Jan-Apr 2026 (actual_raw.tsv)
-  f48      → May-Dec 2026 forecast (tpv_combinado.tsv FORECAST 4+8)
-             Jan-Apr 2026 actuals reused from actual_raw.tsv
-  f39      → Apr-Dec 2026 forecast (forecast_39_raw.tsv)
+  f39      → Apr-Dec 2026 forecast (unified_scenarios_raw.tsv FORECAST 3+9)
              Jan-Mar 2026 actuals reused from actual_raw.tsv
-  plano    → Jan-Dec 2026 product/canal/carteira (plano_raw.tsv)
-             MOP from plano_mop_raw.tsv
+  f48      → May-Dec 2026 forecast (unified_scenarios_raw.tsv FORECAST 4+8)
+             Jan-Apr 2026 actuals reused from actual_raw.tsv
+  plano    → Jan-Dec 2026 (unified_scenarios_raw.tsv PLANO V5)
 """
 import csv, json
 from collections import defaultdict
@@ -147,114 +146,78 @@ with open('actual_raw.tsv', newline='', encoding='utf-8') as f:
             if mes in ('202601','202602','202603','202604'):
                 add(f48_s, dims_fc, idx, val)
 
-# ── 2. forecast_39_raw.tsv → f39 Apr-Dec 2026 ───────────────────────────────
-print("Processing forecast_39_raw.tsv...")
-with open('forecast_39_raw.tsv', newline='', encoding='utf-8') as f:
-    rows = list(csv.DictReader(f, delimiter='\t'))
+# ── 2+3+4+5. unified_scenarios_raw.tsv → f39 (Apr-Dec26), f48 (May-Dec26), plano (Jan-Dec26)
+print("Processing unified_scenarios_raw.tsv...")
 
-if rows:
-    mon_cols = [k for k in rows[0].keys() if k.isdigit() and len(k)==6]
-    for r in rows:
-        prod  = PROD_FC.get(r['Produto'].strip(), 'OUTROS')
-        mop   = r['MOP'].strip() or 'OUTROS'
-        canal = norm_canal(r['CANAL'])
-        cart  = norm_cart(r['CARTEIRA'])
-        bu    = r.get('BU','').strip()
-        seg   = r.get('SEGMENTO','').strip()
-        dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart,'bu':bu,'seg':seg}
-        for mc in mon_cols:
-            if mc not in MIDX: continue
-            val = parse_num(r[mc])
-            add(f39_s, dims, MIDX[mc], val)
+_U_BU   = {'ONLINE PAYMENTS':'OP','POINT':'POINT','QR':'QR SELLERS'}
+_U_PROD = {'CHECKOUT':'CHECKOUT','LINK':'LINK','OTHERS':'OTHERS',
+           'POINT':'POINT','QR SELLERS':'QR','TTP':'TTP','-':'OTHERS','':'OTHERS'}
+_U_MOP  = {'account_money':'ACCOUNT_MONEY','bank_transfer':'BANK_TRANSFER',
+           'credit_card':'CREDIT_CARD','debit_card':'DEBIT_CARD',
+           'digital_currency':'DIGITAL_CURRENCY','ticket':'TICKET',
+           'consumer_credits':'','others':'','prepaid_card':'OUTROS','voucher_card':'OUTROS'}
+_U_CANAL = {'FDV-P':'FDVP','FDV-T':'FDVT','APP':'DIGITAIS','LANDING':'DIGITAIS',
+            'MGM':'MGM','Others':'OUTROS','RESELLERS':'RESELLERS',
+            'TELESALES':'TELESALES','TO':'CONSULTOR',
+            'BIG SELLERS':'','BIGSELLER FARMING':'','-':'','':''}
 
-# ── 3. f48_raw_new.tsv → f48 May-Dec 2026 dimensional data ──────────────────
-# tpv_combinado.tsv VALOR is pre-aggregated across installments → wrong for summing
-# f48_raw_new.tsv has row-level data with correct month columns
-print("Processing f48_raw_new.tsv (May-Dec 2026 dims)...")
-F48_CART = {
-    'AQUISICAO':'AQUISICAO',
-    'LEGADO':'ENGAJAMENTO','BS HUNTING':'ENGAJAMENTO','BS FARMING':'ENGAJAMENTO',
-    'BS SIN TAG':'ENGAJAMENTO','BS HUNTING LC':'ENGAJAMENTO','TTP':'ENGAJAMENTO',
-    '-':'OUTROS','':'OUTROS',
-}
-F48_MOP = {
-    'account_money':'ACCOUNT_MONEY','bank_transfer':'BANK_TRANSFER',
-    'credit_card':'CREDIT_CARD','debit_card':'DEBIT_CARD',
-    'ticket':'TICKET','digital_currency':'DIGITAL_CURRENCY',
-    'others':'OUTROS','':'OUTROS',
-}
-F48_PROD = {
-    'POINT':'POINT','TTP':'TTP','QR SELLERS':'QR',
-    'LINK':'LINK','CHECKOUT':'CHECKOUT',
-    'OTHERS':'OUTROS','-':'OUTROS','':'OUTROS',
-}
-F48_CANAL = {
-    'FDV-P':'FDVP','FDV-T':'FDVT',
-    'APP':'DIGITAIS','LANDING':'DIGITAIS',
-    'LEGADO':'ENGAGEMENT','BIG SELLERS':'ENGAGEMENT',
-    'TTP':'OUTROS','TO':'TELESALES','TELESALES':'TELESALES',
-    'MGM':'MGM','RESELLERS':'RESELLERS',
-    'OTHERS':'OUTROS','-':'OUTROS','':'OUTROS',
-}
-F48_MONTHS_FC = [m for m in MONTHS if '202605' <= m <= '202612']
-with open('f48_raw_new.tsv', newline='', encoding='utf-8') as f:
-    for row in csv.DictReader(f, delimiter='\t'):
-        if row.get('P&L','').strip() != 'TPV': continue
-        bu    = row.get('BU','').strip()
-        seg   = row.get('SEG_OFICIAL','').strip()
-        cart  = F48_CART.get(row.get('PORTFOLIO','').strip().upper(), 'OUTROS')
-        canal = F48_CANAL.get(row.get('CANAL','').strip(), 'OUTROS')
-        prod  = F48_PROD.get(row.get('PRODUTO','').strip(), 'OUTROS')
-        mop   = F48_MOP.get(row.get('MEIO_PAGO','').strip().lower(), 'OUTROS')
-        dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart,'bu':bu,'seg':seg}
-        for m in F48_MONTHS_FC:
-            val = parse_num(row.get(m,''))
-            if val: add(f48_s, dims, MIDX[m], val)
-
-# ── 4+5. plano_v5_raw.tsv → plano all dims (2026 only) ───────────────────────
-print("Processing plano_v5_raw.tsv...")
-
-_PL_BU  = {'ONLINE PAYMENTS':'OP','POINT':'POINT','QR':'QR SELLERS'}
-_PL_PROD = {'CHECKOUT':'CHECKOUT','LINK':'LINK','OTHERS':'OTHERS',
-            'POINT':'POINT','QR SELLERS':'QR','TTP':'TTP','-':'OTHERS'}
-_PL_MOP  = {'account_money':'ACCOUNT_MONEY','bank_transfer':'BANK_TRANSFER',
-            'credit_card':'CREDIT_CARD','debit_card':'DEBIT_CARD',
-            'digital_currency':'DIGITAL_CURRENCY','ticket':'TICKET',
-            'consumer_credits':''}
-
-def _pl_cart(bs_port, port):
+def _u_cart(bs_port, port):
     bs = bs_port.strip(); po = port.strip()
     if bs and bs != '-':
         if bs == 'TTP': return 'TTP'
-        if bs.startswith('BS'): return 'ENGAJAMENTO' if 'FARM' in bs or 'SIN' in bs.upper() else 'AQUISICAO'
-        return 'OUTROS'
+        if 'HUNT' in bs.upper(): return 'AQUISICAO'
+        if bs.startswith('BS'): return 'ENGAJAMENTO'
     if po and po != '-':
         return 'AQUISICAO' if po == 'AQUISICAO' else 'ENGAJAMENTO'
     return ''
 
-# Zero out plano_s 2026 months before rebuilding from new source
-for _i in range(12, 24):
+VER_MAP   = {'FORECAST 3+9':'f39','FORECAST 4+8':'f48','PLANO V5':'plano'}
+VER_START = {'f39':'202604','f48':'202605','plano':'202601'}
+VER_SCEN  = {'f39':f39_s,'f48':f48_s,'plano':plano_s}
+
+# Zero out forecast months before rebuilding
+for _i in range(15, 24):   # 202604-202612 for f39
+    f39_s['total'][_i] = 0.0
+    for _v in f39_s['by_bu'].values():      _v[_i] = 0.0
+    for _v in f39_s['by_segment'].values(): _v[_i] = 0.0
+for _i in range(16, 24):   # 202605-202612 for f48
+    f48_s['total'][_i] = 0.0
+    for _v in f48_s['by_bu'].values():      _v[_i] = 0.0
+    for _v in f48_s['by_segment'].values(): _v[_i] = 0.0
+for _i in range(12, 24):   # 202601-202612 for plano
     plano_s['total'][_i] = 0.0
     for _v in plano_s['by_bu'].values():      _v[_i] = 0.0
     for _v in plano_s['by_segment'].values(): _v[_i] = 0.0
 
-with open('plano_v5_raw.tsv', newline='', encoding='utf-8') as f:
-    for r in csv.DictReader(f, delimiter='\t'):
-        mes = r['YEARMONTH_ID'].strip()
-        if mes not in MIDX: continue
-        val = parse_num(r[' VALUE_AMOUNT '])
-        if not val: continue
-        bu   = _PL_BU.get(r['BU'].strip(), r['BU'].strip())
-        seg  = r['SEGMENT_DESC'].strip()
-        prod = _PL_PROD.get(r['PRODUCT_DESC'].strip(), '')
-        mop  = _PL_MOP.get(r['PAYMENT_METHOD_DESC'].strip(), '')
-        cart = _pl_cart(r['BALANCE_SHEET_PORTFOLIO_DESC'], r['PORTFOLIO_DESC'])
-        idx  = MIDX[mes]
-        plano_s['total'][idx] += val
-        if bu:  plano_s['by_bu'][bu][idx]       += val
-        if seg: plano_s['by_segment'][seg][idx]  += val
-        dims = {'product':prod,'mop':mop,'canal':'','cart':cart,'bu':bu,'seg':seg}
-        add(plano_s, dims, idx, val)
+with open('unified_scenarios_raw.tsv', newline='', encoding='utf-8') as f:
+    reader = csv.reader(f, delimiter='\t')
+    next(reader)  # skip "SUM de VALUE_AMOUNT" title row
+    headers = next(reader)  # real column headers
+    for row in reader:
+        r = dict(zip(headers, row))
+        ver_desc = r.get('VERSION_DESC','').strip()
+        if ver_desc not in VER_MAP: continue  # skip ACTUAL and blank rows
+        ver   = VER_MAP[ver_desc]
+        scen  = VER_SCEN[ver]
+        start = VER_START[ver]
+
+        bu   = _U_BU.get(r.get('BU','').strip(), r.get('BU','').strip())
+        seg  = r.get('SEGMENT_DESC','').strip()
+        prod = _U_PROD.get(r.get('PRODUCT_DESC','').strip(), 'OTHERS')
+        mop  = _U_MOP.get(r.get('PAYMENT_METHOD_DESC','').strip(), '')
+        cart = _u_cart(r.get('BALANCE_SHEET_PORTFOLIO_DESC',''), r.get('PORTFOLIO_DESC',''))
+        canal= _U_CANAL.get(r.get('CHANNEL_DESC','').strip(), '')
+
+        dims = {'product':prod,'mop':mop,'canal':canal,'cart':cart,'bu':bu,'seg':seg}
+        for mes in MONTHS:
+            if mes < start: continue
+            val = parse_num(r.get(mes,''))
+            if not val: continue
+            idx = MIDX[mes]
+            scen['total'][idx] += val
+            if bu:  scen['by_bu'].setdefault(bu,  zero24())[idx] += val
+            if seg: scen['by_segment'].setdefault(seg, zero24())[idx] += val
+            add(scen, dims, idx, val)
 
 # ── Finalise (convert defaultdicts) ──────────────────────────────────────────
 def finalise(s):
