@@ -65,6 +65,13 @@ select:focus{outline:2px solid var(--y)}
 .kf39{border-top:3px solid var(--f39)}.kpl{border-top:3px solid var(--pl)}
 .kv5{border-top:3px solid #9333EA}
 .pos{color:#16A34A}.neg{color:#DC2626}
+.drill td{background:rgba(0,0,0,.025);font-size:11px;color:var(--sub)}
+.drill td:first-child{padding-left:22px}
+.arr{display:inline-block;transition:transform .15s;font-size:9px;margin-right:4px;color:var(--sub);cursor:pointer}
+.arr.open{transform:rotate(90deg)}
+em.sh{font-style:italic;color:var(--sub);font-size:10px;margin-left:2px}
+.chart-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.chart-hd .ct{margin-bottom:0}
 /* main row */
 .mrow{display:grid;grid-template-columns:1fr 320px;gap:12px;padding:12px 24px 0;align-items:start}
 .card{background:var(--card);border-radius:12px;padding:16px 18px 14px;border:1px solid var(--brd);box-shadow:0 1px 3px rgba(0,0,0,.04);transition:.12s}
@@ -163,6 +170,8 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
       <option value="BIG SELLERS">Big Sellers</option>
       <option value="LONGTAIL">Longtail</option>
       <option value="SMB">SMB</option>
+      <option value="SMB|LONGTAIL">SMB + Longtail</option>
+      <option value="BIG SELLERS|SMB">Big Sellers + SMB</option>
     </select>
   </div>
   <div class="fg"><label>MOP</label>
@@ -206,7 +215,13 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
 
 <div class="mrow">
   <div class="card">
-    <div class="ct">Evolução Mensal do TPV</div>
+    <div class="chart-hd">
+      <div class="ct">Evolução Mensal do TPV</div>
+      <div style="display:flex;gap:4px">
+        <button id="btnYoY25" class="rb" onclick="toggleYoY25()" title="Sobrepõe Actual 2025 alinhado por mês">+2025</button>
+        <button id="btnYoYGr" class="rb" onclick="toggleYoYGr()" title="Mostra crescimento % vs mesmo mês 2025">% YoY</button>
+      </div>
+    </div>
     <canvas id="cMain" height="110"></canvas>
   </div>
   <div class="cmpbox">
@@ -313,10 +328,13 @@ const BU_KEY = {
 };
 
 // ── STATE ────────────────────────────────────────────────────────────────────
-let activeYr   = '2026';
-let hidden     = new Set();
-let charts     = {};
-let chartMode  = 'abs';
+let activeYr        = '2026';
+let hidden          = new Set();
+let charts          = {};
+let chartMode       = 'abs';
+let expandedMonths  = new Set();
+let yoy25           = false;
+let yoyGr           = false;
 
 const $id = id => document.getElementById(id);
 const gBU    = () => $id('fBU').value;
@@ -371,7 +389,15 @@ function getSeries(scen) {
   if (mop)   return sc.by_mop[mop]       || new Array(24).fill(0);
   if (canal) return sc.by_canal[canal]   || new Array(24).fill(0);
   if (cart)  return sc.by_carteira[cart] || new Array(24).fill(0);
-  if (seg)   return sc.by_segment[seg]   || new Array(24).fill(0);
+  if (seg) {
+    if (seg.includes('|')) {
+      const parts = seg.split('|');
+      const arr = new Array(24).fill(0);
+      parts.forEach(p => { const a=sc.by_segment[p]; if(a) a.forEach((v,i)=>arr[i]+=(v||0)); });
+      return arr;
+    }
+    return sc.by_segment[seg] || new Array(24).fill(0);
+  }
   if (bu) {
     const key = (BU_KEY[scen]||{})[bu] || bu;
     return sc.by_bu[key] || new Array(24).fill(0);
@@ -479,82 +505,65 @@ function renderCmp() {
   const scB = D.scenarios[B.scen];
   const slc = (arr,lo,hi) => arr ? sa(arr.slice(lo,hi)) : 0;
 
+  // Total respects active filters
   const totA = slc(getSeries(A.scen), A.lo, A.hi);
   const totB = slc(getSeries(B.scen), B.lo, B.hi);
-
-  const prod=gProd(), mop=gMop(), canal=gCanal(), cart=gCart(), seg=gSeg(), bu=gBU();
-  const NA = `<td colspan="3" style="color:var(--sub);font-style:italic;font-size:10px">— filtro ativo —</td>`;
-  const ND = `<td colspan="3" style="color:var(--sub);font-style:italic;font-size:10px">— sem dados —</td>`;
 
   const diff = (a,b) => {
     if (!a&&!b) return '<span style="color:var(--sub)">—</span>';
     const v = pctN(a,b);
-    const pstr = v!==null ? ` <span class="${v>=0?'pos':'neg'}">(${v>=0?'+':''}${v.toFixed(1)}%)</span>` : '';
+    const pstr = v!==null?` <span class="${v>=0?'pos':'neg'}">(${v>=0?'+':''}${v.toFixed(1)}%)</span>`:'';
     return fmtBs(a)+pstr;
   };
-  const sh = (v,tot) => tot>0 ? (v/tot*100).toFixed(1)+'%' : '';
+  const sh = (v,tot) => tot>0?(v/tot*100).toFixed(1)+'%':'';
+  const ND = `<tr><td colspan="3" style="color:var(--sub);font-style:italic;font-size:10px">— sem dados —</td></tr>`;
 
-  // ── BU section ──────────────────────────────────────────────────────────────
-  let buRows = '';
-  if (prod||mop||canal||cart||seg) {
-    buRows = `<tr>${NA}</tr>`;
-  } else {
-    const showBus = bu ? [bu] : buses;
-    buRows = showBus.map(b_=>{
-      const kA=(BU_KEY[A.scen]||{})[b_]||b_, kB=(BU_KEY[B.scen]||{})[b_]||b_;
-      const a=slc(scA.by_bu[kA],A.lo,A.hi), b=slc(scB.by_bu[kB],B.lo,B.hi);
-      return `<tr><td>${b_}</td><td>${diff(a,b)}</td><td>${fmtBs(b)}</td></tr>`;
-    }).join('');
-  }
+  // ── BU — always shown (raw, not filtered by other dims)
+  const bu = gBU();
+  const showBus = bu?[bu]:buses;
+  const buRows = showBus.map(b_=>{
+    const kA=(BU_KEY[A.scen]||{})[b_]||b_, kB=(BU_KEY[B.scen]||{})[b_]||b_;
+    const a=slc(scA.by_bu[kA],A.lo,A.hi), b=slc(scB.by_bu[kB],B.lo,B.hi);
+    return `<tr><td>${b_}</td><td>${diff(a,b)}</td><td>${fmtBs(b)}</td></tr>`;
+  }).join('');
 
-  // ── Seg section ─────────────────────────────────────────────────────────────
+  // ── Seg — always shown
   const segsK=['BIG SELLERS','LONGTAIL','SMB'];
   const segLbl={'BIG SELLERS':'Big Sellers','LONGTAIL':'Longtail','SMB':'SMB'};
   const segAf=k=>slc(scA.by_segment[k],A.lo,A.hi), segBf=k=>slc(scB.by_segment[k],B.lo,B.hi);
   const stA=segsK.reduce((s,k)=>s+segAf(k),0), stB=segsK.reduce((s,k)=>s+segBf(k),0);
-  let segRows = '';
-  if (prod||mop||canal||cart||bu) {
-    segRows = `<tr>${NA}</tr>`;
-  } else if (!stA&&!stB) {
-    segRows = `<tr>${ND}</tr>`;
-  } else {
-    const showSegs = seg ? [seg] : segsK;
-    segRows = showSegs.map(k=>{
-      const a=segAf(k), b=segBf(k);
-      if(!a&&!b) return '';
-      const saStr=stA>0?` <em>${sh(a,stA)}</em>`:'';
-      const sbStr=stB>0?` <em>${sh(b,stB)}</em>`:'';
-      return `<tr><td>${segLbl[k]||k}</td><td>${fmtBs(a)}${saStr}</td><td>${fmtBs(b)}${sbStr}</td></tr>`;
-    }).join('');
-  }
+  const seg=gSeg(); const segKey=seg&&!seg.includes('|')?seg:null;
+  const showSegs=segKey?[segKey]:segsK;
+  const segRows=(!stA&&!stB)?ND:showSegs.map(k=>{
+    const a=segAf(k),b=segBf(k); if(!a&&!b) return '';
+    const saStr=stA>0?` <em>${sh(a,stA)}</em>`:'';
+    const sbStr=stB>0?` <em>${sh(b,stB)}</em>`:'';
+    return `<tr><td>${segLbl[k]||k}</td><td>${fmtBs(a)}${saStr}</td><td>${fmtBs(b)}${sbStr}</td></tr>`;
+  }).join('');
 
-  // ── MOP section ─────────────────────────────────────────────────────────────
+  // ── MOP — always shown
+  const mop=gMop();
   const mops=['CREDIT_CARD','DEBIT_CARD','BANK_TRANSFER','ACCOUNT_MONEY','TICKET'];
   const mopAf=m=>slc(scA.by_mop[m],A.lo,A.hi), mopBf=m=>slc(scB.by_mop[m],B.lo,B.hi);
   const mtA=mops.reduce((s,m)=>s+mopAf(m),0), mtB=mops.reduce((s,m)=>s+mopBf(m),0);
-  let mopRows = '';
-  if (prod||canal||cart||seg||bu) {
-    mopRows = `<tr>${NA}</tr>`;
-  } else if (!mtA&&!mtB) {
-    mopRows = `<tr>${ND}</tr>`;
-  } else if (mop) {
-    const a=mopAf(mop), b=mopBf(mop);
-    mopRows = `<tr><td>${MOP_LBL[mop]||mop}</td><td>${diff(a,b)}</td><td>${fmtBs(b)}</td></tr>`;
+  let mopRows='';
+  if (!mtA&&!mtB) { mopRows=ND; }
+  else if (mop) {
+    const a=mopAf(mop),b=mopBf(mop);
+    mopRows=`<tr><td>${MOP_LBL[mop]||mop}</td><td>${diff(a,b)}</td><td>${fmtBs(b)}</td></tr>`;
   } else {
-    mopRows = mops.map(m=>{
-      const a=mopAf(m), b=mopBf(m);
-      if(!a&&!b) return '';
+    mopRows=mops.map(m=>{
+      const a=mopAf(m),b=mopBf(m); if(!a&&!b) return '';
       const saStr=mtA>0?` <em>${sh(a,mtA)}</em>`:'';
       const sbStr=mtB>0?` <em>${sh(b,mtB)}</em>`:'';
       return `<tr><td>${MOP_LBL[m]||m}</td><td>${fmtBs(a)}${saStr}</td><td>${fmtBs(b)}${sbStr}</td></tr>`;
     }).join('');
   }
 
-  const lA = $id('cA').options[$id('cA').selectedIndex].text.replace(' — ',' ');
-  const lB = $id('cB').options[$id('cB').selectedIndex].text.replace(' — ',' ');
-
-  $id('cmpDiv').innerHTML =
-    `<table class="ctbl"><thead><tr><th>Métrica</th><th>A: ${lA}</th><th>B: ${lB}</th></tr></thead>
+  const lA=$id('cA').options[$id('cA').selectedIndex].text.replace(' — ',' ');
+  const lB=$id('cB').options[$id('cB').selectedIndex].text.replace(' — ',' ');
+  $id('cmpDiv').innerHTML=`<table class="ctbl">
+    <thead><tr><th>Métrica</th><th>A: ${lA}</th><th>B: ${lB}</th></tr></thead>
     <tbody>
       <tr class="sep"><td colspan="3">Total</td></tr>
       <tr><td>TPV</td><td>${diff(totA,totB)}</td><td>${fmtBs(totB)}</td></tr>
@@ -571,20 +580,44 @@ function renderMain() {
   const [lo,hi] = getRange();
   const ctx = $id('cMain').getContext('2d');
   if (charts.main) charts.main.destroy();
-  const names = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano'};
-  const datasets = Object.keys(names).map(s => ({
-    label: names[s],
-    data:  getSeries(s).slice(lo,hi).map(v => v ? +(v/1e9).toFixed(3) : null),
-    borderColor:   CC[s],
-    backgroundColor: CA[s],
-    borderWidth: 2.2,
-    tension:0.42,
-    pointRadius:3,
-    pointHoverRadius:6,
-    borderDash: DASH[s]||[],
-    spanGaps:false,
-    hidden: hidden.has(s),
-  }));
+  const names  = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano'};
+  const is2026 = lo >= 12;
+  const ac2025 = getSeries('actual');
+
+  let datasets, yTick, tooltipFmt;
+
+  if (yoyGr && is2026) {
+    datasets = Object.keys(names).map(s => {
+      const s26 = getSeries(s);
+      const data = Array.from({length:hi-lo},(_,i)=>{
+        const v = s26[lo+i], prev = ac2025[lo-12+i];
+        return (v && prev) ? +((v/prev-1)*100).toFixed(2) : null;
+      });
+      return {label:names[s],data,borderColor:CC[s],backgroundColor:CA[s],
+        borderWidth:2.2,tension:0.42,pointRadius:3,pointHoverRadius:6,
+        borderDash:DASH[s]||[],spanGaps:false,hidden:hidden.has(s)};
+    });
+    yTick = v => (v>=0?'+':'')+v.toFixed(1)+'%';
+    tooltipFmt = c=>` ${c.dataset.label}: ${c.parsed.y!==null?(c.parsed.y>=0?'+':'')+c.parsed.y.toFixed(1)+'%':'—'}`;
+  } else {
+    datasets = Object.keys(names).map(s => ({
+      label:names[s],
+      data:getSeries(s).slice(lo,hi).map(v=>v?+(v/1e9).toFixed(3):null),
+      borderColor:CC[s],backgroundColor:CA[s],borderWidth:2.2,tension:0.42,
+      pointRadius:3,pointHoverRadius:6,borderDash:DASH[s]||[],spanGaps:false,hidden:hidden.has(s),
+    }));
+    if (yoy25 && is2026) {
+      datasets.push({
+        label:'Actual 2025',
+        data:ac2025.slice(lo-12,hi-12).map(v=>v?+(v/1e9).toFixed(3):null),
+        borderColor:'#9CA3AF',backgroundColor:'transparent',borderWidth:1.5,
+        tension:0.42,pointRadius:2,pointHoverRadius:4,borderDash:[3,3],spanGaps:false,
+      });
+    }
+    yTick = v=>+v.toFixed(2)+'B';
+    tooltipFmt = c=>` ${c.dataset.label}: ${c.parsed.y!==null?'R$ '+c.parsed.y.toFixed(2)+'B':'—'}`;
+  }
+
   charts.main = new Chart(ctx,{
     type:'line', plugins:[ChartDataLabels],
     data:{labels:getLabels(), datasets},
@@ -594,12 +627,12 @@ function renderMain() {
       plugins:{
         legend:{display:false},
         tooltip:{backgroundColor:'#111827',titleColor:'#F9FAFB',bodyColor:'#D1D5DB',padding:12,cornerRadius:12,
-          callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y!==null?'R$ '+c.parsed.y.toFixed(2)+'B':'—'}`}},
+          callbacks:{label:tooltipFmt}},
         datalabels:{display:false},
       },
       scales:{
         x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},color:'#6B7280'}},
-        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},color:'#6B7280',callback:v=>+v.toFixed(2)+'B'}}
+        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},color:'#6B7280',callback:yTick}}
       }
     }
   });
@@ -741,24 +774,68 @@ function barOpts(mode) {
 function renderTable() {
   const [lo,hi] = getRange();
   const labels = D.labels.slice(lo,hi);
-  const sA=getSeries('actual').slice(lo,hi), sF48=getSeries('f48').slice(lo,hi),
-        sF39=getSeries('f39').slice(lo,hi), sPl=getSeries('plano2026').slice(lo,hi);
+  const acFull  = getSeries('actual');
+  const f48Full = getSeries('f48');
+  const f39Full = getSeries('f39');
+  const plFull  = getSeries('plano2026');
 
-  $id('tHead').innerHTML = '<th>Mês</th><th class="num">Actual</th><th class="num">F 4+8</th><th class="num">F 3+9</th><th class="num">Plano 2026</th><th class="num">Δ vs F4+8</th><th class="num">Δ vs Plano</th>';
+  // Override F4+8 Jan-Apr 2026 and F3+9 Jan-Mar 2026 with actual
+  const f48Eff = f48Full.map((v,i)=>(i>=12&&i<=15&&acFull[i])?acFull[i]:v);
+  const f39Eff = f39Full.map((v,i)=>(i>=12&&i<=14&&acFull[i])?acFull[i]:v);
+
+  const prods   = ['CHECKOUT','LINK','POINT','QR','TTP'];
+  const prodLbl = {CHECKOUT:'Checkout',LINK:'Link',POINT:'Point',QR:'QR',TTP:'TTP'};
+
+  $id('tHead').innerHTML = `<th>Mês</th>
+    <th class="num">Actual</th><th class="num">F 4+8</th>
+    <th class="num">F 3+9</th><th class="num">Plano</th>
+    <th class="num">Δ Ac/F4+8</th><th class="num">Δ Ac/Plano</th>
+    <th class="num">Δ F4+8/F3+9</th>`;
+
   const nil = '<span style="color:var(--sub)">—</span>';
   const fR  = v => v ? `R$ ${fmtB(v)}` : nil;
   const fDl = v => v===null?nil:`<span class="${v>=0?'pos':'neg'}">${v>=0?'+':''}${v.toFixed(1)}%</span>`;
+  const dlt = (a,b) => fDl(a&&b?pctN(a,b):null);
+  const sh  = (v,tot) => tot>0?`<em class="sh">${(v/tot*100).toFixed(1)}%</em>`:'';
 
   $id('tBody').innerHTML = labels.map((lbl,i) => {
-    const gi=lo+i, isAc=gi<=LAST_AC;
-    const ac=sA[i],f48=sF48[i],f39=sF39[i],pl=sPl[i];
-    return `<tr>
-      <td><strong>${lbl}</strong>${isAc?' <span class="badge bac">A</span>':''}</td>
+    const gi   = lo+i;
+    const isAc = gi<=LAST_AC;
+    const ac=acFull[gi], f48=f48Eff[gi], f39=f39Eff[gi], pl=plFull[gi];
+    const open = expandedMonths.has(gi);
+
+    let rows = `<tr style="cursor:pointer" onclick="toggleDrill(${gi})">
+      <td><span class="arr ${open?'open':''}">▶</span><strong>${lbl}</strong>${isAc?' <span class="badge bac">A</span>':''}</td>
       <td class="num">${fR(ac)}</td><td class="num">${fR(f48)}</td>
       <td class="num">${fR(f39)}</td><td class="num">${fR(pl)}</td>
-      <td class="num">${fDl(ac&&f48?pctN(ac,f48):null)}</td>
-      <td class="num">${fDl(ac&&pl?pctN(ac,pl):null)}</td>
+      <td class="num">${dlt(ac,f48)}</td><td class="num">${dlt(ac,pl)}</td>
+      <td class="num">${dlt(f48,f39)}</td>
     </tr>`;
+
+    if (open) {
+      const useAc48 = gi>=12&&gi<=15&&!!acFull[gi];
+      const useAc39 = gi>=12&&gi<=14&&!!acFull[gi];
+      const getP = (scen,prod,useAc) => {
+        const src = useAc?'actual':scen;
+        return (D.scenarios[src].by_product[prod]||[])[gi]||0;
+      };
+      prods.forEach(prod=>{
+        const a  = (D.scenarios.actual.by_product[prod]||[])[gi]||0;
+        const f4 = getP('f48',prod,useAc48);
+        const f3 = getP('f39',prod,useAc39);
+        const pl = (D.scenarios.plano2026.by_product[prod]||[])[gi]||0;
+        if(!a&&!f4&&!f3&&!pl) return;
+        rows+=`<tr class="drill">
+          <td>↳ ${prodLbl[prod]||prod}</td>
+          <td class="num">${a  ?fmtBs(a)  +' '+sh(a,ac)  :nil}</td>
+          <td class="num">${f4 ?fmtBs(f4) +' '+sh(f4,f48):nil}</td>
+          <td class="num">${f3 ?fmtBs(f3) +' '+sh(f3,f39):nil}</td>
+          <td class="num">${pl ?fmtBs(pl) +' '+sh(pl,plFull[gi]):nil}</td>
+          <td class="num" colspan="3"></td>
+        </tr>`;
+      });
+    }
+    return rows;
   }).join('');
 }
 
@@ -788,6 +865,28 @@ function toggleChartMode() {
   btn.textContent = chartMode==='abs' ? '% Share' : 'Absoluto';
   btn.classList.toggle('on', chartMode==='pct');
   renderBU(); renderSeg(); renderMop();
+}
+
+function toggleDrill(gi) {
+  if (expandedMonths.has(gi)) expandedMonths.delete(gi);
+  else expandedMonths.add(gi);
+  renderTable();
+}
+
+function toggleYoY25() {
+  yoy25 = !yoy25;
+  if (yoy25) yoyGr = false;
+  $id('btnYoY25').classList.toggle('on', yoy25);
+  $id('btnYoYGr').classList.remove('on');
+  renderMain();
+}
+
+function toggleYoYGr() {
+  yoyGr = !yoyGr;
+  if (yoyGr) yoy25 = false;
+  $id('btnYoYGr').classList.toggle('on', yoyGr);
+  $id('btnYoY25').classList.remove('on');
+  renderMain();
 }
 
 function toggleScen(pill) {
