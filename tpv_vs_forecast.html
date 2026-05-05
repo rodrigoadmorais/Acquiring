@@ -55,7 +55,7 @@ select:focus{outline:2px solid var(--y)}
 
 .fnote{font-size:9.5px;color:var(--sub);padding:3px 24px;font-style:italic;min-height:18px}
 /* kpis */
-.kg{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;padding:14px 24px 0}
+.kg{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;padding:12px 24px 0}
 .kpi{background:var(--card);border-radius:10px;padding:12px 14px 10px;border:1px solid var(--brd);box-shadow:0 1px 3px rgba(0,0,0,.04);transition:.12s}
 .kpi:hover{box-shadow:0 3px 12px rgba(0,0,0,.08)}
 .kl{font-size:9.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
@@ -78,7 +78,7 @@ em.sh{font-style:italic;color:var(--sub);font-size:10px;margin-left:2px}
 .card:hover{box-shadow:0 3px 12px rgba(0,0,0,.08)}
 .ct{font-size:11px;font-weight:700;margin-bottom:12px;color:var(--tx)}
 /* comparison panel */
-.cmpbox{background:var(--card);border-radius:12px;border:1px solid var(--brd);box-shadow:0 1px 3px rgba(0,0,0,.04);padding:14px;display:flex;flex-direction:column;gap:10px}
+.cmpbox{background:var(--card);border-radius:12px;border:1px solid var(--brd);box-shadow:0 1px 3px rgba(0,0,0,.04);padding:14px;display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto}
 .cmptit{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}
 .selrow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .selrow select{font-size:10px}
@@ -95,7 +95,7 @@ em.sh{font-style:italic;color:var(--sub);font-size:10px;margin-left:2px}
 /* bottom row */
 .brow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px 24px 0}
 /* table */
-.tw{margin:12px 24px 24px;background:var(--card);border-radius:12px;border:1px solid var(--brd);overflow-x:auto;max-height:300px;overflow-y:auto}
+.tw{margin:12px 24px 24px;background:var(--card);border-radius:12px;border:1px solid var(--brd);overflow-x:auto;max-height:320px;overflow-y:auto}
 table{width:100%;border-collapse:collapse;font-size:11px}
 thead th{background:var(--y);color:#111;padding:7px 10px;text-align:left;font-weight:700;position:sticky;top:0;z-index:1;white-space:nowrap}
 tbody td{padding:5px 10px;border-bottom:1px solid var(--brd);white-space:nowrap}
@@ -104,12 +104,12 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
 .badge{display:inline-block;padding:1px 6px;border-radius:20px;font-size:9px;font-weight:700}
 .bac{background:var(--aac);color:var(--ac)}
 /* main layout */
-.main-wrap{display:grid;grid-template-columns:1fr 380px;gap:12px;padding:14px 24px 24px;align-items:start}
-.left-col{display:flex;flex-direction:column;gap:12px;min-width:0}
-.main-wrap .kg{padding:0}
-.main-wrap .mrow{padding:0}
-.main-wrap .brow{padding:0}
-.main-wrap .tw{margin:0;max-height:calc(100vh - 100px);overflow-y:auto}
+
+
+
+
+
+
 /* responsive */
 @media(max-width:900px){.mrow{grid-template-columns:1fr}.brow{grid-template-columns:1fr 1fr}}
 @media(max-width:900px){.kg{grid-template-columns:repeat(3,1fr)}.brow{grid-template-columns:1fr}}
@@ -218,8 +218,6 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
 </div>
 <div class="fnote" id="fnote"></div>
 
-<div class="main-wrap">
-<div class="left-col">
 <div class="kg" id="kg"></div>
 
 <div class="mrow">
@@ -323,15 +321,21 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
   <canvas id="cBU" height="190"></canvas>
 </div>
   <div class="card"><div class="ct">Segmento Breakdown</div><canvas id="cSeg" height="190"></canvas></div>
-  <div class="card"><div class="ct">Meio de Pagamento</div><canvas id="cMop" height="190"></canvas></div>
+  <div class="card">
+  <div class="chart-hd">
+    <div class="ct">Meio de Pagamento</div>
+    <div class="rg">
+      <button class="rb on" id="btnMopBrkVol" onclick="mopMode='vol';$id('btnMopBrkPct').classList.remove('on');this.classList.add('on');renderMop()">Vol</button>
+      <button class="rb" id="btnMopBrkPct" onclick="mopMode='pct';$id('btnMopBrkVol').classList.remove('on');this.classList.add('on');renderMop()">%</button>
+    </div>
+  </div>
+  <canvas id="cMop" height="190"></canvas>
 </div>
-</div><!-- /left-col -->
-<div class="right-col">
+</div>
+
 <div class="tw">
   <table><thead><tr id="tHead"></tr></thead><tbody id="tBody"></tbody></table>
 </div>
-</div><!-- /right-col -->
-</div><!-- /main-wrap -->
 
 <script>
 // ── DATA ─────────────────────────────────────────────────────────────────────
@@ -361,6 +365,7 @@ let hidden          = new Set();
 let charts          = {};
 let mopTrendScen    = 'f48';
 let mopTrendMode    = 'vol';
+let mopMode         = 'vol';
 let expandedMonths  = new Set();
 let yoy25           = true;
 let yoyGr           = false;
@@ -832,6 +837,7 @@ function renderMop() {
   const names = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano'};
   const mop = gMop();
   const hasOtherFilter = gProd()||gCanal()||gCart()||gBU()||gSeg();
+  const isPct = mopMode === 'pct';
   let labels, getRaw;
   if (hasOtherFilter) {
     const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gCanal()?gCanal():gCart()?gCart():gBU()?gBU():(SEG_LBL[gSeg()]||gSeg()||'Filtrado');
@@ -844,14 +850,28 @@ function renderMop() {
     labels = mlabs;
     getRaw = s => mops.map(m => { const arr=D.scenarios[s].by_mop[m]; return arr?sa(arr.slice(lo,hi)):0; });
   }
-  const getData = s => getRaw(s).map(v=>v/1e9);
+  const getData = s => {
+    const raw = getRaw(s);
+    if (!isPct) return raw.map(v=>v/1e9);
+    const tot = sa(getSeries(s).slice(lo,hi));
+    return raw.map(v=>tot>0?+(v/tot*100).toFixed(2):0);
+  };
   charts.mop = new Chart(ctx,{
     type:'bar', plugins:[ChartDataLabels],
     data:{labels, datasets:scens.map(s=>({label:names[s],data:getData(s),backgroundColor:CC[s]+'AA',hidden:hidden.has(s)}))},
-    options:{...barOpts(),
+    options:{
+      responsive:true,
       indexAxis:'y',
+      plugins:{
+        legend:{display:true,labels:{font:{size:9.5},boxWidth:9,padding:6}},
+        tooltip:{backgroundColor:'#111827',titleColor:'#F9FAFB',bodyColor:'#D1D5DB',padding:10,cornerRadius:10,
+          callbacks:{label:c=>` ${c.dataset.label}: ${isPct?c.parsed.x.toFixed(1)+'%':'R$ '+c.parsed.x.toFixed(1)+'B'}`}},
+        datalabels:{anchor:'end',align:'end',font:{size:8.5,weight:700},
+          formatter:v=>v>0?(isPct?v.toFixed(1)+'%':v.toFixed(1)):'',color:'#374151',
+          display:ctx=>ctx.chart.data.datasets.filter(d=>!d.hidden).length<=3},
+      },
       scales:{
-        x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},callback:v=>v+'B'}},
+        x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},callback:v=>isPct?v.toFixed(0)+'%':v+'B'}},
         y:{grid:{display:false},ticks:{font:{size:10}}}
       }
     },
