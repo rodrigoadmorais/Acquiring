@@ -110,32 +110,42 @@ for v in actual_s['by_bu'].values():     v[idx_may26] = 0
 for v in actual_s['by_segment'].values(): v[idx_may26] = 0
 
 # ── 1. actual_raw.tsv → actual + f39 Jan-Mar + f48 Jan-Apr ──────────────────
-print("Processing actual_raw.tsv...")
-actual_detail = defaultdict(lambda: defaultdict(float))  # (product,mop,canal,cart) → {month: val}
+# New format: wide/pivoted TSV — months are column headers (202.401 → 202401)
+# Columns: PRODUTO_MACRO, CUST_SEGMENT_CROSS, CARTEIRA, PORTFOLIO_SELLER,
+#          SUB_CANAL_AJUSTADO, SUB_CANAL, PRODUTO, METODO2, [month cols...]
+print("Processing actual_raw.tsv (wide format)...")
+NEW_MOP_MAP = {
+    'BANK_TRANSFER':'BANK_TRANSFER','CREDIT_CARD':'CREDIT_CARD',
+    'PARCELADO':'CREDIT_CARD',
+    'DEBIT_CARD':'DEBIT_CARD','ACCOUNT_MONEY':'ACCOUNT_MONEY',
+    'TICKET':'TICKET','DIGITAL_CURRENCY':'DIGITAL_CURRENCY',
+    'PREPAID_CARD':'OUTROS','VOUCHER_CARD':'OUTROS','':'OUTROS',
+}
+# Month columns in TSV use dots as thousands sep (202.401 = 202401)
+ACT_MON_COLS = [m for m in MONTHS if m <= '202604']  # 202501–202604 from this file
+ACT_MON_MAP  = {f'{m[:3]}.{m[3:]}': m for m in ACT_MON_COLS}  # e.g. '202.501' → '202501'
+# Also include 2024 months in case they appear (we won't add them to scenarios but must not crash)
 
 with open('actual_raw.tsv', newline='', encoding='utf-8') as f:
     for r in csv.DictReader(f, delimiter='\t'):
-        mes = r['TIM_MONTH'].strip()
-        if mes not in MIDX: continue
-        idx = MIDX[mes]
-        val = parse_num(r['SUM de TPV'])
         prod  = PROD_ACTUAL.get(r['PRODUTO'].strip(), 'OUTROS')
-        mop   = r['METODO_PAGAMENTO'].strip() or 'OUTROS'
-        canal = norm_canal(r['CANAL_AJUSTADO'])
+        mop   = NEW_MOP_MAP.get(r['METODO2'].strip(), 'OUTROS')
+        canal = norm_canal(r['SUB_CANAL_AJUSTADO'])
         cart  = norm_cart(r['CARTEIRA'])
-        bu_ac = BU_ACTUAL.get(r['PRODUTO'].strip(), '')
+        bu_ac = r['PRODUTO_MACRO'].strip() or BU_ACTUAL.get(r['PRODUTO'].strip(), '')
         seg   = r.get('CUST_SEGMENT_CROSS', '').strip()
         dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart,'bu':bu_ac,'seg':seg}
-        # actual
-        add(actual_s, dims, idx, val)
-        # f39 gets Jan-Mar 2026 from actual (use QR SELLERS key for consistency)
-        bu_fc = BU_PLANO.get(r['PRODUTO'].strip(), bu_ac)
-        dims_fc = {**dims, 'bu': bu_fc}
-        if mes in ('202601','202602','202603'):
-            add(f39_s, dims_fc, idx, val)
-        # f48 gets Jan-Apr 2026 from actual
-        if mes in ('202601','202602','202603','202604'):
-            add(f48_s, dims_fc, idx, val)
+        for col, mes in ACT_MON_MAP.items():
+            val = parse_num(r.get(col, ''))
+            if not val: continue
+            idx = MIDX[mes]
+            add(actual_s, dims, idx, val)
+            bu_fc = BU_PLANO.get(r['PRODUTO'].strip(), bu_ac)
+            dims_fc = {**dims, 'bu': bu_fc}
+            if mes in ('202601','202602','202603'):
+                add(f39_s, dims_fc, idx, val)
+            if mes in ('202601','202602','202603','202604'):
+                add(f48_s, dims_fc, idx, val)
 
 # ── 2. forecast_39_raw.tsv → f39 Apr-Dec 2026 ───────────────────────────────
 print("Processing forecast_39_raw.tsv...")
