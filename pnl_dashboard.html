@@ -3898,22 +3898,21 @@ function renderEficTab() {
   const ud    = eficUnitDiv;
   const udLbl = ud===1 ? 'R$' : ud===1000 ? 'R$ mil' : 'R$ M';
 
-  // Sum for an item — supports matching by MNG_2 (default) or MNG_4 (when item.mng4 set)
-  // mng2/mng4 can be a string or array of strings (all summed together)
+  // Sum for an item — matches against the DEEPEST non-null MNG level of each row.
+  // This avoids both "—" (wrong level) and double-counting (subtotal + detail).
+  // Priority for the name to match: mng4 > mng2 > label (any can be a string or array)
   const sumItem = (item, ano, cen) => {
-    const useMng4  = !!item.mng4;
-    const names    = useMng4
-      ? (Array.isArray(item.mng4) ? item.mng4 : [item.mng4])
-      : (Array.isArray(item.mng2) ? item.mng2 : [item.mng2 || item.label]);
+    const raw   = item.mng4 ?? item.mng2 ?? item.label;
+    const names = Array.isArray(raw) ? raw : [raw];
     const mng1f = item.mng1 || null;
-    const mng3f = item.mng3 || null;
     let s = null;
     for(const d of allData) {
       if(!inBU(d)) continue;
       if(d.ANO !== ano || d.Cenario !== cen) continue;
-      if(useMng4  ? !names.includes(d.MNG_4) : !names.includes(d.MNG_2)) continue;
       if(mng1f && d.MNG_1 !== mng1f) continue;
-      if(mng3f && d.MNG_3 !== mng3f) continue;
+      // Use deepest non-null MNG level → leaf value, no subtotal double-count
+      const deepest = d.MNG_4 || d.MNG_3 || d.MNG_2;
+      if(!names.includes(deepest)) continue;
       s = (s||0) + (d.Value||0);
     }
     return s;
