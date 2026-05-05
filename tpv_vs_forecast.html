@@ -401,36 +401,55 @@ function updateNote() {
 // ── KPIs ─────────────────────────────────────────────────────────────────────
 function renderKPIs() {
   const [lo,hi] = getRange();
+  // acRange: only months with actual data within the selected period
   const acEnd   = Math.min(hi, LAST_AC+1);
-  const acRange = Array.from({length:acEnd-lo},(_,i)=>lo+i);
+  const acLen   = Math.max(0, acEnd - lo);
+  const acRange = Array.from({length:acLen}, (_,i)=>lo+i);
+  const fcRange = Array.from({length:hi-lo}, (_,i)=>lo+i);  // full selected period
 
   const acS  = getSeries('actual');
   const f48S = getSeries('f48');
   const f39S = getSeries('f39');
   const plS  = getSeries('plano2026');
 
-  const ac  = acRange.reduce((s,i)=>s+(acS[i]||0),0);
-  const f48 = acRange.reduce((s,i)=>s+(f48S[i]||0),0);
-  const f39 = acRange.reduce((s,i)=>s+(f39S[i]||0),0);
-  const pl  = acRange.reduce((s,i)=>s+(plS[i]||0),0);
-  const lbl = acRange.length ? `(${D.labels[lo]}–${D.labels[acEnd-1]})` : '';
+  const ac   = acRange.reduce((s,i)=>s+(acS[i]||0), 0);
+  // forecasts use full period (not bounded to actual months)
+  const f48  = fcRange.reduce((s,i)=>s+(f48S[i]||0), 0);
+  const f39  = fcRange.reduce((s,i)=>s+(f39S[i]||0), 0);
+  const pl   = fcRange.reduce((s,i)=>s+(plS[i]||0),  0);
+  // vs comparison: actual vs forecast for the same actual months
+  const f48ac = acRange.reduce((s,i)=>s+(f48S[i]||0), 0);
+  const plac  = acRange.reduce((s,i)=>s+(plS[i]||0),  0);
 
-  const vsF  = pctN(ac,f48);
-  const vsP  = pctN(ac,pl);
+  const vsF  = acLen ? pctN(ac, f48ac) : null;
+  const vsP  = acLen ? pctN(ac, plac)  : null;
   const cls  = v => v===null?'':(v>=0?'pos':'neg');
   const fmt  = v => v===null?'—':(v>=0?'+':'')+v.toFixed(1)+'%';
 
-  const yrLabel = activeYr==='all'?'Todos':activeYr;
-  const [klo,khi] = getRange();
-  const f48fy = sa(getSeries('f48').slice(klo,khi));
-  const plfy  = sa(getSeries('plano2026').slice(klo,khi));
+  const perLbl = `(${D.labels[lo]}–${D.labels[hi-1]})`;
+  const acLbl  = acLen ? `(${D.labels[lo]}–${D.labels[acEnd-1]})` : perLbl;
 
   $id('kg').innerHTML = `
-    <div class="kpi kac"><div class="kl">Actual ${lbl}</div><div class="kv">R$ ${fmtB(ac)}</div><div class="kd">YTD ${acRange.length}m</div></div>
-    <div class="kpi kf48"><div class="kl">F 4+8 ${lbl}</div><div class="kv">R$ ${fmtB(f48)}</div><div class="kd ${cls(vsF)}">Actual ${fmt(vsF)} vs F4+8</div></div>
-    <div class="kpi kf39"><div class="kl">F 3+9 ${lbl}</div><div class="kv">R$ ${fmtB(f39)}</div><div class="kd">Mesmo período</div></div>
-    <div class="kpi kpl"><div class="kl">Plano ${lbl}</div><div class="kv">R$ ${fmtB(pl)}</div><div class="kd ${cls(vsP)}">Actual ${fmt(vsP)} vs Plano</div></div>
-    <div class="kpi kv5"><div class="kl">F 4+8 Full ${yrLabel}</div><div class="kv">R$ ${fmtB(f48fy)}</div><div class="kd">Plano: R$ ${fmtB(plfy)}</div></div>`;
+    <div class="kpi kac">
+      <div class="kl">Actual ${acLbl}</div>
+      <div class="kv">${acLen ? 'R$ '+fmtB(ac) : '—'}</div>
+      <div class="kd">${acLen ? 'Fechado '+acLen+'m' : 'Período futuro'}</div>
+    </div>
+    <div class="kpi kf48">
+      <div class="kl">F 4+8 ${perLbl}</div>
+      <div class="kv">R$ ${fmtB(f48)}</div>
+      <div class="kd ${cls(vsF)}">${acLen ? 'Actual '+fmt(vsF)+' vs F4+8' : 'Período completo'}</div>
+    </div>
+    <div class="kpi kf39">
+      <div class="kl">F 3+9 ${perLbl}</div>
+      <div class="kv">R$ ${fmtB(f39)}</div>
+      <div class="kd">Mesmo período</div>
+    </div>
+    <div class="kpi kpl">
+      <div class="kl">Plano ${perLbl}</div>
+      <div class="kv">R$ ${fmtB(pl)}</div>
+      <div class="kd ${cls(vsP)}">${acLen ? 'Actual '+fmt(vsP)+' vs Plano' : 'Período completo'}</div>
+    </div>`;
 }
 
 // ── COMPARISON PANEL ─────────────────────────────────────────────────────────
