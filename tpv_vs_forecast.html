@@ -432,7 +432,7 @@ function getLabels() {
   return Array.from({length: hi-lo}, (_,i) => MONTH_SHORT[(lo+i)%12]);
 }
 
-// Main series getter — respects all filters with priority order
+// Main series getter — respects all active filters using available cross dimensions
 function getSeries(scen) {
   const sc = D.scenarios[scen];
   if (!sc) return new Array(24).fill(0);
@@ -442,24 +442,37 @@ function getSeries(scen) {
   const cart  = gCart();
   const seg   = gSeg();
   const bu    = gBU();
-  // priority: prod > mop > canal > cart > seg > bu > total
-  if (prod)  return sc.by_product[prod]  || new Array(24).fill(0);
-  if (mop)   return sc.by_mop[mop]       || new Array(24).fill(0);
+  const segK  = seg && !seg.includes('|') ? seg : null;
+  const buKey = bu ? ((BU_KEY[scen]||{})[bu]||bu) : null;
+
+  // canal / cart override everything
   if (canal) return sc.by_canal[canal]   || new Array(24).fill(0);
   if (cart)  return sc.by_carteira[cart] || new Array(24).fill(0);
+
+  // prod: most specific single-dim; no prod×bu or prod×seg cross available
+  if (prod)  return sc.by_product[prod]  || new Array(24).fill(0);
+
+  // mop: use seg×mop or bu×mop cross when active
+  if (mop) {
+    if (segK  && sc.by_seg_by_mop?.[segK]?.[mop])  return sc.by_seg_by_mop[segK][mop];
+    if (buKey && sc.by_bu_by_mop?.[buKey]?.[mop])   return sc.by_bu_by_mop[buKey][mop];
+    return sc.by_mop[mop] || new Array(24).fill(0);
+  }
+
+  // bu + seg cross
+  if (buKey && segK) return sc.by_bu_by_seg?.[buKey]?.[segK] || new Array(24).fill(0);
+
+  // seg (single or multi), optionally scoped to bu
   if (seg) {
-    if (seg.includes('|')) {
-      const parts = seg.split('|');
-      const arr = new Array(24).fill(0);
-      parts.forEach(p => { const a=sc.by_segment[p]; if(a) a.forEach((v,i)=>arr[i]+=(v||0)); });
-      return arr;
-    }
-    return sc.by_segment[seg] || new Array(24).fill(0);
+    const arr = new Array(24).fill(0);
+    seg.split('|').forEach(p => {
+      const a = buKey ? sc.by_bu_by_seg?.[buKey]?.[p] : sc.by_segment[p];
+      if (a) a.forEach((v, i) => arr[i] += (v||0));
+    });
+    return arr;
   }
-  if (bu) {
-    const key = (BU_KEY[scen]||{})[bu] || bu;
-    return sc.by_bu[key] || new Array(24).fill(0);
-  }
+
+  if (buKey) return sc.by_bu[buKey] || new Array(24).fill(0);
   return sc.total;
 }
 
@@ -470,16 +483,17 @@ function getVisible(scen) {
 
 // ── FILTER NOTE ──────────────────────────────────────────────────────────────
 function updateNote() {
+  const seg = gSeg(); const bu = gBU();
+  const segLbl = seg ? (seg.includes('|') ? seg.split('|').map(s=>SEG_LBL[s]||s).join('+') : (SEG_LBL[seg]||seg)) : '';
   const active = [
-    gProd()&&'Produto', gMop()&&'MOP', gCanal()&&'Canal', gCart()&&'Carteira'
+    bu        && `BU: ${bu}`,
+    segLbl    && `Seg: ${segLbl}`,
+    gProd()   && `Produto: ${PROD_LBL[gProd()]||gProd()}`,
+    gMop()    && `MOP: ${MOP_LBL[gMop()]||gMop()}`,
+    gCanal()  && `Canal: ${gCanal()}`,
+    gCart()   && `Carteira: ${gCart()}`,
   ].filter(Boolean);
-  const note = $id('fnote');
-  if (active.length) {
-    note.textContent = 'Filtro ativo: '+active.join(', ')+
-      ' — dados granulares disponíveis a partir de Jan/26 (Actual) e meses previstos em cada cenário';
-  } else {
-    note.textContent = '';
-  }
+  $id('fnote').textContent = active.length ? 'Filtros ativos: ' + active.join(' · ') : '';
 }
 
 // ── KPIs ─────────────────────────────────────────────────────────────────────
@@ -792,16 +806,26 @@ function renderMopTrend() {
   const lo = 12, hi = 24;
   const labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const isPct = mopTrendMode === 'pct';
+  const _tSeg = gSeg(); const _tSegK = _tSeg && !_tSeg.includes('|') ? _tSeg : null;
+  const _tBU  = gBU();
+  const _getMopV = (src, scId, mop, gi) => {
+    const bk = _tBU ? ((BU_KEY[scId]||{})[_tBU]||_tBU) : null;
+    if (_tSegK && src.by_seg_by_mop?.[_tSegK]?.[mop])  return src.by_seg_by_mop[_tSegK][mop][gi]  || 0;
+    if (bk     && src.by_bu_by_mop?.[bk]?.[mop])        return src.by_bu_by_mop[bk][mop][gi]       || 0;
+    return (src.by_mop[mop]||[])[gi] || 0;
+  };
   const totals = Array.from({length:12}, (_,i) => {
     const gi = lo+i;
     const src = gi<=LAST_AC ? acSc : sc;
-    return mops.reduce((s,m)=>s+((src.by_mop[m]||[])[gi]||0), 0);
+    const scId = gi<=LAST_AC ? 'actual' : mopTrendScen;
+    return mops.reduce((s,m)=>s+_getMopV(src,scId,m,gi), 0);
   });
   const datasets = mops.map(mop => {
     const data = Array.from({length:12}, (_,i) => {
       const gi = lo+i;
       const src = gi<=LAST_AC ? acSc : sc;
-      const v = (src.by_mop[mop]||[])[gi]||0;
+      const scId = gi<=LAST_AC ? 'actual' : mopTrendScen;
+      const v = _getMopV(src, scId, mop, gi);
       if (!v) return null;
       return isPct ? (totals[i]>0?+(v/totals[i]*100).toFixed(2):null) : +(v/1e9).toFixed(3);
     });
@@ -857,7 +881,7 @@ function renderSeg() {
     labels = slugs;
     getRaw = s => { const key=(BU_KEY[s]||{})[bu]||bu; return segs.map(sg => { const arr=D.scenarios[s].by_bu_by_seg?.[key]?.[sg]; return arr?sa(arr.slice(lo,hi)):0; }); };
   } else if (hasOtherFilter || (segK && bu)) {
-    const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gMop()?(MOP_LBL[gMop()]||gMop()):gCanal()?gCanal():gCart()?gCart():bu||'Filtrado';
+    const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gMop()?(MOP_LBL[gMop()]||gMop()):gCanal()?gCanal():gCart()?gCart():(segK&&bu)?`${SEG_LBL[segK]||segK} (${bu})`:(SEG_LBL[segK]||segK||bu||'Filtrado');
     labels = [filtLbl];
     getRaw = s => [sa(getSeries(s).slice(lo,hi))];
   } else if (segK) {
@@ -904,7 +928,7 @@ function renderMop() {
     getRaw = s => mops.map(m => { const arr=D.scenarios[s].by_seg_by_mop?.[segK]?.[m]; return arr?sa(arr.slice(lo,hi)):0; });
   } else if (hasOtherFilter || bu || segK) {
     // Complex filter: show total with label
-    const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gCanal()?gCanal():gCart()?gCart():bu?bu:(SEG_LBL[segK]||segK||'Filtrado');
+    const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gCanal()?gCanal():gCart()?gCart():(bu&&segK)?`${bu} · ${SEG_LBL[segK]||segK}`:bu?bu:(SEG_LBL[segK]||segK||'Filtrado');
     labels = [filtLbl];
     getRaw = s => [sa(getSeries(s).slice(lo,hi))];
   } else {
