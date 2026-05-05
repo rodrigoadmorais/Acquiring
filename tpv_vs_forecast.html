@@ -787,10 +787,10 @@ function renderTable() {
   const prodLbl = {CHECKOUT:'Checkout',LINK:'Link',POINT:'Point',QR:'QR',TTP:'TTP'};
 
   $id('tHead').innerHTML = `<th>Mês</th>
-    <th class="num">Actual</th><th class="num">F 4+8</th>
-    <th class="num">F 3+9</th><th class="num">Plano</th>
-    <th class="num">Δ Ac/F4+8</th><th class="num">Δ Ac/Plano</th>
-    <th class="num">Δ F4+8/F3+9</th>`;
+    <th class="num">2025</th><th class="num">Actual</th><th class="num">F 4+8</th>
+    <th class="num">F 3+9</th><th class="num">Plano 2026</th>
+    <th class="num">Δ F4+8 vs F3+9</th><th class="num">Δ F4+8 vs Plano</th>
+    <th class="num">Δ F4+8 vs 2025</th>`;
 
   const nil = '<span style="color:var(--sub)">—</span>';
   const fR  = v => v ? `R$ ${fmtB(v)}` : nil;
@@ -799,17 +799,24 @@ function renderTable() {
   const sh  = (v,tot) => tot>0?`<em class="sh">${(v/tot*100).toFixed(1)}%</em>`:'';
 
   $id('tBody').innerHTML = labels.map((lbl,i) => {
-    const gi   = lo+i;
-    const isAc = gi<=LAST_AC;
-    const ac=acFull[gi], f48=f48Eff[gi], f39=f39Eff[gi], pl=plFull[gi];
-    const open = expandedMonths.has(gi);
+    const gi    = lo+i;
+    const isAc  = gi<=LAST_AC;
+    const is26  = gi>=12;
+    const ac    = acFull[gi];
+    const f48   = f48Eff[gi];
+    const f39   = f39Eff[gi];
+    const pl    = plFull[gi];
+    const ac25  = is26 ? acFull[gi-12] : null;   // same month 2025
+    const open  = expandedMonths.has(gi);
 
     let rows = `<tr style="cursor:pointer" onclick="toggleDrill(${gi})">
       <td><span class="arr ${open?'open':''}">▶</span><strong>${lbl}</strong>${isAc?' <span class="badge bac">A</span>':''}</td>
+      <td class="num">${fR(ac25)}</td>
       <td class="num">${fR(ac)}</td><td class="num">${fR(f48)}</td>
       <td class="num">${fR(f39)}</td><td class="num">${fR(pl)}</td>
-      <td class="num">${dlt(ac,f48)}</td><td class="num">${dlt(ac,pl)}</td>
       <td class="num">${dlt(f48,f39)}</td>
+      <td class="num">${dlt(f48,pl)}</td>
+      <td class="num">${is26?dlt(f48,ac25):nil}</td>
     </tr>`;
 
     if (open) {
@@ -819,18 +826,21 @@ function renderTable() {
         const src = useAc?'actual':scen;
         return (D.scenarios[src].by_product[prod]||[])[gi]||0;
       };
+      const getP25 = (prod) => is26?(D.scenarios.actual.by_product[prod]||[])[gi-12]||0:0;
       prods.forEach(prod=>{
-        const a  = (D.scenarios.actual.by_product[prod]||[])[gi]||0;
-        const f4 = getP('f48',prod,useAc48);
-        const f3 = getP('f39',prod,useAc39);
-        const pl = (D.scenarios.plano2026.by_product[prod]||[])[gi]||0;
-        if(!a&&!f4&&!f3&&!pl) return;
+        const a   = (D.scenarios.actual.by_product[prod]||[])[gi]||0;
+        const f4  = getP('f48',prod,useAc48);
+        const f3  = getP('f39',prod,useAc39);
+        const p26 = (D.scenarios.plano2026.by_product[prod]||[])[gi]||0;
+        const p25 = getP25(prod);
+        if(!a&&!f4&&!f3&&!p26&&!p25) return;
         rows+=`<tr class="drill">
           <td>↳ ${prodLbl[prod]||prod}</td>
+          <td class="num">${p25?fmtBs(p25)+' '+sh(p25,ac25||1):nil}</td>
           <td class="num">${a  ?fmtBs(a)  +' '+sh(a,ac)  :nil}</td>
           <td class="num">${f4 ?fmtBs(f4) +' '+sh(f4,f48):nil}</td>
           <td class="num">${f3 ?fmtBs(f3) +' '+sh(f3,f39):nil}</td>
-          <td class="num">${pl ?fmtBs(pl) +' '+sh(pl,plFull[gi]):nil}</td>
+          <td class="num">${p26?fmtBs(p26)+' '+sh(p26,plFull[gi]):nil}</td>
           <td class="num" colspan="3"></td>
         </tr>`;
       });
