@@ -157,22 +157,49 @@ if rows:
             val = parse_num(r[mc])
             add(f39_s, dims, MIDX[mc], val)
 
-# ── 3. tpv_combinado.tsv → f48 May-Dec 2026 (FORECAST 4+8 rows) ─────────────
-print("Processing tpv_combinado.tsv (FORECAST 4+8)...")
-with open('tpv_combinado.tsv', newline='', encoding='utf-8') as f:
-    for r in csv.DictReader(f, delimiter='\t'):
-        if r['CENARIO'].strip() != 'FORECAST 4+8': continue
-        mes = r['MES'].strip()
-        if mes not in MIDX or mes < '202605': continue  # only May-Dec 2026 (Apr covered by actual)
-        val = parse_num(r['VALOR'])
-        prod  = PROD_FC.get(r['PRODUTO'].strip(), r['PRODUTO'].strip() or 'OUTROS')
-        mop   = r['MOP'].strip() or 'OUTROS'
-        canal = norm_canal(r['CANAL'])
-        cart  = norm_cart(r['CARTEIRA'])
-        bu    = r.get('BU','').strip()
-        seg   = r.get('SEGMENTO','').strip()
+# ── 3. f48_raw_new.tsv → f48 May-Dec 2026 dimensional data ──────────────────
+# tpv_combinado.tsv VALOR is pre-aggregated across installments → wrong for summing
+# f48_raw_new.tsv has row-level data with correct month columns
+print("Processing f48_raw_new.tsv (May-Dec 2026 dims)...")
+F48_CART = {
+    'AQUISICAO':'AQUISICAO',
+    'LEGADO':'ENGAJAMENTO','BS HUNTING':'ENGAJAMENTO','BS FARMING':'ENGAJAMENTO',
+    'BS SIN TAG':'ENGAJAMENTO','BS HUNTING LC':'ENGAJAMENTO','TTP':'ENGAJAMENTO',
+    '-':'OUTROS','':'OUTROS',
+}
+F48_MOP = {
+    'account_money':'ACCOUNT_MONEY','bank_transfer':'BANK_TRANSFER',
+    'credit_card':'CREDIT_CARD','debit_card':'DEBIT_CARD',
+    'ticket':'TICKET','digital_currency':'DIGITAL_CURRENCY',
+    'others':'OUTROS','':'OUTROS',
+}
+F48_PROD = {
+    'POINT':'POINT','TTP':'TTP','QR SELLERS':'QR',
+    'LINK':'LINK','CHECKOUT':'CHECKOUT',
+    'OTHERS':'OUTROS','-':'OUTROS','':'OUTROS',
+}
+F48_CANAL = {
+    'FDV-P':'FDVP','FDV-T':'FDVT',
+    'APP':'DIGITAIS','LANDING':'DIGITAIS',
+    'LEGADO':'ENGAGEMENT','BIG SELLERS':'ENGAGEMENT',
+    'TTP':'OUTROS','TO':'TELESALES','TELESALES':'TELESALES',
+    'MGM':'MGM','RESELLERS':'RESELLERS',
+    'OTHERS':'OUTROS','-':'OUTROS','':'OUTROS',
+}
+F48_MONTHS_FC = [m for m in MONTHS if '202605' <= m <= '202612']
+with open('f48_raw_new.tsv', newline='', encoding='utf-8') as f:
+    for row in csv.DictReader(f, delimiter='\t'):
+        if row.get('P&L','').strip() != 'TPV': continue
+        bu    = row.get('BU','').strip()
+        seg   = row.get('SEG_OFICIAL','').strip()
+        cart  = F48_CART.get(row.get('PORTFOLIO','').strip().upper(), 'OUTROS')
+        canal = F48_CANAL.get(row.get('CANAL','').strip(), 'OUTROS')
+        prod  = F48_PROD.get(row.get('PRODUTO','').strip(), 'OUTROS')
+        mop   = F48_MOP.get(row.get('MEIO_PAGO','').strip().lower(), 'OUTROS')
         dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart,'bu':bu,'seg':seg}
-        add(f48_s, dims, MIDX[mes], val)
+        for m in F48_MONTHS_FC:
+            val = parse_num(row.get(m,''))
+            if val: add(f48_s, dims, MIDX[m], val)
 
 # ── 4. plano_raw.tsv → plano product/canal/carteira ─────────────────────────
 print("Processing plano_raw.tsv...")
