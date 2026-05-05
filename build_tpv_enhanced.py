@@ -62,24 +62,36 @@ MIDX   = {m:i for i,m in enumerate(MONTHS)}
 
 def zero24(): return [0.0]*24
 
+BU_PLANO = {
+    'OP - CHECKOUT':'OP','OP - LINK':'OP','OP - OTHERS':'OP',
+    'POINT':'POINT','QR':'QR SELLERS','QR FROM POINT':'QR SELLERS','TAP':'QR SELLERS',
+}
+
 def new_scen(base_total, base_bu, base_seg):
     return {
-        'total':      list(base_total),
-        'by_bu':      {k:list(v) for k,v in base_bu.items()},
-        'by_segment': {k:list(v) for k,v in base_seg.items()},
-        'by_product': defaultdict(zero24),
-        'by_mop':     defaultdict(zero24),
-        'by_canal':   defaultdict(zero24),
-        'by_carteira':defaultdict(zero24),
+        'total':         list(base_total),
+        'by_bu':         {k:list(v) for k,v in base_bu.items()},
+        'by_segment':    {k:list(v) for k,v in base_seg.items()},
+        'by_product':    defaultdict(zero24),
+        'by_mop':        defaultdict(zero24),
+        'by_canal':      defaultdict(zero24),
+        'by_carteira':   defaultdict(zero24),
+        'by_bu_by_seg':  defaultdict(lambda: defaultdict(zero24)),
+        'by_bu_by_mop':  defaultdict(lambda: defaultdict(zero24)),
+        'by_seg_by_mop': defaultdict(lambda: defaultdict(zero24)),
     }
 
 def add(scen, dims, idx, val):
-    """dims = {'product':..., 'mop':..., 'canal':..., 'carteira':...}"""
+    """dims = {'product':..., 'mop':..., 'canal':..., 'cart':..., 'bu':..., 'seg':...}"""
     if val == 0: return
     if dims.get('product'): scen['by_product'][dims['product']][idx] += val
     if dims.get('mop'):     scen['by_mop']    [dims['mop']]    [idx] += val
     if dims.get('canal'):   scen['by_canal']  [dims['canal']]  [idx] += val
     if dims.get('cart'):    scen['by_carteira'][dims['cart']]   [idx] += val
+    bu, seg, mop = dims.get('bu',''), dims.get('seg',''), dims.get('mop','')
+    if bu and seg:  scen['by_bu_by_seg'] [bu][seg][idx]  += val
+    if bu and mop:  scen['by_bu_by_mop'] [bu][mop][idx]  += val
+    if seg and mop: scen['by_seg_by_mop'][seg][mop][idx] += val
 
 # ── Load base data ────────────────────────────────────────────────────────────
 print("Loading base JSON...")
@@ -111,15 +123,19 @@ with open('actual_raw.tsv', newline='', encoding='utf-8') as f:
         mop   = r['METODO_PAGAMENTO'].strip() or 'OUTROS'
         canal = norm_canal(r['CANAL_AJUSTADO'])
         cart  = norm_cart(r['CARTEIRA'])
-        dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart}
+        bu_ac = BU_ACTUAL.get(r['PRODUTO'].strip(), '')
+        seg   = r.get('CUST_SEGMENT_CROSS', '').strip()
+        dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart,'bu':bu_ac,'seg':seg}
         # actual
         add(actual_s, dims, idx, val)
-        # f39 gets Jan-Mar 2026 from actual
+        # f39 gets Jan-Mar 2026 from actual (use QR SELLERS key for consistency)
+        bu_fc = BU_PLANO.get(r['PRODUTO'].strip(), bu_ac)
+        dims_fc = {**dims, 'bu': bu_fc}
         if mes in ('202601','202602','202603'):
-            add(f39_s, dims, idx, val)
+            add(f39_s, dims_fc, idx, val)
         # f48 gets Jan-Apr 2026 from actual
         if mes in ('202601','202602','202603','202604'):
-            add(f48_s, dims, idx, val)
+            add(f48_s, dims_fc, idx, val)
 
 # ── 2. forecast_39_raw.tsv → f39 Apr-Dec 2026 ───────────────────────────────
 print("Processing forecast_39_raw.tsv...")
@@ -133,7 +149,9 @@ if rows:
         mop   = r['MOP'].strip() or 'OUTROS'
         canal = norm_canal(r['CANAL'])
         cart  = norm_cart(r['CARTEIRA'])
-        dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart}
+        bu    = r.get('BU','').strip()
+        seg   = r.get('SEGMENTO','').strip()
+        dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart,'bu':bu,'seg':seg}
         for mc in mon_cols:
             if mc not in MIDX: continue
             val = parse_num(r[mc])
@@ -151,7 +169,9 @@ with open('tpv_combinado.tsv', newline='', encoding='utf-8') as f:
         mop   = r['MOP'].strip() or 'OUTROS'
         canal = norm_canal(r['CANAL'])
         cart  = norm_cart(r['CARTEIRA'])
-        dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart}
+        bu    = r.get('BU','').strip()
+        seg   = r.get('SEGMENTO','').strip()
+        dims  = {'product':prod,'mop':mop,'canal':canal,'cart':cart,'bu':bu,'seg':seg}
         add(f48_s, dims, MIDX[mes], val)
 
 # ── 4. plano_raw.tsv → plano product/canal/carteira ─────────────────────────
@@ -164,7 +184,9 @@ with open('plano_raw.tsv', newline='', encoding='utf-8') as f:
         prod = PROD_ACTUAL.get(r['PRODUTO'].strip(), r['PRODUTO'].strip() or 'OUTROS')
         canal = norm_canal(r['CANAL'])
         cart  = norm_cart(r['CARTEIRA'])
-        dims  = {'product':prod,'canal':canal,'cart':cart}
+        bu    = BU_PLANO.get(r['PRODUTO'].strip(), '')
+        seg   = r.get('SEGMENTO','').strip()
+        dims  = {'product':prod,'canal':canal,'cart':cart,'bu':bu,'seg':seg}
         add(plano_s, dims, MIDX[mes], val)
 
 # ── 5. plano_mop_raw.tsv → plano MOP (2026 only) ────────────────────────────
@@ -176,21 +198,31 @@ with open('plano_mop_raw.tsv', newline='', encoding='utf-8') as f:
         val = parse_num(r['SUM de TPV'])
         mop = r['MOP'].strip() or 'OUTROS'
         if mop == 'PIX': mop = 'BANK_TRANSFER'
-        if val: plano_s['by_mop'][mop][MIDX[mes]] += val
+        bu  = BU_PLANO.get(r.get('PRODUTO','').strip(), '')
+        if val:
+            plano_s['by_mop'][mop][MIDX[mes]] += val
+            if bu: plano_s['by_bu_by_mop'][bu][mop][MIDX[mes]] += val
 
 # ── Finalise (convert defaultdicts) ──────────────────────────────────────────
 def finalise(s):
     for dim in ('by_product','by_mop','by_canal','by_carteira'):
-        # round and drop zero-only keys
         cleaned = {}
         for k,arr in s[dim].items():
             rounded = [round(v) for v in arr]
             if any(rounded): cleaned[k] = rounded
         s[dim] = cleaned
-    # also round base arrays
     s['total'] = [round(v) for v in s['total']]
     for sub in ('by_bu','by_segment'):
         s[sub] = {k:[round(x) for x in v] for k,v in s[sub].items()}
+    for xdim in ('by_bu_by_seg','by_bu_by_mop','by_seg_by_mop'):
+        outer = {}
+        for k1, inner_d in s[xdim].items():
+            inner = {}
+            for k2, arr in inner_d.items():
+                rounded = [round(v) for v in arr]
+                if any(rounded): inner[k2] = rounded
+            if inner: outer[k1] = inner
+        s[xdim] = outer
     return s
 
 for sc in (actual_s, f48_s, f39_s, plano_s):
