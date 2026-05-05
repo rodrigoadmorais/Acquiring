@@ -108,6 +108,14 @@ actual_s['total'][idx_may26] = 0
 for v in actual_s['by_bu'].values():     v[idx_may26] = 0
 for v in actual_s['by_segment'].values(): v[idx_may26] = 0
 
+# ── Zero ALL 2026 months in f39/f48/plano BEFORE rebuilding ──────────────────
+# This ensures actual months are sourced entirely from actual_raw.tsv
+for _i in range(12, 24):
+    for _s in (f39_s, f48_s, plano_s):
+        _s['total'][_i] = 0.0
+        for _v in _s['by_bu'].values():      _v[_i] = 0.0
+        for _v in _s['by_segment'].values(): _v[_i] = 0.0
+
 # ── 1. actual_raw.tsv → actual + f39 Jan-Mar + f48 Jan-Apr ──────────────────
 # New format: wide/pivoted TSV — months are column headers (202.401 → 202401)
 # Columns: PRODUTO_MACRO, CUST_SEGMENT_CROSS, CARTEIRA, PORTFOLIO_SELLER,
@@ -143,8 +151,14 @@ with open('actual_raw.tsv', newline='', encoding='utf-8') as f:
             dims_fc = {**dims, 'bu': bu_fc}
             if mes in ('202601','202602','202603'):
                 add(f39_s, dims_fc, idx, val)
+                f39_s['total'][idx] += val
+                if bu_fc: f39_s['by_bu'].setdefault(bu_fc, zero24())[idx] += val
+                if seg:   f39_s['by_segment'].setdefault(seg, zero24())[idx] += val
             if mes in ('202601','202602','202603','202604'):
                 add(f48_s, dims_fc, idx, val)
+                f48_s['total'][idx] += val
+                if bu_fc: f48_s['by_bu'].setdefault(bu_fc, zero24())[idx] += val
+                if seg:   f48_s['by_segment'].setdefault(seg, zero24())[idx] += val
 
 # ── 2+3+4+5. unified_scenarios_raw.tsv → f39 (Apr-Dec26), f48 (May-Dec26), plano (Jan-Dec26)
 print("Processing unified_scenarios_raw.tsv...")
@@ -174,20 +188,6 @@ def _u_cart(bs_port, port):
 VER_MAP   = {'FORECAST 3+9':'f39','FORECAST 4+8':'f48','PLANO V5':'plano'}
 VER_START = {'f39':'202604','f48':'202605','plano':'202601'}
 VER_SCEN  = {'f39':f39_s,'f48':f48_s,'plano':plano_s}
-
-# Zero out forecast months before rebuilding
-for _i in range(15, 24):   # 202604-202612 for f39
-    f39_s['total'][_i] = 0.0
-    for _v in f39_s['by_bu'].values():      _v[_i] = 0.0
-    for _v in f39_s['by_segment'].values(): _v[_i] = 0.0
-for _i in range(16, 24):   # 202605-202612 for f48
-    f48_s['total'][_i] = 0.0
-    for _v in f48_s['by_bu'].values():      _v[_i] = 0.0
-    for _v in f48_s['by_segment'].values(): _v[_i] = 0.0
-for _i in range(12, 24):   # 202601-202612 for plano
-    plano_s['total'][_i] = 0.0
-    for _v in plano_s['by_bu'].values():      _v[_i] = 0.0
-    for _v in plano_s['by_segment'].values(): _v[_i] = 0.0
 
 with open('unified_scenarios_raw.tsv', newline='', encoding='utf-8') as f:
     reader = csv.reader(f, delimiter='\t')
