@@ -147,18 +147,43 @@ with open('actual_raw.tsv', newline='', encoding='utf-8') as f:
             if not val: continue
             idx = MIDX[mes]
             add(actual_s, dims, idx, val)
-            bu_fc = BU_PLANO.get(r['PRODUTO'].strip(), bu_ac)
-            dims_fc = {**dims, 'bu': bu_fc}
-            if mes in ('202601','202602','202603'):
-                add(f39_s, dims_fc, idx, val)
-                f39_s['total'][idx] += val
-                if bu_fc: f39_s['by_bu'].setdefault(bu_fc, zero24())[idx] += val
-                if seg:   f39_s['by_segment'].setdefault(seg, zero24())[idx] += val
-            if mes in ('202601','202602','202603','202604'):
-                add(f48_s, dims_fc, idx, val)
-                f48_s['total'][idx] += val
-                if bu_fc: f48_s['by_bu'].setdefault(bu_fc, zero24())[idx] += val
-                if seg:   f48_s['by_segment'].setdefault(seg, zero24())[idx] += val
+
+# ── Copy actual_s → f39 actual months (Jan-Mar) and f48 actual months (Jan-Apr) ──
+# Uses the same BU/segment taxonomy as actual, guaranteeing exact match for ALL filters
+F39_ACT = [12, 13, 14]        # 202601-202603
+F48_ACT = [12, 13, 14, 15]   # 202601-202604
+
+def _copy_actual_months(src, dst, indices, bu_remap=None):
+    """Copy src actual months into dst. bu_remap normalises BU keys to forecast taxonomy."""
+    def rbu(k): return bu_remap.get(k, k) if bu_remap else k
+    for i in indices:
+        dst['total'][i] = src['total'][i]
+        for k, arr in src['by_bu'].items():
+            dst['by_bu'].setdefault(rbu(k), zero24())[i] += arr[i]
+        for k, arr in src['by_segment'].items():
+            dst['by_segment'].setdefault(k, zero24())[i] = arr[i]
+        for k, arr in src['by_product'].items():
+            dst['by_product'][k][i] = arr[i]
+        for k, arr in src['by_mop'].items():
+            dst['by_mop'][k][i] = arr[i]
+        for k, arr in src['by_canal'].items():
+            dst['by_canal'][k][i] = arr[i]
+        for k, arr in src['by_carteira'].items():
+            dst['by_carteira'][k][i] = arr[i]
+        for bu, seg_d in src['by_bu_by_seg'].items():
+            for sg, arr in seg_d.items():
+                dst['by_bu_by_seg'][rbu(bu)][sg][i] += arr[i]
+        for bu, mop_d in src['by_bu_by_mop'].items():
+            for mp, arr in mop_d.items():
+                dst['by_bu_by_mop'][rbu(bu)][mp][i] += arr[i]
+        for sg, mop_d in src['by_seg_by_mop'].items():
+            for mp, arr in mop_d.items():
+                dst['by_seg_by_mop'][sg][mp][i] = arr[i]
+
+# Remap actual 'QR' → 'QR SELLERS' so BU keys are consistent with forecast taxonomy
+_BU_REMAP = {'QR': 'QR SELLERS'}
+_copy_actual_months(actual_s, f39_s, F39_ACT, bu_remap=_BU_REMAP)
+_copy_actual_months(actual_s, f48_s, F48_ACT, bu_remap=_BU_REMAP)
 
 # ── 2+3+4+5. unified_scenarios_raw.tsv → f39 (Apr-Dec26), f48 (May-Dec26), plano (Jan-Dec26)
 print("Processing unified_scenarios_raw.tsv...")
