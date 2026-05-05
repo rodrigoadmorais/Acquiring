@@ -211,34 +211,50 @@ with open('f48_raw_new.tsv', newline='', encoding='utf-8') as f:
             val = parse_num(row.get(m,''))
             if val: add(f48_s, dims, MIDX[m], val)
 
-# ── 4. plano_raw.tsv → plano product/canal/carteira ─────────────────────────
-print("Processing plano_raw.tsv...")
-with open('plano_raw.tsv', newline='', encoding='utf-8') as f:
-    for r in csv.DictReader(f, delimiter='\t'):
-        mes = r['MES'].strip()
-        if mes not in MIDX: continue
-        val  = parse_num(r['TPV_PLANO'])
-        prod = PROD_ACTUAL.get(r['PRODUTO'].strip(), r['PRODUTO'].strip() or 'OUTROS')
-        canal = norm_canal(r['CANAL'])
-        cart  = norm_cart(r['CARTEIRA'])
-        bu    = BU_PLANO.get(r['PRODUTO'].strip(), '')
-        seg   = r.get('SEGMENTO','').strip()
-        dims  = {'product':prod,'canal':canal,'cart':cart,'bu':bu,'seg':seg}
-        add(plano_s, dims, MIDX[mes], val)
+# ── 4+5. plano_v5_raw.tsv → plano all dims (2026 only) ───────────────────────
+print("Processing plano_v5_raw.tsv...")
 
-# ── 5. plano_mop_raw.tsv → plano MOP (2026 only) ────────────────────────────
-print("Processing plano_mop_raw.tsv...")
-with open('plano_mop_raw.tsv', newline='', encoding='utf-8') as f:
+_PL_BU  = {'ONLINE PAYMENTS':'OP','POINT':'POINT','QR':'QR SELLERS'}
+_PL_PROD = {'CHECKOUT':'CHECKOUT','LINK':'LINK','OTHERS':'OTHERS',
+            'POINT':'POINT','QR SELLERS':'QR','TTP':'TTP','-':'OTHERS'}
+_PL_MOP  = {'account_money':'ACCOUNT_MONEY','bank_transfer':'BANK_TRANSFER',
+            'credit_card':'CREDIT_CARD','debit_card':'DEBIT_CARD',
+            'digital_currency':'DIGITAL_CURRENCY','ticket':'TICKET',
+            'consumer_credits':''}
+
+def _pl_cart(bs_port, port):
+    bs = bs_port.strip(); po = port.strip()
+    if bs and bs != '-':
+        if bs == 'TTP': return 'TTP'
+        if bs.startswith('BS'): return 'ENGAJAMENTO' if 'FARM' in bs or 'SIN' in bs.upper() else 'AQUISICAO'
+        return 'OUTROS'
+    if po and po != '-':
+        return 'AQUISICAO' if po == 'AQUISICAO' else 'ENGAJAMENTO'
+    return ''
+
+# Zero out plano_s 2026 months before rebuilding from new source
+for _i in range(12, 24):
+    plano_s['total'][_i] = 0.0
+    for _v in plano_s['by_bu'].values():      _v[_i] = 0.0
+    for _v in plano_s['by_segment'].values(): _v[_i] = 0.0
+
+with open('plano_v5_raw.tsv', newline='', encoding='utf-8') as f:
     for r in csv.DictReader(f, delimiter='\t'):
-        mes = r['MES'].strip()
-        if mes not in MIDX or mes < '202601': continue
-        val = parse_num(r['SUM de TPV'])
-        mop = r['MOP'].strip() or 'OUTROS'
-        if mop == 'PIX': mop = 'BANK_TRANSFER'
-        bu  = BU_PLANO.get(r.get('PRODUTO','').strip(), '')
-        if val:
-            plano_s['by_mop'][mop][MIDX[mes]] += val
-            if bu: plano_s['by_bu_by_mop'][bu][mop][MIDX[mes]] += val
+        mes = r['YEARMONTH_ID'].strip()
+        if mes not in MIDX: continue
+        val = parse_num(r[' VALUE_AMOUNT '])
+        if not val: continue
+        bu   = _PL_BU.get(r['BU'].strip(), r['BU'].strip())
+        seg  = r['SEGMENT_DESC'].strip()
+        prod = _PL_PROD.get(r['PRODUCT_DESC'].strip(), '')
+        mop  = _PL_MOP.get(r['PAYMENT_METHOD_DESC'].strip(), '')
+        cart = _pl_cart(r['BALANCE_SHEET_PORTFOLIO_DESC'], r['PORTFOLIO_DESC'])
+        idx  = MIDX[mes]
+        plano_s['total'][idx] += val
+        if bu:  plano_s['by_bu'][bu][idx]       += val
+        if seg: plano_s['by_segment'][seg][idx]  += val
+        dims = {'product':prod,'mop':mop,'canal':'','cart':cart,'bu':bu,'seg':seg}
+        add(plano_s, dims, idx, val)
 
 # ── Finalise (convert defaultdicts) ──────────────────────────────────────────
 def finalise(s):
