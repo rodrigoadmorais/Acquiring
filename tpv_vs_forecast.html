@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --y:#FFE600;--bg:#F5F7FA;--card:#FFF;--brd:#E5E7EB;
@@ -113,6 +114,21 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
 
 
 
+/* export modal */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.50);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.modal-box{background:var(--card);border-radius:16px;padding:24px;width:360px;box-shadow:0 24px 64px rgba(0,0,0,.35);border:1px solid var(--brd)}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-title{font-size:15px;font-weight:800;color:var(--tx);letter-spacing:-.2px}
+.modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.modal-field label{font-size:9.5px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px}
+.modal-field select{padding:6px 9px;font-size:12px;border-radius:8px;border:1px solid var(--brd);background:var(--bg);color:var(--tx);font-family:inherit;cursor:pointer}
+.modal-field select:focus{outline:2px solid var(--y)}
+.modal-hint{font-size:10px;color:var(--sub);line-height:1.5;margin-bottom:18px;padding:10px 12px;background:rgba(0,0,0,.03);border-radius:8px;border:1px solid var(--brd)}
+[data-theme=dark] .modal-hint{background:rgba(255,255,255,.03)}
+.modal-hint strong{color:var(--tx)}
+.exp-btn{width:100%;padding:10px;background:var(--y);color:#111;border:none;border-radius:9px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:-.1px;transition:.12s}
+.exp-btn:hover{filter:brightness(.94)}
+.exp-btn:active{transform:scale(.98)}
 /* responsive */
 @media(max-width:900px){.mrow{grid-template-columns:1fr}.brow{grid-template-columns:1fr 1fr}}
 @media(max-width:900px){.kg{grid-template-columns:repeat(3,1fr)}.brow{grid-template-columns:1fr}}
@@ -123,7 +139,10 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
 
 <header class="hdr">
   <div><div class="ht">TPV &mdash; Actual vs Forecasts</div><div class="hs">Acquiring Brasil &middot; 04/05/2026</div></div>
-  <button class="ib" id="themeBtn" title="Tema">🌙</button>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button class="ib" onclick="openExport()" title="Exportar dados" style="width:auto;padding:0 10px;gap:5px;font-size:11px;font-weight:700;color:#111">&#8595; Excel</button>
+    <button class="ib" id="themeBtn" title="Tema">🌙</button>
+  </div>
 </header>
 
 <div class="leg">
@@ -1094,6 +1113,162 @@ $id('themeBtn').onclick = () => {
 Chart.register(ChartDataLabels);
 render();
 $id('btnYoY25').classList.add('on');
+
+// ── EXPORT ───────────────────────────────────────────────────────────────────
+const SCEN_LBL = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano 2026'};
+const EXP_PROD_LBL = {CHECKOUT:'Checkout',LINK:'Link',OTHERS:'Outros',POINT:'Device (Point)',QR:'QR',TTP:'TTP'};
+const EXP_MOP_LBL  = {CREDIT_CARD:'Crédito',DEBIT_CARD:'Débito',BANK_TRANSFER:'PIX',
+                       ACCOUNT_MONEY:'Conta MP',TICKET:'Boleto',DIGITAL_CURRENCY:'Moeda Digital',OUTROS:'Outros'};
+const EXP_BU_LBL   = {'OP':'OP','POINT':'POINT','QR SELLERS':'QR'};
+let expPer = 'all';
+
+function openExport() { $id('exportModal').style.display = 'flex'; }
+function closeExport() { $id('exportModal').style.display = 'none'; }
+
+function expSetPer(btn, v) {
+  expPer = v;
+  ['expPerAll','expPerCur'].forEach(id => $id(id).classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function runExport() {
+  const scenId = $id('expScen').value;
+  const sc = D.scenarios[scenId];
+  const months = D.months;
+  const lbls   = D.labels;
+
+  let lo = 0, hi = months.length;
+  if (expPer === 'current') { const r = getRange(); lo = r[0]; hi = r[1]; }
+
+  const fmt = v => v ? Math.round(v) : 0;
+
+  // ── Sheet 1: Por Mês ──────────────────────────────────────────────────────
+  const sMes = [['Mês','TPV (R$)']];
+  for (let i = lo; i < hi; i++) {
+    const v = fmt(sc.total[i]);
+    if (v) sMes.push([lbls[i], v]);
+  }
+
+  // ── Sheet 2: BU × Mês ────────────────────────────────────────────────────
+  const sBU = [['Mês','BU','TPV (R$)']];
+  for (let i = lo; i < hi; i++) {
+    Object.entries(sc.by_bu || {}).sort().forEach(([bu, arr]) => {
+      const v = fmt(arr[i]);
+      if (v) sBU.push([lbls[i], EXP_BU_LBL[bu] || bu, v]);
+    });
+  }
+
+  // ── Sheet 3: Segmento × Mês ───────────────────────────────────────────────
+  const sSeg = [['Mês','Segmento','TPV (R$)']];
+  const SEG_ORDER = ['BIG SELLERS','LONGTAIL','SMB'];
+  for (let i = lo; i < hi; i++) {
+    SEG_ORDER.forEach(seg => {
+      const arr = (sc.by_segment || {})[seg];
+      if (!arr) return;
+      const v = fmt(arr[i]);
+      if (v) sSeg.push([lbls[i], seg, v]);
+    });
+  }
+
+  // ── Sheet 4: Produto × Mês ───────────────────────────────────────────────
+  const sProd = [['Mês','Produto','TPV (R$)']];
+  const PROD_ORDER = ['CHECKOUT','LINK','OTHERS','POINT','QR','TTP'];
+  for (let i = lo; i < hi; i++) {
+    PROD_ORDER.forEach(prod => {
+      const arr = (sc.by_product || {})[prod];
+      if (!arr) return;
+      const v = fmt(arr[i]);
+      if (v) sProd.push([lbls[i], EXP_PROD_LBL[prod] || prod, v]);
+    });
+  }
+
+  // ── Sheet 5: MOP × Mês ───────────────────────────────────────────────────
+  const sMop = [['Mês','Meio de Pagamento','TPV (R$)']];
+  const MOP_ORDER = ['CREDIT_CARD','DEBIT_CARD','BANK_TRANSFER','ACCOUNT_MONEY','TICKET','DIGITAL_CURRENCY'];
+  for (let i = lo; i < hi; i++) {
+    MOP_ORDER.forEach(mop => {
+      const arr = (sc.by_mop || {})[mop];
+      if (!arr) return;
+      const v = fmt(arr[i]);
+      if (v) sMop.push([lbls[i], EXP_MOP_LBL[mop] || mop, v]);
+    });
+  }
+
+  // ── Sheet 6: Segmento × MOP × Mês ────────────────────────────────────────
+  const sSegMop = [['Mês','Segmento','Meio de Pagamento','TPV (R$)']];
+  for (let i = lo; i < hi; i++) {
+    SEG_ORDER.forEach(seg => {
+      MOP_ORDER.forEach(mop => {
+        const v = fmt(((sc.by_seg_by_mop || {})[seg] || {})[mop]?.[i] || 0);
+        if (v) sSegMop.push([lbls[i], seg, EXP_MOP_LBL[mop] || mop, v]);
+      });
+    });
+  }
+
+  // ── Workbook ─────────────────────────────────────────────────────────────
+  const wb = XLSX.utils.book_new();
+  const sheets = [
+    ['Por Mês',       sMes],
+    ['Por BU',        sBU],
+    ['Por Segmento',  sSeg],
+    ['Por Produto',   sProd],
+    ['Por MOP',       sMop],
+    ['Segmento x MOP',sSegMop],
+  ];
+  sheets.forEach(([name, data]) => {
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    // right-align TPV column and set number format
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    const tpvCol = data[0].length - 1;
+    for (let r = 1; r <= range.e.r; r++) {
+      const cell = ws[XLSX.utils.encode_cell({r, c: tpvCol})];
+      if (cell) { cell.t = 'n'; cell.z = '#,##0'; }
+    }
+    // freeze header row
+    ws['!freeze'] = {xSplit:0, ySplit:1};
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  });
+
+  const scenSlug = scenId.replace('plano2026','Plano').replace('actual','Actual').replace('f48','F4+8').replace('f39','F3+9');
+  const per = expPer==='current' ? `_${$id('fbar') ? activeYr : 'sel'}` : '_todos';
+  XLSX.writeFile(wb, `TPV_${scenSlug}${per}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  closeExport();
+}
 </script>
+
+<!-- ── Export Modal ── -->
+<div id="exportModal" class="modal-ov" style="display:none" onclick="if(event.target===this)closeExport()">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title">Exportar Dados</span>
+      <button class="ib" onclick="closeExport()" style="font-size:13px">✕</button>
+    </div>
+
+    <div class="modal-field">
+      <label>Cenário</label>
+      <select id="expScen">
+        <option value="actual">Actual</option>
+        <option value="f48">Forecast 4+8</option>
+        <option value="f39">Forecast 3+9</option>
+        <option value="plano2026" selected>Plano 2026</option>
+      </select>
+    </div>
+
+    <div class="modal-field">
+      <label>Período</label>
+      <div class="rg">
+        <button class="rb on" id="expPerAll" onclick="expSetPer(this,'all')">Todos os meses</button>
+        <button class="rb"    id="expPerCur" onclick="expSetPer(this,'current')">Período atual</button>
+      </div>
+    </div>
+
+    <div class="modal-hint">
+      O arquivo <strong>.xlsx</strong> terá 6 abas:<br>
+      <strong>Por Mês · Por BU · Por Segmento · Por Produto · Por MOP · Segmento × MOP</strong>
+    </div>
+
+    <button class="exp-btn" onclick="runExport()">⬇&nbsp; Baixar Excel</button>
+  </div>
+</div>
 </body>
 </html>
