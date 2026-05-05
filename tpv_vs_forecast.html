@@ -73,12 +73,15 @@ em.sh{font-style:italic;color:var(--sub);font-size:10px;margin-left:2px}
 .chart-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
 .chart-hd .ct{margin-bottom:0}
 /* main row */
+.main-section{display:grid;grid-template-columns:1fr 320px;gap:12px;padding:12px 24px 0;align-items:start}
+.main-left{display:flex;flex-direction:column;gap:12px;min-width:0}
+.main-section .kg{padding:0}
 .mrow{display:grid;grid-template-columns:1fr 320px;gap:12px;padding:12px 24px 0;align-items:start}
 .card{background:var(--card);border-radius:12px;padding:16px 18px 14px;border:1px solid var(--brd);box-shadow:0 1px 3px rgba(0,0,0,.04);transition:.12s}
 .card:hover{box-shadow:0 3px 12px rgba(0,0,0,.08)}
 .ct{font-size:11px;font-weight:700;margin-bottom:12px;color:var(--tx)}
 /* comparison panel */
-.cmpbox{background:var(--card);border-radius:12px;border:1px solid var(--brd);box-shadow:0 1px 3px rgba(0,0,0,.04);padding:14px;display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto}
+.cmpbox{background:var(--card);border-radius:12px;border:1px solid var(--brd);box-shadow:0 1px 3px rgba(0,0,0,.04);padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
 .cmptit{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}
 .selrow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .selrow select{font-size:10px}
@@ -218,10 +221,11 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
 </div>
 <div class="fnote" id="fnote"></div>
 
+<div class="main-section">
+<div class="main-left">
 <div class="kg" id="kg"></div>
 
-<div class="mrow">
-  <div class="card">
+<div class="card">
     <div class="chart-hd">
       <div class="ct">Evolução Mensal do TPV</div>
       <div style="display:flex;gap:4px">
@@ -231,7 +235,8 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
     </div>
     <canvas id="cMain" height="110"></canvas>
   </div>
-  <div class="cmpbox">
+</div><!-- /main-left -->
+<div class="cmpbox">
     <div class="cmptit">Comparativo A vs B</div>
     <div class="selrow">
       <select id="cA" onchange="renderCmp()">
@@ -299,7 +304,7 @@ tbody tr:hover td{background:rgba(255,230,0,.05)}
     </div>
     <div id="cmpDiv"></div>
   </div>
-</div>
+</div><!-- /main-section -->
 
 
 <div class="brow">
@@ -637,12 +642,32 @@ function renderCmp() {
 
   const lA=$id('cA').options[$id('cA').selectedIndex].text.replace(' — ',' ');
   const lB=$id('cB').options[$id('cB').selectedIndex].text.replace(' — ',' ');
+  // ── Products section when BU filter active ────────────────────────────
+  const BU_PRODS = {
+    POINT:[{k:'POINT',l:'Device'},{k:'TTP',l:'TTP'}],
+    OP:   [{k:'LINK',l:'Link'},{k:'CHECKOUT',l:'Checkout'}],
+    QR:   [],
+  };
+  let prodSection = '';
+  if (fBu && BU_PRODS[fBu] && BU_PRODS[fBu].length > 0) {
+    let ptA=0, ptB=0;
+    BU_PRODS[fBu].forEach(({k})=>{ ptA+=slc(scA.by_product[k],A.lo,A.hi); ptB+=slc(scB.by_product[k],B.lo,B.hi); });
+    const prodRows2 = BU_PRODS[fBu].map(({k,l})=>{
+      const a=slc(scA.by_product[k],A.lo,A.hi), b=slc(scB.by_product[k],B.lo,B.hi);
+      if(!a&&!b) return '';
+      const saStr=ptA>0&&a?` <em>${sh(a,ptA)}</em>`:'', sbStr=ptB>0&&b?` <em>${sh(b,ptB)}</em>`:'';
+      return `<tr><td>${l}</td><td>${fmtBs(a)}${saStr}</td><td>${fmtBs(b)}${sbStr}</td></tr>`;
+    }).join('');
+    if (prodRows2) prodSection = `<tr class="sep"><td colspan="3">Produtos</td></tr>${prodRows2}`;
+  }
+
   $id('cmpDiv').innerHTML=`<table class="ctbl">
     <thead><tr><th>Métrica</th><th>A: ${lA}</th><th>B: ${lB}</th></tr></thead>
     <tbody>
       <tr class="sep"><td colspan="3">Total</td></tr>
       <tr><td>TPV</td><td>${diff(totA,totB)}</td><td>${fmtBs(totB)}</td></tr>
       <tr class="sep"><td colspan="3">Por BU</td></tr>${buRows}
+      ${prodSection}
       <tr class="sep"><td colspan="3">Segmento</td></tr>${segRows}
       <tr class="sep"><td colspan="3">Share MOP</td></tr>${mopRows}
     </tbody></table>`;
@@ -804,16 +829,21 @@ function renderSeg() {
   const slugs = ['Big Sellers','Longtail','SMB'];
   const scens = ['actual','f48','f39','plano2026'];
   const names = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano'};
-  const seg = gSeg();
-  const hasOtherFilter = gProd()||gMop()||gCanal()||gCart()||gBU();
+  const seg = gSeg(); const segK = seg&&!seg.includes('|')?seg:null;
+  const bu = gBU();
+  const hasOtherFilter = gProd()||gMop()||gCanal()||gCart();
   let labels, getRaw;
-  if (hasOtherFilter) {
-    const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gMop()?(MOP_LBL[gMop()]||gMop()):gCanal()?gCanal():gCart()?gCart():gBU()||'Filtrado';
+  if (bu && !hasOtherFilter && !segK) {
+    // BU filter only → show segments within that BU
+    labels = slugs;
+    getRaw = s => { const key=(BU_KEY[s]||{})[bu]||bu; return segs.map(sg => { const arr=D.scenarios[s].by_bu_by_seg?.[key]?.[sg]; return arr?sa(arr.slice(lo,hi)):0; }); };
+  } else if (hasOtherFilter || (segK && bu)) {
+    const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gMop()?(MOP_LBL[gMop()]||gMop()):gCanal()?gCanal():gCart()?gCart():bu||'Filtrado';
     labels = [filtLbl];
     getRaw = s => [sa(getSeries(s).slice(lo,hi))];
-  } else if (seg) {
-    labels = [seg==='BIG SELLERS'?'Big Sellers':seg==='LONGTAIL'?'Longtail':'SMB'];
-    getRaw = s => { const arr=D.scenarios[s].by_segment[seg]; return [arr?sa(arr.slice(lo,hi)):0]; };
+  } else if (segK) {
+    labels = [SEG_LBL[segK]||segK];
+    getRaw = s => { const arr=D.scenarios[s].by_segment[segK]; return [arr?sa(arr.slice(lo,hi)):0]; };
   } else {
     labels = slugs;
     getRaw = s => segs.map(sg => { const arr=D.scenarios[s].by_segment[sg]; return arr?sa(arr.slice(lo,hi)):0; });
@@ -836,16 +866,28 @@ function renderMop() {
   const scens = ['actual','f48','f39','plano2026'];
   const names = {actual:'Actual',f48:'F 4+8',f39:'F 3+9',plano2026:'Plano'};
   const mop = gMop();
-  const hasOtherFilter = gProd()||gCanal()||gCart()||gBU()||gSeg();
+  const bu = gBU();
+  const seg = gSeg(); const segK = seg&&!seg.includes('|')?seg:null;
+  const hasOtherFilter = gProd()||gCanal()||gCart();
   const isPct = mopMode === 'pct';
   let labels, getRaw;
-  if (hasOtherFilter) {
-    const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gCanal()?gCanal():gCart()?gCart():gBU()?gBU():(SEG_LBL[gSeg()]||gSeg()||'Filtrado');
-    labels = [filtLbl];
-    getRaw = s => [sa(getSeries(s).slice(lo,hi))];
-  } else if (mop) {
+  if (mop) {
+    // Single MOP selected
     labels = [MOP_LBL[mop]||mop];
     getRaw = s => { const arr=D.scenarios[s].by_mop[mop]; return [arr?sa(arr.slice(lo,hi)):0]; };
+  } else if (!hasOtherFilter && bu && !segK) {
+    // BU only → MOPs within BU
+    labels = mlabs;
+    getRaw = s => { const key=(BU_KEY[s]||{})[bu]||bu; return mops.map(m => { const arr=D.scenarios[s].by_bu_by_mop?.[key]?.[m]; return arr?sa(arr.slice(lo,hi)):0; }); };
+  } else if (!hasOtherFilter && segK && !bu) {
+    // Seg only → MOPs within Segment
+    labels = mlabs;
+    getRaw = s => mops.map(m => { const arr=D.scenarios[s].by_seg_by_mop?.[segK]?.[m]; return arr?sa(arr.slice(lo,hi)):0; });
+  } else if (hasOtherFilter || bu || segK) {
+    // Complex filter: show total with label
+    const filtLbl = gProd()?(PROD_LBL[gProd()]||gProd()):gCanal()?gCanal():gCart()?gCart():bu?bu:(SEG_LBL[segK]||segK||'Filtrado');
+    labels = [filtLbl];
+    getRaw = s => [sa(getSeries(s).slice(lo,hi))];
   } else {
     labels = mlabs;
     getRaw = s => mops.map(m => { const arr=D.scenarios[s].by_mop[m]; return arr?sa(arr.slice(lo,hi)):0; });
