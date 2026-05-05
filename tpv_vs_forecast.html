@@ -333,7 +333,7 @@ let hidden          = new Set();
 let charts          = {};
 let chartMode       = 'abs';
 let expandedMonths  = new Set();
-let yoy25           = false;
+let yoy25           = true;
 let yoyGr           = false;
 
 const $id = id => document.getElementById(id);
@@ -641,18 +641,39 @@ function renderMain() {
     yTick = v => (v>=0?'+':'')+v.toFixed(1)+'%';
     tooltipFmt = c=>` ${c.dataset.label}: ${c.parsed.y!==null?(c.parsed.y>=0?'+':'')+c.parsed.y.toFixed(1)+'%':'—'}`;
   } else {
-    datasets = Object.keys(names).map(s => ({
-      label:names[s],
-      data:getSeries(s).slice(lo,hi).map(v=>v?+(v/1e9).toFixed(3):null),
-      borderColor:CC[s],backgroundColor:CA[s],borderWidth:2.2,tension:0.42,
-      pointRadius:3,pointHoverRadius:6,borderDash:DASH[s]||[],spanGaps:false,hidden:hidden.has(s),
-    }));
+    datasets = Object.keys(names).map(s => {
+      const d = {
+        label:names[s],
+        data:getSeries(s).slice(lo,hi).map(v=>v?+(v/1e9).toFixed(3):null),
+        borderColor:CC[s],backgroundColor:CA[s],borderWidth:2.2,tension:0.42,
+        pointRadius:3,pointHoverRadius:6,borderDash:DASH[s]||[],spanGaps:false,hidden:hidden.has(s),
+        datalabels:{display:false},
+      };
+      if (s==='f48' && yoy25 && is2026) {
+        const f48raw = getSeries('f48');
+        d.datalabels = {
+          display: true,
+          anchor:'end', align:'top',
+          font:{size:8.5,weight:700},
+          color: CC['f48'],
+          formatter: (_,ctx) => {
+            const i = ctx.dataIndex;
+            const v26 = f48raw[lo+i], v25 = ac2025[lo-12+i];
+            if (!v26||!v25) return null;
+            const pct = (v26/v25-1)*100;
+            return (pct>=0?'+':'')+pct.toFixed(1)+'%';
+          },
+        };
+      }
+      return d;
+    });
     if (yoy25 && is2026) {
       datasets.push({
         label:'Actual 2025',
         data:ac2025.slice(lo-12,hi-12).map(v=>v?+(v/1e9).toFixed(3):null),
         borderColor:'#9CA3AF',backgroundColor:'transparent',borderWidth:1.5,
         tension:0.42,pointRadius:2,pointHoverRadius:4,borderDash:[3,3],spanGaps:false,
+        datalabels:{display:false},
       });
     }
     yTick = v=>+v.toFixed(2)+'B';
@@ -956,6 +977,7 @@ $id('themeBtn').onclick = () => {
 
 Chart.register(ChartDataLabels);
 render();
+$id('btnYoY25').classList.add('on');
 </script>
 </body>
 </html>
