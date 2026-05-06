@@ -3642,6 +3642,7 @@
             const [type, year] = selVal.split('|');
             const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
+            const qtdRow = ['Qtd Devices'];
             const receitaRow = ['Receita'];
             const salesTaxesRow = ['Sales Taxes'];
             const cmvRow = ['CMV'];
@@ -3649,6 +3650,7 @@
             for (let m = 1; m <= 12; m++) {
                 const periodId = `MONTH|${year}${String(m).padStart(2, '0')}`;
                 const pl = computePLPeriod(type, periodId, 'ALL', 'ALL');
+                qtdRow.push(pl.totalQty !== 0 ? Math.round(pl.totalQty) : '');
                 receitaRow.push(pl.totalReceita !== 0 ? Math.round(pl.totalReceita) : '');
                 salesTaxesRow.push(pl.totalSalesTaxes !== 0 ? Math.round(pl.totalSalesTaxes) : '');
                 cmvRow.push(pl.totalCMV !== 0 ? Math.round(pl.totalCMV) : '');
@@ -3660,7 +3662,7 @@
             const isCustom = Math.abs(salesTaxesRate - SALES_TAXES_DEFAULT) > 0.00001;
             const noteRow = [`Alíquota Sales Taxes: ${stPct}%${isCustom ? ' (simulada)' : ' (padrão)'}`];
 
-            const wsData = [noteRow, header, receitaRow, emptyRow, salesTaxesRow, cmvRow];
+            const wsData = [noteRow, header, qtdRow, emptyRow, receitaRow, emptyRow, salesTaxesRow, cmvRow];
 
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(wsData);
