@@ -851,6 +851,10 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   </h1>
   <div class="hdr-r">
     <span class="upd" id="lastUpd"></span>
+    <button class="btn-hdr" onclick="exportDashboardHtml()" title="Baixar cópia do dashboard em HTML"
+      style="opacity:.65;font-size:10px;padding:3px 9px">⬇ HTML</button>
+    <button class="btn-hdr" onclick="exportDashboardTxt()" title="Baixar cópia do dashboard em TXT"
+      style="opacity:.65;font-size:10px;padding:3px 9px">⬇ TXT</button>
     <button class="btn-hdr" id="btnTheme" onclick="toggleTheme()">Dark</button>
   </div>
 </header>
@@ -3988,7 +3992,31 @@ function renderEficTab() {
   if(tbody) tbody.innerHTML = html;
 }
 
-// ── Excel export ────────────────────────────────────────────────
+// ── HTML export ─────────────────────────────────────────────────
+function exportDashboardHtml() {
+  const html  = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob  = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const date  = new Date().toISOString().slice(0, 10);
+  const a     = document.createElement('a');
+  a.href      = URL.createObjectURL(blob);
+  a.download  = `pnl_dashboard_${date}.html`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+// ── TXT export ──────────────────────────────────────────────────
+function exportDashboardTxt() {
+  const html  = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob  = new Blob([html], { type: 'text/plain;charset=utf-8' });
+  const date  = new Date().toISOString().slice(0, 10);
+  const a     = document.createElement('a');
+  a.href      = URL.createObjectURL(blob);
+  a.download  = `pnl_dashboard_${date}.txt`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+// ── Excel export ─────────────────────────────────────────────────
 function exportXlsx(tabId) {
   if(!allData || !allData.length) { alert('Sem dados carregados.'); return; }
   if(typeof XLSX === 'undefined') { alert('Biblioteca XLSX não carregada.'); return; }
