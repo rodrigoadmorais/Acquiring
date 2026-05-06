@@ -7477,18 +7477,15 @@ const GRAFGEN_METRICS = [
 ];
 
 // Color palette for granular P&L rows
-// First two P&L rows always: ML yellow → black; 3rd+ from extended palette
-const GG_ML_FIXED = ['#FFE600', '#1a1a1a'];
-const GRAFGEN_ROW_COLORS = [
+// P&L row color palette — first two always ML yellow + black
+const GG_PALETTE = [
+  '#FFE600','#1a1a1a',
   '#0277BD','#00695C','#558B2F','#9E7D00','#BF360C','#4A148C',
   '#880E4F','#006064','#1A237E','#37474F','#3E2723','#E65100',
 ];
 function _ggRowColor(k) {
-  const keys = [...grafgenPnlRows];
-  const idx  = keys.indexOf(k);
-  if (idx < 0) return GG_ML_FIXED[0]; // fallback
-  if (idx < GG_ML_FIXED.length) return GG_ML_FIXED[idx];
-  return GRAFGEN_ROW_COLORS[(idx - GG_ML_FIXED.length) % GRAFGEN_ROW_COLORS.length];
+  const idx = [...grafgenPnlRows].indexOf(k);
+  return GG_PALETTE[(idx < 0 ? 0 : idx) % GG_PALETTE.length];
 }
 
 // Scenario dash/label constants
@@ -7786,10 +7783,8 @@ function buildGrafgenPnlTree() {
       <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;
                     color:${on ? color : 'var(--text)'}">
         <input type="checkbox" data-rk="${rk}" ${on?'checked':''}
-          style="accent-color:${color};cursor:pointer;flex-shrink:0"
-          onchange="grafgenPnlRows[this.checked?'add':'delete'](this.dataset.rk);
-                    this.closest('label').style.color=this.checked?'${color}':'var(--text)';
-                    _grafgenUpdatePnlPills();renderGrafgenTab()">
+          style="cursor:pointer;flex-shrink:0"
+          onchange="_ggRowToggle(this)">
         ${label}
       </label>
     </div>`;
@@ -7832,6 +7827,26 @@ function buildGrafgenPnlTree() {
   }
   html += '</div>';
   panel.innerHTML = html;
+}
+
+// Checkbox toggle — always computes color dynamically at click time
+function _ggRowToggle(el) {
+  const rk = el.dataset.rk;
+  grafgenPnlRows[el.checked ? 'add' : 'delete'](rk);
+  _grafgenUpdatePnlPills();
+  renderGrafgenTab();
+  _ggSyncTree();
+}
+
+// Sync tree checkbox accent-colors and label colors with current palette positions
+function _ggSyncTree() {
+  document.querySelectorAll('#grafgenPnlPanel input[data-rk]').forEach(cb => {
+    const rk = cb.dataset.rk;
+    const c  = _ggRowColor(rk);
+    cb.style.accentColor = grafgenPnlRows.has(rk) ? c : '';
+    const lbl = cb.closest('label');
+    if(lbl) lbl.style.color = grafgenPnlRows.has(rk) ? c : 'var(--text)';
+  });
 }
 
 // Toggle expand/collapse for P&L tree nodes
@@ -8104,7 +8119,7 @@ function renderGrafgenTab() {
       display: true,
       position:'left',
       reverse: grafgenInvertY,
-      grid:{ color:'rgba(0,0,0,.06)' },
+      grid:{ display:false },
       ticks:{ display:false },  // hide tick labels — data labels carry the values
       border:{ display:false },
     },
@@ -8194,6 +8209,7 @@ function renderGrafgenTab() {
     console.error('GrafGen chart error:', err);
     _grafgenShowMsg('Erro ao gerar gráfico: ' + err.message);
   }
+  _ggSyncTree();
 }
 
 function _grafgenShowMsg(msg) {
