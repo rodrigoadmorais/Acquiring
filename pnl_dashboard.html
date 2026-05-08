@@ -3763,8 +3763,7 @@ function switchTab(btn) {
 //  PROJ. EFICIÊNCIAS TAB
 // ═══════════════════════════════════════════════════════════
 
-let eficBU        = 'Fintech';   // default: Acquiring + Fintech Services
-let eficUnitDiv   = 1_000_000;
+let eficBU        = 'Mercado Pago';  // default: Acquiring + Fintech Services
 let eficAnoA      = 2024;
 let eficAnoB      = 2025;
 let eficCenarioA  = 'Realizado';
@@ -3827,25 +3826,16 @@ const EFIC_GROUPS = [
 
 function buildEficBUSel() {
   const sel = document.getElementById('eficBUSel');
-  if(!sel || sel.options.length || !allData || !allData.length) return;
-  const macroToProds = new Map();
-  for(const d of allData) {
-    if(!d.Macro_BU||!d.Product) continue;
-    if(!macroToProds.has(d.Macro_BU)) macroToProds.set(d.Macro_BU, new Set());
-    macroToProds.get(d.Macro_BU).add(d.Product);
-  }
-  for(const [macro,prods] of macroToProds) if(!KN_BU_MAP[macro]) KN_BU_MAP[macro]=[...prods];
-  const macroBUs = [...macroToProds.keys()].sort((a,b)=>{
-    if(a==='Acquiring')return -1;if(b==='Acquiring')return 1;return a.localeCompare(b,'pt-BR');
+  if(!sel || sel.options.length) return;
+  [
+    { value:'Mercado Pago',     label:'Mercado Pago (total)' },
+    { value:'Acquiring',        label:'Acquiring' },
+    { value:'Fintech Services', label:'Fintech Services' },
+  ].forEach(({value, label}) => {
+    const o = document.createElement('option');
+    o.value = value; o.textContent = label;
+    sel.appendChild(o);
   });
-  const knGrouped = Object.keys(KN_BU_MAP).filter(k=>!macroToProds.has(k)).sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  const allProds  = [...new Set(allData.map(d=>d.Product).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  sel.innerHTML = '';
-  const allOpt = document.createElement('option'); allOpt.value='__ALL__'; allOpt.textContent='★ Todas as BUs'; sel.appendChild(allOpt);
-  const addGrp=(lbl,items)=>{const g=document.createElement('optgroup');g.label=lbl;items.forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;g.appendChild(o);});sel.appendChild(g);};
-  addGrp('Macro BU',macroBUs);
-  if(knGrouped.length) addGrp('BU Agrupada',knGrouped);
-  addGrp('Produto',allProds);
   sel.value = eficBU;
 }
 
@@ -3870,8 +3860,11 @@ function buildEficYearCenSels() {
 }
 
 function setEficUnit(btn) {
-  eficUnitDiv = parseFloat(btn.dataset.u);
-  document.querySelectorAll('#eficFilterBar [data-u]').forEach(b=>b.classList.toggle('on',b===btn));
+  unitDiv = parseFloat(btn.dataset.u);
+  // sync both the efic buttons and the main P&L unit buttons
+  document.querySelectorAll('#eficFilterBar [data-u], #unitGrp button').forEach(b =>
+    b.classList.toggle('on', parseFloat(b.dataset.u) === unitDiv)
+  );
   renderEficTab();
 }
 
@@ -3899,7 +3892,7 @@ function renderEficTab() {
 
   const buses = eficBU === '__ALL__' ? null : (KN_BU_MAP[eficBU] || [eficBU]);
   const inBU  = d => !buses || buses.includes(d.Product);
-  const ud    = eficUnitDiv;
+  const ud    = unitDiv;   // share the same unit as the main P&L tab
   const udLbl = ud===1 ? 'R$' : ud===1000 ? 'R$ mil' : 'R$ M';
 
   // Sum for an item — matches against the DEEPEST non-null MNG level of each row.
@@ -5384,6 +5377,7 @@ const KN_BU_MAP = {
   'Acquiring'         : ['Point','Online Payments','QR'],
   'Fintech Services'  : ['Credits','Digital Accounts','Investments','Insurtech','Fintech Services','Payments General'],
   'Fintech'           : ['Point','Online Payments','QR','Credits','Digital Accounts','Investments','Insurtech','Fintech Services','Payments General'],
+  'Mercado Pago'      : ['Point','Online Payments','QR','Credits','Digital Accounts','Investments','Insurtech','Fintech Services','Payments General'],
 };
 
 // Hierarchy rows: level 0=top parent, 1=child parent, 2=leaf
