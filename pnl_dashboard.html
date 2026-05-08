@@ -7545,8 +7545,10 @@ function _ggMetricDef(key) {
 }
 function _ggAllMetrics() {
   const out = [];
-  for(const k of grafgenMetrics) { const d=_ggMetricDef(k); if(d) out.push(d); }
-  for(const k of grafgenPnlRows)  { const d=_ggMetricDef(k); if(d) out.push(d); }
+  for(const k of grafgenMetrics) { const d=_ggMetricDef(k); if(d) out.push({...d}); }
+  for(const k of grafgenPnlRows)  { const d=_ggMetricDef(k); if(d) out.push({...d}); }
+  // Apply ML palette by position — pos 0 = yellow, pos 1 = black, 2+ = extended palette
+  out.forEach((d, i) => { d.color = GG_PALETTE[i % GG_PALETTE.length]; });
   return out;
 }
 
