@@ -3777,14 +3777,14 @@ let eficCollapsed = new Set();// group keys that are collapsed
 // mng2extra: additional MNG_2 names to also sum (useful when a line spans multiple sub-items)
 const EFIC_GROUPS = [
   { key:'var_neg', label:'Variáveis Negócio', items: [
-    { label:'Bad Debt',                       mng2:'Bad Debt' },
-    { label:'Funding & Financing',            mng2:'Funding & Financing' },
-    { label:'Collection Fees',                mng2:'Collection Fees' },
-    { label:'Sales Taxes',                    mng2:'Sales Taxes' },
+    { label:'Bad Debt',                       mng2:'Bad Debt',         sumByMng2:true },
+    { label:'Funding & Financing',            mng2:'Financing Net',    sumByMng2:true },
+    { label:'Collection Fees',                mng2:'Collection Fees',  sumByMng2:true },
+    { label:'Sales Taxes',                    mng2:'Sales Taxes',      sumByMng2:true },
     { label:'Hosting',                        mng2:'Hosting Variable' },
     { label:'Investimentos',                  mng2:'Investimentos' },
     { label:'Servicios de Cobranzas Credits', mng2:'Servicios de Cobranzas Credits' },
-    { label:'Chargebacks',                    mng2:'Chargebacks' },
+    { label:'Chargebacks',                    mng2:'Chargebacks',      sumByMng2:true },
     { label:'Fraud Prevention',               mng2:'Fraud Prevention Variable' },
     { label:'Promotions',                     mng2:'Promotions' },
     { label:'CX',                             mng2:'CX Variable' },
@@ -3914,9 +3914,15 @@ function renderEficTab() {
       if(!inBU(d)) continue;
       if(d.ANO !== ano || d.Cenario !== cen) continue;
       if(mng1f && d.MNG_1 !== mng1f) continue;
-      // Use deepest non-null MNG level → leaf value, no subtotal double-count
-      const deepest = d.MNG_4 || d.MNG_3 || d.MNG_2;
-      if(!names.includes(deepest)) continue;
+      if(item.sumByMng2) {
+        // Sum all leaf rows under the given MNG_2 — used when the category
+        // has sub-levels (MNG_3/4) and no standalone MNG_2 summary row exists
+        if(!names.includes(d.MNG_2)) continue;
+      } else {
+        // Default: match the deepest non-null MNG level (leaf value, no double-count)
+        const deepest = d.MNG_4 || d.MNG_3 || d.MNG_2;
+        if(!names.includes(deepest)) continue;
+      }
       s = (s||0) + (d.Value||0);
     }
     return s;
