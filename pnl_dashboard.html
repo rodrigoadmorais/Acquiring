@@ -3933,7 +3933,7 @@ function renderEficTab() {
 
   // Helpers
   const fv = v => v === null ? `<td class="vnull">—</td>`
-    : `<td>${(v/ud).toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3})}</td>`;
+    : `<td>${(v/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
 
   const fvar = (a, b) => {
     if(a === null || b === null) return '<td class="vnull">—</td><td class="vnull">—</td>';
@@ -3944,7 +3944,7 @@ function renderEficTab() {
     const isBad  = eficSignInvert ? varAbs > 0 : varAbs < 0;
     const cls    = isGood ? 'vpos' : isBad ? 'vneg' : '';
     const sign   = varAbs > 0 ? '+' : '';
-    const absStr = sign + (varAbs/ud).toLocaleString('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3});
+    const absStr = sign + (varAbs/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
     const pctStr = varPct !== null
       ? (varPct > 0 ? '+' : '') + varPct.toFixed(1) + '%'
       : '—';
