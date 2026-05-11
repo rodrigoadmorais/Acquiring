@@ -3767,7 +3767,7 @@ let eficBU        = 'Mercado Pago';  // default: Acquiring + Fintech Services
 let eficAnoA      = 2025;
 let eficAnoB      = 2026;
 let eficCenarioA  = 'Realizado';
-let eficCenarioB  = 'Forecast';
+let eficCenarioB  = 'Plan';
 let eficSignInvert = false;   // true → invert var color (cost mode: reduction = green)
 const _eficMap = {};  // runtime overrides: 'groupKey::itemLabel' → {mng2?,mng3?,mng4?,sumByMng2?}
 let _eficMapperCtx = null;  // { groupKey, itemLabel }
@@ -3784,22 +3784,22 @@ let eficCollapsed = new Set();// group keys that are collapsed
 const EFIC_GROUPS = [
   { key:'var_neg', label:'Variáveis Negócio', items: [
     { label:'Bad Debt',                       mng2:'Bad Debt',                                                              sumByMng2:true  },
-    { label:'Funding & Financing',            mng2:'Financing Net',                                                         sumByMng2:true  },
+    { label:'Funding & Financing',            mng4:'Theoretical financing cost'                                                               },
     { label:'Collection Fees',                mng2:'Collection Fees',                                                       sumByMng2:true  },
     { label:'Sales Taxes',                    mng2:'Sales Taxes',                                                           sumByMng2:true  },
     { label:'Hosting',                        mng2:'Hosting Variable'                                                                       },
-    { label:'Investimentos',                  mng2:'Investimentos'                                                                          },
+    { label:'Investimentos',                  mng4:'Investment Revenues'                                                                      },
     { label:'Servicios de Cobranzas Credits', mng3:'Servicios de Cobranzas Credits'                                                        },
     { label:'Chargebacks',                    mng2:'Chargebacks',                                                           sumByMng2:true  },
     { label:'Fraud Prevention',               mng2:'Fraud Prevention Variable'                                                              },
     { label:'Promotions',                     mng2:'Promotions',                                                            sumByMng2:true  },
     { label:'CX',                             mng2:'CX Variable',                                                           sumByMng2:true  },
     { label:'Telemetria',                     mng3:'Telemetría'                                                                             },
-    { label:'Bandeiras',                      mng2:'Bandeiras'                                                                              },
+    { label:'Bandeiras',                      mng4:'Costos Banderas'                                                                          },
     { label:'Money-In/Out',                   mng3:['Money Out /Cash Out Costs','Money In Costs']                                           },
     { label:'Resellers & MGM',                mng4:'Cashbacks'                                                                             },
     { label:'Other CAC',                      mng4:['Fuerza de Venta de Terceros Point','Other Sales Expenses Point','Paid On Media']       },
-    { label:'Others',                         mng2:'Others'                                                                                },
+    { label:'Others',                         remainderOf:'var_neg'                                                                    },
   ]},
   { key:'fix_neg', label:'Fixos Negócios', items: [
     { label:'Device Cost',         mng3:['Point COGS','Previsión MPOS Cost','Sales MPOS']  },
@@ -3906,8 +3906,33 @@ function renderEficTab() {
   // This avoids both "—" (wrong level) and double-counting (subtotal + detail).
   // Priority for the name to match: mng4 > mng2 > label (any can be a string or array)
   const sumItem = (item, ano, cen) => {
-    const mng1f  = item.mng1 || null;
-    const toArr  = v => v == null ? null : (Array.isArray(v) ? v : [v]);
+    const mng1f = item.mng1 || null;
+    const toArr = v => v == null ? null : (Array.isArray(v) ? v : [v]);
+
+    // Remainder mode: sum all negative-value rows NOT already claimed by sibling items
+    if(item.remainderOf) {
+      const grp = EFIC_GROUPS.find(g => g.key === item.remainderOf);
+      const cM4 = new Set(), cM3 = new Set(), cM2 = new Set();
+      for(const oi of grp.items) {
+        if(oi.label === item.label) continue;
+        const eff = _eficGetEff(item.remainderOf, oi);
+        toArr(eff.mng4)?.forEach(v => cM4.add(v));
+        toArr(eff.mng3)?.forEach(v => cM3.add(v));
+        toArr(eff.mng2)?.forEach(v => cM2.add(v));
+      }
+      let s = null;
+      for(const d of allData) {
+        if(!inBU(d) || d.ANO !== ano || d.Cenario !== cen) continue;
+        if(mng1f && d.MNG_1 !== mng1f) continue;
+        if((d.Value||0) >= 0) continue;                          // only costs (negative)
+        if(d.MNG_4 && cM4.has(d.MNG_4)) continue;              // skip already claimed
+        if(d.MNG_3 && cM3.has(d.MNG_3)) continue;
+        if(cM2.has(d.MNG_2)) continue;
+        s = (s||0) + (d.Value||0);
+      }
+      return s;
+    }
+
     const m4n = toArr(item.mng4);
     const m3n = toArr(item.mng3);
     const m2n = toArr(item.mng2) ?? [item.label];
