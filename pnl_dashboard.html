@@ -4061,7 +4061,7 @@ function renderEficTab() {
     if(eficRelMode) {
       if(!denom) return `<td class="vnull">—</td>`;
       const pct = (v / Math.abs(denom)) * 100;
-      return `<td>${pct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</td>`;
+      return `<td>${pct.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</td>`;
     }
     return `<td>${(v/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
   };
@@ -4076,9 +4076,9 @@ function renderEficTab() {
       const isGood = eficSignInvert ? pp < 0 : pp > 0;
       const isBad  = eficSignInvert ? pp > 0 : pp < 0;
       cls    = isGood ? 'vpos' : isBad ? 'vneg' : '';
-      absStr = (pp > 0 ? '+' : '') + pp.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + 'pp';
+      absStr = (pp > 0 ? '+' : '') + pp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + 'pp';
       const relChg = pA !== 0 ? ((pp / Math.abs(pA)) * 100) : null;
-      pctStr = relChg !== null ? (relChg > 0 ? '+' : '') + relChg.toFixed(1) + '%' : '—';
+      pctStr = relChg !== null ? (relChg > 0 ? '+' : '') + relChg.toFixed(2) + '%' : '—';
     } else {
       const varAbs = b - a;
       const varPct = a !== 0 ? (varAbs / Math.abs(a)) * 100 : null;
