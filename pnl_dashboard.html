@@ -3769,6 +3769,7 @@ let eficAnoB      = 2026;
 let eficCenarioA  = 'Realizado';
 let eficCenarioB  = 'Plan';
 let eficSignInvert = false;   // true → invert var color (cost mode: reduction = green)
+let eficRemainderOpen = new Set();  // keys of remainder rows that are expanded
 const _eficMap = {};  // runtime overrides: 'groupKey::itemLabel' → {mng2?,mng3?,mng4?,sumByMng2?}
 let _eficMapperCtx = null;  // { groupKey, itemLabel }
 
@@ -3892,6 +3893,12 @@ function toggleEficGroup(key) {
   if(hdr) hdr.classList.toggle('collapsed', eficCollapsed.has(key));
 }
 
+function toggleEficRemainder(rowKey) {
+  if(eficRemainderOpen.has(rowKey)) eficRemainderOpen.delete(rowKey);
+  else eficRemainderOpen.add(rowKey);
+  renderEficTab();
+}
+
 function renderEficTab() {
   if(!allData || !allData.length) return;
   buildEficBUSel();
@@ -3956,6 +3963,34 @@ function renderEficTab() {
     return s;
   };
 
+  // Returns [{label, vA, vB}] breakdown by MNG_2 for remainder items
+  const drillRemainder = (item) => {
+    const grp = EFIC_GROUPS.find(g => g.key === item.remainderOf);
+    const mng1f = item.mng1 || null;
+    const cM4 = new Set(), cM3 = new Set(), cM2 = new Set();
+    for(const oi of grp.items) {
+      if(oi.label === item.label) continue;
+      const eff = _eficGetEff(item.remainderOf, oi);
+      (Array.isArray(eff.mng4)?eff.mng4:[eff.mng4]).filter(Boolean).forEach(v=>cM4.add(v));
+      (Array.isArray(eff.mng3)?eff.mng3:[eff.mng3]).filter(Boolean).forEach(v=>cM3.add(v));
+      (Array.isArray(eff.mng2)?eff.mng2:[eff.mng2]).filter(Boolean).forEach(v=>cM2.add(v));
+    }
+    const totA = new Map(), totB = new Map();
+    for(const d of allData) {
+      if(!inBU(d)) continue;
+      if(mng1f && d.MNG_1 !== mng1f) continue;
+      if((d.Value||0) >= 0) continue;
+      if(d.MNG_4 && cM4.has(d.MNG_4)) continue;
+      if(d.MNG_3 && cM3.has(d.MNG_3)) continue;
+      if(cM2.has(d.MNG_2)) continue;
+      const key = d.MNG_2 || '—';
+      if(d.ANO===eficAnoA && d.Cenario===eficCenarioA) totA.set(key,(totA.get(key)||0)+d.Value);
+      if(d.ANO===eficAnoB && d.Cenario===eficCenarioB) totB.set(key,(totB.get(key)||0)+d.Value);
+    }
+    const keys = new Set([...totA.keys(), ...totB.keys()]);
+    return [...keys].sort().map(k => ({ label:k, vA:totA.get(k)||null, vB:totB.get(k)||null }));
+  };
+
   // Helpers
   const fv = v => v === null ? `<td class="vnull">—</td>`
     : `<td>${(v/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
@@ -4007,12 +4042,38 @@ function renderEficTab() {
       const icon   = hasOv ? '🔗' : '⊕';
       const eGk    = grp.key.replace(/'/g,"\\'");
       const eLbl   = item.label.replace(/'/g,"\\'");
-      detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
-        <td style="cursor:pointer" title="Clique para vincular linha do P&amp;L"
-            onclick="openEficMapper('${eGk}','${eLbl}',event)">
-          <span style="opacity:.45;font-size:9px;margin-right:4px">${icon}</span>${item.label}
-        </td>${fv(vA)}${fv(vB)}${fvar(vA,vB)}
-      </tr>`;
+      if(eff.remainderOf) {
+        const rowKey = `${grp.key}::${item.label}`;
+        const rk_esc = rowKey.replace(/'/g,"\\'");
+        const isOpen = eficRemainderOpen.has(rowKey);
+        const arrow  = isOpen ? '▼' : '▶';
+        detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
+          <td style="cursor:pointer" title="Clique para vincular linha do P&amp;L / expandir"
+              onclick="openEficMapper('${eGk}','${eLbl}',event)">
+            <span style="opacity:.45;font-size:9px;margin-right:4px">${icon}</span>${item.label}
+            <button onclick="event.stopPropagation();toggleEficRemainder('${rk_esc}')"
+              style="background:none;border:none;cursor:pointer;font-size:10px;opacity:.55;margin-left:4px;padding:0"
+              title="Expandir detalhes">${arrow}</button>
+          </td>${fv(vA)}${fv(vB)}${fvar(vA,vB)}
+        </tr>`;
+        if(isOpen) {
+          const drill = drillRemainder(eff);
+          for(const d of drill) {
+            detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}
+              style="font-size:11px;opacity:.85">
+              <td style="padding-left:28px;color:var(--muted)">${d.label}</td>
+              ${fv(d.vA)}${fv(d.vB)}${fvar(d.vA,d.vB)}
+            </tr>`;
+          }
+        }
+      } else {
+        detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
+          <td style="cursor:pointer" title="Clique para vincular linha do P&amp;L"
+              onclick="openEficMapper('${eGk}','${eLbl}',event)">
+            <span style="opacity:.45;font-size:9px;margin-right:4px">${icon}</span>${item.label}
+          </td>${fv(vA)}${fv(vB)}${fvar(vA,vB)}
+        </tr>`;
+      }
     }
 
     if(grpA !== null) grandA = (grandA||0) + grpA;
