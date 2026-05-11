@@ -3796,7 +3796,7 @@ let eficCollapsed = new Set();// group keys that are collapsed
 const EFIC_GROUPS = [
   { key:'var_neg', label:'Variáveis Negócio', items: [
     { label:'Bad Debt',                       mng2:'Bad Debt',                                                              sumByMng2:true  },
-    { label:'Funding & Financing',            mng4:'Theoretical financing cost'                                                               },
+    { label:'Funding & Financing',            mng4:'Theoretical financing cost', mng2extra:'Funding'                                         },
     { label:'Collection Fees',                mng2:'Collection Fees',                                                       sumByMng2:true  },
     { label:'Sales Taxes',                    mng2:'Sales Taxes',                                                           sumByMng2:true  },
     { label:'Hosting',                        mng2:'Hosting Variable'                                                                       },
@@ -3985,6 +3985,7 @@ function renderEficTab() {
         toArr(eff.mng4)?.forEach(v => cM4.add(v));
         toArr(eff.mng3)?.forEach(v => cM3.add(v));
         toArr(eff.mng2)?.forEach(v => cM2.add(v));
+        toArr(eff.mng2extra)?.forEach(v => cM2.add(v));
       }
       let s = null;
       for(const d of allData) {
@@ -4019,6 +4020,17 @@ function renderEficTab() {
       }
       s = (s||0) + (d.Value||0);
     }
+    // mng2extra: additional MNG_2 lines to sum on top of the primary matcher
+    if(item.mng2extra) {
+      const extras = toArr(item.mng2extra);
+      for(const d of allData) {
+        if(!inBU(d)) continue;
+        if(d.ANO !== ano || d.Cenario !== cen) continue;
+        if(mng1f && d.MNG_1 !== mng1f) continue;
+        if(!extras.includes(d.MNG_2)) continue;
+        s = (s||0) + (d.Value||0);
+      }
+    }
     return s;
   };
 
@@ -4033,6 +4045,7 @@ function renderEficTab() {
       (Array.isArray(eff.mng4)?eff.mng4:[eff.mng4]).filter(Boolean).forEach(v=>cM4.add(v));
       (Array.isArray(eff.mng3)?eff.mng3:[eff.mng3]).filter(Boolean).forEach(v=>cM3.add(v));
       (Array.isArray(eff.mng2)?eff.mng2:[eff.mng2]).filter(Boolean).forEach(v=>cM2.add(v));
+      (Array.isArray(eff.mng2extra)?eff.mng2extra:[eff.mng2extra]).filter(Boolean).forEach(v=>cM2.add(v));
     }
     const totA = new Map(), totB = new Map();
     for(const d of allData) {
