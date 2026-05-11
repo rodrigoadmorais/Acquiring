@@ -1757,6 +1757,16 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
                  background:var(--card);color:var(--text);font-size:12px;cursor:pointer;min-width:110px"></select>
       </div>
     </div>
+    <!-- Vista Abs / % -->
+    <div>
+      <label>Vista</label>
+      <div style="display:flex;gap:4px" id="eficVistaGrp">
+        <button class="btn-hdr on" data-rel="0" onclick="setEficRelMode(false)"
+          title="Valores absolutos">Abs</button>
+        <button class="btn-hdr" data-rel="1" onclick="setEficRelMode(true)"
+          title="Valor como % do denominador (TPV, NM, Outstanding…)">%</button>
+      </div>
+    </div>
     <!-- Sinal variação (toggle para itens de custo) -->
     <div>
       <label>Sinal Var.</label>
@@ -3769,6 +3779,7 @@ let eficAnoB      = 2026;
 let eficCenarioA  = 'Realizado';
 let eficCenarioB  = 'Plan';
 let eficSignInvert = false;   // true → invert var color (cost mode: reduction = green)
+let eficRelMode    = false;   // true → relative mode (value / denominator, shown as %)
 let eficRemainderOpen = new Set();  // keys of remainder rows that are expanded
 const _eficMap = {};  // runtime overrides: 'groupKey::itemLabel' → {mng2?,mng3?,mng4?,sumByMng2?}
 let _eficMapperCtx = null;  // { groupKey, itemLabel }
@@ -3832,13 +3843,53 @@ const EFIC_GROUPS = [
   ]},
 ];
 
+// Denominator config for relative mode: mng1 = cumulative P&L sections sum; mng2metrics = Metrics row
+// KN_PNL_ORDER sections are cumulative — NM = sum(PM + NM rows)
+const EFIC_DENOM_MAP = {
+  'Mercado Pago'    : { label:'NM',          nmCumulative: true },
+  'Fintech Services': { label:'NM',          nmCumulative: true },
+  'Acquiring'       : { label:'TPV',         mng2metrics:'TPV' },
+  'Point'           : { label:'TPV',         mng2metrics:'TPV' },
+  'OP'              : { label:'TPV',         mng2metrics:'TPV' },
+  'QR'              : { label:'TPV',         mng2metrics:'TPV' },
+  'Credits'         : { label:'Outstanding', mng2metrics:'Outstanding' },
+  'DA & Investments': { label:'AUM EOP',     mng2metrics:'AUM Saldo EOP' },
+  'Insurtech'       : { label:'GPV',         mng2metrics:'GPV' },
+};
+
+function eficGetDenom(ano, cen) {
+  const def  = EFIC_DENOM_MAP[eficBU];
+  if(!def) return null;
+  const buses = KN_BU_MAP[eficBU] || [eficBU];
+  let s = null;
+  for(const d of allData) {
+    if(d.ANO !== ano || d.Cenario !== cen) continue;
+    if(!buses.includes(d.Product)) continue;
+    if(def.nmCumulative) {
+      // Net Monetization = cumulative sum of PM + NM sections
+      if(d.MNG_1 === 'Product Monetization' || d.MNG_1 === 'Net Monetization')
+        s = (s||0) + d.Value;
+    } else if(def.mng2metrics) {
+      if(d.MNG_1 === 'Metrics' && d.MNG_2 === def.mng2metrics)
+        s = (s||0) + d.Value;
+    }
+  }
+  return s;
+}
+
 function buildEficBUSel() {
   const sel = document.getElementById('eficBUSel');
   if(!sel || sel.options.length) return;
   [
     { value:'Mercado Pago',     label:'Mercado Pago (total)' },
-    { value:'Acquiring',        label:'Acquiring' },
-    { value:'Fintech Services', label:'Fintech Services' },
+    { value:'Acquiring',        label:'  ↳ Acquiring' },
+    { value:'Point',            label:'      · Point' },
+    { value:'OP',               label:'      · Online Payments' },
+    { value:'QR',               label:'      · QR' },
+    { value:'Fintech Services', label:'  ↳ Fintech Services' },
+    { value:'Credits',          label:'      · Credits' },
+    { value:'DA & Investments', label:'      · DA & Investments' },
+    { value:'Insurtech',        label:'      · Insurtech' },
   ].forEach(({value, label}) => {
     const o = document.createElement('option');
     o.value = value; o.textContent = label;
@@ -3880,6 +3931,14 @@ function toggleEficSign() {
   eficSignInvert = !eficSignInvert;
   const btn = document.getElementById('eficSignBtn');
   if(btn) btn.classList.toggle('on', eficSignInvert);
+  renderEficTab();
+}
+
+function setEficRelMode(rel) {
+  eficRelMode = rel;
+  document.querySelectorAll('#eficVistaGrp button').forEach(b =>
+    b.classList.toggle('on', b.dataset.rel === (rel?'1':'0'))
+  );
   renderEficTab();
 }
 
@@ -3991,36 +4050,61 @@ function renderEficTab() {
     return [...keys].sort().map(k => ({ label:k, vA:totA.get(k)||null, vB:totB.get(k)||null }));
   };
 
-  // Helpers
-  const fv = v => v === null ? `<td class="vnull">—</td>`
-    : `<td>${(v/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
+  // Denominators for relative mode
+  const denomA = eficRelMode ? eficGetDenom(eficAnoA, eficCenarioA) : null;
+  const denomB = eficRelMode ? eficGetDenom(eficAnoB, eficCenarioB) : null;
+  const denomLbl = eficRelMode ? (EFIC_DENOM_MAP[eficBU]?.label || '%') : null;
 
-  const fvar = (a, b) => {
+  // Helpers
+  const fv = (v, denom) => {
+    if(v === null) return `<td class="vnull">—</td>`;
+    if(eficRelMode) {
+      if(!denom) return `<td class="vnull">—</td>`;
+      const pct = (v / Math.abs(denom)) * 100;
+      return `<td>${pct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</td>`;
+    }
+    return `<td>${(v/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
+  };
+
+  const fvar = (a, b, dA, dB) => {
     if(a === null || b === null) return '<td class="vnull">—</td><td class="vnull">—</td>';
-    const varAbs = b - a;
-    const varPct = a !== 0 ? (varAbs / Math.abs(a)) * 100 : null;
-    // Color: positive = green, negative = red; inverted when eficSignInvert (cost mode)
-    const isGood = eficSignInvert ? varAbs < 0 : varAbs > 0;
-    const isBad  = eficSignInvert ? varAbs > 0 : varAbs < 0;
-    const cls    = isGood ? 'vpos' : isBad ? 'vneg' : '';
-    const sign   = varAbs > 0 ? '+' : '';
-    const absStr = sign + (varAbs/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
-    const pctStr = varPct !== null
-      ? (varPct > 0 ? '+' : '') + varPct.toFixed(1) + '%'
-      : '—';
+    let absStr, pctStr, cls;
+    if(eficRelMode && dA && dB) {
+      const pA = (a / Math.abs(dA)) * 100;
+      const pB = (b / Math.abs(dB)) * 100;
+      const pp  = pB - pA;
+      const isGood = eficSignInvert ? pp < 0 : pp > 0;
+      const isBad  = eficSignInvert ? pp > 0 : pp < 0;
+      cls    = isGood ? 'vpos' : isBad ? 'vneg' : '';
+      absStr = (pp > 0 ? '+' : '') + pp.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + 'pp';
+      const relChg = pA !== 0 ? ((pp / Math.abs(pA)) * 100) : null;
+      pctStr = relChg !== null ? (relChg > 0 ? '+' : '') + relChg.toFixed(1) + '%' : '—';
+    } else {
+      const varAbs = b - a;
+      const varPct = a !== 0 ? (varAbs / Math.abs(a)) * 100 : null;
+      const isGood = eficSignInvert ? varAbs < 0 : varAbs > 0;
+      const isBad  = eficSignInvert ? varAbs > 0 : varAbs < 0;
+      cls    = isGood ? 'vpos' : isBad ? 'vneg' : '';
+      absStr = (varAbs > 0 ? '+' : '') + (varAbs/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+      pctStr = varPct !== null ? (varPct > 0 ? '+' : '') + varPct.toFixed(1) + '%' : '—';
+    }
     return `<td class="${cls}">${absStr}</td><td class="${cls}">${pctStr}</td>`;
   };
 
   // Build header
   const cenLblA = `${eficAnoA} ${eficCenarioA}`;
   const cenLblB = `${eficAnoB} ${eficCenarioB}`;
+  const colAHdr = eficRelMode && denomLbl ? `${cenLblA} / ${denomLbl}` : `${cenLblA} (${udLbl})`;
+  const colBHdr = eficRelMode && denomLbl ? `${cenLblB} / ${denomLbl}` : `${cenLblB} (${udLbl})`;
+  const varAbsHdr = eficRelMode ? 'Δ (pp)' : `Var Abs (${udLbl})`;
+  const varPctHdr = eficRelMode ? 'Δ % (pp)' : 'Var %';
   const thead = document.getElementById('eficHead');
   if(thead) thead.innerHTML = `<tr>
     <th>Linha P&L</th>
-    <th>${cenLblA} (${udLbl})</th>
-    <th>${cenLblB} (${udLbl})</th>
-    <th>Var Abs (${udLbl})</th>
-    <th>Var %</th>
+    <th>${colAHdr}</th>
+    <th>${colBHdr}</th>
+    <th>${varAbsHdr}</th>
+    <th>${varPctHdr}</th>
   </tr>`;
 
   // Build body
@@ -4054,7 +4138,7 @@ function renderEficTab() {
             <button onclick="event.stopPropagation();toggleEficRemainder('${rk_esc}')"
               style="background:none;border:none;cursor:pointer;font-size:10px;opacity:.55;margin-left:4px;padding:0"
               title="Expandir detalhes">${arrow}</button>
-          </td>${fv(vA)}${fv(vB)}${fvar(vA,vB)}
+          </td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
         </tr>`;
         if(isOpen) {
           const drill = drillRemainder(eff);
@@ -4062,7 +4146,7 @@ function renderEficTab() {
             detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}
               style="font-size:11px;opacity:.85">
               <td style="padding-left:28px;color:var(--muted)">${d.label}</td>
-              ${fv(d.vA)}${fv(d.vB)}${fvar(d.vA,d.vB)}
+              ${fv(d.vA,denomA)}${fv(d.vB,denomB)}${fvar(d.vA,d.vB,denomA,denomB)}
             </tr>`;
           }
         }
@@ -4071,7 +4155,7 @@ function renderEficTab() {
           <td style="cursor:pointer" title="Clique para vincular linha do P&amp;L"
               onclick="openEficMapper('${eGk}','${eLbl}',event)">
             <span style="opacity:.45;font-size:9px;margin-right:4px">${icon}</span>${item.label}
-          </td>${fv(vA)}${fv(vB)}${fvar(vA,vB)}
+          </td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
         </tr>`;
       }
     }
@@ -4081,14 +4165,14 @@ function renderEficTab() {
     const collCls = eficCollapsed.has(grp.key) ? ' collapsed' : '';
     html += `<tr class="efic-grp${collCls}" data-efic-hdr="${grp.key}"
         onclick="toggleEficGroup('${grp.key}')">
-      <td>${grp.label}</td>${fv(grpA)}${fv(grpB)}${fvar(grpA,grpB)}
+      <td>${grp.label}</td>${fv(grpA,denomA)}${fv(grpB,denomB)}${fvar(grpA,grpB,denomA,denomB)}
     </tr>`;
     html += detailHtml;
   }
 
   // Grand Total
   html += `<tr class="efic-ttl">
-    <td>Grand Total</td>${fv(grandA)}${fv(grandB)}${fvar(grandA,grandB)}
+    <td>Grand Total</td>${fv(grandA,denomA)}${fv(grandB,denomB)}${fvar(grandA,grandB,denomA,denomB)}
   </tr>`;
 
   const tbody = document.getElementById('eficBody');
