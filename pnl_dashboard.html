@@ -3808,6 +3808,7 @@ const EFIC_DRIVERS = {
   'fix_neg::FDV Propria': {
     label: 'HCs', unitLabel: 'HCs',
     values: { 2025: 1106, 2026: 1845 },
+    abbrev: false, perDecimals: 0,
   },
   'var_neg::Money-In/Out': {
     label: 'AUM', unitLabel: 'R$',
@@ -4232,12 +4233,14 @@ function renderEficTab() {
           if(isDrvOpen) {
             const drvA = eficComputeDriver(driver, eficAnoA, eficCenarioA);
             const drvB = eficComputeDriver(driver, eficAnoB, eficCenarioB);
+            const dec = driver.perDecimals ?? 4;
             const fmtPer = (v, drv) => {
               if(v === null || !drv) return '—';
-              return (v / drv).toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4});
+              return (v / drv).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
             };
             const fmtVol = drv => {
               if(!drv) return '—';
+              if(driver.abbrev === false) return drv.toLocaleString('pt-BR');
               if(drv >= 1e9) return (drv/1e9).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'B';
               if(drv >= 1e6) return (drv/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
               if(drv >= 1e3) return (drv/1e3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'K';
