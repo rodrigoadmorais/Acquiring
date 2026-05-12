@@ -4216,15 +4216,7 @@ function renderEficTab() {
               const sign = diff > 0 ? '+' : '';
               const absStr = sign + diff.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
               const pctStr = pct !== null ? (pct > 0?'+':'') + pct.toFixed(1) + '%' : '—';
-              return `
-                <td style="text-align:right;line-height:1.4;padding:4px 14px">
-                  <div class="${cls}" style="font-size:12px;font-weight:600">${absStr}</div>
-                  <div class="${cls}" style="font-size:9px;opacity:.8">${pctStr}</div>
-                </td>
-                <td style="text-align:right;line-height:1.4;padding:4px 14px">
-                  <div style="font-size:9px;color:var(--muted)">Δ vol</div>
-                  <div style="font-size:10px;color:var(--muted)">${dA && dB ? ((dB-dA)/Math.abs(dA)*100).toFixed(1)+'%' : '—'}</div>
-                </td>`;
+              return `<td class="${cls}">${absStr}</td><td class="${cls}">${pctStr}</td>`;
             };
             detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}
               style="background:var(--bg-2);border-left:3px solid #C9A800">
