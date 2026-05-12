@@ -3809,6 +3809,10 @@ const EFIC_DRIVERS = {
     label: 'HCs', unitLabel: 'HCs',
     values: { 2025: 1106, 2026: 1845 },
   },
+  'var_neg::Money-In/Out': {
+    label: 'AUM', unitLabel: 'R$',
+    mng2metrics: 'AUM Saldo EOP', buKey: 'DA & Investments',
+  },
 };
 
 function eficComputeDriver(driver, ano, cenario) {
