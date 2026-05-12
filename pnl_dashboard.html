@@ -4089,8 +4089,8 @@ function renderEficTab() {
     if(v === null) return `<td class="vnull">—</td>`;
     if(eficRelMode) {
       if(!denom) return `<td class="vnull">—</td>`;
-      const pct = (v / Math.abs(denom)) * 100;
-      return `<td>${pct.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</td>`;
+      const ratio = v / Math.abs(denom);
+      return `<td>${ratio.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4})}</td>`;
     }
     return `<td>${(v/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
   };
@@ -4099,13 +4099,13 @@ function renderEficTab() {
     if(a === null || b === null) return '<td class="vnull">—</td><td class="vnull">—</td>';
     let absStr, pctStr, cls;
     if(eficRelMode && dA && dB) {
-      const pA = (a / Math.abs(dA)) * 100;
-      const pB = (b / Math.abs(dB)) * 100;
+      const pA = a / Math.abs(dA);
+      const pB = b / Math.abs(dB);
       const pp  = pB - pA;
       const isGood = eficSignInvert ? pp < 0 : pp > 0;
       const isBad  = eficSignInvert ? pp > 0 : pp < 0;
       cls    = isGood ? 'vpos' : isBad ? 'vneg' : '';
-      absStr = (pp > 0 ? '+' : '') + pp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + 'pp';
+      absStr = (pp > 0 ? '+' : '') + pp.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4});
       const relChg = pA !== 0 ? ((pp / Math.abs(pA)) * 100) : null;
       pctStr = relChg !== null ? (relChg > 0 ? '+' : '') + relChg.toFixed(2) + '%' : '—';
     } else {
@@ -4125,8 +4125,8 @@ function renderEficTab() {
   const cenLblB = `${eficAnoB} ${eficCenarioB}`;
   const colAHdr = eficRelMode && denomLbl ? `${cenLblA} / ${denomLbl}` : `${cenLblA} (${udLbl})`;
   const colBHdr = eficRelMode && denomLbl ? `${cenLblB} / ${denomLbl}` : `${cenLblB} (${udLbl})`;
-  const varAbsHdr = eficRelMode ? 'Δ (pp)' : `Var Abs (${udLbl})`;
-  const varPctHdr = eficRelMode ? 'Δ % (pp)' : 'Var %';
+  const varAbsHdr = eficRelMode ? 'Δ unitário' : `Var Abs (${udLbl})`;
+  const varPctHdr = eficRelMode ? 'Δ %' : 'Var %';
   const thead = document.getElementById('eficHead');
   if(thead) thead.innerHTML = `<tr>
     <th>Linha P&L</th>
