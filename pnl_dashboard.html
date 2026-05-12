@@ -4197,7 +4197,13 @@ function renderEficTab() {
               if(v === null || !drv) return '—';
               return (v / drv).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
             };
-            const fmtVol = drv => drv ? drv.toLocaleString('pt-BR') : '—';
+            const fmtVol = drv => {
+              if(!drv) return '—';
+              if(drv >= 1e9) return (drv/1e9).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'B';
+              if(drv >= 1e6) return (drv/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
+              if(drv >= 1e3) return (drv/1e3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'K';
+              return drv.toLocaleString('pt-BR');
+            };
             // Variance cell: stacked Δ value + Δ%
             const fvarDrv = (a, b, dA, dB) => {
               if(a === null || b === null || !dA || !dB) return '<td class="vnull">—</td><td class="vnull">—</td>';
