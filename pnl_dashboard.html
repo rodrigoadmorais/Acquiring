@@ -3780,8 +3780,19 @@ let eficCenarioA  = 'Realizado';
 let eficCenarioB  = 'Plan';
 let eficSignInvert = false;   // true → invert var color (cost mode: reduction = green)
 let eficRelMode    = false;   // true → relative mode (value / denominator, shown as %)
-let eficRemainderOpen = new Set();  // keys of remainder rows that are expanded
+let eficRemainderOpen  = new Set();  // keys of remainder rows that are expanded
+let eficDriverExpanded = new Set();  // keys of driver sub-rows that are expanded
 const _eficMap = {};  // mapping overrides (read-only at runtime — set via EFIC_GROUPS defaults)
+
+// ── Driver definitions ────────────────────────────────────────────
+// key: 'groupKey::itemLabel'  values: { year: volume }
+const EFIC_DRIVERS = {
+  'var_neg::Telemetria': {
+    label    : 'MADs',
+    unitLabel: 'Devices Ativas',
+    values   : { 2024: 3103828, 2025: 2799510, 2026: 3111548 },
+  },
+};
 
 function _eficGetEff(groupKey, item) {
   const ov = _eficMap[`${groupKey}::${item.label}`];
@@ -3954,6 +3965,12 @@ function toggleEficGroup(key) {
 function toggleEficRemainder(rowKey) {
   if(eficRemainderOpen.has(rowKey)) eficRemainderOpen.delete(rowKey);
   else eficRemainderOpen.add(rowKey);
+  renderEficTab();
+}
+
+function toggleEficDriver(rowKey) {
+  if(eficDriverExpanded.has(rowKey)) eficDriverExpanded.delete(rowKey);
+  else eficDriverExpanded.add(rowKey);
   renderEficTab();
 }
 
@@ -4158,9 +4175,59 @@ function renderEficTab() {
           }
         }
       } else {
-        detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
-          <td>${item.label}</td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
-        </tr>`;
+        const rowKey   = `${grp.key}::${item.label}`;
+        const driver   = EFIC_DRIVERS[rowKey];
+        const rkEsc    = rowKey.replace(/'/g,"\\'");
+        if(driver) {
+          const isDrvOpen = eficDriverExpanded.has(rowKey);
+          const drvArrow  = isDrvOpen ? '▼' : '▶';
+          detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
+            <td>
+              ${item.label}
+              <button onclick="toggleEficDriver('${rkEsc}')"
+                style="background:none;border:1px solid var(--border);border-radius:3px;cursor:pointer;
+                       font-size:9px;opacity:.65;margin-left:6px;padding:1px 5px;color:var(--text)"
+                title="Ver custo por ${driver.unitLabel}">÷ ${driver.label} ${drvArrow}</button>
+            </td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
+          </tr>`;
+          if(isDrvOpen) {
+            const drvA = driver.values[eficAnoA] || null;
+            const drvB = driver.values[eficAnoB] || null;
+            const fvDrv = (v, drv) => {
+              if(v === null || !drv) return `<td class="vnull">—</td>`;
+              const per = v / drv;
+              return `<td>${per.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+            };
+            const fvarDrv = (a, b, dA, dB) => {
+              if(a === null || b === null || !dA || !dB) return '<td class="vnull">—</td><td class="vnull">—</td>';
+              const pA = a/dA, pB = b/dB;
+              const diff = pB - pA;
+              const pct  = pA !== 0 ? (diff / Math.abs(pA)) * 100 : null;
+              const isGood = eficSignInvert ? diff < 0 : diff > 0;
+              const isBad  = eficSignInvert ? diff > 0 : diff < 0;
+              const cls  = isGood ? 'vpos' : isBad ? 'vneg' : '';
+              const sign = diff > 0 ? '+' : '';
+              const absStr = sign + diff.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+              const pctStr = pct !== null ? (pct > 0?'+':'') + pct.toFixed(1) + '%' : '—';
+              return `<td class="${cls}">${absStr}</td><td class="${cls}">${pctStr}</td>`;
+            };
+            detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}
+              style="font-size:11px;background:var(--bg-2)">
+              <td style="padding-left:28px;color:var(--muted)">
+                R$ / ${driver.label}
+                <span style="font-size:9px;opacity:.55;margin-left:4px">
+                  (${eficAnoA}: ${drvA ? drvA.toLocaleString('pt-BR') : '—'} |
+                   ${eficAnoB}: ${drvB ? drvB.toLocaleString('pt-BR') : '—'} ${driver.unitLabel})
+                </span>
+              </td>
+              ${fvDrv(vA,drvA)}${fvDrv(vB,drvB)}${fvarDrv(vA,vB,drvA,drvB)}
+            </tr>`;
+          }
+        } else {
+          detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
+            <td>${item.label}</td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
+          </tr>`;
+        }
       }
     }
 
