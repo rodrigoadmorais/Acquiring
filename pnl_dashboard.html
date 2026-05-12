@@ -3781,8 +3781,7 @@ let eficCenarioB  = 'Plan';
 let eficSignInvert = false;   // true → invert var color (cost mode: reduction = green)
 let eficRelMode    = false;   // true → relative mode (value / denominator, shown as %)
 let eficRemainderOpen = new Set();  // keys of remainder rows that are expanded
-const _eficMap = {};  // runtime overrides: 'groupKey::itemLabel' → {mng2?,mng3?,mng4?,sumByMng2?}
-let _eficMapperCtx = null;  // { groupKey, itemLabel }
+const _eficMap = {};  // mapping overrides (read-only at runtime — set via EFIC_GROUPS defaults)
 
 function _eficGetEff(groupKey, item) {
   const ov = _eficMap[`${groupKey}::${item.label}`];
@@ -4135,20 +4134,15 @@ function renderEficTab() {
       if(vA !== null) grpA = (grpA||0) + vA;
       if(vB !== null) grpB = (grpB||0) + vB;
       const hidden = eficCollapsed.has(grp.key) ? 'style="display:none"' : '';
-      const hasOv  = !!_eficMap[`${grp.key}::${item.label}`];
-      const icon   = hasOv ? '🔗' : '⊕';
-      const eGk    = grp.key.replace(/'/g,"\\'");
-      const eLbl   = item.label.replace(/'/g,"\\'");
       if(eff.remainderOf) {
         const rowKey = `${grp.key}::${item.label}`;
         const rk_esc = rowKey.replace(/'/g,"\\'");
         const isOpen = eficRemainderOpen.has(rowKey);
         const arrow  = isOpen ? '▼' : '▶';
         detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
-          <td style="cursor:pointer" title="Clique para vincular linha do P&amp;L / expandir"
-              onclick="openEficMapper('${eGk}','${eLbl}',event)">
-            <span style="opacity:.45;font-size:9px;margin-right:4px">${icon}</span>${item.label}
-            <button onclick="event.stopPropagation();toggleEficRemainder('${rk_esc}')"
+          <td>
+            ${item.label}
+            <button onclick="toggleEficRemainder('${rk_esc}')"
               style="background:none;border:none;cursor:pointer;font-size:10px;opacity:.55;margin-left:4px;padding:0"
               title="Expandir detalhes">${arrow}</button>
           </td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
@@ -4165,10 +4159,7 @@ function renderEficTab() {
         }
       } else {
         detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
-          <td style="cursor:pointer" title="Clique para vincular linha do P&amp;L"
-              onclick="openEficMapper('${eGk}','${eLbl}',event)">
-            <span style="opacity:.45;font-size:9px;margin-right:4px">${icon}</span>${item.label}
-          </td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
+          <td>${item.label}</td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
         </tr>`;
       }
     }
@@ -8423,210 +8414,7 @@ function _grafgenShowMsg(msg) {
   if(ctEl)  ctEl.style.display='none';
 }
 
-
-// ── Efic Mapper ───────────────────────────────────────────
-function openEficMapper(groupKey, itemLabel, evt) {
-  if(evt) evt.stopPropagation();
-  _eficMapperCtx = { groupKey, itemLabel };
-  const modal = document.getElementById('eficMapperModal');
-  if(!modal) return;
-  document.getElementById('emTitle').textContent = `Vincular → ${itemLabel}`;
-  _emShowCurrent();
-  document.getElementById('emSearch').value = '';
-  _emBuildList('');
-  modal.style.display = 'flex';
-  document.getElementById('emSearch').focus();
-}
-
-function _emShowCurrent() {
-  if(!_eficMapperCtx) return;
-  const { groupKey, itemLabel } = _eficMapperCtx;
-  const grp  = EFIC_GROUPS.find(g=>g.key===groupKey);
-  const item = grp?.items.find(i=>i.label===itemLabel);
-  const eff  = item ? _eficGetEff(groupKey, item) : null;
-  let desc = '—';
-  if(eff) {
-    if(eff.mng4) desc = `MNG_4: ${[].concat(eff.mng4).join(', ')}`;
-    else if(eff.mng3) desc = `MNG_3: ${[].concat(eff.mng3).join(', ')}`;
-    else if(eff.mng2) desc = `MNG_2: ${[].concat(eff.mng2).join(', ')}${eff.sumByMng2?' (soma sub-linhas)':''}`;
-    else desc = `label: ${eff.label}`;
-  }
-  document.getElementById('emCurrent').textContent = desc;
-}
-
-function _emBuildList(filter) {
-  if(!allData || !_eficMapperCtx) return;
-  const { groupKey, itemLabel } = _eficMapperCtx;
-  const fl = filter.toLowerCase();
-  const buses = eficBU === '__ALL__' ? null : (KN_BU_MAP[eficBU] || [eficBU]);
-  const inBU2 = d => !buses || buses.includes(d.Product);
-
-  // Collect totals at each level for Col A (for reference values)
-  const totM2 = new Map(), totM3 = new Map(), totM4 = new Map();
-  // Tree: Map<MNG_1, Map<MNG_2, Map<MNG_3, Set<MNG_4>>>>
-  const tree = new Map();
-  for(const d of allData) {
-    if(!inBU2(d)||d.ANO!==eficAnoA||d.Cenario!==eficCenarioA) continue;
-    const m1=d.MNG_1||'—', m2=d.MNG_2||'—', m3=d.MNG_3||null, m4=d.MNG_4||null;
-    const v = d.Value||0;
-    if(!tree.has(m1)) tree.set(m1, new Map());
-    const l2=tree.get(m1);
-    if(!l2.has(m2)) l2.set(m2, new Map());
-    const l3=l2.get(m2);
-    if(m3){ if(!l3.has(m3)) l3.set(m3, new Set()); if(m4) l3.get(m3).add(m4); }
-    totM2.set(`${m1}|${m2}`, (totM2.get(`${m1}|${m2}`)||0)+v);
-    if(m3) totM3.set(`${m1}|${m2}|${m3}`, (totM3.get(`${m1}|${m2}|${m3}`)||0)+v);
-    if(m4) totM4.set(`${m1}|${m2}|${m3}|${m4}`, (totM4.get(`${m1}|${m2}|${m3}|${m4}`)||0)+v);
-  }
-
-  // Pre-selection: current effective config
-  const grp  = EFIC_GROUPS.find(g=>g.key===groupKey);
-  const item = grp?.items.find(i=>i.label===itemLabel);
-  const eff  = item ? _eficGetEff(groupKey, item) : {};
-  const selM4 = new Set([].concat(eff.mng4||[]));
-  const selM3 = new Set([].concat(eff.mng3||[]));
-  const selM2 = new Set([].concat(eff.mng2||[]));
-
-  const fmt = v => (v/unitDiv).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
-  const esc = s => s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-
-  let html = '';
-  for(const [m1, l2map] of tree) {
-    let inner = '';
-    for(const [m2, l3map] of l2map) {
-      const matchM2 = !fl || m2.toLowerCase().includes(fl);
-      // Check if any sub-level matches filter
-      let subMatch = matchM2;
-      if(!subMatch) for(const [m3,l4] of l3map) {
-        if(m3.toLowerCase().includes(fl)){ subMatch=true; break; }
-        for(const m4 of l4) if(m4.toLowerCase().includes(fl)){ subMatch=true; break; }
-      }
-      if(!subMatch) continue;
-
-      const k2   = `${m1}|${m2}`;
-      const tot2 = fmt(totM2.get(k2)||0);
-      const chk2 = selM2.has(m2) ? 'checked' : '';
-      inner += `<div class="em-row" style="padding:4px 20px;display:flex;align-items:center;gap:6px">
-        <input type="checkbox" class="emCk" data-lv="2" data-val="${m2}" ${chk2}
-          style="accent-color:#FFE600;cursor:pointer;flex-shrink:0">
-        <span style="font-size:12px;flex:1">${m2}</span>
-        <span style="font-size:11px;color:var(--muted);min-width:60px;text-align:right">${tot2}</span>
-      </div>`;
-
-      // MNG_3 sub-rows
-      for(const [m3, l4set] of l3map) {
-        const matchM3 = !fl || matchM2 || m3.toLowerCase().includes(fl);
-        let l4match = matchM3;
-        if(!l4match) for(const m4 of l4set) if(m4.toLowerCase().includes(fl)){ l4match=true; break; }
-        if(!l4match) continue;
-        const k3   = `${m1}|${m2}|${m3}`;
-        const tot3 = fmt(totM3.get(k3)||0);
-        const chk3 = selM3.has(m3) ? 'checked' : '';
-        inner += `<div class="em-row" style="padding:3px 36px;display:flex;align-items:center;gap:6px">
-          <input type="checkbox" class="emCk" data-lv="3" data-val="${m3}" ${chk3}
-            style="accent-color:#FFE600;cursor:pointer;flex-shrink:0">
-          <span style="font-size:11px;flex:1;color:var(--text-2)">${m3}</span>
-          <span style="font-size:10px;color:var(--muted);min-width:60px;text-align:right">${tot3}</span>
-        </div>`;
-
-        // MNG_4 sub-rows
-        for(const m4 of [...l4set].sort()) {
-          if(fl && !matchM2 && !m3.toLowerCase().includes(fl) && !m4.toLowerCase().includes(fl)) continue;
-          const k4   = `${m1}|${m2}|${m3}|${m4}`;
-          const tot4 = fmt(totM4.get(k4)||0);
-          const chk4 = selM4.has(m4) ? 'checked' : '';
-          inner += `<div class="em-row" style="padding:2px 52px;display:flex;align-items:center;gap:6px">
-            <input type="checkbox" class="emCk" data-lv="4" data-val="${m4}" ${chk4}
-              style="accent-color:#FFE600;cursor:pointer;flex-shrink:0">
-            <span style="font-size:10px;flex:1;color:var(--muted)">${m4}</span>
-            <span style="font-size:10px;color:var(--muted);min-width:60px;text-align:right">${tot4}</span>
-          </div>`;
-        }
-      }
-    }
-    if(inner) {
-      html += `<div style="padding:6px 20px 2px;font-size:10px;font-weight:700;color:var(--muted);
-               text-transform:uppercase;letter-spacing:.5px;background:var(--bg-2)">${m1}</div>`;
-      html += inner;
-    }
-  }
-  const list = document.getElementById('emList');
-  if(list) list.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sem linhas encontradas</div>';
-}
-
-function _confirmEficMapping() {
-  if(!_eficMapperCtx) return;
-  const { groupKey, itemLabel } = _eficMapperCtx;
-  const key = `${groupKey}::${itemLabel}`;
-  const sumMng2 = document.getElementById('emSumMng2').checked;
-
-  const sel4 = [...document.querySelectorAll('.emCk[data-lv="4"]:checked')].map(c=>c.dataset.val);
-  const sel3 = [...document.querySelectorAll('.emCk[data-lv="3"]:checked')].map(c=>c.dataset.val);
-  const sel2 = [...document.querySelectorAll('.emCk[data-lv="2"]:checked')].map(c=>c.dataset.val);
-
-  let ov = {};
-  if(sel4.length)      { ov = { mng4: sel4.length===1?sel4[0]:sel4, mng3:undefined, mng2:undefined, sumByMng2:false }; }
-  else if(sel3.length) { ov = { mng3: sel3.length===1?sel3[0]:sel3, mng4:undefined, mng2:undefined, sumByMng2:false }; }
-  else if(sel2.length) { ov = { mng2: sel2.length===1?sel2[0]:sel2, mng4:undefined, mng3:undefined, sumByMng2: sumMng2 }; }
-
-  if(Object.keys(ov).length) _eficMap[key] = ov; else delete _eficMap[key];
-
-  closeEficMapper();
-  renderEficTab();
-}
-
-function closeEficMapper() {
-  const m = document.getElementById('eficMapperModal');
-  if(m) m.style.display = 'none';
-  _eficMapperCtx = null;
-}
-
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeEficMapper(); });
 </script>
 
-<!-- ── Efic Mapper Modal ────────────────────────────────── -->
-<div id="eficMapperModal" style="display:none;position:fixed;inset:0;z-index:9999;
-     background:rgba(0,0,0,.45);align-items:center;justify-content:center">
-  <div style="background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-xl);
-              width:580px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden">
-    <!-- Header -->
-    <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
-      <span style="font-size:13px;font-weight:700;flex:1;color:var(--text)" id="emTitle">Vincular linha</span>
-      <button onclick="closeEficMapper()"
-        style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);line-height:1">✕</button>
-    </div>
-    <!-- Current mapping -->
-    <div style="padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg-2)">
-      <span style="font-size:10px;color:var(--muted);margin-right:6px">Vínculo atual:</span>
-      <span id="emCurrent" style="font-size:11px;font-weight:600;color:var(--text)"></span>
-    </div>
-    <!-- Search -->
-    <div style="padding:10px 20px;border-bottom:1px solid var(--border)">
-      <input id="emSearch" type="text" placeholder="Buscar linha do P&L…" oninput="_emBuildList(this.value)"
-        style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);
-               font-size:12px;background:var(--card);color:var(--text);box-sizing:border-box">
-    </div>
-    <!-- Column header -->
-    <div style="padding:4px 20px;display:flex;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg-2)">
-      <span style="flex:1">Linha P&L</span>
-      <span style="min-width:60px;text-align:right">Col A</span>
-    </div>
-    <!-- List -->
-    <div id="emList" style="overflow-y:auto;flex:1"></div>
-    <!-- Footer -->
-    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px">
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:var(--text);margin-right:auto">
-        <input type="checkbox" id="emSumMng2" checked style="accent-color:#FFE600">
-        Somar todas as sub-linhas do MNG_2 selecionado
-      </label>
-      <button onclick="closeEficMapper()"
-        style="padding:6px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);
-               background:none;cursor:pointer;font-size:12px;color:var(--muted)">Cancelar</button>
-      <button onclick="_confirmEficMapping()"
-        style="padding:6px 16px;border:none;border-radius:var(--r-sm);
-               background:#FFE600;color:#1a1a1a;font-weight:700;cursor:pointer;font-size:12px">Confirmar</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
