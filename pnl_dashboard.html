@@ -3785,14 +3785,45 @@ let eficDriverExpanded = new Set();  // keys of driver sub-rows that are expande
 const _eficMap = {};  // mapping overrides (read-only at runtime — set via EFIC_GROUPS defaults)
 
 // ── Driver definitions ────────────────────────────────────────────
-// key: 'groupKey::itemLabel'  values: { year: volume }
+// Two source types:
+//   values      → hardcoded { year: number } (e.g. HCs, Devices)
+//   mng2metrics → pulled from allData MNG_1='Metrics' for the given buKey
 const EFIC_DRIVERS = {
   'var_neg::Telemetria': {
-    label    : 'MADs',
-    unitLabel: 'Devices Ativas',
-    values   : { 2024: 3103828, 2025: 2799510, 2026: 3111548 },
+    label: 'MADs', unitLabel: 'Devices Ativas',
+    values: { 2024: 3103828, 2025: 2799510, 2026: 3111548 },
+  },
+  'var_neg::Bad Debt': {
+    label: 'Outstanding', unitLabel: 'R$',
+    mng2metrics: 'Outstanding', buKey: 'Credits',
+  },
+  'var_neg::Investimentos': {
+    label: 'AUM', unitLabel: 'R$',
+    mng2metrics: 'AUM Saldo EOP', buKey: 'DA & Investments',
+  },
+  'var_neg::Servicios de Cobranzas Credits': {
+    label: 'Outstanding', unitLabel: 'R$',
+    mng2metrics: 'Outstanding', buKey: 'Credits',
+  },
+  'fix_neg::FDV Propria': {
+    label: 'HCs', unitLabel: 'HCs',
+    values: { 2025: 1106, 2026: 1845 },
   },
 };
+
+function eficComputeDriver(driver, ano, cenario) {
+  if(driver.values) return driver.values[ano] ?? null;
+  if(!driver.mng2metrics || !allData) return null;
+  const buses = KN_BU_MAP[driver.buKey] || [driver.buKey];
+  let s = null;
+  for(const d of allData) {
+    if(d.ANO !== ano || d.Cenario !== cenario) continue;
+    if(!buses.includes(d.Product)) continue;
+    if(d.MNG_1 === 'Metrics' && d.MNG_2 === driver.mng2metrics)
+      s = (s||0) + d.Value;
+  }
+  return s;
+}
 
 function _eficGetEff(groupKey, item) {
   const ov = _eficMap[`${groupKey}::${item.label}`];
@@ -4191,11 +4222,11 @@ function renderEficTab() {
             </td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
           </tr>`;
           if(isDrvOpen) {
-            const drvA = driver.values[eficAnoA] || null;
-            const drvB = driver.values[eficAnoB] || null;
+            const drvA = eficComputeDriver(driver, eficAnoA, eficCenarioA);
+            const drvB = eficComputeDriver(driver, eficAnoB, eficCenarioB);
             const fmtPer = (v, drv) => {
               if(v === null || !drv) return '—';
-              return (v / drv).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+              return (v / drv).toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4});
             };
             const fmtVol = drv => {
               if(!drv) return '—';
