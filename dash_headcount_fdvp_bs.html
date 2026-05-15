@@ -138,9 +138,9 @@
     <span class="text-gray-400 text-xs font-bold">→</span>
     <select id="fMesFim" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
       <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
-      <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
+      <option value="3" selected>Abr</option><option value="4">Mai</option><option value="5">Jun</option>
       <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
-      <option value="9">Out</option><option value="10">Nov</option><option value="11" selected>Dez</option>
+      <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
     </select>
   </div>
 </div>
@@ -354,7 +354,7 @@ const M25=["Jan/25","Fev/25","Mar/25","Abr/25","Mai/25","Jun/25","Jul/25","Ago/2
 const M26=["Jan/26","Fev/26","Mar/26","Abr/26","Mai/26","Jun/26","Jul/26","Ago/26","Set/26","Out/26","Nov/26","Dez/26"];
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
-const ST={ano:"2026",canal:"FDVP",subbu:"all",role:"all",rv:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{},mes26ini:0,mes26fim:11};
+const ST={ano:"2026",canal:"FDVP",subbu:"all",role:"all",rv:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{},mes26ini:0,mes26fim:3};
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────
 function avg(arr){if(!arr||!arr.length)return 0;return arr.reduce((a,b)=>a+b,0)/arr.length;}

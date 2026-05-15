@@ -557,7 +557,7 @@
                             <option value="1">R$ Unidades</option>
                             <option value="1000">R$ Milhares (K)</option>
                             <option value="1000000">R$ Milhões (M)</option>
-                            <option value="1000000000">R$ Bilhões (B)</option>
+                            <option value="1000000000" selected>R$ Bilhões (B)</option>
                         </select>
                     </div>
 
@@ -709,7 +709,7 @@
         let rawData        = {};
         let currentChannel  = 'ALL';
         let currentCiclo    = 'ALL';
-        let currentMagnitude = 1;
+        let currentMagnitude = 1000000000;
         let hideJanuary    = false;
         let hideFebruary   = false;
         let showDataLabels = false;
@@ -1001,7 +1001,7 @@
                                 font: { size: 11, family: "'Inter', sans-serif" },
                                 color: '#6B7280',
                                 callback(value) {
-                                    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
+                                    return formatCurrencyWithMagnitude(value * currentMagnitude);
                                 }
                             }
                         },
