@@ -3011,7 +3011,7 @@
                 // MONTH, QTR, HALF: show both
                 moA.style.display = 'block'; moB.style.display = 'block';
             }
-            // Override selects for QTR/HALF
+            // Override selects for QTR/HALF; restore months for all other modes
             if (compType === 'QTR') {
                 const qOpts = ['Q1','Q2','Q3','Q4'].map(q => `<option value="${q}">${q}</option>`).join('');
                 moA.innerHTML = qOpts; moB.innerHTML = qOpts;
@@ -3020,6 +3020,10 @@
                 const hOpts = ['H1','H2'].map(h => `<option value="${h}">${h}</option>`).join('');
                 moA.innerHTML = hOpts; moB.innerHTML = hOpts;
                 moA.value = 'H1'; moB.value = 'H1';
+            } else {
+                // Restore month options when leaving QTR/HALF (e.g. QTR → YTG/YTD/MONTH/YEAR)
+                handlePLScenarioChange('a', false);
+                handlePLScenarioChange('b', false);
             }
             renderPLTab();
         }
