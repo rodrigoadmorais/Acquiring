@@ -329,7 +329,7 @@
                         <!-- Toggle ajuste CMV Pro -->
                         <button id="btn-pro-cost-adj" onclick="toggleProCostAdj()"
                             title="Aplica +20% no CMV unitário do Pro a partir de Agosto"
-                            class="flex items-center gap-1.5 border px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all bg-white border-gray-300 text-gray-500">
+                            class="flex items-center gap-1.5 border px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all bg-blue-600 border-blue-700 text-white">
                             <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
                             <span>↑ CMV Pro</span>
                         </button>
@@ -2198,7 +2198,7 @@
         let plMetric = 'resultado';
         let plTimelineChartObj = null, plBarChartObj = null;
         let smartCostAdjEnabled = true;   // toggle ajuste de custo Smart (ago +12,5% / nov +7% adicional) — ativo por padrão
-        let proCostAdjEnabled   = false;  // toggle ajuste de custo Pro (ago +20% wave única) — desligado por padrão
+        let proCostAdjEnabled   = true;   // toggle ajuste de custo Pro (ago +20% wave única) — ativo por padrão
 
         const PL_METRIC_LABELS = { resultado: 'Resultado', receita: 'Receita', salesTaxes: 'Sales Taxes', cmv: 'CMV' };
         const PL_METRIC_ACTIVE_COLOR = { resultado: '#1d4ed8', receita: '#1d4ed8', salesTaxes: '#d97706', cmv: '#dc2626' };
