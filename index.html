@@ -276,6 +276,212 @@
       .header-inner { padding: 20px 16px; }
       .agent-hint { display: none; }
     }
+
+    /* ── Botão Gerar Documentação ── */
+    .btn-doc {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.35);
+      color: white;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+    .btn-doc:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.6); }
+    .btn-doc svg { flex-shrink: 0; }
+
+    /* ── Modal Documentação ── */
+    #modal-doc {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(18,20,40,0.72);
+      backdrop-filter: blur(4px);
+      overflow-y: auto;
+    }
+    #modal-doc.open { display: block; }
+    .doc-sheet {
+      max-width: 960px;
+      margin: 32px auto 64px;
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+    }
+    .doc-header {
+      background: linear-gradient(135deg, #2D3277 0%, #1a1f5e 100%);
+      padding: 32px 40px 28px;
+      position: relative;
+    }
+    .doc-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: #FFF159;
+    }
+    .doc-header h1 { color: white; font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+    .doc-header p  { color: rgba(255,255,255,0.65); font-size: 0.88rem; }
+    .doc-header-meta { margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .doc-chip {
+      background: rgba(255,255,255,0.13);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.85);
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .doc-close {
+      position: absolute;
+      top: 20px; right: 24px;
+      background: rgba(255,255,255,0.12);
+      border: none;
+      color: white;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .doc-close:hover { background: rgba(255,255,255,0.25); }
+    .doc-body { padding: 40px; }
+    .doc-toc {
+      background: #f8f9fc;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 36px;
+    }
+    .doc-toc h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 12px; font-weight: 700; }
+    .doc-toc ol { padding-left: 20px; column-count: 2; column-gap: 24px; }
+    .doc-toc li { font-size: 0.84rem; color: #374151; margin-bottom: 5px; }
+    .doc-toc a { color: #2D3277; text-decoration: none; font-weight: 500; }
+    .doc-toc a:hover { text-decoration: underline; }
+    .doc-section-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #1a1f5e;
+      margin: 36px 0 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #FFF159;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .doc-section-title span {
+      background: #2D3277;
+      color: white;
+      font-size: 0.72rem;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .doc-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .doc-card-header {
+      background: #f8f9fc;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .doc-card-title { font-size: 1rem; font-weight: 700; color: #1a1f5e; }
+    .doc-card-tag {
+      font-size: 0.72rem;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      background: #e8eaf6;
+      color: #2D3277;
+    }
+    .doc-card-body { padding: 20px; }
+    .doc-field { margin-bottom: 14px; }
+    .doc-field-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #9ca3af;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .doc-field-value { font-size: 0.88rem; color: #374151; line-height: 1.55; }
+    .doc-field-value a { color: #2D3277; word-break: break-all; }
+    .doc-query {
+      background: #1e1e2e;
+      color: #a6e3a1;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      padding: 14px 18px;
+      border-radius: 8px;
+      overflow-x: auto;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .doc-platform-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .doc-actions {
+      display: flex;
+      gap: 12px;
+      padding: 20px 40px 32px;
+      border-top: 1px solid #f0f2f5;
+      background: #fafbfc;
+    }
+    .doc-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .doc-btn:hover { opacity: 0.85; }
+    .doc-btn-primary { background: #2D3277; color: white; }
+    .doc-btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .doc-overview {
+      background: linear-gradient(135deg, #eef0fb 0%, #f0f7ff 100%);
+      border: 1px solid #c7d2ee;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+    .doc-overview h3 { font-size: 0.95rem; font-weight: 700; color: #1a1f5e; margin-bottom: 8px; }
+    .doc-overview p  { font-size: 0.86rem; color: #4b5563; line-height: 1.6; }
+
+    @media print {
+      #modal-doc { position: static; background: white; overflow: visible; }
+      .doc-sheet { box-shadow: none; margin: 0; border-radius: 0; max-width: 100%; }
+      .doc-close, .doc-actions { display: none !important; }
+      .doc-card { break-inside: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -296,6 +502,10 @@
       <p>Mercado Pago - FP&amp;A Acquiring MLB</p>
     </div>
     <span class="header-badge">12 Dashboards</span>
+    <button class="btn-doc" onclick="abrirDocumentacao()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 2v4h4M5 8h5M5 11h3" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Gerar Documentação
+    </button>
   </div>
 </header>
 
@@ -1204,7 +1414,250 @@
 
 </main>
 
+<!-- ── Modal Documentação ── -->
+<div id="modal-doc">
+  <div class="doc-sheet" id="doc-sheet-inner"></div>
+</div>
+
 <script>
+  /* ── Documentação ── */
+  var DOC_REGISTRY = {
+    'P&L MNG': {
+      categoria: 'P&L',
+      audiencia: 'Time de Financial Planning – Acquiring Brasil',
+      objetivo: 'P&L completo de todas as BUs de Acquiring — evolutivo, comparativo e período total com granularidade mensal, trimestral e anual.',
+      como_foi_construido: 'Dashboard HTML nativo hospedado na plataforma Grid (grid.adminml.com). Desenvolvido com HTML, CSS e JavaScript puro. Utiliza a biblioteca Chart.js (via CDN Grid /d/_libs/) para visualizações e a API Grid.sheets para conexão ao vivo com a planilha-fonte no Google Sheets.',
+      como_funciona: 'Exibe o P&L completo de todas as BUs (FDVP, Big Sellers, MPOS, MNG, TLV etc.) com visões: evolutiva mensal/trimestral/anual, comparativa Actual vs Plan vs Forecast e totalizadores YTD. Filtros de BU, granularidade de período e visão (linhas de P&L). Os dados são lidos a cada acesso diretamente da planilha via Grid.sheets — sem cache local.',
+      fonte_dados: 'Google Sheets — planilha P&L Brasil mantida pelo time de FP&A Acquiring. Conexão ao vivo via Grid.sheets (owner OAuth).',
+      query: 'Conexão direta via Grid HTML SDK:\n\nconst data = await Grid.sheets.get("<SHEET_ID>");\n// Aba: "Base para Dashboard"\n// Colunas esperadas: BU | Linha P&L | Jan_Act | Jan_Plan | Jan_FCST | ... | Dez_FCST\n\nNenhum ETL intermediário — leitura in-browser a cada carregamento.',
+      atualizacao: 'Tempo real (live) — a cada acesso ao dashboard, os dados são lidos direto da planilha.',
+    },
+    'MPOS Analytics': {
+      categoria: 'Dispositivos',
+      audiencia: 'Time de Financial Planning e Canal MPOS',
+      objetivo: 'Comparativos de Devices Sold — plano, actual e forecast por canal e modelo de dispositivo.',
+      como_foi_construido: 'Dashboard HTML estático hospedado no GitHub Pages (rodrigoadmorais.github.io/Acquiring/MPOS - Plan 2026.html). Construído com Chart.js para visualizações. Dados exportados da planilha Google Sheets e embarcados diretamente no HTML como objetos JSON.',
+      como_funciona: 'Exibe Devices Sold com drill por canal de vendas e modelo de dispositivo (Point Pro, Point Smart, Point Mini etc.). Visões: evolutivo mensal, comparativo Actual vs Plan vs Forecast. Filtros de período, canal e modelo.',
+      fonte_dados: 'Google Sheets — planilha de planejamento de dispositivos MPOS do time FP&A.',
+      query: '// Dados embarcados diretamente no HTML como JSON estático:\nconst mposData = [\n  { canal: "FDVP", modelo: "Point Pro",\n    meses: [ { mes: "Jan", actual: 1200, plan: 1100, fcst: 1150 }, ... ] },\n  ...\n];\n\n// Extração via script Python antes do build:\n# python3 gen_dashboard.py --sheet-id <ID> --aba "Devices" --output mpos_data.json',
+      atualizacao: 'Manual — requer re-geração do HTML (script gen_dashboard.py) e novo commit/push no GitHub Pages quando a planilha é atualizada.',
+    },
+    'HCs FDVP e Big Sellers': {
+      categoria: 'Headcount',
+      audiencia: 'Time de Financial Planning – Gestão de HCs FDVP e Big Sellers',
+      objetivo: 'Comparativo de headcount realizado vs plano por canal e cargo. Período padrão: YTD Jan–Abr 2026 (meses com realizado fechado).',
+      como_foi_construido: 'Dashboard HTML hospedado no GitHub Pages (dash_headcount_fdvp_bs.html). Usa Chart.js para gráficos de barras comparativos. Estado padrão configurado no objeto ST: { ano: "2026", mes26ini: 0, mes26fim: 3 } (Jan=0, Abr=3).',
+      como_funciona: 'Exibe HCs com drill por canal (FDVP, Big Sellers) e cargo. Filtros: ano (2025/2026), período início/fim (mês), visão (por canal / por cargo). O filtro de período padrão exibe apenas os meses com realizado disponível (até Abril). Realizado e Plano são exibidos em barras lado a lado com gap (Δ).',
+      fonte_dados: 'Google Sheets — planilha de headcount FP&A Acquiring. Aba "HC Dashboard".',
+      query: '// Dados embarcados no HTML como array JS:\nconst hcData = [\n  { canal: "FDVP", cargo: "Consultor", ano: 2026,\n    meses: [ { mes: 0, actual: 142, plan: 145 }, ... ] },\n  ...\n];\n\n// Estado de controle (objeto ST no HTML):\nconst ST = { ano: "2026", mes26ini: 0, mes26fim: 3, ... };',
+      atualizacao: 'Manual — atualizado a cada mês de fechamento de realizado. Novo mes26fim no objeto ST + dados atualizados.',
+    },
+    'Performance Canais TPV': {
+      categoria: 'TPV',
+      audiencia: 'Time de Financial Planning – Análise de TPV por Canal',
+      objetivo: 'Evolução de TPV por canal e ciclo de vida. Escala padrão em Bilhões (R$ B) para evitar números gigantescos nos cards e eixo Y.',
+      como_foi_construido: 'Dashboard HTML hospedado no GitHub Pages (TPVm1.html). Chart.js com seletor de magnitude dinâmico. Variável currentMagnitude controla o divisor: padrão 1.000.000.000 (Bilhões). KPI cards e eixo Y usam a função formatCurrencyWithMagnitude(value).',
+      como_funciona: 'Exibe TPV por canal (FDVP, Big Sellers, MPOS, TLV etc.) e ciclo de vida. Seletor de magnitude: Unidades / K / M / B (padrão: Bilhões). Os KPI cards e o eixo Y do gráfico formatam os valores com o sufixo selecionado (R$ 3,2 B). Filtros de canal e período.',
+      fonte_dados: 'Google Sheets — planilha de TPV Acquiring. Dados extraídos e embarcados no HTML.',
+      query: '// Dados embarcados como JSON no HTML:\nconst tpvData = [\n  { canal: "FDVP", ciclo: "Ativo",\n    meses: [ { mes: "Jan/26", actual: 3200000000, plan: 3100000000, fcst: 3150000000 }, ... ] },\n  ...\n];\n\n// Formatação com magnitude:\nconst formatCurrencyWithMagnitude = (value) => {\n  const val = value / currentMagnitude; // currentMagnitude = 1_000_000_000\n  return "R$ " + val.toFixed(1) + " B";\n};',
+      atualizacao: 'Manual — atualizado mensalmente com novos dados de realizado/forecast.',
+    },
+    'Dash CPA': {
+      categoria: 'CPA / Custos',
+      audiencia: 'Time de Financial Planning – Análise de Custos por Canal',
+      objetivo: 'Comparativo Plano vs FCST e FCST vs FCST de custos por canal. Análise de Pareto dos 90% da variação para priorização.',
+      como_foi_construido: 'Dashboard HTML hospedado no GitHub Pages (dash_cpa.html). Chart.js para barras comparativas e gráfico de Pareto. Inclui resumo IA integrado gerado a partir dos dados.',
+      como_funciona: 'Compara custos por canal (Resellers, FDVP, FDVT, MNG, TLV, Consultor Virtual) entre Plano vs FCST e entre FCSTv FCSTv anterior. Análise de Pareto destaca os canais/linhas que explicam 90% da variação. O resumo IA consolida os principais desvios.',
+      fonte_dados: 'Google Sheets — planilha de CPA/custos Acquiring por canal.',
+      query: '// Estrutura de dados embarcada no HTML:\nconst cpaData = [\n  { canal: "FDVP",\n    linhas: [\n      { nome: "Comissão", plan: 12500000, fcst1: 13100000, fcst2: 12800000 },\n      { nome: "Marketing", plan: 3200000, fcst1: 3400000,  fcst2: 3350000  },\n      ...\n    ]\n  }, ...\n];',
+      atualizacao: 'Manual — atualizado a cada ciclo de forecast (mensal/bimestral).',
+    },
+    'Acquiring 3.0': {
+      categoria: 'P&L',
+      audiencia: 'Time de Financial Planning, Diretoria e stakeholders de Acquiring',
+      objetivo: 'P&L actual, plano e forecast com drill por SubBU e Segmento. Projeto Simplifica — consolidação do P&L Acquiring 3.0.',
+      como_foi_construido: 'Dashboard Tableau hospedado em Tableau Server Mercado Livre (us-east-1.online.tableau.com, site melicross). Projeto Simplifica — migração e consolidação do P&L Acquiring para a nova estrutura 3.0.',
+      como_funciona: 'Evolutivos do P&L actual, plano e forecast com granularidade por SubBU (FDVP, Big Sellers, MPOS etc.) e Segmento. Abas: PLActual, PLPlan, PLForecast. Filtros de período, SubBU e Segmento. Acesso via SSO Mercado Livre.',
+      fonte_dados: 'Data Warehouse Mercado Livre (BigQuery) via conexão Tableau Live ou Extract agendado.',
+      query: '-- Queries gerenciadas dentro do Tableau (não expostas externamente).\n-- Fonte: DW interno MeLi — BigQuery.\n-- Tabelas de fato e dimensão do P&L Acquiring (projeto Simplifica).\n-- Atualização via Tableau Extracts agendados no Tableau Server.\n\n-- Para acesso às queries, contate o time FP&A Acquiring\n-- ou consulte o projeto no Tableau Server: melicross/Acquiring3_0.',
+      atualizacao: 'Automático — refresh diário via Tableau Server (Extract schedule).',
+    },
+    'FDVP Point — OPEX P&L': {
+      categoria: 'OPEX',
+      audiencia: 'Time de Financial Planning – Canal FDVP Point',
+      objetivo: 'OPEX P&L do canal FDVP Point — evolutivo por categoria de custo, comparativo plano vs realizado e drill por headcount.',
+      como_foi_construido: 'Dashboard HTML hospedado na plataforma Grid (grid.adminml.com, doc_id: 01KRXRJRCQ8DZP98R0VPC9F6EE). Construído com o skill /acquiring-dashboard. HTML/CSS/JS com Chart.js via /d/_libs/. Conexão ao vivo com Google Sheets via Grid HTML SDK (Grid.sheets).',
+      como_funciona: 'Exibe OPEX por categoria (Pessoal, Marketing, Tecnologia, Administrativo etc.) com comparativo Actual vs Plan e drill por HC. Filtros de ano, período (De/Até), categoria e drill. Painel "Sobre" com metadados do dashboard. Dados lidos ao vivo da planilha a cada acesso.',
+      fonte_dados: 'Google Sheets — planilha OPEX FDVP Point mantida pelo time FP&A. Conexão ao vivo via Grid.sheets (owner OAuth do Grid).',
+      query: '// Grid HTML SDK — leitura ao vivo da planilha:\nconst raw = await Grid.sheets.get("<SHEET_ID>");\n// Aba: "Base para Dashboard"\n// Estrutura esperada:\n// | Categoria | Jan_Act | Jan_Plan | Fev_Act | Fev_Plan | ... | Dez_Plan |\n// | Pessoal   | 4200000 | 4000000  | ...     |          |     |          |\n\n// Nenhuma query SQL — acesso direto via Sheets API do Grid.',
+      atualizacao: 'Tempo real (live) — dados lidos diretamente da planilha a cada acesso ao dashboard.',
+    },
+    'Base Fornecedor': {
+      categoria: 'P&L',
+      audiencia: 'Time de Financial Planning – Mercado Pago Brasil',
+      objetivo: 'P&L Executive de Base Fornecedor (MPB) — comparativo e evolutivo PYL1 vs PYL2 com dados ao vivo via Google Sheets.',
+      como_foi_construido: 'Dashboard HTML hospedado na plataforma Grid (grid.adminml.com, doc_id: 01KRXPX4WHE1XAZ207ZHTD6SMC). Construído com o skill /acquiring-dashboard. HTML/CSS/JS com Chart.js via /d/_libs/. Conexão ao vivo com Google Sheets via Grid HTML SDK (Grid.sheets).',
+      como_funciona: 'Exibe o P&L de Base Fornecedor com visões: Comparação (PYL1 vs PYL2) e Evolutivo mensal. Filtros: Todo PYL1, Todo PYL2. Valores em LC (moeda local). Dados lidos ao vivo da planilha. O engine LC do Grid resolve a conversão de moeda conforme configuração do doc.',
+      fonte_dados: 'Google Sheets — planilha Base Fornecedor MPB. Aba "Base para Dashboard". Conexão ao vivo via Grid.sheets.',
+      query: '// Grid HTML SDK — leitura ao vivo da planilha:\nconst raw = await Grid.sheets.get("<SHEET_ID>");\n// Aba: "Base para Dashboard"\n// Estrutura esperada:\n// | Linha P&L         | PYL1_Jan | PYL1_Fev | ... | PYL2_Jan | PYL2_Fev | ... |\n// | Receita Bruta     | 112000   | 118000   | ... | 89000    | 95000    | ... |\n// | (-) Custos Diretos| -45000   | -47000   | ... | -38000   | -40000   | ... |\n\n// Nenhuma query SQL — acesso direto via Sheets API do Grid.',
+      atualizacao: 'Tempo real (live) — dados lidos diretamente da planilha a cada acesso ao dashboard.',
+    },
+    'Visão Ecossistêmica': {
+      categoria: 'Ecossistema',
+      audiencia: 'FP&A Fintech — stakeholders Fintech Brasil',
+      objetivo: 'Visão ecossistêmica MLB excl. CCard — overview de resultado por produto Fintech (Acquiring, Crédito, Conta, Marketplace).',
+      como_foi_construido: 'Dashboard Tableau hospedado em Tableau Server Fintech (tableau.melifintech). Desenvolvido pelo time FP&A Fintech.',
+      como_funciona: 'Overview trimestral e anual de resultado por produto Fintech no Brasil (MLB excl. CCard). Comparativo de P&L entre produtos, evolução YoY e YTD. Acesso via SSO Mercado Livre.',
+      fonte_dados: 'Data Warehouse Mercado Livre (BigQuery) via Tableau Extract.',
+      query: '-- Queries gerenciadas pelo time FP&A Fintech no Tableau Server.\n-- Para acesso: contate FP&A Fintech ou abra ticket no #help-data-finance-br.\n-- Site Tableau: melifintech / FPAFintech-DashboardEcosistemicoMLBExcl_CCard.',
+      atualizacao: 'Automático — refresh diário via Tableau Server.',
+    },
+    'KPIs de Negócio por Canal': {
+      categoria: 'Sellers / Canal',
+      audiencia: 'Time de Sellers Mercado Pago e Financial Planning',
+      objetivo: 'KPIs de negócio por canal de vendas — plano por canal para Sellers Mercado Pago.',
+      como_foi_construido: 'Dashboard Tableau hospedado em Tableau Server Fintech (tableau.melifintech). Desenvolvido pelo time de Sellers MP.',
+      como_funciona: 'KPIs segmentados por canal de vendas Mercado Pago. Comparativo de plano vs realizado por canal. Acesso via SSO Mercado Livre.',
+      fonte_dados: 'Data Warehouse Mercado Livre (BigQuery) via Tableau Extract.',
+      query: '-- Queries gerenciadas pelo time de Sellers MP no Tableau Server.\n-- Site Tableau: melifintech / DashboardSellersMercadoPago.\n-- Para acesso às queries: contate o time de Sellers MP.',
+      atualizacao: 'Automático — refresh diário via Tableau Server.',
+    },
+    'Inventário MPOS': {
+      categoria: 'Inventário / Logística',
+      audiencia: 'Time de Operações e Logística MPOS',
+      objetivo: 'Relatório de inventário de dispositivos MPOS — posição de estoque, cobertura em meses, entradas e saídas.',
+      como_foi_construido: 'Relatório Power BI hospedado no Power BI Service (app.powerbi.com). Desenvolvido pelo time de Operações MPOS.',
+      como_funciona: 'Exibe posição de estoque de dispositivos MPOS por SKU e localização. KPIs: cobertura (meses), entradas, saídas, saldo. Filtros de SKU, depósito e período. Acesso via conta Microsoft/Azure AD Mercado Livre.',
+      fonte_dados: 'Sistemas de logística/ERP Mercado Livre via Power BI Dataflow. Conexão com sistemas de estoque internos.',
+      query: '-- Queries gerenciadas no Power BI (M Language / DAX).\n-- Fonte: sistemas internos de estoque MeLi via dataflow Power BI.\n-- Para acesso às queries: contate o time de Operações MPOS\n-- ou abra solicitação no workspace Power BI correspondente.',
+      atualizacao: 'Automático — refresh diário via Power BI Service (scheduled refresh).',
+    },
+    'P&L Econômico de Pricing': {
+      categoria: 'Pricing / P&L',
+      audiencia: 'Time de Pricing — Mercado Pago Brasil',
+      objetivo: 'Decomposição do P&L econômico de Pricing — receitas, margens, impostos e evolução vs plano e forecast. Waterfall de componentes.',
+      como_foi_construido: 'Dashboard Tableau hospedado em Tableau Server Fintech (tableau.melifintech). Desenvolvido pelo time de Pricing MP Brasil.',
+      como_funciona: 'Decomposição waterfall do P&L econômico: Receita → (-) Impostos → (-) Custos → (-) Despesas → Margem. Evolução da margem % vs plano e forecast. Filtros de país, período e segmento. Drill por linha de P&L. Acesso via SSO Mercado Livre.',
+      fonte_dados: 'Data Warehouse Mercado Livre (BigQuery) via Tableau Live/Extract.',
+      query: '-- Queries gerenciadas pelo time de Pricing no Tableau.\n-- Site Tableau: melifintech / PLMercadoPago-Brasil.\n-- Tabelas de fato: P&L econômico Pricing (receitas, TR econômico, impostos).\n-- Para acesso: contate time de Pricing MP ou #help-data-finance-br.',
+      atualizacao: 'Automático — refresh diário via Tableau Server.',
+    },
+  };
+
+  function abrirDocumentacao() {
+    var hoje = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+    var cards = document.querySelectorAll('.card[data-tab]');
+    var total = cards.length;
+
+    // Coletar dados do DOM
+    var dashboards = { acquiring: [], 'outras-areas': [] };
+    cards.forEach(function(card) {
+      var tab   = card.dataset.tab;
+      var label = card.dataset.label || '';
+      var link  = (card.querySelector('.card-link') || card.querySelector('.card-title') || {}).href || '#';
+      var desc  = (card.querySelector('.card-desc') || {}).textContent || '';
+      var plat  = (card.querySelector('.card-platform') || {}).textContent || '';
+      var tag   = (card.querySelector('.card-tag') || {}).textContent || '';
+      if (dashboards[tab]) dashboards[tab].push({ label, link, desc, plat, tag });
+    });
+
+    function renderCard(d, idx) {
+      var reg = DOC_REGISTRY[d.label] || {};
+      var tag = reg.categoria || d.tag || 'Dashboard';
+      return '<div class="doc-card" id="doc-dash-' + idx + '">' +
+        '<div class="doc-card-header">' +
+          '<span class="doc-card-title">' + d.label + '</span>' +
+          '<span class="doc-card-tag">' + tag + '</span>' +
+        '</div>' +
+        '<div class="doc-card-body">' +
+          '<div class="doc-field"><div class="doc-field-label">Plataforma</div>' +
+            '<div class="doc-field-value"><span class="doc-platform-badge">' + d.plat + '</span></div></div>' +
+          '<div class="doc-field"><div class="doc-field-label">Link</div>' +
+            '<div class="doc-field-value"><a href="' + d.link + '" target="_blank">' + d.link + '</a></div></div>' +
+          '<div class="doc-field"><div class="doc-field-label">Objetivo</div>' +
+            '<div class="doc-field-value">' + (reg.objetivo || d.desc) + '</div></div>' +
+          '<div class="doc-field"><div class="doc-field-label">Audiência</div>' +
+            '<div class="doc-field-value">' + (reg.audiencia || '—') + '</div></div>' +
+          '<div class="doc-field"><div class="doc-field-label">Como foi construído</div>' +
+            '<div class="doc-field-value">' + (reg.como_foi_construido || '—') + '</div></div>' +
+          '<div class="doc-field"><div class="doc-field-label">Como funciona</div>' +
+            '<div class="doc-field-value">' + (reg.como_funciona || '—') + '</div></div>' +
+          '<div class="doc-field"><div class="doc-field-label">Fonte dos dados</div>' +
+            '<div class="doc-field-value">' + (reg.fonte_dados || '—') + '</div></div>' +
+          '<div class="doc-field"><div class="doc-field-label">Query / Conexão com a base</div>' +
+            '<div class="doc-query">' + (reg.query || '— Query não documentada. Consulte o responsável pelo dashboard.') + '</div></div>' +
+          '<div class="doc-field"><div class="doc-field-label">Frequência de atualização</div>' +
+            '<div class="doc-field-value">' + (reg.atualizacao || '—') + '</div></div>' +
+        '</div></div>';
+    }
+
+    var acqCards  = dashboards.acquiring;
+    var outCards  = dashboards['outras-areas'];
+
+    var tocItems = '';
+    var idx = 1;
+    acqCards.forEach(function(d)  { tocItems += '<li><a href="#doc-dash-' + idx + '">' + d.label + '</a></li>'; idx++; });
+    outCards.forEach(function(d)  { tocItems += '<li><a href="#doc-dash-' + idx + '">' + d.label + '</a></li>'; idx++; });
+
+    var acqHtml = ''; idx = 1;
+    acqCards.forEach(function(d)  { acqHtml  += renderCard(d, idx); idx++; });
+    var outHtml = '';
+    outCards.forEach(function(d)  { outHtml  += renderCard(d, idx); idx++; });
+
+    document.getElementById('doc-sheet-inner').innerHTML =
+      '<div class="doc-header">' +
+        '<button class="doc-close" onclick="fecharDocumentacao()" title="Fechar">✕</button>' +
+        '<h1>📋 Documentação — Acquiring Data Center</h1>' +
+        '<p>FP&A Acquiring · Mercado Pago Brasil</p>' +
+        '<div class="doc-header-meta">' +
+          '<span class="doc-chip">Gerado em ' + hoje + '</span>' +
+          '<span class="doc-chip">' + total + ' Dashboards</span>' +
+          '<span class="doc-chip">Versão HTML estática + Grid + Tableau + Power BI</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="doc-body">' +
+        '<div class="doc-overview">' +
+          '<h3>Sobre o Acquiring Data Center</h3>' +
+          '<p>Central de dashboards do time de FP&A Acquiring (Mercado Pago Brasil). Agrupa ' + total + ' dashboards ' +
+          'distribuídos em duas seções: <strong>Acquiring</strong> (' + acqCards.length + ' dashs — P&L, dispositivos, headcount, TPV, CPA, OPEX) ' +
+          'e <strong>Outras Áreas</strong> (' + outCards.length + ' dashs — Ecossistema Fintech, Sellers MP, Inventário MPOS, Pricing). ' +
+          'Hospedagem mista: Grid (live Google Sheets), GitHub Pages (HTML estático), Tableau Server e Power BI Service.</p>' +
+        '</div>' +
+        '<div class="doc-toc"><h3>Índice</h3><ol>' + tocItems + '</ol></div>' +
+        '<div class="doc-section-title">Dashboards Acquiring <span>' + acqCards.length + ' dashboards</span></div>' +
+        acqHtml +
+        '<div class="doc-section-title">Dashboards de Outras Áreas <span>' + outCards.length + ' dashboards</span></div>' +
+        outHtml +
+      '</div>' +
+      '<div class="doc-actions">' +
+        '<button class="doc-btn doc-btn-primary" onclick="window.print()">' +
+          '<svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2" y="5" width="11" height="7" rx="1" stroke="white" stroke-width="1.3"/><path d="M4 5V3h7v2M4 9h7M4 11h4" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>' +
+          'Imprimir / Salvar PDF' +
+        '</button>' +
+        '<button class="doc-btn doc-btn-secondary" onclick="fecharDocumentacao()">' +
+          'Fechar' +
+        '</button>' +
+      '</div>';
+
+    document.getElementById('modal-doc').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function fecharDocumentacao() {
+    document.getElementById('modal-doc').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // Fechar com ESC
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') fecharDocumentacao();
+  });
+
+  // Fechar clicando fora do painel
+  document.getElementById('modal-doc').addEventListener('click', function(e) {
+    if (e.target === this) fecharDocumentacao();
+  });
+
   /* ── Tab switching ── */
   function switchTab(name, e) {
     document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
