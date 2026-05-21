@@ -112,6 +112,9 @@
                 <button onclick="showCorpPLModal()" class="flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-violet-700 transition-all active:scale-95">
                     <i data-lucide="building-2" class="w-4 h-4"></i> P&amp;L Corp
                 </button>
+                <button onclick="showDocsModal()" class="flex items-center gap-2 bg-slate-700 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-slate-800 transition-all active:scale-95">
+                    <i data-lucide="book-open" class="w-4 h-4"></i> Documentação
+                </button>
             </div>
         </div>
 
@@ -650,6 +653,40 @@
         </div> <!-- end tab-content-estoque -->
 
     </main>
+
+    <!-- Docs Modal -->
+    <div id="docs-modal" class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm" style="display:none;" onclick="if(event.target===this)hideDocsModal()">
+        <div class="flex h-full">
+            <!-- Sidebar TOC -->
+            <div class="w-56 shrink-0 bg-slate-900 text-white overflow-y-auto flex flex-col gap-1 p-4 pt-6">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 px-2">Navegação</p>
+                <a href="#doc-s1" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">1. Visão Geral</a>
+                <a href="#doc-s2" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">2. Stack Técnico</a>
+                <a href="#doc-s3" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">3. Fontes de Dados</a>
+                <a href="#doc-s4" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">4. Pipeline de Dados</a>
+                <a href="#doc-s5" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">5. Motor de Comparação</a>
+                <a href="#doc-s6" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">6. Simulação P&amp;L</a>
+                <a href="#doc-s7" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">7. Aba Estoque</a>
+                <a href="#doc-s8" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">8. Modelo de Preço/Custo</a>
+                <a href="#doc-s9" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">9. Fusão Forecast+Real</a>
+                <a href="#doc-s10" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">10. Exports</a>
+                <a href="#doc-s11" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">11. Deploy &amp; Automação</a>
+                <a href="#doc-s12" onclick="docNav(this)" class="doc-nav-item text-[11px] font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all cursor-pointer">12. Query BigQuery</a>
+                <div class="mt-auto pt-4 border-t border-slate-700 flex flex-col gap-2">
+                    <button onclick="downloadDocsMD()" class="w-full bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-lg transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="download" class="w-3 h-3"></i> Download .md
+                    </button>
+                    <button onclick="hideDocsModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-lg transition-all">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+            <!-- Content -->
+            <div id="docs-content" class="flex-1 bg-white overflow-y-auto p-10 text-sm text-gray-800 leading-relaxed" style="font-family:'Inter',sans-serif;">
+                <!-- gerado dinamicamente por generateDocumentation() -->
+            </div>
+        </div>
+    </div>
 
     <!-- PPT Modal -->
     <div id="ppt-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/50 backdrop-blur-sm" style="display:none;">
@@ -4506,6 +4543,605 @@
             document.getElementById('tpv-total-pct').innerText = (totDA >= 0 ? '+' : '') + formatBRPct(totDP);
             document.getElementById('tpv-total-pct').className = `p-4 text-xs font-black ${totPC}`;
             lucide.createIcons();
+        }
+
+        // =====================================================================
+        // DOCUMENTAÇÃO — Modal & gerador de conteúdo
+        // =====================================================================
+
+        function showDocsModal() {
+            const modal = document.getElementById('docs-modal');
+            const content = document.getElementById('docs-content');
+            content.innerHTML = generateDocumentation();
+            modal.style.display = 'flex';
+            lucide.createIcons();
+            const firstNav = modal.querySelector('.doc-nav-item');
+            if (firstNav) {
+                firstNav.classList.add('bg-slate-700', 'text-white');
+                firstNav.classList.remove('text-slate-300');
+            }
+        }
+
+        function hideDocsModal() {
+            document.getElementById('docs-modal').style.display = 'none';
+        }
+
+        function docNav(el) {
+            document.querySelectorAll('.doc-nav-item').forEach(a => {
+                a.classList.remove('bg-slate-700', 'text-white');
+                a.classList.add('text-slate-300');
+            });
+            el.classList.add('bg-slate-700', 'text-white');
+            el.classList.remove('text-slate-300');
+            const targetId = el.getAttribute('href').replace('#', '');
+            const target = document.getElementById(targetId);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function generateDocumentation() {
+            const today = new Date().toLocaleDateString('pt-BR');
+            const usdBrl = 4.5687;
+
+            // Tabela de preços dinâmica
+            const canais = ['APP','FDV PROPRIA','FDV TERCERA','LP','MGM','RESELLERS','TLV','TO','ENGAGEMENT','BIG SELLERS'];
+            const devices = ['SMART','PRO','AIR','MINI'];
+            const priceTableHeader = `<tr>
+                <th class="py-2 px-3 bg-slate-800 text-white text-left text-xs font-black uppercase tracking-wider sticky left-0">Device \\ Canal</th>`
+                + canais.map(c => `<th class="py-2 px-3 bg-slate-800 text-white text-center text-xs font-black uppercase tracking-wider whitespace-nowrap">${c}</th>`).join('') + `</tr>`;
+            const priceTableRows = devices.map(d => {
+                const row = PL_SELL_PRICE[d] || {};
+                return `<tr class="border-b border-gray-100 hover:bg-blue-50">
+                    <td class="py-2 px-3 font-black text-xs text-gray-700 sticky left-0 bg-white">${d}</td>`
+                    + canais.map(c => {
+                        const v = row[c] !== undefined ? row[c] : 0;
+                        return `<td class="py-2 px-3 text-center text-xs text-gray-600">${v > 0 ? 'R$ ' + v.toFixed(2) : '—'}</td>`;
+                    }).join('') + `</tr>`;
+            }).join('');
+
+            // Tabela de custos dinâmica
+            const costTableRows = devices.map(d => {
+                const base = PL_COST_BRL[d] || 0;
+                const usd = Math.abs(base / usdBrl).toFixed(2);
+                return `<tr class="border-b border-gray-100 hover:bg-red-50">
+                    <td class="py-2 px-3 font-black text-xs text-gray-700">${d}</td>
+                    <td class="py-2 px-3 text-center text-xs text-gray-600">USD ${usd}</td>
+                    <td class="py-2 px-3 text-center text-xs font-semibold text-red-600">R$ ${base.toFixed(2)}</td>
+                    <td class="py-2 px-3 text-center text-xs text-gray-500">USD × ${usdBrl}</td>
+                </tr>`;
+            }).join('');
+
+            // Cenários disponíveis
+            const scenariosHtml = (window.scenarioList || []).map(s =>
+                `<li><span class="font-bold text-gray-800">${s.name}</span> — tipo: <code class="bg-gray-100 px-1 rounded text-xs">${s.type}</code>, meses: ${s.months.join(', ')}</li>`
+            ).join('') || '<li class="text-gray-400 italic">Carregue os dados para ver os cenários disponíveis.</li>';
+
+            return `<div style="font-family:'Inter',sans-serif;" class="max-w-4xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between mb-10">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-white font-black text-lg">M</div>
+      <div>
+        <h1 class="text-2xl font-black text-gray-900 leading-tight">MPOS Analytics Dashboard</h1>
+        <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Documentação Técnica — Plan 2026</p>
+      </div>
+    </div>
+    <div class="text-right text-xs text-gray-400 flex-shrink-0">
+      <div>Gerado em <strong>${today}</strong></div>
+      <div class="mt-1"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold text-[10px]">Ativo</span></div>
+    </div>
+  </div>
+
+  <!-- 1. Visão Geral -->
+  <div id="doc-s1" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">1</div><h2 class="text-lg font-black text-gray-900">Visão Geral</h2></div>
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-5 text-sm text-gray-700 leading-relaxed">
+      <p class="mb-3">O <strong>MPOS Analytics Dashboard</strong> é uma aplicação web de página única (SPA) em HTML puro, sem backend ou build step. Centraliza a análise de vendas de dispositivos MPOS (Smart, Pro, Air, Mini) do Mercado Pago Brasil, cruzando dados de Plan, Realizado, Forecast e Forecast Anterior em uma interface interativa.</p>
+      <p class="mb-3">Permite comparar períodos (Mês, YTD, YTG, Quarter, Semestre, Ano), simular P&amp;L com ajustes de custo de CMV, exportar dados em formato base de dados para Excel, gerar apresentações PowerPoint e acompanhar o estoque de devices.</p>
+      <ul class="list-disc list-inside space-y-1 text-xs text-gray-600 mt-3">
+        <li><strong>Produto:</strong> Smart, Pro, Air, Mini</li>
+        <li><strong>Mercado:</strong> Brasil — canais APP, FDV Própria, FDV Terceira, LP, MGM, Resellers, TLV, TO, Engagement, Big Sellers</li>
+        <li><strong>Horizonte:</strong> Jan–Dez 2026 (Plan anual + tracking mensal)</li>
+        <li><strong>Usuários:</strong> Time de Business Intelligence e liderança de MPOS</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 2. Stack Técnico -->
+  <div id="doc-s2" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">2</div><h2 class="text-lg font-black text-gray-900">Stack Técnico</h2></div>
+    <div class="grid grid-cols-2 gap-3">
+      ${[
+        ['HTML5 + Vanilla JS', 'Toda a lógica de dados, renderização e interação em JavaScript puro, sem frameworks ou bundlers.'],
+        ['TailwindCSS (CDN)', 'Estilização utilitária via CDN. Sem processo de build — classes aplicadas diretamente no markup.'],
+        ['Chart.js + DataLabels', 'Gráficos de barras, linhas e timelines interativos. Plugin chartjs-plugin-datalabels para rótulos inline.'],
+        ['SheetJS (xlsx.full.min.js)', 'Geração de arquivos .xlsx no cliente, sem servidor. Exportações em formato base de dados (long format).'],
+        ['PptxGenJS', 'Criação de apresentações .pptx executivas diretamente no browser, com slides de métricas e gráficos.'],
+        ['Lucide Icons', 'Ícones SVG leves via CDN, reinicializados com lucide.createIcons() após cada render.'],
+        ['Google Fonts — Inter', 'Tipografia principal carregada via @import CSS para consistência visual.'],
+        ['GitHub Pages', 'Hosting estático gratuito. Deploy automático via push para branch main (e master por compatibilidade).']
+      ].map(([name, desc]) => `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-200 transition-all">
+          <div class="font-black text-xs text-gray-800 mb-1">${name}</div>
+          <div class="text-xs text-gray-500 leading-relaxed">${desc}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- 3. Fontes de Dados -->
+  <div id="doc-s3" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">3</div><h2 class="text-lg font-black text-gray-900">Fontes de Dados</h2></div>
+    <p class="text-xs text-gray-500 mb-4">Todos os dados são arquivos JSON estáticos servidos junto ao HTML. Carregados via <code class="bg-gray-100 px-1 rounded">fetch()</code> com cache-busting (<code class="bg-gray-100 px-1 rounded">?_=Date.now()</code>) em paralelo durante o boot.</p>
+    <table class="w-full text-xs border-collapse rounded-xl overflow-hidden border border-gray-200">
+      <thead><tr class="bg-slate-800 text-white"><th class="py-2 px-3 text-left font-black">Arquivo</th><th class="py-2 px-3 text-left font-black">Variável</th><th class="py-2 px-3 text-left font-black">Conteúdo</th><th class="py-2 px-3 text-left font-black">Chaves mensais</th></tr></thead>
+      <tbody class="divide-y divide-gray-100">
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">data/dados.json</td><td class="py-2 px-3"><code>planDb</code></td><td class="py-2 px-3 text-gray-600">Plan (orçamento anual)</td><td class="py-2 px-3 text-gray-500">202601–202612</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">data/realizado.json</td><td class="py-2 px-3"><code>actualDb</code></td><td class="py-2 px-3 text-gray-600">Realizado (fechado)</td><td class="py-2 px-3 text-gray-500">202601–202612</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">data/forecast.json</td><td class="py-2 px-3"><code>forecastDb</code></td><td class="py-2 px-3 text-gray-600">Forecast mais recente</td><td class="py-2 px-3 text-gray-500">202601–202612</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">data/forecast_old.json</td><td class="py-2 px-3"><code>forecastOldDb</code></td><td class="py-2 px-3 text-gray-600">Forecast anterior (comparação)</td><td class="py-2 px-3 text-gray-500">202601–202612</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">data/tpv_devices.json</td><td class="py-2 px-3"><code>tpvDb</code></td><td class="py-2 px-3 text-gray-600">TPV por device e canal</td><td class="py-2 px-3 text-gray-500">202601–202612</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">data/stock.json</td><td class="py-2 px-3"><code>stockDb</code></td><td class="py-2 px-3 text-gray-600">Estoque por device e mês</td><td class="py-2 px-3 text-gray-500">202601–202612</td></tr>
+      </tbody>
+    </table>
+    <div class="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800">
+      <strong>Formato das linhas JSON:</strong> cada registro contém <code>CANAL</code>, <code>DEVICE</code> e colunas mensais no padrão <code>YYYYMM</code> (ex: <code>202601</code>). Todas as chaves são normalizadas para UPPERCASE antes de qualquer acesso.
+    </div>
+  </div>
+
+  <!-- 4. Pipeline de Dados -->
+  <div id="doc-s4" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">4</div><h2 class="text-lg font-black text-gray-900">Pipeline de Dados</h2></div>
+    <div class="space-y-3 text-xs">
+      ${[
+        ['Fetch paralelo','boot() dispara 6 fetches simultâneos com Promise.all(). Falhas individuais retornam { ok: false } e são tratadas — o dashboard inicializa parcialmente sem travar.'],
+        ['Parse & normalização','Cada JSON é parseado e todas as chaves de string são normalizadas para UPPERCASE via parseAndNormalize(). Isso garante match entre dados de Plan, Realizado e Forecast independente de case nos arquivos.'],
+        ['Fusão Forecast + Realizado','fuseActualIntoForecast(actualDb, forecastDb) sobrescreve os meses com dados reais no forecast (meses 1..N, onde N = último mês com realizado > 0). O resultado é o cenário "Forecast (com Real)".'],
+        ['Construção do scenarioList','Array global de cenários disponíveis: Plan, Realizado, Forecast, Forecast Anterior e versões fusionadas. Cada cenário tem { id, name, type, months[] }.'],
+        ['Render inicial','processDashboard() é chamado com os valores default dos selectors. A aba ativa (Comparação, P&L ou Estoque) é renderizada com os dados processados.'],
+        ['Re-render reativo','Qualquer mudança nos selectors (cenário, período, canal, device) re-executa processDashboard() ou renderPLTab(), atualizando todos os gráficos e tabelas na tela.']
+      ].map(([step, desc], i) => `
+        <div class="flex gap-3">
+          <div class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-0.5">${i+1}</div>
+          <div><div class="font-black text-gray-800 mb-0.5">${step}</div><div class="text-gray-500 leading-relaxed">${desc}</div></div>
+        </div>`).join('')}
+    </div>
+    <div class="mt-5 bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs text-gray-600">
+      <strong>Cenários atualmente disponíveis:</strong>
+      <ul class="mt-2 space-y-1 list-none">${scenariosHtml}</ul>
+    </div>
+  </div>
+
+  <!-- 5. Motor de Comparação -->
+  <div id="doc-s5" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">5</div><h2 class="text-lg font-black text-gray-900">Motor de Comparação</h2></div>
+    <p class="text-xs text-gray-500 mb-4">Compara dois cenários (A vs B) para o mesmo ou diferentes períodos. Suporta 6 tipos de período:</p>
+    <table class="w-full text-xs border-collapse mb-4 rounded-xl overflow-hidden border border-gray-200">
+      <thead><tr class="bg-slate-800 text-white"><th class="py-2 px-3 text-left font-black">Tipo</th><th class="py-2 px-3 text-left font-black">ID de Período</th><th class="py-2 px-3 text-left font-black">Meses incluídos</th><th class="py-2 px-3 text-left font-black">Seletores</th></tr></thead>
+      <tbody class="divide-y divide-gray-100">
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-bold">MONTH</td><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">MONTH|202601</td><td class="py-2 px-3 text-gray-600">Mês exato selecionado</td><td class="py-2 px-3 text-gray-500">A e B</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-bold">YTD</td><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">YTD|202606</td><td class="py-2 px-3 text-gray-600">Jan até mês selecionado</td><td class="py-2 px-3 text-gray-500">Apenas A</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-bold">YTG</td><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">YTG|202607</td><td class="py-2 px-3 text-gray-600">Mês selecionado até Dez</td><td class="py-2 px-3 text-gray-500">Apenas A</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-bold">YEAR</td><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">YEAR|2026</td><td class="py-2 px-3 text-gray-600">Jan–Dez completo</td><td class="py-2 px-3 text-gray-500">Nenhum</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-bold">QTR</td><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">QTR|2026Q2</td><td class="py-2 px-3 text-gray-600">Q1=Jan-Mar · Q2=Abr-Jun · Q3=Jul-Set · Q4=Out-Dez</td><td class="py-2 px-3 text-gray-500">A e B</td></tr>
+        <tr class="hover:bg-gray-50"><td class="py-2 px-3 font-bold">HALF</td><td class="py-2 px-3 font-mono text-blue-700 text-[11px]">HALF|2026H1</td><td class="py-2 px-3 text-gray-600">H1=Jan-Jun · H2=Jul-Dez</td><td class="py-2 px-3 text-gray-500">A e B</td></tr>
+      </tbody>
+    </table>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs text-gray-700 leading-relaxed">
+      <strong>extractValue(type, periodId, filterCanal, filterDevice)</strong> — função central que acumula quantidade da base de dados para o período e filtros dados. Retorna: <code>{ total, byCanal, byDevice, byCanalDevice }</code> para uso em gráficos, tabelas e drill-down.
+    </div>
+  </div>
+
+  <!-- 6. Simulação P&L -->
+  <div id="doc-s6" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">6</div><h2 class="text-lg font-black text-gray-900">Simulação P&amp;L</h2></div>
+    <p class="text-xs text-gray-500 mb-4">Calcula o Demonstrativo de Resultado para cada cenário/período com base nas quantidades vendidas por canal × device.</p>
+    <div class="grid grid-cols-2 gap-4 mb-4 text-xs">
+      <div class="bg-green-50 border border-green-200 rounded-xl p-4"><div class="font-black text-green-800 mb-2">Receita Líquida</div><div class="text-green-700 leading-relaxed"><code>Qty × PL_SELL_PRICE[device][canal]</code><br>Preço de venda em R$ por unidade, variando por device e canal.</div></div>
+      <div class="bg-red-50 border border-red-200 rounded-xl p-4"><div class="font-black text-red-800 mb-2">Sales Taxes</div><div class="text-red-700 leading-relaxed"><code>Receita × ${(SALES_TAXES_DEFAULT * 100).toFixed(2)}%</code> (padrão)<br>Percentual configurável na UI. Tributos sobre receita bruta.</div></div>
+      <div class="bg-orange-50 border border-orange-200 rounded-xl p-4"><div class="font-black text-orange-800 mb-2">CMV</div><div class="text-orange-700 leading-relaxed"><code>Qty × PL_COST_BRL[device]</code><br>Custo unitário negativo em R$, convertido do USD à taxa fixa ${usdBrl}.</div></div>
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4"><div class="font-black text-blue-800 mb-2">Resultado (Margem Bruta)</div><div class="text-blue-700 leading-relaxed"><code>Receita + Sales Taxes + CMV</code><br>Resultado final após tributos e custo de produto.</div></div>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-2">
+      <div><strong>↑ CMV Smart (botão toggle, ativo por padrão):</strong> Ago–Out: +12,5% | Nov+: +12,5% × 1,07 (duas waves de aumento)</div>
+      <div><strong>↑ CMV Pro (botão toggle, ativo por padrão):</strong> Ago+ +20% no custo unitário do Pro (wave única)</div>
+      <div><strong>Impacto técnico:</strong> quando qualquer ajuste está ativo, <code>computePLPeriod()</code> itera mês a mês (em vez de usar a soma agregada) para aplicar o multiplicador correto de cada mês.</div>
+    </div>
+  </div>
+
+  <!-- 7. Aba Estoque -->
+  <div id="doc-s7" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">7</div><h2 class="text-lg font-black text-gray-900">Aba Estoque</h2></div>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 text-xs text-gray-700 leading-relaxed">
+      <p class="mb-3">Exibe a evolução mensal de unidades em estoque por device, carregada de <code class="bg-gray-100 px-1 rounded">data/stock.json</code>. Independente dos cenários de vendas — não sofre fusão com realizado.</p>
+      <ul class="list-disc list-inside space-y-1">
+        <li>Gráfico de linhas por device (Smart, Pro, Air, Mini) ao longo dos 12 meses</li>
+        <li>Tabela de valores absolutos com totais por mês</li>
+        <li>Filtros de device para drill-down individual</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 8. Modelo de Preço/Custo -->
+  <div id="doc-s8" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">8</div><h2 class="text-lg font-black text-gray-900">Modelo de Preço / Custo</h2></div>
+    <p class="text-[10px] font-black text-gray-500 mb-2 uppercase tracking-wider">Tabela de Preços de Venda — PL_SELL_PRICE (R$ / unidade)</p>
+    <div class="overflow-x-auto mb-6 rounded-xl border border-gray-200">
+      <table class="text-xs border-collapse w-full"><thead>${priceTableHeader}</thead><tbody class="divide-y divide-gray-100">${priceTableRows}</tbody></table>
+    </div>
+    <p class="text-[10px] font-black text-gray-500 mb-2 uppercase tracking-wider">Custo CMV — PL_COST_BRL (base, sem ajustes sazonais)</p>
+    <div class="overflow-x-auto rounded-xl border border-gray-200">
+      <table class="text-xs border-collapse w-full">
+        <thead><tr class="bg-slate-800 text-white"><th class="py-2 px-3 text-left font-black">Device</th><th class="py-2 px-3 text-center font-black">Custo USD</th><th class="py-2 px-3 text-center font-black">Custo BRL</th><th class="py-2 px-3 text-center font-black">Conversão</th></tr></thead>
+        <tbody class="divide-y divide-gray-100">${costTableRows}</tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-xs text-gray-400">Taxa USD/BRL fixa utilizada: <strong>${usdBrl}</strong></p>
+  </div>
+
+  <!-- 9. Fusão Forecast + Realizado -->
+  <div id="doc-s9" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">9</div><h2 class="text-lg font-black text-gray-900">Fusão Forecast + Realizado</h2></div>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 text-xs text-gray-700 leading-relaxed space-y-3">
+      <p>Função <code class="bg-gray-100 px-1 rounded font-bold">fuseActualIntoForecast(actualDb, forecastDb, label)</code> cria um cenário híbrido:</p>
+      <ul class="list-disc list-inside space-y-1">
+        <li><strong>Meses fechados (1..N):</strong> dados do Realizado (mais precisos)</li>
+        <li><strong>Meses futuros (N+1..12):</strong> dados do Forecast</li>
+      </ul>
+      <p><strong>Detecção de N:</strong> percorre meses 1 a 12 e identifica o maior com total de realizado &gt; 0 em qualquer linha do dataset.</p>
+      <p><strong>Normalização:</strong> todas as chaves (CANAL, DEVICE, colunas YYYYMM) convertidas para UPPERCASE antes da fusão.</p>
+      <p><strong>Resultado:</strong> novo array de linhas registrado como cenário separado no <code>scenarioList</code>.</p>
+    </div>
+  </div>
+
+  <!-- 10. Exports -->
+  <div id="doc-s10" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">10</div><h2 class="text-lg font-black text-gray-900">Exports</h2></div>
+    <div class="space-y-3 text-xs">
+      ${[
+        ['Excel — Motor de Comparação','Long format (base de dados): uma linha por Cenário × Canal × Device × Mês. Colunas: Cenário, Tipo Período, Período, Mês, Ano, Canal, Device, Quantidade. Ideal para pivot tables.','exportExcel()'],
+        ['Excel — Simulação P&L','Mesmo long format com colunas adicionais de Receita, Sales Taxes, CMV e Resultado. Uma linha por Cenário × Canal × Device × Mês.','exportPLExcel()'],
+        ['Excel — P&L Corp','Wide format: linhas = métricas (Qtd Devices, Receita, Sales Taxes, CMV), colunas = meses. Inclui linha de quantidade total de devices por mês.','exportCorpPL()'],
+        ['CSV','Exportação rápida dos dados brutos do Motor de Comparação em long format .csv.','exportCSV()'],
+        ['PowerPoint (.pptx)','Apresentação executiva gerada com PptxGenJS. Slides com KPIs, gráficos por canal e device, comparativo de cenários.','generatePPT()']
+      ].map(([name, desc, fn]) => `
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <div class="flex justify-between items-start mb-1">
+            <div class="font-black text-gray-800">${name}</div>
+            <code class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px] flex-shrink-0 ml-2">${fn}</code>
+          </div>
+          <div class="text-gray-500 leading-relaxed">${desc}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- 11. Deploy & Automação -->
+  <div id="doc-s11" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">11</div><h2 class="text-lg font-black text-gray-900">Deploy &amp; Automação</h2></div>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 text-xs text-gray-700 space-y-4">
+      <div><div class="font-black text-gray-800 mb-1">Hosting</div><div>GitHub Pages (estático, sem custo). Serve o conteúdo do branch <code class="bg-gray-100 px-1 rounded">main</code>. Todo commit é propagado também para <code class="bg-gray-100 px-1 rounded">master</code> por compatibilidade.</div></div>
+      <div>
+        <div class="font-black text-gray-800 mb-2">Padrão de push</div>
+        <pre class="bg-slate-900 text-green-300 rounded-xl p-4 text-[11px] leading-6 overflow-x-auto">git stash
+git pull --rebase origin main
+git stash pop
+git add "MPOS - Plan 2026.html"
+git commit -m "descrição da mudança"
+git push origin main
+git push origin main:master</pre>
+      </div>
+      <div><div class="font-black text-gray-800 mb-1">Atualização de dados</div><div>Arquivos JSON em <code class="bg-gray-100 px-1 rounded">data/</code> são atualizados separadamente (Verdi Flows ou upload manual). Cache-busting automático com <code class="bg-gray-100 px-1 rounded">?_=Date.now()</code> garante que o browser sempre busca a versão mais recente.</div></div>
+    </div>
+  </div>
+
+  <!-- 12. Query BigQuery -->
+  <div id="doc-s12" class="mb-10 scroll-mt-4">
+    <div class="flex items-center gap-2 mb-4"><div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-black">12</div><h2 class="text-lg font-black text-gray-900">Query BigQuery</h2></div>
+    <p class="text-xs text-gray-500 mb-4">Padrão de extração dos dados que alimentam os JSONs do dashboard. Os nomes de tabela são representativos — confirmar com o time de Data Engineering.</p>
+
+    <div class="mb-5">
+      <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Plan / Forecast — dados.json / forecast.json</div>
+      <pre class="bg-slate-900 text-green-300 text-xs rounded-xl p-5 overflow-x-auto leading-relaxed">SELECT
+  UPPER(TRIM(canal))  AS CANAL,
+  UPPER(TRIM(device)) AS DEVICE,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-01-01' THEN quantidade ELSE 0 END) AS \`202601\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-02-01' THEN quantidade ELSE 0 END) AS \`202602\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-03-01' THEN quantidade ELSE 0 END) AS \`202603\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-04-01' THEN quantidade ELSE 0 END) AS \`202604\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-05-01' THEN quantidade ELSE 0 END) AS \`202605\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-06-01' THEN quantidade ELSE 0 END) AS \`202606\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-07-01' THEN quantidade ELSE 0 END) AS \`202607\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-08-01' THEN quantidade ELSE 0 END) AS \`202608\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-09-01' THEN quantidade ELSE 0 END) AS \`202609\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-10-01' THEN quantidade ELSE 0 END) AS \`202610\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-11-01' THEN quantidade ELSE 0 END) AS \`202611\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-12-01' THEN quantidade ELSE 0 END) AS \`202612\`
+FROM
+  \`meli-bi-data.WHOWNER.BT_MP_MPOS_VENDAS_PLAN_2026\`  -- substituir pela tabela correta
+WHERE
+  EXTRACT(YEAR FROM data) = 2026
+  AND UPPER(device) IN ('SMART','PRO','AIR','MINI')
+GROUP BY 1, 2
+ORDER BY CANAL, DEVICE;</pre>
+    </div>
+
+    <div class="mb-5">
+      <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Realizado — realizado.json</div>
+      <pre class="bg-slate-900 text-green-300 text-xs rounded-xl p-5 overflow-x-auto leading-relaxed">SELECT
+  UPPER(TRIM(canal))  AS CANAL,
+  UPPER(TRIM(device)) AS DEVICE,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-01-01' THEN quantidade ELSE 0 END) AS \`202601\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-02-01' THEN quantidade ELSE 0 END) AS \`202602\`,
+  -- ... (mesmo padrão para 202603 a 202611)
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-12-01' THEN quantidade ELSE 0 END) AS \`202612\`
+FROM
+  \`meli-bi-data.WHOWNER.BT_MP_MPOS_VENDAS_REALIZADO_2026\`  -- substituir pela tabela correta
+WHERE
+  EXTRACT(YEAR FROM data) = 2026
+  AND UPPER(device) IN ('SMART','PRO','AIR','MINI')
+  AND status_venda = 'APROVADO'
+GROUP BY 1, 2
+ORDER BY CANAL, DEVICE;</pre>
+    </div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-1.5">
+      <div><strong>Saída esperada:</strong> JSON array com objetos <code>{ CANAL, DEVICE, "202601": x, "202602": x, ..., "202612": x }</code></div>
+      <div><strong>Conversão para JSON:</strong> <code>bq query --format=json --nouse_legacy_sql</code> ou Python <code>df.to_json(orient='records')</code></div>
+      <div><strong>Nota:</strong> os nomes de tabela acima são representativos. Confirmar o dataset e projeto corretos com o time de Data Engineering.</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t border-gray-100 pt-6 mt-4 text-xs text-gray-400 text-center">
+    <div class="font-black text-gray-300 mb-1">MPOS Analytics Dashboard — Plan 2026</div>
+    <div>Documentação gerada automaticamente em ${today} · Mercado Pago Brasil</div>
+  </div>
+</div>`;
+        }
+
+        function downloadDocsMD() {
+            const today = new Date().toLocaleDateString('pt-BR');
+            const usdBrl = 4.5687;
+
+            const canais = ['APP','FDV PROPRIA','FDV TERCERA','LP','MGM','RESELLERS','TLV','TO','ENGAGEMENT','BIG SELLERS'];
+            const devices = ['SMART','PRO','AIR','MINI'];
+
+            // Tabela de preços em Markdown
+            let priceTable = `| Device \\ Canal | ${canais.join(' | ')} |\n`;
+            priceTable += `|---|${canais.map(() => ':---:').join('|')}|\n`;
+            devices.forEach(d => {
+                const row = PL_SELL_PRICE[d] || {};
+                priceTable += `| **${d}** | ${canais.map(c => (row[c] !== undefined && row[c] > 0) ? `R$ ${row[c].toFixed(2)}` : '—').join(' | ')} |\n`;
+            });
+
+            // Tabela de custos em Markdown
+            let costTable = `| Device | Custo USD | Custo BRL | Taxa |\n|---|:---:|:---:|:---:|\n`;
+            devices.forEach(d => {
+                const base = PL_COST_BRL[d] || 0;
+                const usd = Math.abs(base / usdBrl).toFixed(2);
+                costTable += `| **${d}** | USD ${usd} | R$ ${base.toFixed(2)} | USD × ${usdBrl} |\n`;
+            });
+
+            const scenariosMD = (window.scenarioList || [])
+                .map(s => `- **${s.name}** — tipo: \`${s.type}\`, meses: ${s.months.join(', ')}`)
+                .join('\n') || '_Carregue os dados para ver cenários._';
+
+            const md = `# MPOS Analytics Dashboard — Documentação Técnica
+> Plan 2026 · Mercado Pago Brasil · Gerado em ${today}
+
+---
+
+## 1. Visão Geral
+
+O **MPOS Analytics Dashboard** é uma aplicação web de página única (SPA) em HTML puro, sem backend ou build step. Centraliza a análise de vendas de dispositivos MPOS (Smart, Pro, Air, Mini) do Mercado Pago Brasil, cruzando dados de Plan, Realizado, Forecast e Forecast Anterior.
+
+- **Produto:** Smart, Pro, Air, Mini
+- **Mercado:** Brasil — canais APP, FDV Própria, FDV Terceira, LP, MGM, Resellers, TLV, TO, Engagement, Big Sellers
+- **Horizonte:** Jan–Dez 2026 (Plan anual + tracking mensal)
+- **Usuários:** Time de Business Intelligence e liderança de MPOS
+
+---
+
+## 2. Stack Técnico
+
+| Tecnologia | Uso |
+|---|---|
+| HTML5 + Vanilla JS | Toda lógica sem frameworks ou bundlers |
+| TailwindCSS (CDN) | Estilização utilitária sem build step |
+| Chart.js + DataLabels | Gráficos interativos com rótulos inline |
+| SheetJS | Exportação .xlsx no cliente |
+| PptxGenJS | Geração de .pptx no browser |
+| Lucide Icons | Ícones SVG via CDN |
+| Google Fonts — Inter | Tipografia principal |
+| GitHub Pages | Hosting estático gratuito |
+
+---
+
+## 3. Fontes de Dados
+
+| Arquivo | Variável | Conteúdo |
+|---|---|---|
+| data/dados.json | planDb | Plan (orçamento anual) |
+| data/realizado.json | actualDb | Realizado (dados fechados) |
+| data/forecast.json | forecastDb | Forecast mais recente |
+| data/forecast_old.json | forecastOldDb | Forecast anterior |
+| data/tpv_devices.json | tpvDb | TPV por device e canal |
+| data/stock.json | stockDb | Estoque por device e mês |
+
+**Formato interno das linhas JSON:** cada registro contém \`CANAL\`, \`DEVICE\` e colunas mensais no padrão \`YYYYMM\` (ex: \`202601\`). Chaves normalizadas para UPPERCASE antes de qualquer acesso.
+
+---
+
+## 4. Pipeline de Dados
+
+1. **Fetch paralelo** — \`boot()\` dispara 6 fetches com \`Promise.all()\` + cache-busting \`?_=Date.now()\`
+2. **Normalização** — todas as chaves convertidas para UPPERCASE via \`parseAndNormalize()\`
+3. **Fusão Forecast+Realizado** — \`fuseActualIntoForecast()\` sobrescreve meses 1..N com dados reais
+4. **scenarioList** — array global com todos os cenários e meses disponíveis
+5. **Render inicial** — \`processDashboard()\` com valores default dos selectors
+6. **Re-render reativo** — qualquer mudança nos selectors dispara novo processamento
+
+### Cenários disponíveis
+
+${scenariosMD}
+
+---
+
+## 5. Motor de Comparação
+
+| Tipo | ID de Período | Meses | Seletores |
+|---|---|---|---|
+| MONTH | MONTH\\|202601 | Mês exato | A e B |
+| YTD | YTD\\|202606 | Jan até mês selecionado | Apenas A |
+| YTG | YTG\\|202607 | Mês selecionado até Dez | Apenas A |
+| YEAR | YEAR\\|2026 | Jan–Dez | Nenhum |
+| QTR | QTR\\|2026Q2 | Q1=Jan-Mar · Q2=Abr-Jun · Q3=Jul-Set · Q4=Out-Dez | A e B |
+| HALF | HALF\\|2026H1 | H1=Jan-Jun · H2=Jul-Dez | A e B |
+
+Função central: \`extractValue(type, periodId, filterCanal, filterDevice)\` → \`{ total, byCanal, byDevice, byCanalDevice }\`
+
+---
+
+## 6. Simulação P&L
+
+| Linha | Fórmula |
+|---|---|
+| Receita Líquida | \`Qty × PL_SELL_PRICE[device][canal]\` |
+| Sales Taxes | \`Receita × ${(SALES_TAXES_DEFAULT * 100).toFixed(2)}%\` (configurável) |
+| CMV | \`Qty × PL_COST_BRL[device]\` (USD × ${usdBrl}) |
+| Resultado | \`Receita + Sales Taxes + CMV\` |
+
+### Ajustes de CMV (ativos por padrão)
+- **↑ CMV Smart:** Ago–Out +12,5% | Nov+ +12,5%×1,07 (duas waves)
+- **↑ CMV Pro:** Ago+ +20% (wave única)
+
+Quando qualquer ajuste está ativo, \`computePLPeriod()\` itera mês a mês para aplicar o multiplicador correto.
+
+---
+
+## 7. Aba Estoque
+
+Exibe evolução mensal de unidades em estoque por device (Smart, Pro, Air, Mini) a partir de \`data/stock.json\`. Independente dos cenários de vendas — não sofre fusão com realizado.
+
+---
+
+## 8. Modelo de Preço / Custo
+
+### PL_SELL_PRICE (R$ / unidade)
+
+${priceTable}
+
+### PL_COST_BRL (base, sem ajustes sazonais)
+
+${costTable}
+
+**Taxa USD/BRL fixa: ${usdBrl}**
+
+---
+
+## 9. Fusão Forecast + Realizado
+
+\`fuseActualIntoForecast(actualDb, forecastDb, label)\`
+
+- **Meses 1..N:** dados do Realizado (N = último mês com total > 0)
+- **Meses N+1..12:** dados do Forecast
+- Chaves normalizadas para UPPERCASE antes da fusão
+- Resultado registrado como cenário separado no \`scenarioList\`
+
+---
+
+## 10. Exports
+
+| Export | Função | Formato |
+|---|---|---|
+| Excel Motor de Comparação | exportExcel() | Long format (base de dados) |
+| Excel P&L | exportPLExcel() | Long format com métricas P&L |
+| Excel P&L Corp | exportCorpPL() | Wide format por mês |
+| CSV | exportCSV() | Long format .csv |
+| PowerPoint | generatePPT() | Slides executivos .pptx |
+
+---
+
+## 11. Deploy & Automação
+
+**Hosting:** GitHub Pages (branch main / master)
+
+\`\`\`bash
+git stash
+git pull --rebase origin main
+git stash pop
+git add "MPOS - Plan 2026.html"
+git commit -m "descrição"
+git push origin main
+git push origin main:master
+\`\`\`
+
+**Atualização de dados:** arquivos JSON em \`data/\` atualizados via Verdi Flows ou upload manual. Cache-busting automático via \`?_=Date.now()\`.
+
+---
+
+## 12. Query BigQuery
+
+### Plan / Forecast
+
+\`\`\`sql
+SELECT
+  UPPER(TRIM(canal))  AS CANAL,
+  UPPER(TRIM(device)) AS DEVICE,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-01-01' THEN quantidade ELSE 0 END) AS \`202601\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-02-01' THEN quantidade ELSE 0 END) AS \`202602\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-03-01' THEN quantidade ELSE 0 END) AS \`202603\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-04-01' THEN quantidade ELSE 0 END) AS \`202604\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-05-01' THEN quantidade ELSE 0 END) AS \`202605\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-06-01' THEN quantidade ELSE 0 END) AS \`202606\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-07-01' THEN quantidade ELSE 0 END) AS \`202607\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-08-01' THEN quantidade ELSE 0 END) AS \`202608\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-09-01' THEN quantidade ELSE 0 END) AS \`202609\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-10-01' THEN quantidade ELSE 0 END) AS \`202610\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-11-01' THEN quantidade ELSE 0 END) AS \`202611\`,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-12-01' THEN quantidade ELSE 0 END) AS \`202612\`
+FROM \`meli-bi-data.WHOWNER.BT_MP_MPOS_VENDAS_PLAN_2026\`
+WHERE
+  EXTRACT(YEAR FROM data) = 2026
+  AND UPPER(device) IN ('SMART','PRO','AIR','MINI')
+GROUP BY 1, 2
+ORDER BY CANAL, DEVICE;
+\`\`\`
+
+### Realizado
+
+\`\`\`sql
+SELECT
+  UPPER(TRIM(canal))  AS CANAL,
+  UPPER(TRIM(device)) AS DEVICE,
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-01-01' THEN quantidade ELSE 0 END) AS \`202601\`,
+  -- ... (mesmo padrão para 202602–202611)
+  SUM(CASE WHEN DATE_TRUNC(data, MONTH) = '2026-12-01' THEN quantidade ELSE 0 END) AS \`202612\`
+FROM \`meli-bi-data.WHOWNER.BT_MP_MPOS_VENDAS_REALIZADO_2026\`
+WHERE
+  EXTRACT(YEAR FROM data) = 2026
+  AND UPPER(device) IN ('SMART','PRO','AIR','MINI')
+  AND status_venda = 'APROVADO'
+GROUP BY 1, 2
+ORDER BY CANAL, DEVICE;
+\`\`\`
+
+> **Saída:** JSON array com \`{ CANAL, DEVICE, "202601": x, ..., "202612": x }\`
+> **Conversão:** \`bq query --format=json --nouse_legacy_sql\` ou Python \`df.to_json(orient='records')\`
+
+---
+
+_Documentação gerada automaticamente pelo MPOS Analytics Dashboard · ${today}_
+`;
+
+            const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MPOS_Documentacao_${new Date().getTime()}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         window.onload = boot;
