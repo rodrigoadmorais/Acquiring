@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P&L UE Brasil — Acquiring</title>
+<!-- Grid-hosted libraries only (no external CDN — CSP/mobile-safe) -->
+<script src="/d/_libs/chart.min.js"></script>
+<script src="/d/_assets/grid-sdk.js"></script>
+<style>
+:root{
+  --yellow:#FFE600; --yellow-dark:#D9C200; --yellow-dim:#FFFBE6;
+  --ink:#1a1a1a; --ink-2:#374151;
+  --bg:#F5F7FA; --bg-2:#EEF2F7; --card:#FFFFFF; --card-2:#F8FAFC;
+  --border:#E5E7EB; --border-strong:#C5CAD4;
+  --text:#1F2937; --text-2:#374151; --muted:#6B7280; --muted-2:#9CA3AF;
+  --red:#E53935; --red-lt:#FEF2F2; --green:#00A650; --green-lt:#F0FDF4;
+  --blue:#1E88E5; --orange:#FF9F1C; --purple:#7C3AED;
+  --bu-op:#1E88E5; --bu-point:#FF9F1C; --bu-qr:#7C3AED;
+  --l1bg:#FFF9E0; --l2bg:#F8F8F4;
+  --sh-xs:0 1px 3px rgba(0,0,0,.06);
+  --sh-sm:0 2px 8px rgba(0,0,0,.06);
+  --sh-md:0 4px 16px rgba(0,0,0,.10);
+  --sh-lg:0 8px 28px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);
+  --r-sm:6px; --r-md:10px; --r-lg:12px; --r-xl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+     background:var(--bg);color:var(--text);font-size:13px;
+     height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+.hdr{background:var(--yellow);height:52px;padding:0 24px;
+     display:flex;align-items:center;justify-content:space-between;
+     position:sticky;top:0;z-index:400;
+     box-shadow:0 1px 0 rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.08)}
+.hdr h1{font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;
+        display:flex;align-items:center;gap:10px;margin:0}
+.hdr-r{display:flex;gap:8px;align-items:center}
+.upd{font-size:11px;color:rgba(0,0,0,.6);font-weight:500;
+     background:rgba(0,0,0,.08);padding:4px 10px;border-radius:20px;
+     transition:background-color .35s, color .35s}
+.upd.flash{background:#1a1a1a;color:#FFE600}
+.upd .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+          background:var(--green);margin-right:6px;vertical-align:middle}
+
+.tab-nav{background:var(--card);border-bottom:1px solid var(--border);
+         padding:0 24px;display:flex;gap:0;position:sticky;top:52px;z-index:300;
+         box-shadow:var(--sh-xs)}
+.tab-btn{padding:0 22px;border:none;border-bottom:2px solid transparent;
+         background:transparent;font-weight:600;font-size:12.5px;color:var(--muted);
+         cursor:pointer;height:42px;letter-spacing:.2px;transition:.15s;
+         display:inline-flex;align-items:center;gap:7px}
+.tab-btn:hover{color:var(--ink);background:var(--yellow-dim)}
+.tab-btn.on{color:var(--ink);border-bottom-color:var(--yellow);
+            font-weight:700;background:var(--yellow-dim)}
+.tab-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+
+.filters{background:var(--card);border-bottom:1px solid var(--border);
+         padding:10px 24px;display:flex;gap:14px;flex-wrap:wrap;
+         align-items:flex-end;position:sticky;top:94px;z-index:299;
+         box-shadow:var(--sh-xs)}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;font-weight:700;color:var(--muted);
+          text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+.ml-a{margin-left:auto}
+select{padding:6px 10px;border:1.5px solid var(--border);
+       border-radius:var(--r-sm);font-weight:600;font-size:12px;
+       color:var(--text);background:var(--card);cursor:pointer;
+       min-width:140px;transition:.15s}
+select:hover{border-color:var(--border-strong)}
+select:focus{outline:none;border-color:var(--ink)}
+
+.pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{padding:5px 13px;border-radius:20px;border:1.5px solid var(--border);
+      background:var(--card);color:var(--muted);cursor:pointer;
+      font-weight:600;font-size:11px;transition:.15s;white-space:nowrap;user-select:none}
+.pill:hover{border-color:var(--border-strong);color:var(--ink)}
+.pill.on{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
+
+.content{flex:1 1 0;min-height:0;overflow:auto;padding:18px 24px 28px}
+.panel{display:none}
+.panel.on{display:block}
+
+.card{background:var(--card);border:1px solid var(--border);
+      border-radius:var(--r-md);box-shadow:var(--sh-xs);overflow:hidden}
+.card-h{padding:12px 16px;border-bottom:1px solid var(--border);
+        background:var(--card-2);font-weight:700;font-size:12px;color:var(--ink);
+        letter-spacing:.2px;display:flex;align-items:center;justify-content:space-between}
+.card-h .sub{font-weight:500;font-size:11px;color:var(--muted);letter-spacing:0}
+
+.evo-wrap, .sum-wrap{overflow:auto;max-height:calc(100vh - 200px);border-radius:var(--r-md)}
+.evo-tbl, .sum-tbl{border-collapse:separate;border-spacing:0;font-size:11.5px;
+                   white-space:nowrap;font-variant-numeric:tabular-nums}
+.evo-tbl{width:100%}
+.evo-tbl th, .sum-tbl th{background:var(--yellow);color:var(--ink);padding:8px 10px;
+                         text-align:right;font-weight:700;font-size:11px;
+                         position:sticky;top:0;z-index:5;border-bottom:2px solid var(--yellow-dark)}
+/* Two-row sticky header in Resumo: BU row pinned at top, segments row right below */
+.sum-tbl thead tr:nth-child(1) th{position:sticky;top:0;z-index:7}
+.sum-tbl thead tr:nth-child(2) th{position:sticky;top:32px;z-index:6}
+.evo-tbl th.first, .sum-tbl th.line-hdr{text-align:left;left:0;z-index:6;min-width:260px;
+                                        border-right:2px solid var(--yellow-dark);background:var(--yellow)}
+.evo-tbl td, .sum-tbl td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--border);
+                         background:var(--card);color:var(--text)}
+.evo-tbl td.first, .sum-tbl td.line-cell{text-align:left;position:sticky;left:0;z-index:4;
+                                         background:var(--card);font-weight:600;color:var(--ink-2);
+                                         border-right:1px solid var(--border);min-width:260px}
+.evo-tbl td.first{display:flex;align-items:center;gap:6px}
+/* ── L1: group section subtotal — bold dark bar (closes the section) ── */
+.evo-tbl tr.l1 td, .sum-tbl tr.l1 td{background:#fff;font-weight:800;color:var(--ink);
+  font-size:12px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.evo-tbl tr.l1 td.first, .sum-tbl tr.l1 td.line-cell{background:#fff}
+/* L2 (legacy alias, kept for any unstyled subtotal — same look as L1) */
+.evo-tbl tr.l2 td, .sum-tbl tr.l2 td{background:#fff;font-weight:800;color:var(--ink);
+  font-size:12px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.evo-tbl tr.l2 td.first, .sum-tbl tr.l2 td.line-cell{background:#fff}
+/* Sub-group header (expanded MPOS) — small uppercase strip */
+.evo-tbl tr.sg-h td, .sum-tbl tr.sg-h td{background:#F8FAFC;font-weight:700;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-2);
+  border-top:1px solid var(--border-strong);border-bottom:1px solid var(--border)}
+.evo-tbl tr.sg-h td.first, .sum-tbl tr.sg-h td.line-cell{background:#F8FAFC}
+/* Sub-group subtotal (expanded MPOS bottom) — medium bar */
+.evo-tbl tr.sg-sub td, .sum-tbl tr.sg-sub td{background:#fff;font-weight:700;
+  color:var(--ink);border-top:1.5px solid var(--ink-2);border-bottom:1.5px solid var(--ink-2)}
+.evo-tbl tr.sg-sub td.first, .sum-tbl tr.sg-sub td.line-cell{background:#fff}
+/* Collapsed sub-group — same medium bar but interactive */
+.evo-tbl tr.sg-col td, .sum-tbl tr.sg-col td{background:#fff;font-weight:700;
+  color:var(--ink);border-top:1.5px solid var(--ink-2);border-bottom:1.5px solid var(--ink-2)}
+.evo-tbl tr.sg-col td.first, .sum-tbl tr.sg-col td.line-cell{background:#fff}
+.evo-tbl tr.sg-h, .sum-tbl tr.sg-h,
+.evo-tbl tr.sg-col, .sum-tbl tr.sg-col{cursor:pointer;user-select:none}
+.evo-tbl tr.sg-h:hover td, .sum-tbl tr.sg-h:hover td,
+.evo-tbl tr.sg-col:hover td, .sum-tbl tr.sg-col:hover td{background:var(--yellow-dim)!important}
+/* Chevron — present on every regular item; smaller and gray for items, ink for toggles */
+.chev{display:inline-block;font-size:8px;margin-right:8px;color:var(--muted);
+      width:10px;text-align:center;flex-shrink:0}
+.chev.tog{color:var(--ink);font-size:9px}
+.evo-tbl .ind3{padding-left:26px}
+.evo-tbl tbody tr:hover td{background:#F8FAFC}
+.evo-tbl tbody tr.l1:hover td, .evo-tbl tbody tr.l2:hover td{background:#fff}
+.evo-tbl td.neg, .sum-tbl td.neg{color:var(--red)}
+.evo-tbl td.pos, .sum-tbl td.pos{color:var(--green)}
+.evo-tbl .ind{padding-left:18px}
+.sum-tbl th.bu-hdr{font-size:12px;border-left:3px solid var(--ink)}
+.sum-tbl th.sub-hdr{font-size:10.5px;background:var(--yellow-dim);color:var(--ink-2)}
+.sum-tbl td.bu-first{border-left:3px solid var(--ink)}
+
+.gg-top{display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:16px}
+.gg-list{background:var(--card);border:1px solid var(--border);
+         border-radius:var(--r-md);box-shadow:var(--sh-xs);
+         max-height:calc(100vh - 220px);overflow:auto}
+.gg-list-item{padding:8px 14px;border-bottom:1px solid var(--border);
+              cursor:pointer;font-weight:600;font-size:11.5px;color:var(--ink-2);
+              display:flex;align-items:center;justify-content:space-between;transition:.12s}
+.gg-list-item:hover{background:var(--yellow-dim);color:var(--ink)}
+.gg-list-item.on{background:var(--ink);color:var(--yellow)}
+.gg-list-item .v{font-weight:500;font-size:10.5px;opacity:.7}
+.gg-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gg-grid .full{grid-column:1 / -1}
+.chart-box{background:var(--card);border:1px solid var(--border);
+           border-radius:var(--r-md);box-shadow:var(--sh-xs);padding:14px 14px 10px;
+           height:260px;display:flex;flex-direction:column}
+.chart-box.tall{height:300px}
+.chart-box .ttl{font-weight:700;font-size:11.5px;color:var(--ink);
+                display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.chart-box .ttl .badge{font-weight:600;font-size:10px;color:var(--muted);
+                       background:var(--bg);padding:2px 8px;border-radius:10px}
+.chart-host{flex:1;position:relative;min-height:0}
+
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:12px}
+
+.boot{position:fixed;inset:0;background:var(--bg);display:flex;
+      align-items:center;justify-content:center;z-index:9999}
+.boot-card{background:var(--card);padding:24px 32px;border-radius:var(--r-lg);
+           box-shadow:var(--sh-lg);text-align:center;max-width:520px}
+.boot-card h2{font-weight:800;font-size:16px;color:var(--ink);margin-bottom:8px}
+.boot-card p{font-weight:500;font-size:12px;color:var(--muted);line-height:1.5}
+.boot-card .spinner{width:32px;height:32px;border:3px solid var(--border);
+                    border-top-color:var(--yellow);border-radius:50%;
+                    margin:0 auto 14px;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.boot-card code{background:var(--bg);padding:2px 6px;border-radius:4px;
+                font-weight:600;font-size:11px;color:var(--ink);
+                font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <h1>
+    <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="48" fill="#1a1a1a"/>
+      <text x="50" y="62" text-anchor="middle" font-family="-apple-system,Segoe UI" font-weight="900" font-size="32" fill="#FFE600">M</text>
+    </svg>
+    P&L UE Brasil <span style="opacity:.55;font-weight:600">· Acquiring</span>
+  </h1>
+  <div class="hdr-r">
+    <span class="upd" id="updated"><span class="dot"></span>conectando…</span>
+  </div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn on" data-tab="evo">
+    <svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/></svg>
+    P&amp;L Evolutivo
+  </button>
+  <button class="tab-btn" data-tab="sum">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Resumo
+  </button>
+  <button class="tab-btn" data-tab="gg">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+    Gráficos
+  </button>
+  <button class="tab-btn" data-tab="margin">
+    <svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><line x1="3" y1="21" x2="21" y2="21"/></svg>
+    Margem por BU/Segmento
+  </button>
+</nav>
+
+<section class="filters">
+  <div class="fg">
+    <label>BU</label>
+    <div class="pills" id="bu-pills">
+      <span class="pill on" data-bu="ALL">Total</span>
+      <span class="pill" data-bu="OP">Online Payments</span>
+      <span class="pill" data-bu="POINT">Point</span>
+      <span class="pill" data-bu="QR">QR</span>
+    </div>
+  </div>
+  <div class="fg" id="tap-wrap" style="display:none">
+    <label>Point · Tipo</label>
+    <div class="pills" id="tap-pills">
+      <span class="pill on" data-tap="ALL">Todos</span>
+      <span class="pill" data-tap="Device">Device</span>
+      <span class="pill" data-tap="TTP">TTP</span>
+    </div>
+  </div>
+  <div class="fg" id="opprod-wrap" style="display:none">
+    <label>OP · Produto</label>
+    <div class="pills" id="opprod-pills">
+      <span class="pill on" data-opprod="ALL">Todos</span>
+      <span class="pill" data-opprod="CHECKOUT">Checkout</span>
+      <span class="pill" data-opprod="LINK">Link</span>
+      <span class="pill" data-opprod="OTHERS">Others</span>
+    </div>
+  </div>
+  <div class="fg">
+    <label>Segmento</label>
+    <div class="pills" id="segment-pills">
+      <span class="pill on" data-seg="ALL">Todos</span>
+    </div>
+  </div>
+  <div class="fg">
+    <label>Produto</label>
+    <select id="f-product"><option value="ALL">Todos</option></select>
+  </div>
+  <div class="fg">
+    <label>Visão</label>
+    <div class="pills" id="variant-pills">
+      <span class="pill on" data-variant="econ">Econômico</span>
+      <span class="pill" data-variant="contabil">Contábil</span>
+    </div>
+  </div>
+  <div class="fg ml-a">
+    <label>Métrica</label>
+    <div class="pills" id="metric-pills">
+      <span class="pill on" data-metric="abs">Absoluto</span>
+      <span class="pill" data-metric="ptpn">por TPN</span>
+      <span class="pill" data-metric="ptpv">% TPV</span>
+    </div>
+  </div>
+  <div class="fg">
+    <label>Unidade</label>
+    <div class="pills" id="unit-pills">
+      <span class="pill" data-unit="1">R$</span>
+      <span class="pill" data-unit="1000">R$ mil</span>
+      <span class="pill on" data-unit="1000000">R$ M</span>
+    </div>
+  </div>
+  <div class="fg">
+    <label>Período</label>
+    <select id="f-period">
+      <option value="Y2026" selected>2026</option>
+      <option value="Y2025">2025</option>
+      <option value="Y2024">2024</option>
+      <option value="L12">Últimos 12m</option>
+      <option value="L6">Últimos 6m</option>
+      <option value="ALL">Todos</option>
+    </select>
+  </div>
+</section>
+
+<main class="content">
+  <section class="panel on" id="panel-evo">
+    <div class="card">
+      <div class="card-h">
+        <span>P&L · Evolutivo Mensal</span>
+        <span class="sub" id="evo-sub">—</span>
+      </div>
+      <div class="evo-wrap">
+        <table class="evo-tbl" id="evo-tbl"></table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-sum">
+    <div class="card">
+      <div class="card-h">
+        <span>Resumo · Point / OP / QR por Segmento</span>
+        <span class="sub" id="sum-sub">—</span>
+      </div>
+      <div class="sum-wrap">
+        <table class="sum-tbl" id="sum-tbl"></table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-gg">
+    <div class="gg-top">
+      <div class="gg-list" id="gg-list"></div>
+      <div class="gg-grid" id="gg-grid"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-margin">
+    <div class="card">
+      <div class="card-h">
+        <span>Margem · Onde estamos perdendo</span>
+        <span class="sub" id="margin-sub">Cada gráfico mostra o walk PM → NM → VC. Quando as linhas se afastam, a margem está sendo consumida.</span>
+      </div>
+      <div class="gg-grid" id="margin-grid"></div>
+    </div>
+  </section>
+</main>
+
+<div class="boot" id="boot">
+  <div class="boot-card">
+    <div class="spinner"></div>
+    <h2>Conectando à planilha…</h2>
+    <p id="boot-msg">Lendo a aba <strong>Base UE</strong> ao vivo via <code>Grid.sheets</code>. Requer que o owner deste doc tenha o Google OAuth conectado em <code>/google/oauth/start</code>.</p>
+  </div>
+</div>
+
+<script>
+/* ──────────────────────────────────────────────────────────
+   P&L UE — dashboard Grid-native
+   Data source: Grid.sheets.get(SHEET_ID, "Base UE!A1:CZ20000")
+   Auto-refresh: a cada POLL_MS (60s), só re-renderiza se mudou.
+   Segurança: rótulos vindos da planilha são renderizados via
+   textContent (nunca innerHTML) — defesa contra XSS.
+─────────────────────────────────────────────────────────── */
+(() => {
+'use strict';
+
+const SHEET_ID = '1b7LdGhlhANlsJBkr77c0I2roI1ijBlTrGW26bvUdjtA';
+const SHEET_RANGE = "Base UE!A1:CZ20000";
+const POLL_MS = 60_000;
+
+// ── State ───────────────────────────────────────────────
+const state = {
+  data: null,
+  bu: 'ALL',
+  segments: [],            // [] = all; otherwise list of selected segment names (multi-select)
+  product: 'ALL',
+  tap: 'ALL',              // Device / TTP — only relevant when bu === 'POINT'
+  opProduct: 'ALL',        // Checkout / Link / Others — only relevant when bu === 'OP'
+  metric: 'abs',           // active metric (mirror of metricByTab[tab])
+  metricByTab: { evo: 'abs', sum: 'abs', gg: 'ptpv', margin: 'ptpv' }, // per-tab default
+  unit: 1_000_000,         // 1 | 1_000 | 1_000_000  (default R$ MM)
+  variant: 'econ',         // 'econ' | 'contabil'
+  period: 'Y2026',         // default → calendário 2026
+  tab: 'evo',
+  ggLine: null,
+  charts: {},
+  lastHash: null,
+  pollTimer: null,
+  expanded: new Set()   // subgroup keys currently expanded (drill-down)
+};
+
+function toggleSubgroup(subKey){
+  if (state.expanded.has(subKey)) state.expanded.delete(subKey);
+  else state.expanded.add(subKey);
+  rerender();
+}
+
+// ── P&L Taxonomy (mirrors reference dash MNG_1 ordering) ──
+// Each group:
+//   group          → label printed at top of section + on % rollups
+//   items          → MNG_2-equivalent lines (in display order)
+//                    each item: { src, label, variant?: 'econ'|'contabil', isCount?, isRatio? }
+//                    variant flag → only shown when state.variant matches
+//                    isCount      → never divided by unit (TPN, counters)
+//                    isRatio      → already a ratio, never divided
+//   subtotal       → { econ: {src,label}, contabil: {src,label} } shown bold at section bottom
+const PNL_TAXONOMY = [
+  {
+    group: 'Metrics',
+    items: [
+      { src: 'TPV',                  label: 'TPV' },
+      { src: 'TPN',                  label: 'TPN' },
+      { src: 'TAKE_RATE_ECONOMICO',  label: 'Take Rate', variant: 'econ' },
+      { src: 'TAKE_RATE_CONTABLE',   label: 'Take Rate', variant: 'contabil' }
+    ]
+  },
+  {
+    group: 'Product Monetization',
+    items: [
+      { src: 'Processing_Fees', label: 'Processing Fees' },
+      { src: 'PM_Adj',          label: 'PM Adj' }
+    ],
+    subtotal: {
+      econ:     { src: 'PRODUCT_MONETIZATION_ECONOMICO', label: 'Product Monetization' },
+      contabil: { src: 'PRODUCT_MONETIZATION_CONTABLE',  label: 'Product Monetization' }
+    }
+  },
+  {
+    group: 'Net Monetization',
+    items: [
+      { src: 'Financing_Revenues',   label: 'Financing Revenues' },
+      { src: 'Fin_Cost_FTP',         label: 'Fin Cost FTP' },
+      { src: 'HII_FTP',              label: 'HII FTP' },
+      { src: 'Sales_Taxes_Econ',     label: 'Sales Taxes Econ',     variant: 'econ' },
+      { src: 'Sales_Taxes_Contable', label: 'Sales Taxes Contable', variant: 'contabil' },
+      { src: 'NM_Adj',               label: 'NM Adj' }
+    ],
+    subtotal: {
+      econ:     { src: 'NET_MONETIZATION_ECONOMICO', label: 'Net Monetization' },
+      contabil: { src: 'NET_MONETIZATION_CONTABLE',  label: 'Net Monetization' }
+    }
+  },
+  {
+    group: 'Variable Contribution',
+    items: [
+      { src: 'Collection_Fees',             label: 'Collection Fees' },
+      { src: 'CHARGEBACKS_Contable',        label: 'CHARGEBACKS Contable' },
+      { src: 'Bad_Debt_Incobrables',        label: 'Bad Debt Incobrables' },
+      { src: 'BPP',                         label: 'BPP' },
+      { src: 'Consultor_Certificado',       label: 'Consultor Certificado' },
+      { src: 'Plataforma',                  label: 'Plataforma' },
+      { src: 'CX_Variable',                 label: 'CX Variable' },
+      { src: 'Hosting_Variable',            label: 'Hosting Variable' },
+      { src: 'FP_Variable',                 label: 'FP Variable' },
+      { src: 'Telemetria',                  label: 'Telemetria' },
+      { src: 'Cashbacks_Sellers',           label: 'Cashbacks Sellers' },
+      { src: 'COUPONS',                     label: 'COUPONS' },
+      { src: 'Other_Direct_Variable_Costs', label: 'Other Direct Variable Costs' },
+      { src: 'VC_Adj',                      label: 'VC Adj' }
+    ],
+    subtotal: {
+      econ:     { src: 'VARIABLE_CONTRIBUTION_ECONOMICO', label: 'Variable Contribution' },
+      contabil: { src: 'VARIABLE_CONTRIBUTION_CONTABLE',  label: 'Variable Contribution' }
+    }
+  },
+  {
+    group: 'Direct Contribution',
+    items: [
+      { kind: 'subgroup', key: 'MPOS', label: 'MPOS', items: [
+        { src: 'Descuentos_MPOS',      label: 'Descuentos MPOS' },
+        { src: 'Sales_MPOS_Gross',     label: 'Sales MPOS Gross' },
+        { src: 'Sales_Tax_MPOS',       label: 'Sales Tax MPOS' },
+        { src: 'Alquiler_MPOS',        label: 'Alquiler MPOS' },
+        { src: 'Cost_Of_Product_Sold', label: 'Cost Of Product Sold' },
+        { src: 'Insumos_Point',        label: 'Insumos Point' },
+        { src: 'Shipping_Costs_Point', label: 'Shipping Costs Point' },
+        { src: 'Warehousing_Point',    label: 'Warehousing Point' },
+        { src: 'Reacondicionamento',   label: 'Reacondicionamento' },
+        { src: 'Other_MPOS_Cogs',      label: 'Other MPOS Cogs' }
+      ]},
+      { src: 'Fuerza_de_Ventas',        label: 'Fuerza de Ventas' },
+      { src: 'Fuerza_de_Ventas_Propia', label: 'Fuerza de Ventas Propia' },
+      { src: 'Other_Sales_Expenses',    label: 'Other Sales Expenses' },
+      { src: 'Special_Dates',           label: 'Special Dates' },
+      { src: 'Strategic_Initiatives',   label: 'Strategic Initiatives' },
+      { src: 'Other_Marketing_Fixed',   label: 'Other Marketing Fixed' },
+      { src: 'Content_Cost',            label: 'Content Cost' },
+      { src: 'Subscriptions_Revs',      label: 'Subscriptions Revs' },
+      { src: 'SM_Local',                label: 'SM Local' },
+      { src: 'Fraud_Prevention',        label: 'Fraud Prevention' },
+      { src: 'CX_Fixed',                label: 'CX Fixed' },
+      { src: 'Hosting_Fixed',           label: 'Hosting Fixed' },
+      { src: 'OTHER_FIXED_COSTS',       label: 'OTHER FIXED COSTS' },
+      { src: 'Com_Resselers',           label: 'Com Resselers' },
+      { src: 'Paid_On_Media',           label: 'Paid On Media' },
+      { src: 'DC_Adj',                  label: 'DC Adj' }
+    ],
+    subtotal: {
+      econ:     { src: 'DIRECT_CONTRIBUTION_ECONOMICO', label: 'Direct Contribution' },
+      contabil: { src: 'DIRECT_CONTRIBUTION_CONTABLE',  label: 'Direct Contribution' }
+    }
+  },
+  {
+    group: 'Business Contribution',
+    items: [
+      { src: 'Marketing_Branding',           label: 'Marketing Branding' },
+      { src: 'PRODUCT_DEVELOPMENT_DIRECT',   label: 'PRODUCT DEVELOPMENT DIRECT' },
+      { src: 'PRODUCT_DEVELOPMENT_INDIRECT', label: 'PRODUCT DEVELOPMENT INDIRECT' },
+      { src: 'GA_LOCAL',                     label: 'GA LOCAL' },
+      { src: 'GA_SUBBU_CORP',                label: 'GA SUBBU CORP' },
+      { src: 'GA_BU_CORP',                   label: 'GA BU CORP' },
+      { src: 'SM_SUBBU_CORP',                label: 'SM SUBBU CORP' },
+      { src: 'SM_BU_CORP',                   label: 'SM BU CORP' },
+      { src: 'BC_Adj',                       label: 'BC Adj' }
+    ],
+    subtotal: {
+      econ:     { src: 'BUSINESS_CONTRIBUTION_ECONOMICO', label: 'Business Contribution' },
+      contabil: { src: 'BUSINESS_CONTRIBUTION_CONTABLE',  label: 'Business Contribution' }
+    }
+  },
+  {
+    group: 'Business Margin',
+    items: [
+      { src: 'GA_CORPORATE', label: 'GA CORPORATE' },
+      { src: 'SM_CORPORATE', label: 'SM CORPORATE' },
+      { src: 'PD_BM',        label: 'PD BM' },
+      { src: 'BM_Adj',       label: 'BM Adj' }
+    ],
+    subtotal: {
+      econ:     { src: 'BUSINESS_MARGIN_ECONOMICO', label: 'Business Margin' },
+      contabil: { src: 'BUSINESS_MARGIN_CONTABLE',  label: 'Business Margin' }
+    }
+  }
+];
+
+// Synthetic key for a subgroup's computed subtotal map (stored inside agg).
+function subgroupKey(groupName, subgroupKey){ return `__SG__${groupName}__${subgroupKey}`; }
+
+// Walk every leaf item of a group (flattens subgroups).
+function* iterLeafItems(group){
+  for (const it of group.items){
+    if (it.kind === 'subgroup'){
+      for (const s of it.items) yield s;
+    } else {
+      yield it;
+    }
+  }
+}
+
+// Lookup index — src line → { item, group, isSubtotal }
+const PNL_INDEX = (() => {
+  const idx = new Map();
+  for (const g of PNL_TAXONOMY){
+    for (const it of iterLeafItems(g)){
+      idx.set(it.src, { item: it, group: g.group, isSubtotal: false });
+    }
+    if (g.subtotal){
+      idx.set(g.subtotal.econ.src,     { item: { ...g.subtotal.econ,     variant:'econ',     isSubtotalLabel:true }, group: g.group, isSubtotal: true });
+      idx.set(g.subtotal.contabil.src, { item: { ...g.subtotal.contabil, variant:'contabil', isSubtotalLabel:true }, group: g.group, isSubtotal: true });
+    }
+  }
+  return idx;
+})();
+
+// Row kinds: header, subheader, item, subitem, subsubtotal, subtotal, collapsed
+// hasValue(src) → optional predicate. Lines where it returns false are hidden.
+function buildOutline(present, hasValue){
+  const keep = hasValue || (() => true);
+  const rows = [];
+  for (const g of PNL_TAXONOMY){
+    const blocks = [];
+    for (const it of g.items){
+      if (it.kind === 'subgroup'){
+        const subItems = it.items.filter(s =>
+          present.has(s.src)
+          && (!s.variant || s.variant === state.variant)
+          && keep(s.src)
+        );
+        if (!subItems.length) continue;
+        blocks.push({
+          kind: 'subgroup',
+          label: it.label,
+          subKey: subgroupKey(g.group, it.key || it.label),
+          items: subItems
+        });
+      } else {
+        if (!present.has(it.src)) continue;
+        if (it.variant && it.variant !== state.variant) continue;
+        if (!keep(it.src)) continue;
+        blocks.push({ kind: 'item', item: it });
+      }
+    }
+    const sub = g.subtotal && present.has(g.subtotal[state.variant].src)
+      ? g.subtotal[state.variant] : null;
+    // Skip group entirely if no items survived the zero filter.
+    if (!blocks.length) continue;
+    if (!sub) rows.push({ kind: 'header', label: g.group });
+    for (const b of blocks){
+      if (b.kind === 'subgroup'){
+        const expanded = state.expanded.has(b.subKey);
+        if (expanded){
+          rows.push({ kind: 'subheader', label: b.label, subKey: b.subKey, group: g.group });
+          for (const s of b.items) rows.push({ kind: 'subitem', item: s, group: g.group });
+          rows.push({ kind: 'subsubtotal',
+                      item: { src: b.subKey, label: b.label, isSubtotalLabel: true },
+                      subKey: b.subKey, group: g.group });
+        } else {
+          rows.push({ kind: 'collapsed',
+                      item: { src: b.subKey, label: b.label, isSubtotalLabel: true },
+                      subKey: b.subKey, group: g.group });
+        }
+      } else {
+        rows.push({ kind: 'item', item: b.item, group: g.group });
+      }
+    }
+    if (sub) rows.push({ kind: 'subtotal', item: { ...sub, isSubtotalLabel: true }, group: g.group });
+  }
+  return rows;
+}
+
+// ── Helpers ─────────────────────────────────────────────
+// Default: 1 decimal place. % TPV uses 2 decimals to preserve take-rate precision.
+const fmtNum = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmtPct = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function fmt(v, mode, opts){
+  if (v === null || v === undefined || !isFinite(v)) return '—';
+  if (mode === 'ptpv') return fmtPct.format(v) + '%';
+  if (mode === 'ptpn') return fmtNum.format(v);
+  // 'abs' mode → apply unit divisor unless the line is a count or a ratio
+  const it = opts && opts.item;
+  const skipUnit = it && (it.isCount || it.isRatio);
+  const div = skipUnit ? 1 : state.unit;
+  return fmtNum.format(v / div);
+}
+function labelUnit(){
+  return state.unit === 1 ? 'R$' : state.unit === 1000 ? 'R$ mil' : 'R$ M';
+}
+function labelVariant(){
+  return state.variant === 'econ' ? 'Econômico' : 'Contábil';
+}
+function setText(el, txt){ el.textContent = txt == null ? '' : String(txt); }
+function mkEl(tag, cls, txt){
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = String(txt);
+  return e;
+}
+function prettyLine(s){ return String(s).replace(/_/g,' '); }
+function fmtMonth(iso){
+  const m = /^(\d{4})-(\d{2})$/.exec(iso || '');
+  if (!m) return iso || '';
+  const mons = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return mons[parseInt(m[2],10)-1] + '/' + m[1].slice(2);
+}
+function labelBU(b){
+  return ({ ALL:'Total', OP:'Online Payments', POINT:'Point', QR:'QR' })[b] || b;
+}
+function labelMetric(m){
+  return ({ abs:'Absoluto', ptpn:'por TPN', ptpv:'% TPV' })[m] || m;
+}
+
+// ── Parse sheet matrix into { months, rows } ────────────
+function parseSheet(values){
+  if (!Array.isArray(values) || !values.length) return { months: [], rows: [] };
+  // Find header row: the first row whose first non-empty cell is "SUBBU"
+  let hdrRow = -1;
+  for (let i = 0; i < values.length && i < 10; i++){
+    const r = values[i] || [];
+    const first = String(r[0] || '').trim().toUpperCase();
+    if (first === 'SUBBU'){ hdrRow = i; break; }
+  }
+  if (hdrRow < 0) return { months: [], rows: [] };
+  const headers = values[hdrRow].map(h => String(h || '').trim());
+
+  // Locate dimension columns
+  const idx = {
+    bu:      headers.indexOf('SUBBU'),
+    product: headers.indexOf('OPERATION_PRODUCT_DESC'),
+    tap:     headers.indexOf('DEVICE_TAP_TYPE'),
+    segment: headers.indexOf('SEGMENT_DESC'),
+    line:    headers.indexOf('PNL')
+  };
+  // Period columns: header matches '2YY.MMM' or 'YYYYMM' or ISO-ish strings
+  const periodCols = [];
+  for (let c = 0; c < headers.length; c++){
+    const h = headers[c];
+    if (/^2\d{2}\.\d{3}$/.test(h)){
+      // '202.401' → '2024-01'
+      const clean = h.replace('.', '');
+      periodCols.push({ col: c, key: clean.slice(0,4) + '-' + clean.slice(4,6) });
+    } else if (/^20\d{4}$/.test(h)){
+      periodCols.push({ col: c, key: h.slice(0,4) + '-' + h.slice(4,6) });
+    } else if (/^20\d{2}-\d{2}$/.test(h)){
+      periodCols.push({ col: c, key: h });
+    }
+  }
+  const months = [...new Set(periodCols.map(p => p.key))].sort();
+
+  function parseNum(v){
+    if (v == null || v === '') return 0;
+    if (typeof v === 'number') return v;
+    let s = String(v).trim().replace(/−/g,'-');
+    if (!s) return 0;
+    // PT-BR locale: comma = decimal, dot = thousands.
+    // If a comma exists, it's the decimal mark and dots are thousand separators.
+    // If no comma exists, ALL dots are thousand separators (avoids '4.007.859.222' → 4.007).
+    if (s.indexOf(',') >= 0){
+      s = s.replace(/\./g,'').replace(',','.');
+    } else {
+      s = s.replace(/\./g,'');
+    }
+    s = s.replace(/[^0-9.\-]/g,'');
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+  function normBU(v){
+    const s = String(v || '').trim().toUpperCase();
+    if (!s) return '';
+    if (s.includes('ONLINE')) return 'OP';
+    if (s.includes('POINT')) return 'POINT';
+    if (s === 'QR' || s.includes('QR')) return 'QR';
+    return s;
+  }
+
+  const rows = [];
+  for (let r = hdrRow + 1; r < values.length; r++){
+    const row = values[r] || [];
+    if (!row.length) continue;
+    const bu = normBU(row[idx.bu]);
+    const segment = String(row[idx.segment] || '').trim();
+    const product = String(row[idx.product] || '').trim();
+    const tap     = idx.tap >= 0 ? String(row[idx.tap] || '').trim() : '';
+    const line = String(row[idx.line] || '').trim();
+    if (!bu || !line) continue;
+    const vals = {};
+    let any = false;
+    for (const p of periodCols){
+      const n = parseNum(row[p.col]);
+      if (n !== 0) any = true;
+      vals[p.key] = n;
+    }
+    if (!any && line !== 'TPV' && line !== 'TPN') continue;
+    rows.push({ bu, segment, product, tap, line, values: vals });
+  }
+  return { months, rows };
+}
+
+function stableHash(obj){
+  const s = JSON.stringify(obj);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+  return h.toString(16);
+}
+
+// ── Period filter ───────────────────────────────────────
+function activeMonths(){
+  const all = state.data.months;
+  if (state.period === 'ALL') return all;
+  if (state.period === 'L12') return all.slice(-12);
+  if (state.period === 'L6')  return all.slice(-6);
+  // Year selection: Y2024 / Y2025 / Y2026 / ... → all months of that year.
+  if (/^Y\d{4}$/.test(state.period)){
+    const y = state.period.slice(1);
+    return all.filter(m => m.startsWith(y));
+  }
+  // Legacy YTD → most recent year present in data.
+  if (state.period === 'YTD'){
+    const last = all[all.length-1];
+    const y = last.slice(0,4);
+    return all.filter(m => m.startsWith(y));
+  }
+  return all;
+}
+
+function aggregate(filter){
+  const out = new Map();
+  const tapNarrowsPoint = filter.tap && filter.tap !== 'ALL';
+  const opNarrowsOP    = filter.opProduct && filter.opProduct !== 'ALL';
+  // segments can be: undefined / 'ALL' / array (empty = all; non-empty = restrict)
+  let segSet = null;
+  if (filter.segments && Array.isArray(filter.segments) && filter.segments.length){
+    segSet = new Set(filter.segments);
+  } else if (filter.segment && filter.segment !== 'ALL'){
+    segSet = new Set([filter.segment]);
+  }
+  for (const r of state.data.rows){
+    if (filter.bu      && filter.bu      !== 'ALL' && r.bu      !== filter.bu)      continue;
+    if (segSet && !segSet.has(r.segment)) continue;
+    if (filter.product && filter.product !== 'ALL' && r.product !== filter.product) continue;
+    if (tapNarrowsPoint && r.bu === 'POINT' && r.tap !== filter.tap) continue;
+    if (opNarrowsOP    && r.bu === 'OP'    && r.product !== filter.opProduct) continue;
+    let line = out.get(r.line);
+    if (!line){ line = new Map(); out.set(r.line, line); }
+    for (const [m,v] of Object.entries(r.values)) line.set(m, (line.get(m)||0) + v);
+  }
+  applyRunningSubtotals(out);
+  return out;
+}
+
+// Replace each MNG_1 subtotal entry with cumulative running total:
+//   Product Monetization     = Σ(its items)
+//   Net Monetization         = Product Monetization        + Σ(its items)
+//   Variable Contribution    = Net Monetization            + Σ(its items)
+//   Direct Contribution      = Variable Contribution       + Σ(its items)
+//   Business Contribution    = Direct Contribution         + Σ(its items)
+//   Business Margin          = Business Contribution       + Σ(its items)
+// Metrics group has no subtotal and does not seed the cumulative.
+function applyRunningSubtotals(agg){
+  const months = state.data.months;
+  let prevCumul = new Map();
+  for (const m of months) prevCumul.set(m, 0);
+
+  for (const g of PNL_TAXONOMY){
+    if (!g.subtotal) continue;
+    const cumul = new Map(prevCumul);
+    for (const it of g.items){
+      if (it.kind === 'subgroup'){
+        // Inject standalone subgroup subtotal (sum of its own items) + add to cumul
+        const sgSum = new Map();
+        for (const s of it.items){
+          if (s.variant && s.variant !== state.variant) continue;
+          const m = agg.get(s.src);
+          if (!m) continue;
+          for (const [k, v] of m){
+            sgSum.set(k, (sgSum.get(k) || 0) + v);
+            cumul.set(k, (cumul.get(k) || 0) + v);
+          }
+        }
+        agg.set(subgroupKey(g.group, it.key || it.label), sgSum);
+      } else {
+        if (it.variant && it.variant !== state.variant) continue;
+        const itemMap = agg.get(it.src);
+        if (!itemMap) continue;
+        for (const [m, v] of itemMap){
+          cumul.set(m, (cumul.get(m) || 0) + v);
+        }
+      }
+    }
+    agg.set(g.subtotal.econ.src,     new Map(cumul));
+    agg.set(g.subtotal.contabil.src, new Map(cumul));
+    prevCumul = cumul;
+  }
+}
+
+function applyMetric(lineMap, mode, tpvMap, tpnMap){
+  const out = new Map();
+  for (const [m,v] of lineMap){
+    if (mode === 'abs') out.set(m, v);
+    else if (mode === 'ptpn'){ const t = tpnMap ? tpnMap.get(m) : 0; out.set(m, t ? v/t : null); }
+    else if (mode === 'ptpv'){ const t = tpvMap ? tpvMap.get(m) : 0; out.set(m, t ? (v/t)*100 : null); }
+  }
+  return out;
+}
+
+// ── Render: Evolutivo ───────────────────────────────────
+function renderEvo(){
+  const tbl = document.getElementById('evo-tbl');
+  tbl.replaceChildren();
+  const months = activeMonths();
+  const agg = aggregate({ bu: state.bu, segments: state.segments, product: state.product, tap: state.tap, opProduct: state.opProduct });
+  const tpvMap = agg.get('TPV'); const tpnMap = agg.get('TPN');
+  const hasValue = (src) => {
+    const m = agg.get(src);
+    if (!m) return false;
+    for (const month of months){
+      const v = m.get(month) || 0;
+      if (v !== 0) return true;
+    }
+    return false;
+  };
+  const outline = buildOutline(new Set(agg.keys()), hasValue);
+
+  const thead = mkEl('thead');
+  const trh = mkEl('tr');
+  trh.append(mkEl('th','first','Linha de P&L'));
+  for (const m of months) trh.append(mkEl('th', null, fmtMonth(m)));
+  thead.append(trh); tbl.append(thead);
+
+  const tbody = mkEl('tbody');
+  for (const row of outline){
+    if (row.kind === 'header'){
+      const trg = mkEl('tr','l1');
+      trg.append(mkEl('td','first', row.label));
+      for (let i=0;i<months.length;i++) trg.append(mkEl('td',null,''));
+      tbody.append(trg);
+      continue;
+    }
+    if (row.kind === 'subheader'){
+      const trg = mkEl('tr','sg-h');
+      const td0 = mkEl('td','first');
+      td0.append(mkEl('span','chev tog','▼'));
+      td0.append(document.createTextNode(row.label));
+      trg.append(td0);
+      for (let i=0;i<months.length;i++) trg.append(mkEl('td',null,''));
+      trg.addEventListener('click', () => toggleSubgroup(row.subKey));
+      tbody.append(trg);
+      continue;
+    }
+    const isSubtotal    = row.kind === 'subtotal';
+    const isSubsubtotal = row.kind === 'subsubtotal';
+    const isCollapsed   = row.kind === 'collapsed';
+    const isSubitem     = row.kind === 'subitem';
+    const isItem        = row.kind === 'item';
+    const trClass = isSubtotal ? 'l1'
+                  : isSubsubtotal ? 'sg-sub'
+                  : isCollapsed ? 'sg-col' : '';
+    const tr = mkEl('tr', trClass);
+    const td0 = mkEl('td','first');
+    // Chevron: ▶ on collapsed (toggle) and on every leaf item (decorative).
+    // None on subtotal/subsubtotal — those are bars, not nodes.
+    if (isCollapsed)          td0.append(mkEl('span','chev tog','▶'));
+    else if (isItem)          td0.append(mkEl('span','chev','▸'));
+    else if (isSubitem)       td0.append(mkEl('span','chev','▸'));
+    const indCls = isSubitem ? 'ind3' : '';
+    td0.append(mkEl('span', indCls, row.item.label));
+    tr.append(td0);
+    if (isCollapsed){ tr.addEventListener('click', () => toggleSubgroup(row.subKey)); }
+    const t = applyMetric(agg.get(row.item.src) || new Map(), state.metric, tpvMap, tpnMap);
+    for (const m of months){
+      const v = t.has(m) ? t.get(m) : null;
+      const td = mkEl('td', null, fmt(v, state.metric, { item: row.item }));
+      if (v != null && v < 0) td.classList.add('neg');
+      tr.append(td);
+    }
+    tbody.append(tr);
+  }
+  tbl.append(tbody);
+
+  setText(document.getElementById('evo-sub'),
+    `${months.length} meses · BU: ${labelBU(state.bu)} · Segmento: ${state.segments.length ? state.segments.join(', ') : 'Todos'} · ${labelVariant()} · ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`);
+}
+
+// ── Render: Resumo ──────────────────────────────────────
+function renderSum(){
+  const tbl = document.getElementById('sum-tbl');
+  tbl.replaceChildren();
+  const months = activeMonths();
+  const last = months[months.length-1];
+  if (!last) return;
+  const BUS = [{key:'POINT',label:'Point'},{key:'OP',label:'Online Payments'},{key:'QR',label:'QR'}];
+  const segs = ['BIG SELLERS','SMB','LONGTAIL']
+    .filter(s => !state.segments.length || state.segments.includes(s));
+
+  const blocks = {};
+  for (const bu of BUS){
+    blocks[bu.key] = {};
+    for (const s of segs) blocks[bu.key][s] = aggregate({ bu: bu.key, segment: s, product: state.product, tap: state.tap, opProduct: state.opProduct });
+    blocks[bu.key]['_TOTAL'] = aggregate({ bu: bu.key, segment: 'ALL', product: state.product, tap: state.tap, opProduct: state.opProduct });
+  }
+  const present = new Set();
+  for (const bu of BUS) for (const s of segs.concat('_TOTAL'))
+    for (const k of blocks[bu.key][s].keys()) present.add(k);
+  // Hide lines that are zero across every cell shown in this view (last month × every BU × segs + Total).
+  const sumHasValue = (src) => {
+    for (const bu of BUS){
+      const tot = blocks[bu.key]['_TOTAL'].get(src);
+      if (tot && (tot.get(last) || 0) !== 0) return true;
+      for (const s of segs){
+        const m = blocks[bu.key][s].get(src);
+        if (m && (m.get(last) || 0) !== 0) return true;
+      }
+    }
+    return false;
+  };
+  const outline = buildOutline(present, sumHasValue);
+  const colsPerBU = segs.length + 1;
+
+  const thead = mkEl('thead');
+  const tr1 = mkEl('tr');
+  tr1.append(mkEl('th','line-hdr', `Linha · ${fmtMonth(last)}`));
+  for (const bu of BUS){
+    const th = mkEl('th','bu-hdr', bu.label); th.colSpan = colsPerBU;
+    tr1.append(th);
+  }
+  thead.append(tr1);
+  const tr2 = mkEl('tr');
+  tr2.append(mkEl('th','sub-hdr',''));
+  for (const bu of BUS){
+    for (const s of segs) tr2.append(mkEl('th','sub-hdr', s));
+    tr2.append(mkEl('th','sub-hdr','Total'));
+  }
+  thead.append(tr2); tbl.append(thead);
+
+  const tbody = mkEl('tbody');
+  for (const row of outline){
+    if (row.kind === 'header'){
+      const trg = mkEl('tr','l1');
+      trg.append(mkEl('td','line-cell', row.label));
+      for (let i=0;i<BUS.length*colsPerBU;i++) trg.append(mkEl('td',null,''));
+      tbody.append(trg);
+      continue;
+    }
+    if (row.kind === 'subheader'){
+      const trg = mkEl('tr','sg-h');
+      const tdl = mkEl('td','line-cell');
+      tdl.append(mkEl('span','chev tog','▼'));
+      tdl.append(document.createTextNode(row.label));
+      trg.append(tdl);
+      for (let i=0;i<BUS.length*colsPerBU;i++) trg.append(mkEl('td',null,''));
+      trg.addEventListener('click', () => toggleSubgroup(row.subKey));
+      tbody.append(trg);
+      continue;
+    }
+    const isSubtotal    = row.kind === 'subtotal';
+    const isSubsubtotal = row.kind === 'subsubtotal';
+    const isCollapsed   = row.kind === 'collapsed';
+    const isItem        = row.kind === 'item';
+    const isSubitem     = row.kind === 'subitem';
+    const trClass = isSubtotal ? 'l1'
+                  : isSubsubtotal ? 'sg-sub'
+                  : isCollapsed ? 'sg-col' : '';
+    const tr = mkEl('tr', trClass);
+    const lc = mkEl('td','line-cell');
+    if (isCollapsed)     lc.append(mkEl('span','chev tog','▶'));
+    else if (isItem)     lc.append(mkEl('span','chev','▸'));
+    else if (isSubitem)  lc.append(mkEl('span','chev','▸'));
+    lc.append(document.createTextNode(row.item.label));
+    tr.append(lc);
+    if (isCollapsed) tr.addEventListener('click', () => toggleSubgroup(row.subKey));
+    for (const bu of BUS){
+      const tot = blocks[bu.key]['_TOTAL'];
+      const tpvT = tot.get('TPV'); const tpnT = tot.get('TPN');
+      let first = true;
+      for (const s of segs){
+        const agg = blocks[bu.key][s];
+        const t = applyMetric(agg.get(row.item.src) || new Map(), state.metric, agg.get('TPV'), agg.get('TPN'));
+        const v = t.has(last) ? t.get(last) : null;
+        const td = mkEl('td', first ? 'bu-first' : null, fmt(v, state.metric, { item: row.item }));
+        if (v != null && v < 0) td.classList.add('neg');
+        tr.append(td); first = false;
+      }
+      const tT = applyMetric(tot.get(row.item.src) || new Map(), state.metric, tpvT, tpnT);
+      const vT = tT.has(last) ? tT.get(last) : null;
+      const td = mkEl('td', null, fmt(vT, state.metric, { item: row.item }));
+      td.style.fontWeight = '700';
+      if (vT != null && vT < 0) td.classList.add('neg');
+      tr.append(td);
+    }
+    tbody.append(tr);
+  }
+  tbl.append(tbody);
+
+  setText(document.getElementById('sum-sub'),
+    `Mês de referência: ${fmtMonth(last)} · ${labelVariant()} · ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`);
+}
+
+// ── Render: Graphic Generator ───────────────────────────
+function renderGG(){
+  const list = document.getElementById('gg-list');
+  list.replaceChildren();
+  const agg = aggregate({ bu:'ALL', segments: state.segments, product: state.product, tap: state.tap, opProduct: state.opProduct });
+  const present = new Set(agg.keys());
+  const months = activeMonths();
+  const ggHasValue = (src) => {
+    const m = agg.get(src);
+    if (!m) return false;
+    for (const month of months){
+      if ((m.get(month) || 0) !== 0) return true;
+    }
+    return false;
+  };
+  const outline = buildOutline(present, ggHasValue);
+  if (!state.ggLine || !present.has(state.ggLine)) state.ggLine = pickDefaultLine(present);
+  const last = months.slice(-1)[0];
+
+  for (const row of outline){
+    if (row.kind === 'header'){
+      const hd = mkEl('div','gg-list-item');
+      hd.style.background = 'var(--yellow-dim)';
+      hd.style.color = 'var(--ink)';
+      hd.style.fontWeight = '800';
+      hd.style.fontSize = '10.5px';
+      hd.style.textTransform = 'uppercase';
+      hd.style.letterSpacing = '.6px';
+      hd.style.cursor = 'default';
+      setText(hd, row.label);
+      list.append(hd);
+      continue;
+    }
+    if (row.kind === 'subheader'){
+      const hd = mkEl('div','gg-list-item');
+      hd.style.background = '#FFFEF0';
+      hd.style.color = 'var(--ink-2)';
+      hd.style.fontWeight = '700';
+      hd.style.fontSize = '10px';
+      hd.style.textTransform = 'uppercase';
+      hd.style.letterSpacing = '.5px';
+      hd.style.paddingLeft = '22px';
+      hd.style.cursor = 'pointer';
+      hd.append(mkEl('span','chev','▼'));
+      hd.append(document.createTextNode(row.label));
+      hd.addEventListener('click', (ev) => { ev.stopPropagation(); toggleSubgroup(row.subKey); });
+      list.append(hd);
+      continue;
+    }
+    const isSubtotal    = row.kind === 'subtotal';
+    const isSubsubtotal = row.kind === 'subsubtotal';
+    const isCollapsed   = row.kind === 'collapsed';
+    const isSubitem     = row.kind === 'subitem';
+    const li = mkEl('div','gg-list-item');
+    if (isSubtotal)    li.style.fontWeight = '800';
+    if (isSubsubtotal){ li.style.fontWeight = '700'; li.style.background = '#FAFAEF'; li.style.paddingLeft = '22px'; }
+    if (isCollapsed){
+      li.style.fontWeight = '700'; li.style.background = '#FAFAEF'; li.style.paddingLeft = '22px';
+      li.prepend(mkEl('span','chev','▶'));
+    }
+    if (isSubitem)     li.style.paddingLeft = '34px';
+    if (row.item.src === state.ggLine) li.classList.add('on');
+    li.dataset.line = row.item.src;
+    // Decorative chevron on every leaf item in the list, for parity with the table.
+    if (!isCollapsed && !isSubsubtotal && !isSubtotal){
+      li.prepend(mkEl('span','chev','▸'));
+    }
+    li.append(mkEl('span', null, row.item.label));
+    const lineMap = agg.get(row.item.src) || new Map();
+    const t = applyMetric(lineMap, state.metric, agg.get('TPV'), agg.get('TPN'));
+    li.append(mkEl('span','v', fmt(t.has(last) ? t.get(last) : null, state.metric, { item: row.item })));
+    if (isCollapsed){
+      li.addEventListener('click', () => toggleSubgroup(row.subKey));
+    } else {
+      li.addEventListener('click', () => { state.ggLine = row.item.src; renderGG(); });
+    }
+    list.append(li);
+  }
+  renderGGCharts();
+}
+
+function pickDefaultLine(present){
+  const prefs = state.variant === 'econ'
+    ? ['BUSINESS_MARGIN_ECONOMICO','NET_MONETIZATION_ECONOMICO','TPV','TPN']
+    : ['BUSINESS_MARGIN_CONTABLE','NET_MONETIZATION_CONTABLE','TPV','TPN'];
+  for (const p of prefs) if (present.has(p)) return p;
+  return [...present][0];
+}
+
+function renderGGCharts(){
+  const grid = document.getElementById('gg-grid');
+  for (const k in state.charts){ state.charts[k].destroy(); delete state.charts[k]; }
+  grid.replaceChildren();
+  const months = activeMonths();
+  if (!state.ggLine){ grid.append(mkEl('div','empty','Sem dados.')); return; }
+
+  // Pretty title via the taxonomy when available
+  const idx = PNL_INDEX.get(state.ggLine);
+  const lineLabel = idx ? idx.item.label : state.ggLine.replace(/_/g,' ');
+
+  grid.append(buildChartCard('total',
+    `${lineLabel} · por BU`,
+    months, [
+      { key:'ALL',   label:'Total',           color:'#1a1a1a' },
+      { key:'OP',    label:'Online Payments', color:'var(--bu-op)' },
+      { key:'POINT', label:'Point',           color:'var(--bu-point)' },
+      { key:'QR',    label:'QR',              color:'var(--bu-qr)' }
+    ], (key) => aggregate({ bu: key, segments: state.segments, product: state.product, tap: state.tap, opProduct: state.opProduct })
+  ));
+
+  for (const bu of ['OP','POINT','QR']){
+    const segs = ['BIG SELLERS','SMB','LONGTAIL'];
+    const colors = ['#1E88E5','#FF9F1C','#7C3AED'];
+    grid.append(buildChartCard(`seg-${bu}`,
+      `${labelBU(bu)} · por Segmento`,
+      months,
+      segs.map((s,i) => ({ key:s, label:s, color:colors[i] })),
+      (key) => aggregate({ bu, segment: key, product: state.product, tap: state.tap, opProduct: state.opProduct })
+    ));
+  }
+
+}
+
+// ── Render: Margem por BU/Segmento ──────────────────────
+// Cada chart mostra o "walk" de margem (Product Monetization → Net Monetization →
+// Variable Contribution) para um corte específico (uma BU ou um segmento).
+// Quando as linhas PM/NM/VC se afastam ao longo do tempo, é onde a margem está
+// sendo consumida — fica visível em qual BU/segmento o leak está acontecendo.
+function renderMargin(){
+  const grid = document.getElementById('margin-grid');
+  for (const k in state.charts){ state.charts[k].destroy(); delete state.charts[k]; }
+  grid.replaceChildren();
+  const months = activeMonths();
+  if (!state.data){ grid.append(mkEl('div','empty','Sem dados.')); return; }
+
+  // 3 charts por BU — usa o filtro de segmento atual (state.segments) e de produto
+  for (const bu of ['OP','POINT','QR']){
+    grid.append(buildMarginChart(
+      `margin-bu-${bu}`,
+      `${labelBU(bu)} · margin walk`,
+      months,
+      aggregate({ bu, segments: state.segments, product: state.product, tap: state.tap, opProduct: state.opProduct })
+    ));
+  }
+
+  // 3 charts por segmento — usa o filtro de BU atual (state.bu) e de produto
+  for (const seg of ['BIG SELLERS','SMB','LONGTAIL']){
+    grid.append(buildMarginChart(
+      `margin-seg-${seg.replace(/\s+/g,'_')}`,
+      `${seg} · margin walk`,
+      months,
+      aggregate({ bu: state.bu, segment: seg, product: state.product, tap: state.tap, opProduct: state.opProduct })
+    ));
+  }
+}
+
+// Helper: chart com as 3 linhas-chave do P&L até VC (PM, NM, VC).
+// Variant-aware: troca as keys de econ ↔ contábil conforme state.variant.
+function buildMarginChart(id, title, months, agg){
+  const variantSuffix = state.variant === 'econ' ? 'ECONOMICO' : 'CONTABLE';
+  const lines = [
+    { src: `PRODUCT_MONETIZATION_${variantSuffix}`,  label: 'Product Monetization',  color: '#1E88E5' },
+    { src: `NET_MONETIZATION_${variantSuffix}`,      label: 'Net Monetization',      color: '#FF9F1C' },
+    { src: `VARIABLE_CONTRIBUTION_${variantSuffix}`, label: 'Variable Contribution', color: '#00A650' }
+  ];
+
+  const card = mkEl('div', 'chart-box tall');
+  const head = mkEl('div','ttl');
+  head.append(mkEl('span', null, title)); // textContent → XSS-safe
+  const badgeTxt = state.metric === 'abs' ? labelUnit() : labelMetric(state.metric);
+  head.append(mkEl('span','badge', badgeTxt));
+  card.append(head);
+  const host = mkEl('div','chart-host');
+  const cv = document.createElement('canvas');
+  host.append(cv); card.append(host);
+
+  const tpvMap = agg.get('TPV');
+  const tpnMap = agg.get('TPN');
+
+  // Unit divisor only applies to absolute values; ratios are already normalized.
+  const skipUnit = state.metric !== 'abs';
+  const div = skipUnit ? 1 : state.unit;
+
+  const datasets = lines.map(ln => {
+    const raw = agg.get(ln.src) || new Map();
+    const t = applyMetric(raw, state.metric, tpvMap, tpnMap);
+    return {
+      label: ln.label,
+      data: months.map(m => {
+        if (!t.has(m)) return null;
+        const v = t.get(m);
+        return v == null ? null : v / div;
+      }),
+      borderColor: ln.color, backgroundColor: ln.color,
+      borderWidth: 2.5, tension: .25, pointRadius: 2.5, pointHoverRadius: 5, spanGaps: true,
+      _srcKey: ln.src
+    };
+  });
+
+  state.charts[id] = new Chart(cv.getContext('2d'), {
+    type: 'line',
+    data: { labels: months.map(fmtMonth), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { position:'bottom',
+          labels: { font:{ size:10, weight:'600' }, boxWidth:10, boxHeight:10, padding:8 } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const y = ctx.parsed.y;
+              if (y == null) return `${ctx.dataset.label}: —`;
+              const raw = y * div;
+              const item = { src: ctx.dataset._srcKey, label: ctx.dataset.label, isSubtotalLabel: true };
+              return `${ctx.dataset.label}: ${fmt(raw, state.metric, { item })}`;
+            }
+          },
+          backgroundColor:'#1a1a1a',
+          titleFont:{ weight:'700' }
+        }
+      },
+      scales: {
+        x: { ticks:{ font:{ size:10 } }, grid:{ display:false } },
+        y: { ticks:{ font:{ size:10 },
+                     callback:(v) => fmt(v * div, state.metric, { item: { isSubtotalLabel:true } }) },
+             grid:{ color:'rgba(0,0,0,.05)' } }
+      }
+    }
+  });
+  return card;
+}
+
+function buildChartCard(id, title, months, series, aggFn, full){
+  const idx = PNL_INDEX.get(state.ggLine);
+  const lineItem = idx ? idx.item : { src: state.ggLine, label: state.ggLine };
+  const card = mkEl('div', 'chart-box' + (full ? ' tall full' : ''));
+  const head = mkEl('div','ttl');
+  head.append(mkEl('span', null, title));
+  const badgeTxt = state.metric === 'abs' ? labelUnit() : labelMetric(state.metric);
+  head.append(mkEl('span','badge', badgeTxt));
+  card.append(head);
+  const host = mkEl('div','chart-host');
+  const cv = document.createElement('canvas');
+  host.append(cv); card.append(host);
+
+  // Pre-format datasets values applying the unit divisor (so axis ticks match).
+  const skipUnit = lineItem.isCount || lineItem.isRatio || state.metric !== 'abs';
+  const div = skipUnit ? 1 : state.unit;
+
+  const datasets = series.map(s => {
+    const agg = aggFn(s.key);
+    const t = applyMetric(agg.get(state.ggLine) || new Map(), state.metric, agg.get('TPV'), agg.get('TPN'));
+    return {
+      label: s.label,
+      data: months.map(m => {
+        if (!t.has(m)) return null;
+        const v = t.get(m);
+        return v == null ? null : v / div;
+      }),
+      borderColor: s.color, backgroundColor: s.color,
+      borderWidth: 2, tension: .25, pointRadius: 2.5, pointHoverRadius: 5, spanGaps: true
+    };
+  });
+
+  state.charts[id] = new Chart(cv.getContext('2d'), {
+    type: 'line',
+    data: { labels: months.map(fmtMonth), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { position:'bottom',
+          labels: { font:{ size:10, weight:'600' }, boxWidth:10, boxHeight:10, padding:8 } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const y = ctx.parsed.y;
+              if (y == null) return `${ctx.dataset.label}: —`;
+              const raw = y * div; // de-normalize for fmt(), then fmt re-applies unit
+              return `${ctx.dataset.label}: ${fmt(raw, state.metric, { item: lineItem })}`;
+            }
+          },
+          backgroundColor:'#1a1a1a',
+          titleFont:{ weight:'700' }
+        }
+      },
+      scales: {
+        x: { ticks:{ font:{ size:10 } }, grid:{ display:false } },
+        y: { ticks:{ font:{ size:10 },
+                     callback:(v) => fmt(v * div, state.metric, { item: lineItem }) },
+             grid:{ color:'rgba(0,0,0,.05)' } }
+      }
+    }
+  });
+  return card;
+}
+
+// ── Filter UI population ────────────────────────────────
+function syncFilters(){
+  const segWrap = document.getElementById('segment-pills');
+  const prdSel = document.getElementById('f-product');
+  const segs = new Set(), prods = new Set();
+  for (const r of state.data.rows){
+    if (r.segment) segs.add(r.segment);
+    if (r.product) prods.add(r.product);
+  }
+
+  // Segment pills — preserve current selection where possible.
+  const orderedSegs = ['BIG SELLERS','SMB','LONGTAIL']
+    .filter(s => segs.has(s))
+    .concat([...segs].filter(s => !['BIG SELLERS','SMB','LONGTAIL'].includes(s)).sort());
+  state.segments = (state.segments || []).filter(s => segs.has(s));
+  segWrap.replaceChildren();
+  const allPill = mkEl('span', 'pill' + (state.segments.length === 0 ? ' on' : ''), 'Todos');
+  allPill.dataset.seg = 'ALL';
+  segWrap.append(allPill);
+  for (const s of orderedSegs){
+    const p = mkEl('span', 'pill' + (state.segments.includes(s) ? ' on' : ''), s);
+    p.dataset.seg = s;
+    segWrap.append(p);
+  }
+  // (re)bind click handlers after rebuild
+  segWrap.querySelectorAll('.pill').forEach(p => {
+    p.addEventListener('click', () => {
+      const s = p.dataset.seg;
+      if (s === 'ALL'){
+        state.segments = [];
+      } else {
+        const i = state.segments.indexOf(s);
+        if (i >= 0) state.segments.splice(i, 1);
+        else state.segments.push(s);
+      }
+      // refresh visual state without rebuilding
+      segWrap.querySelectorAll('.pill').forEach(x => {
+        const k = x.dataset.seg;
+        x.classList.toggle('on', k === 'ALL' ? state.segments.length === 0 : state.segments.includes(k));
+      });
+      rerender();
+    });
+  });
+
+  // Product (single-select dropdown, unchanged)
+  function rebuild(sel, values, current){
+    const prev = current ?? sel.value;
+    sel.replaceChildren();
+    const o0 = document.createElement('option');
+    o0.value='ALL'; o0.textContent='Todos'; sel.append(o0);
+    for (const v of [...values].sort()){
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v; sel.append(o);
+    }
+    sel.value = values.has(prev) || prev === 'ALL' ? prev : 'ALL';
+    return sel.value;
+  }
+  state.product = rebuild(prdSel, prods, state.product);
+}
+
+function setUpdatedBadge(){
+  const el = document.getElementById('updated');
+  if (!el) return;
+  const now = new Date();
+  const dStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const tStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  el.replaceChildren();
+  const dot = mkEl('span','dot'); el.append(dot);
+  el.append(document.createTextNode(`Atualizado: ${dStr} ${tStr}`));
+}
+
+function flashUpdated(){
+  const el = document.getElementById('updated');
+  if (!el) return;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 1200);
+}
+
+// ── Tabs ────────────────────────────────────────────────
+function switchTab(t){
+  state.tab = t;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'panel-' + t));
+  // Load the metric remembered for this tab, then update the pill UI.
+  state.metric = state.metricByTab[t] || 'abs';
+  document.querySelectorAll('#metric-pills .pill').forEach(p =>
+    p.classList.toggle('on', p.dataset.metric === state.metric));
+  rerender();
+}
+function rerender(){
+  if (!state.data) return;
+  if (state.tab === 'evo') renderEvo();
+  else if (state.tab === 'sum') renderSum();
+  else if (state.tab === 'gg') renderGG();
+  else if (state.tab === 'margin') renderMargin();
+}
+
+function wire(){
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  document.querySelectorAll('#bu-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#bu-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.bu = p.dataset.bu;
+      const tapWrap = document.getElementById('tap-wrap');
+      const opWrap  = document.getElementById('opprod-wrap');
+      if (state.bu === 'POINT'){
+        tapWrap.style.display = '';
+        opWrap.style.display = 'none';
+        state.opProduct = 'ALL';
+        document.querySelectorAll('#opprod-pills .pill').forEach(x => x.classList.toggle('on', x.dataset.opprod === 'ALL'));
+      } else if (state.bu === 'OP'){
+        opWrap.style.display = '';
+        tapWrap.style.display = 'none';
+        state.tap = 'ALL';
+        document.querySelectorAll('#tap-pills .pill').forEach(x => x.classList.toggle('on', x.dataset.tap === 'ALL'));
+      } else {
+        tapWrap.style.display = 'none';
+        opWrap.style.display = 'none';
+        state.tap = 'ALL';
+        state.opProduct = 'ALL';
+        document.querySelectorAll('#tap-pills .pill').forEach(x => x.classList.toggle('on', x.dataset.tap === 'ALL'));
+        document.querySelectorAll('#opprod-pills .pill').forEach(x => x.classList.toggle('on', x.dataset.opprod === 'ALL'));
+      }
+      rerender();
+    }));
+  document.querySelectorAll('#tap-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#tap-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.tap = p.dataset.tap; rerender();
+    }));
+  document.querySelectorAll('#opprod-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#opprod-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.opProduct = p.dataset.opprod; rerender();
+    }));
+  document.querySelectorAll('#metric-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#metric-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.metric = p.dataset.metric;
+      state.metricByTab[state.tab] = state.metric; // remember per-tab preference
+      rerender();
+    }));
+  document.querySelectorAll('#unit-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#unit-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.unit = parseInt(p.dataset.unit, 10) || 1;
+      rerender();
+    }));
+  document.querySelectorAll('#variant-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#variant-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.variant = p.dataset.variant;
+      state.ggLine = null; // force re-pick a default line matching the new variant
+      rerender();
+    }));
+  document.getElementById('f-product').addEventListener('change', e => { state.product = e.target.value; rerender(); });
+  document.getElementById('f-period') .addEventListener('change', e => { state.period  = e.target.value; rerender(); });
+}
+
+// ── Data fetch via Grid.sheets ──────────────────────────
+async function fetchSheet(){
+  // Wait for SDK to be ready
+  if (!window.Grid || !window.Grid.sheets){
+    throw new Error('Grid SDK não disponível — abra este doc dentro do Grid (grid.adminml.com).');
+  }
+  const resp = await window.Grid.sheets.get(SHEET_ID, SHEET_RANGE);
+  if (!resp || !resp.values) throw new Error('Resposta vazia de Grid.sheets.get');
+  return parseSheet(resp.values);
+}
+
+async function pollOnce(){
+  if (document.hidden){ schedulePoll(POLL_MS); return; }
+  try {
+    const next = await fetchSheet();
+    const hash = stableHash(next);
+    if (hash !== state.lastHash){
+      state.data = next; state.lastHash = hash;
+      syncFilters(); setUpdatedBadge(); rerender(); flashUpdated();
+    }
+    schedulePoll(POLL_MS);
+  } catch {
+    schedulePoll(POLL_MS * 2);
+  }
+}
+function schedulePoll(delay){
+  if (state.pollTimer) clearTimeout(state.pollTimer);
+  state.pollTimer = setTimeout(pollOnce, delay);
+}
+
+// ── Boot ────────────────────────────────────────────────
+async function boot(){
+  try {
+    // Configure Grid SDK with the docId from the URL path: /d/<docId>/raw
+    const pathParts = location.pathname.split('/');
+    const docId = pathParts[2];
+    if (window.Grid && window.Grid.configure && docId){
+      window.Grid.configure({ docId });
+    }
+    state.data = await fetchSheet();
+    state.lastHash = stableHash(state.data);
+    syncFilters(); setUpdatedBadge(); wire(); rerender();
+    document.getElementById('boot').style.display = 'none';
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) schedulePoll(0);
+    });
+    schedulePoll(POLL_MS);
+  } catch (err){
+    const msg = document.getElementById('boot-msg');
+    setText(msg, '');
+    msg.append(
+      document.createTextNode('Não foi possível ler a planilha — '),
+      mkEl('code', null, String(err && err.message || err)),
+      document.createTextNode('. Confirme que o owner deste doc Grid tem o Google OAuth conectado em /google/oauth/start e que ele tem acesso à planilha.')
+    );
+    // Tenta de novo em 8s — talvez o SDK ainda não tenha carregado.
+    setTimeout(boot, 8000);
+  }
+}
+
+// Wait for SDK script tag, then boot
+if (window.Grid){
+  boot();
+} else {
+  window.addEventListener('load', boot);
+}
+
+})();
+</script>
+</body>
+</html>
