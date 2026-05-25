@@ -846,14 +846,17 @@ function toggleResumo(){
 // ── EXPORT ─────────────────────────────────────────────────────────────────────
 function exportExcel(){
   const d=ds(),n=d.months.length;
-  const rows=[['Canal','Sub-BU','Cargo','Role','RV',...d.months,'Média Plano','Média Real','Ating. %']];
-  d.plan.forEach(pr=>{
-    const rr=d.real.find(r=>r.canal===pr.canal&&r.cargo===pr.cargo);
-    if(!rr)return;
-    rows.push([pr.canal,pr.subbu,pr.cargo,pr.role,pr.rv,
-      ...pr.m.map((v,i)=>v+' / '+(rr.m[i]||0)),
-      avg(pr.m).toFixed(1),avg(rr.m).toFixed(1),pct(avg(rr.m),avg(pr.m))+'%']);
-  });
+  const rows=[['Cenário','Canal','Sub-BU','Cargo','Role','RV',...d.months,'Média']];
+  const pushScenario=(label,arr)=>{
+    arr.forEach(r=>{
+      const m=(r.m||[]).slice(0,n);
+      rows.push([label,r.canal,r.subbu,r.cargo,r.role,r.rv,
+        ...m.map(v=>v||0),
+        avg(m).toFixed(1)]);
+    });
+  };
+  pushScenario('Plano',d.plan);
+  pushScenario('Realizado',d.real);
   const ws=XLSX.utils.aoa_to_sheet(rows);
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Headcount');
