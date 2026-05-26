@@ -268,6 +268,21 @@
     .card.agent-hidden { display: none; }
     .card.agent-match  { order: 0; }
 
+    /* ── Click-rank badge ── */
+    .click-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: auto;
+    }
+    .click-badge-top   { background: #fff3cd; color: #92600a; }
+    .click-badge-mid   { background: #f3f4f6; color: #6b7280; }
+    .card-footer-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
     @media (max-width: 700px) {
       .grid { grid-template-columns: 1fr; }
       .header-inner { flex-wrap: wrap; }
@@ -1939,6 +1954,80 @@
   });
 
   agentClear.addEventListener('click', clearSearch);
+
+  /* ── Click-rank: ordena cards por número de cliques ── */
+  var DC_CLICKS_KEY = 'dc_clicks_v1';
+
+  function getClicks() {
+    try { return JSON.parse(localStorage.getItem(DC_CLICKS_KEY) || '{}'); }
+    catch(e) { return {}; }
+  }
+
+  function recordClick(label) {
+    var c = getClicks();
+    c[label] = (c[label] || 0) + 1;
+    try { localStorage.setItem(DC_CLICKS_KEY, JSON.stringify(c)); } catch(e) {}
+  }
+
+  function updateClickBadges() {
+    var clicks = getClicks();
+    // Remove badges existentes
+    document.querySelectorAll('.click-badge').forEach(function(b) { b.remove(); });
+
+    // Para cada grid de tab, identifica o ranking e injeta badge
+    document.querySelectorAll('.tab-panel .grid').forEach(function(grid) {
+      var cards = Array.from(grid.querySelectorAll('.card[data-label]'));
+      // Apenas mostra badge se algum card já foi clicado
+      var anyClicked = cards.some(function(c) { return (clicks[c.dataset.label] || 0) > 0; });
+      if (!anyClicked) return;
+
+      // Rank por cliques neste tab
+      var sorted = cards.slice().sort(function(a, b) {
+        return (clicks[b.dataset.label] || 0) - (clicks[a.dataset.label] || 0);
+      });
+
+      cards.forEach(function(card) {
+        var n = clicks[card.dataset.label] || 0;
+        if (n === 0) return;
+        var footer = card.querySelector('.card-footer');
+        if (!footer) return;
+        var rank = sorted.indexOf(card);
+        var badge = document.createElement('span');
+        badge.className = 'click-badge ' + (rank === 0 ? 'click-badge-top' : 'click-badge-mid');
+        badge.title = n + ' acesso' + (n > 1 ? 's' : '');
+        badge.innerHTML = (rank === 0 ? '🔥 ' : '') + n + (n === 1 ? ' acesso' : ' acessos');
+        footer.appendChild(badge);
+      });
+    });
+  }
+
+  function sortCardsByClicks() {
+    var clicks = getClicks();
+    document.querySelectorAll('.tab-panel .grid').forEach(function(grid) {
+      var cards = Array.from(grid.querySelectorAll('.card[data-label]'));
+      var anyClicked = cards.some(function(c) { return (clicks[c.dataset.label] || 0) > 0; });
+      if (!anyClicked) return; // mantém ordem original se ninguém clicou ainda
+      cards.sort(function(a, b) {
+        return (clicks[b.dataset.label] || 0) - (clicks[a.dataset.label] || 0);
+      });
+      cards.forEach(function(card) { grid.appendChild(card); });
+    });
+    updateClickBadges();
+  }
+
+  // Registra clique em qualquer link dentro de um card
+  document.querySelectorAll('.card[data-label]').forEach(function(card) {
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('a[href]')) {
+        recordClick(card.dataset.label);
+        // Re-ordena e atualiza badges sem recarregar
+        sortCardsByClicks();
+      }
+    });
+  });
+
+  // Ordena na carga inicial
+  sortCardsByClicks();
 </script>
 
 </body>
