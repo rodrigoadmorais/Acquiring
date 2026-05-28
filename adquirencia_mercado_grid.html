@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grid competitivo - Adquirencia Brasil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --ml-yellow:#FFE600;
+      --ml-blue:#3483FA;
+      --ml-blue-dark:#1259C3;
+      --green:#00A650;
+      --red:#E53935;
+      --orange:#FF9F1C;
+      --purple:#7C3AED;
+      --ink:#111827;
+      --text:#1F2937;
+      --muted:#6B7280;
+      --line:#E5E7EB;
+      --line-strong:#CBD5E1;
+      --bg:#F5F7FA;
+      --panel:#FFFFFF;
+      --panel-soft:#F8FAFC;
+      --shadow:0 18px 45px rgba(15,23,42,.07);
+      --radius-lg:22px;
+      --radius-md:16px;
+      --radius-sm:10px;
+    }
+
+    * { box-sizing:border-box; }
+
+    body {
+      margin:0;
+      min-height:100vh;
+      font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+      background:#F5F7FA;
+      color:var(--text);
+    }
+
+    a { color:var(--ml-blue-dark); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+
+    .topbar {
+      position:sticky;
+      top:0;
+      z-index:30;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      min-height:58px;
+      padding:0 26px;
+      background:rgba(255,230,0,.96);
+      border-bottom:1px solid rgba(17,24,39,.12);
+      box-shadow:0 4px 18px rgba(17,24,39,.08);
+    }
+
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+
+    .brand-mark {
+      display:grid;
+      place-items:center;
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      background:#111827;
+      color:#FFE600;
+      font-size:.78rem;
+      font-weight:800;
+      letter-spacing:.02em;
+      flex:0 0 auto;
+    }
+
+    .brand h1 {
+      margin:0;
+      color:#111827;
+      font-size:1rem;
+      line-height:1.15;
+      font-weight:800;
+      letter-spacing:-.035em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .brand span {
+      display:block;
+      margin-top:2px;
+      font-size:.72rem;
+      color:rgba(17,24,39,.68);
+      font-weight:600;
+      letter-spacing:0;
+    }
+
+    .top-actions {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-height:36px;
+      border:1px solid rgba(17,24,39,.18);
+      border-radius:999px;
+      padding:8px 14px;
+      background:rgba(255,255,255,.72);
+      color:#111827;
+      font:700 .78rem/1 "Inter",sans-serif;
+      cursor:pointer;
+      transition:transform .12s ease, background .12s ease, border-color .12s ease;
+    }
+
+    .btn:hover { transform:translateY(-1px); background:#fff; border-color:rgba(17,24,39,.28); }
+    .btn.primary { background:var(--ml-blue); color:#fff; border-color:var(--ml-blue); }
+    .btn.primary:hover { background:var(--ml-blue-dark); border-color:var(--ml-blue-dark); }
+    .btn svg { width:16px; height:16px; stroke-width:2.2; }
+
+    .wrap {
+      width:min(1480px,calc(100% - 40px));
+      margin:0 auto;
+      padding:24px 0 34px;
+    }
+
+    .summary {
+      display:grid;
+      grid-template-columns:minmax(0,1.4fr) minmax(360px,.6fr);
+      gap:20px;
+      align-items:stretch;
+      margin-bottom:20px;
+    }
+
+    .executive {
+      background:linear-gradient(135deg,#FFE600,#FFF4A3);
+      border:1px solid rgba(17,24,39,.1);
+      border-radius:var(--radius-lg);
+      padding:30px 34px;
+      box-shadow:0 22px 60px rgba(205,164,0,.22);
+      min-height:252px;
+    }
+
+    .eyebrow {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border:1px solid rgba(17,24,39,.14);
+      border-radius:999px;
+      background:rgba(255,255,255,.6);
+      color:#111827;
+      font-size:.72rem;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    .executive h2 {
+      max-width:920px;
+      margin:18px 0 12px;
+      color:#111827;
+      font-size:clamp(1.75rem,3.2vw,3.05rem);
+      line-height:.98;
+      font-weight:800;
+      letter-spacing:-.055em;
+    }
+
+    .executive p {
+      max-width:960px;
+      margin:0;
+      color:rgba(17,24,39,.78);
+      font-size:.98rem;
+      line-height:1.58;
+      font-weight:500;
+    }
+
+    .method-card {
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:18px;
+      background:#111827;
+      color:#fff;
+      border-radius:var(--radius-lg);
+      padding:26px;
+      box-shadow:var(--shadow);
+    }
+
+    .method-card h3 {
+      margin:0 0 10px;
+      font-size:1.02rem;
+      font-weight:800;
+      letter-spacing:-.035em;
+    }
+
+    .method-card p {
+      margin:0;
+      color:rgba(255,255,255,.76);
+      font-size:.84rem;
+      line-height:1.54;
+    }
+
+    .method-list {
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      margin-top:14px;
+    }
+
+    .method-item {
+      display:flex;
+      align-items:center;
+      gap:9px;
+      color:rgba(255,255,255,.88);
+      font-size:.78rem;
+      font-weight:700;
+    }
+
+    .dot {
+      width:9px;
+      height:9px;
+      border-radius:999px;
+      flex:0 0 auto;
+      background:var(--ml-yellow);
+    }
+
+    .dot.blue { background:var(--ml-blue); }
+    .dot.green { background:var(--green); }
+
+    .metrics-grid {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:20px;
+      margin-bottom:20px;
+    }
+
+    .card {
+      background:rgba(255,255,255,.94);
+      border:1px solid rgba(229,231,235,.95);
+      border-radius:var(--radius-lg);
+      box-shadow:var(--shadow);
+      padding:22px 24px;
+    }
+
+    .metric-top {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:10px;
+    }
+
+    .metric-label {
+      display:block;
+      color:var(--muted);
+      font-size:.72rem;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    .metric-icon {
+      display:grid;
+      place-items:center;
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      background:rgba(52,131,250,.1);
+      color:var(--ml-blue);
+      flex:0 0 auto;
+    }
+
+    .metric-icon svg { width:18px; height:18px; stroke-width:2.2; }
+
+    .metric-value {
+      display:block;
+      color:var(--ink);
+      font-size:2rem;
+      line-height:1;
+      font-weight:800;
+      letter-spacing:-.055em;
+    }
+
+    .metric-note {
+      margin-top:8px;
+      color:var(--muted);
+      font-size:.78rem;
+      line-height:1.45;
+      font-weight:600;
+    }
+
+    .delta {
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      margin-top:12px;
+      padding:5px 9px;
+      border-radius:999px;
+      font-size:.74rem;
+      font-weight:800;
+    }
+
+    .delta.good { background:rgba(0,166,80,.1); color:#007A3D; }
+    .delta.warn { background:rgba(255,159,28,.14); color:#9A5A00; }
+    .delta.blue { background:rgba(52,131,250,.11); color:#1259C3; }
+
+    .control-card {
+      display:grid;
+      grid-template-columns:1.3fr repeat(3,minmax(150px,.7fr)) auto;
+      gap:12px;
+      align-items:end;
+      margin-bottom:20px;
+    }
+
+    .field label {
+      display:block;
+      margin:0 0 6px;
+      color:var(--muted);
+      font-size:.72rem;
+      font-weight:800;
+      letter-spacing:.07em;
+      text-transform:uppercase;
+    }
+
+    .field input,
+    .field select {
+      width:100%;
+      height:40px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:0 12px;
+      background:#fff;
+      color:var(--text);
+      font:700 .84rem/1 "Inter",sans-serif;
+      outline:none;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color:var(--ml-blue);
+      box-shadow:0 0 0 3px rgba(52,131,250,.12);
+    }
+
+    .charts-grid {
+      display:grid;
+      grid-template-columns:1.05fr .95fr;
+      gap:20px;
+      margin-bottom:20px;
+    }
+
+    .card-title {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:16px;
+    }
+
+    .card-title h3 {
+      margin:0;
+      color:var(--ink);
+      font-size:1rem;
+      line-height:1.2;
+      font-weight:800;
+      letter-spacing:-.035em;
+    }
+
+    .card-title p {
+      margin:5px 0 0;
+      color:var(--muted);
+      font-size:.78rem;
+      line-height:1.45;
+      font-weight:600;
+    }
+
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:.72rem;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .badge.good { background:rgba(0,166,80,.1); color:#007A3D; }
+    .badge.warn { background:rgba(255,159,28,.13); color:#8C5300; }
+    .badge.risk { background:rgba(229,57,53,.1); color:#C42D29; }
+    .badge.blue { background:rgba(52,131,250,.1); color:#1259C3; }
+    .badge.gray { background:#EEF2F7; color:#475569; }
+
+    .chart-box {
+      height:330px;
+      min-height:330px;
+    }
+
+    .grid-section {
+      display:grid;
+      grid-template-columns:minmax(0,1fr);
+      gap:20px;
+      margin-bottom:20px;
+    }
+
+    .table-shell {
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      max-height:680px;
+    }
+
+    table {
+      width:100%;
+      min-width:1720px;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:.8rem;
+    }
+
+    thead th {
+      position:sticky;
+      top:0;
+      z-index:2;
+      padding:12px 14px;
+      background:#F8FAFC;
+      border-bottom:1px solid var(--line);
+      color:#64748B;
+      text-align:left;
+      font-size:.68rem;
+      line-height:1.15;
+      font-weight:800;
+      letter-spacing:.07em;
+      text-transform:uppercase;
+      vertical-align:bottom;
+    }
+
+    tbody td {
+      padding:12px 14px;
+      border-bottom:1px solid #EEF2F7;
+      color:#334155;
+      vertical-align:top;
+      line-height:1.45;
+    }
+
+    tbody tr:hover td { background:rgba(255,230,0,.07); }
+    tbody tr:last-child td { border-bottom:none; }
+
+    th.sticky-col,
+    td.sticky-col {
+      position:sticky;
+      left:0;
+      z-index:3;
+      background:#fff;
+      box-shadow:1px 0 0 var(--line);
+    }
+
+    thead th.sticky-col {
+      z-index:4;
+      background:#F8FAFC;
+    }
+
+    .player-cell {
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      min-width:210px;
+    }
+
+    .avatar {
+      display:grid;
+      place-items:center;
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      background:rgba(52,131,250,.12);
+      color:var(--ml-blue-dark);
+      font-size:.72rem;
+      font-weight:800;
+      flex:0 0 auto;
+    }
+
+    .player-name {
+      color:var(--ink);
+      font-weight:800;
+      letter-spacing:-.015em;
+    }
+
+    .player-sub {
+      margin-top:2px;
+      color:#64748B;
+      font-size:.72rem;
+      font-weight:600;
+    }
+
+    .num {
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+      font-weight:800;
+      color:#111827;
+    }
+
+    .share-cell { min-width:132px; }
+    .share-top {
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:baseline;
+      font-weight:800;
+      color:#111827;
+    }
+
+    .mini-bar-track {
+      height:8px;
+      margin-top:7px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#E2E8F0;
+    }
+
+    .mini-bar-fill {
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg,var(--ml-blue),#7C3AED);
+    }
+
+    .list {
+      margin:0;
+      padding-left:15px;
+    }
+
+    .list li + li { margin-top:4px; }
+
+    .sources {
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      max-width:240px;
+    }
+
+    .source-pill {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:24px;
+      padding:4px 8px;
+      border-radius:999px;
+      background:#EEF2F7;
+      color:#334155;
+      font-size:.7rem;
+      font-weight:800;
+      border:1px solid #E2E8F0;
+    }
+
+    .source-pill:hover {
+      text-decoration:none;
+      background:#E0ECFF;
+      color:#1259C3;
+      border-color:#BBD3FF;
+    }
+
+    .notes-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px;
+      margin-bottom:20px;
+    }
+
+    .insight-list {
+      display:grid;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .insight {
+      display:grid;
+      grid-template-columns:10px 1fr;
+      gap:10px;
+      align-items:start;
+      padding:12px 0;
+      border-top:1px solid #EEF2F7;
+    }
+
+    .insight:first-child { border-top:none; }
+
+    .insight strong {
+      display:block;
+      margin-bottom:2px;
+      color:#111827;
+      font-size:.84rem;
+      letter-spacing:-.02em;
+    }
+
+    .insight span {
+      display:block;
+      color:#64748B;
+      font-size:.78rem;
+      line-height:1.5;
+      font-weight:600;
+    }
+
+    .footnotes {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      padding:0;
+      margin:0;
+      list-style:none;
+    }
+
+    .footnotes li {
+      border:1px solid #E2E8F0;
+      border-radius:14px;
+      padding:12px 14px;
+      background:#F8FAFC;
+      color:#475569;
+      font-size:.78rem;
+      line-height:1.45;
+      font-weight:600;
+    }
+
+    .footnotes strong {
+      display:block;
+      margin-bottom:3px;
+      color:#111827;
+      font-size:.8rem;
+      font-weight:800;
+    }
+
+    .assumption-table {
+      width:100%;
+      min-width:0;
+      border-collapse:collapse;
+    }
+
+    .assumption-table th,
+    .assumption-table td {
+      position:static;
+      padding:10px 0;
+      border-bottom:1px solid #EEF2F7;
+      background:transparent;
+      color:#475569;
+      font-size:.8rem;
+      text-align:left;
+      vertical-align:top;
+    }
+
+    .assumption-table th {
+      color:#64748B;
+      font-size:.68rem;
+      font-weight:800;
+      letter-spacing:.07em;
+      text-transform:uppercase;
+    }
+
+    .assumption-table td:first-child {
+      color:#111827;
+      font-weight:800;
+      width:34%;
+    }
+
+    footer {
+      padding:18px 0 0;
+      color:#64748B;
+      font-size:.75rem;
+      line-height:1.5;
+      font-weight:600;
+    }
+
+    .toast {
+      position:fixed;
+      right:22px;
+      bottom:22px;
+      z-index:60;
+      display:none;
+      padding:12px 14px;
+      border-radius:14px;
+      background:#111827;
+      color:#fff;
+      box-shadow:0 18px 45px rgba(15,23,42,.22);
+      font-size:.82rem;
+      font-weight:800;
+    }
+
+    .toast.show { display:block; animation:fade .22s ease; }
+
+    @keyframes fade {
+      from { opacity:0; transform:translateY(8px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    @media (max-width:1180px) {
+      .summary,
+      .charts-grid,
+      .notes-grid { grid-template-columns:1fr; }
+      .metrics-grid { grid-template-columns:repeat(2,1fr); }
+      .control-card { grid-template-columns:1fr 1fr; }
+      .control-card .actions { grid-column:1 / -1; }
+    }
+
+    @media (max-width:760px) {
+      .topbar { align-items:flex-start; padding:12px 16px; flex-direction:column; }
+      .brand h1 { white-space:normal; }
+      .wrap { width:calc(100% - 24px); padding-top:16px; }
+      .executive { padding:24px 22px; }
+      .metrics-grid,
+      .control-card,
+      .footnotes { grid-template-columns:1fr; }
+      .top-actions { width:100%; justify-content:flex-start; }
+      .btn { flex:1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">ACQ</div>
+      <div>
+        <h1>Grid competitivo de adquirência no Brasil</h1>
+        <span>Players, segmentos, canais, funding estimado, devices e fontes</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" type="button" id="resetBtn"><i data-lucide="rotate-ccw"></i>Limpar</button>
+      <button class="btn" type="button" id="copyBtn"><i data-lucide="link"></i>Copiar link</button>
+      <button class="btn primary" type="button" id="exportBtn"><i data-lucide="download"></i>Exportar Excel</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="summary">
+      <div class="executive">
+        <span class="eyebrow"><i data-lucide="landmark" style="width:15px;height:15px"></i>Brasil - atualização mai/2026</span>
+        <h2>O jogo voltou a premiar funding barato, canal proprietário e base transacional engajada.</h2>
+        <p>
+          O setor de cartões movimentou R$ 4,5 tri em 2025, alta de 10,1% a/a, e segue grande o suficiente para acomodar bancões, fintechs e adquirentes globais. A leitura competitiva abaixo combina participação pública de mercado, TPV reportado, dados de relacionamento bancário e uma estimativa coerente de custo financeiro para antecipação de recebíveis.
+        </p>
+      </div>
+
+      <aside class="method-card">
+        <div>
+          <h3>Como ler este grid</h3>
+          <p>
+            Market share por player vem de relatório UBS BB divulgado em mar/2026, com leitura de jan/2026. Quando a companhia não divulga TPV Brasil, o campo fica como "n.d." ou usa proxy explicitado.
+          </p>
+          <div class="method-list">
+            <div class="method-item"><span class="dot"></span>Dado público: fonte direta ou relatório de mercado</div>
+            <div class="method-item"><span class="dot blue"></span>Estimativa: inferência a partir de funding e modelo</div>
+            <div class="method-item"><span class="dot green"></span>Sem dado: não forcei número onde não há base</div>
+          </div>
+        </div>
+        <p>Todos os links de fonte ficam na última coluna do grid e na seção de fontes.</p>
+      </aside>
+    </section>
+
+    <section class="metrics-grid" aria-label="Indicadores principais">
+      <article class="card">
+        <div class="metric-top">
+          <span class="metric-label">Mercado de cartões</span>
+          <span class="metric-icon"><i data-lucide="bar-chart-3"></i></span>
+        </div>
+        <strong class="metric-value">R$ 4,5 tri</strong>
+        <div class="delta good">+10,1% em 2025</div>
+        <p class="metric-note">Volume total com cartões no Brasil, segundo ABECS/Panorama ABECS.</p>
+      </article>
+
+      <article class="card">
+        <div class="metric-top">
+          <span class="metric-label">Top 6 por volume</span>
+          <span class="metric-icon"><i data-lucide="pie-chart"></i></span>
+        </div>
+        <strong class="metric-value">81%</strong>
+        <div class="delta blue">UBS BB jan/26</div>
+        <p class="metric-note">Rede, Cielo, PagBank, Stone, Mercado Pago e Getnet; demais players somam 19%.</p>
+      </article>
+
+      <article class="card">
+        <div class="metric-top">
+          <span class="metric-label">Funding mais defensivo</span>
+          <span class="metric-icon"><i data-lucide="shield-check"></i></span>
+        </div>
+        <strong class="metric-value">90%-100%</strong>
+        <div class="delta good">CDI estimado</div>
+        <p class="metric-note">Bancões tendem a ter vantagem estrutural via depósitos, conta PJ e tesouraria.</p>
+      </article>
+
+      <article class="card">
+        <div class="metric-top">
+          <span class="metric-label">Maior aceleração</span>
+          <span class="metric-icon"><i data-lucide="trending-up"></i></span>
+        </div>
+        <strong class="metric-value">Fintechs</strong>
+        <div class="delta warn">Longtail e SMB</div>
+        <p class="metric-note">CloudWalk, Mercado Pago, Stone/Ton e PagBank puxam aquisição digital e experiência.</p>
+      </article>
+    </section>
+
+    <section class="card control-card" aria-label="Filtros do grid">
+      <div class="field">
+        <label for="searchInput">Buscar player, banco, canal ou ponto forte</label>
+        <input id="searchInput" type="search" placeholder="Ex.: Stone, Itaú, longtail, FIDC, aluguel">
+      </div>
+      <div class="field">
+        <label for="segmentFilter">Segmento</label>
+        <select id="segmentFilter">
+          <option value="all">Todos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="modelFilter">Modelo</label>
+        <select id="modelFilter">
+          <option value="all">Todos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="confidenceFilter">Confiança funding</label>
+        <select id="confidenceFilter">
+          <option value="all">Todas</option>
+          <option value="Alta">Alta</option>
+          <option value="Média-alta">Média-alta</option>
+          <option value="Média">Média</option>
+          <option value="Média-baixa">Média-baixa</option>
+          <option value="Baixa">Baixa</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" id="sortBtn"><i data-lucide="arrow-down-wide-narrow"></i>Ordenar share</button>
+      </div>
+    </section>
+
+    <section class="charts-grid">
+      <article class="card">
+        <div class="card-title">
+          <div>
+            <h3>Participação por volume transacionado</h3>
+            <p>Fonte principal: UBS BB, jan/2026, reportado por Let's Money.</p>
+          </div>
+          <span class="badge blue">Top players</span>
+        </div>
+        <div class="chart-box"><canvas id="shareChart"></canvas></div>
+      </article>
+
+      <article class="card">
+        <div class="card-title">
+          <div>
+            <h3>Custo financeiro estimado</h3>
+            <p>Ponto médio da faixa estimada como % do CDI; menor é melhor para antecipação.</p>
+          </div>
+          <span class="badge warn">Estimativa</span>
+        </div>
+        <div class="chart-box"><canvas id="fundingChart"></canvas></div>
+      </article>
+    </section>
+
+    <section class="grid-section">
+      <article class="card">
+        <div class="card-title">
+          <div>
+            <h3>Grid de players</h3>
+            <p>Use a busca e os filtros para isolar bancos, fintechs, longtail, SMB, big sellers ou modelos de maquininha.</p>
+          </div>
+          <span class="badge gray" id="rowCount">0 players</span>
+        </div>
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th class="sticky-col">Player</th>
+                <th>Banco / modelo de negócio</th>
+                <th>Share volume</th>
+                <th>Share usuários</th>
+                <th>Segmento mais presente</th>
+                <th>Crescimento / tração recente</th>
+                <th>Custo financeiro estimado</th>
+                <th>Canal de captação</th>
+                <th>CAC</th>
+                <th>Device</th>
+                <th>Pontos fortes</th>
+                <th>Pontos fracos</th>
+                <th>Fontes</th>
+              </tr>
+            </thead>
+            <tbody id="playersBody"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="notes-grid">
+      <article class="card">
+        <div class="card-title">
+          <div>
+            <h3>Hipóteses de funding</h3>
+            <p>A faixa em CDI não é divulgada pelas empresas; é uma estimativa ancorada no tipo de captação e no balanço.</p>
+          </div>
+          <span class="badge warn">Modelo analítico</span>
+        </div>
+        <table class="assumption-table">
+          <thead>
+            <tr>
+              <th>Tipo de player</th>
+              <th>Racional da estimativa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Bancões</td>
+              <td>Depósitos baratos, carteira PJ, LCI/LCA/LF e tesouraria permitem custo próximo ou abaixo do CDI marginal.</td>
+            </tr>
+            <tr>
+              <td>Fintech com banco digital</td>
+              <td>Melhora com saldos de conta, mas ainda depende de FIDC, securitização, funding institucional e remuneração para atrair depósitos.</td>
+            </tr>
+            <tr>
+              <td>FIDC-heavy</td>
+              <td>Antecipação escalada por FIDC tende a carregar spread acima de bancão, mesmo com boa qualidade de recebíveis.</td>
+            </tr>
+            <tr>
+              <td>Enterprise global</td>
+              <td>Menos comparável: monetiza processamento, gateway, risco, omnichannel e serviços globais, não funding local massivo.</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <div class="card-title">
+          <div>
+            <h3>Leituras executivas</h3>
+            <p>Principais conclusões para estratégia comercial, pricing e aquisição de sellers.</p>
+          </div>
+          <span class="badge good">Síntese</span>
+        </div>
+        <div class="insight-list">
+          <div class="insight">
+            <span class="dot"></span>
+            <div><strong>Bancos ganharam de novo poder competitivo.</strong><span>Rede, Cielo e Getnet conseguem embalar adquirência com conta, crédito, domicílio bancário e relacionamento PJ.</span></div>
+          </div>
+          <div class="insight">
+            <span class="dot blue"></span>
+            <div><strong>Fintechs vencem quando o CAC é nativo.</strong><span>Mercado Pago via marketplace, Ton/PagBank por aquisição digital e CloudWalk por produto leve reduzem fricção no longtail.</span></div>
+          </div>
+          <div class="insight">
+            <span class="dot green"></span>
+            <div><strong>O funding vira preço e sobrevivência.</strong><span>Em Selic alta, quem capta mais barato consegue bancar antecipação e preço sem destruir margem.</span></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-title">
+        <div>
+          <h3>Fontes principais</h3>
+          <p>Links usados para os dados exibidos no grid. Quando o dado é estimado, a coluna de fontes mostra a base factual da inferência.</p>
+        </div>
+      </div>
+      <ul class="footnotes" id="sourceList"></ul>
+    </section>
+
+    <footer>
+      Preparado em 28/05/2026. Participações de mercado: UBS BB jan/2026 quando disponível. Custo financeiro e CAC são estimativas analíticas, não guidance das companhias. "n.d." indica dado não divulgado publicamente em base comparável.
+    </footer>
+  </main>
+
+  <div class="toast" id="toast">Pronto</div>
+
+  <script>
+    const sources = {
+      abecs2025: { label:"ABECS 2025", title:"Panorama ABECS: cartões movimentam R$ 4,5 tri em 2025", url:"https://panoramaabecs.com.br/economia-pagamentos-cartoes-brasil-2025-dados-abecs/" },
+      abecs2024: { label:"ABECS 2024", title:"Panorama ABECS: cartões superam R$ 4 tri em 2024", url:"https://panoramaabecs.com.br/uso-de-cartoes-supera-4-trilhoes-de-reais-em-2024/" },
+      ubs: { label:"UBS BB", title:"Let's Money: Rede lidera volume de adquirentes; dados UBS BB jan/2026", url:"https://www.letsmoney.com.br/noticias/rede-itau-lidera-volume-adquirentes/" },
+      itau2024: { label:"Itaú 2024", title:"Itaú 20-F / Reference Form 2024: Rede processou R$ 917,9 bi e teve 22,3% de share", url:"https://www.marketscreener.com/news/itau-unibanco-s-a-reference-form-2024-v4-ce7c5ed8d189f027" },
+      itauFunding: { label:"Itaú funding", title:"Itaú SEC filing: breakdown das fontes de funding 2024", url:"https://www.sec.gov/Archives/edgar/data/1132597/000113259726000170/referenceform-iuhv13.htm" },
+      redeDevice: { label:"Rede device", title:"Itaú Empresas: Laranjinha powered by Rede, isenção conforme faturamento", url:"https://www.itau.com.br/empresas/pagamentos-recebimentos/maquininha-cartao/" },
+      cielo2024: { label:"Cielo 2024", title:"Cielo Integrated Annual Report 2024: volume financeiro R$ 837,5 bi", url:"https://www.cielo.com.br/docs/sustentabilidade/2024/eng/Integrated_Annual_Report_2024.pdf" },
+      cieloOwnership: { label:"Cielo controle", title:"Cielo RI: composição acionária BB/Bradesco", url:"https://ri.cielo.com.br/en/about-cielo/ownership-breakdown/" },
+      cieloDevice: { label:"Cielo device", title:"Cielo planos: aluguel, comodato e metas de faturamento", url:"https://www.cielo.com.br/planos/" },
+      pags2024: { label:"PagBank 2024", title:"PagBank 4Q24: TPV R$ 518,4 bi, active merchants 6,3 mi", url:"https://www.sec.gov/Archives/edgar/data/1712807/000162828025006745/a080_pagseguroxerx6k.htm" },
+      pags2025: { label:"PagBank 2025", title:"PagBank Corporate Presentation 4Q25: TPV R$ 531 bi e funding R$ 44,7 bi", url:"https://quartr.com/events/pagseguro-digital-ltd-pags-corporate-presentation_3sMuUznm" },
+      pagsDevice: { label:"PagBank device", title:"PagBank: maquininhas sem cobrança de aluguel", url:"https://pagbank.com.br/para-seu-negocio/maquininhas" },
+      stone2024: { label:"Stone 2024", title:"StoneCo 20-F 2024: TPV R$ 516,2 bi, +17,8%", url:"https://www.sec.gov/Archives/edgar/data/1745431/000162828025019653/stne-20241231.htm" },
+      stone2025: { label:"Stone 2025", title:"StoneCo 20-F 2025: TPV R$ 560,9 bi e 4,8 mi clientes ativos", url:"https://www.stocktitan.net/sec-filings/STNE/20-f-stone-co-ltd-files-annual-report-foreign-issuer-325fa28485e7.html" },
+      stoneFunding: { label:"Stone funding", title:"StoneCo 4Q24: depósitos de varejo R$ 8,7 bi", url:"https://www.sec.gov/Archives/edgar/data/1745431/000129281425000956/ex99-1.htm" },
+      stoneMoodys: { label:"Moody's Stone", title:"Moody's Local: captações totais Stone SCFI e indicadores 2022-9M25", url:"https://moodyslocal.com.br/wp-content/uploads/2026/01/RelatorioDeCredito_Stone_Jan26_MLBR.pdf" },
+      meliBrasil: { label:"Meli Brasil", title:"NeoFeed/Itaú BBA: Mercado Pago Brasil TPV R$ 320 bi e 7,7% share em 2024", url:"https://neofeed.com.br/negocios/mercado-pago-avanca-e-ja-supera-lucro-de-stone-e-pagbank-em-adquirencia-diz-itau-bba/" },
+      meli2025: { label:"MELI 2025", title:"Mercado Libre 2025: acquiring TPV US$ 55,7 bi, +33%", url:"https://www.nasdaq.com/press-release/mercado-libre-caps-stellar-2025-performance-45-yoy-revenue-growth-q4-strategic" },
+      meliDevice: { label:"MP device", title:"Mercado Pago: maquininha sem aluguel, compra única; tabela também traz aluguel Point Smart", url:"https://empreendedores.mercadopago.com.br/maquininha-sem-aluguel" },
+      getnet2025: { label:"Getnet 2025", title:"Santander Payments 2025: Getnet TPV EUR 238 bi, +14%", url:"https://www.santander.com/content/dam/santander-com/es/documentos/resultados-trimestrales/2025/4t/rt-4t-2025-payments-es.pdf" },
+      getnetInst: { label:"Getnet BR", title:"Getnet institucional: histórico Brasil, 700 mil clientes e 3o maior adquirente LatAm", url:"https://site.getnet.com.br/institucional/" },
+      getnetDevice: { label:"Getnet device", title:"Santander/Getnet: aluguel zero e antecipação sujeita a aprovação", url:"https://www.santander.com.br/getnet/" },
+      safraDevice: { label:"SafraPay device", title:"SafraPay: modelos de maquininha e aluguel grátis por faturamento", url:"https://www.safrapay.com.br/maquininhas.html" },
+      cloud2024: { label:"CloudWalk 2024", title:"Finsiders: CloudWalk receita R$ 2,7 bi e lucro R$ 339 mi em 2024", url:"https://finsidersbrasil.com.br/giro-noticias/dona-da-infinitepay-tem-receita-de-r-27-bi-e-lucra-r-339-milhoes-em-2024/" },
+      cloud2025: { label:"CloudWalk 2025", title:"InfinitePay newsroom: CloudWalk receita R$ 5,44 bi e 6,3 mi empreendedores ativos", url:"https://www.infinitepay.io/newsroom/cloudwalk-alcanca-r-7-16-bilhoes-em-receita-anualizada-e-r-10-milhoes-de-receita-por-funcionario-em-2025" },
+      cloudFidc: { label:"CloudWalk FIDC", title:"CloudWalk: R$ 1,6 bi em FIDCs para antecipação de recebíveis", url:"https://www.cloudwalk.io/newsroom/cloudwalk-owner-of-infinitepay-raises-fidcs-to-expand-sme-operations" },
+      sumup: { label:"SumUp", title:"SumUp: taxas, sem aluguel ou mensalidade", url:"https://www.sumup.com/pt-br/maquininhas/taxas/" },
+      adyen: { label:"Adyen", title:"Adyen/Wake: unified commerce e pagamentos nacionais/internacionais para varejistas", url:"https://www.adyen.com/pt_BR/imprensa-e-midia/wake-e-adyen-vao-oferecer-mais-solucoes-de-pagamento-aos-varejistas" },
+      fiserv: { label:"Fiserv", title:"Fiserv Brasil: Bin, azulzinha CAIXA, Sicredi e soluções de adquirência", url:"https://www.fiserv.com.br/pt-br/adquirencia/" },
+      fiservPix: { label:"Fiserv Pix", title:"Fiserv: 7% de transações Pix P2B passam por sua plataforma em 2024", url:"https://investors.fiserv.com/news-releases/news-release-details/fiserv-enhances-its-pix-hub-technology-offer-brazilian-retailers" },
+      vero2024: { label:"Vero 2024", title:"Vero/Banrisul: R$ 51,1 bi em transações em 2024", url:"https://www.redevero.com.br/bod/link/quem-somos.html" },
+      vero2023: { label:"Vero 2023", title:"Jornal do Comércio: Vero R$ 46,5 bi em 2023, +8,2%", url:"https://www.jornaldocomercio.com/economia/2024/02/1142317-banrisul-encerra-2023-com-lucro-liquido-de-rs-8711-milhoes.html" }
+    };
+
+    const players = [
+      {
+        name:"Rede",
+        initials:"RD",
+        modelGroup:"Banco incumbente",
+        bankModel:"Itaú / Redecard. Modelo integrado a conta PJ, crédito, cash management e relacionamento bancário.",
+        shareVolume:18,
+        shareUsers:25,
+        shareLabel:"18%",
+        usersLabel:"25%",
+        segment:"SMB + big sellers bancarizados",
+        segmentKey:"SMB / Big sellers",
+        growth:"R$ 917,9 bi processados em 2024, +6,9% vs 2023; Itaú reportou liderança em adquirência com 22,3% de share em crédito/débito em 2024. UBS BB mostrou 18% de volume em jan/26.",
+        funding:"90%-97% CDI",
+        fundingMid:93.5,
+        confidence:"Alta",
+        channel:"Itaú Empresas, gerentes PJ, app/super app, pacote conta + maquininha + crédito.",
+        cac:"Baixo marginal em clientes Itaú; custo comercial embutido na rede bancária e não divulgado por seller.",
+        device:"Laranjinha powered by Rede; aluguel/isenção por faturamento, com oferta sem aluguel a partir de R$ 20 mil/mês em página Itaú.",
+        strengths:["Funding e balanço do Itaú","Distribuição bancária ampla","Força em varejo organizado, TEF e big sellers"],
+        weaknesses:["Menor apelo orgânico no longtail","Risco de competir por preço contra fintechs digitais"],
+        sourceIds:["ubs","itau2024","itauFunding","redeDevice"]
+      },
+      {
+        name:"Cielo",
+        initials:"CI",
+        modelGroup:"Banco incumbente",
+        bankModel:"Controlada por Banco do Brasil e Bradesco após fechamento de capital; adquirente historicamente líder.",
+        shareVolume:17,
+        shareUsers:28,
+        shareLabel:"17%",
+        usersLabel:"28%",
+        segment:"Big sellers + SMB bancarizado",
+        segmentKey:"SMB / Big sellers",
+        growth:"Volume financeiro de R$ 837,5 bi em 2024, +2,6% vs 2023. UBS BB indicou 17% de volume e 28% de usuários em jan/26.",
+        funding:"92%-100% CDI",
+        fundingMid:96,
+        confidence:"Média-alta",
+        channel:"BB e Bradesco, carteira PJ, agências, gerentes e canais digitais dos bancos.",
+        cac:"Baixo a médio; forte reaproveitamento de carteira bancária, mas com estrutura comercial pesada.",
+        device:"Planos com aluguel, comodato e condições negociáveis; Cielo divulga aluguel grátis quando meta de faturamento é atingida.",
+        strengths:["Escala operacional e confiabilidade","Rede BB/Bradesco","Boa presença em grandes contas e vouchers"],
+        weaknesses:["Crescimento recente baixo","Menos tração de marca no micro/longtail"],
+        sourceIds:["ubs","cielo2024","cieloOwnership","cieloDevice"]
+      },
+      {
+        name:"PagBank / PagSeguro",
+        initials:"PB",
+        modelGroup:"Fintech com banco digital",
+        bankModel:"Banco digital e adquirência independente do UOL/PagSeguro; monetiza pagamentos, conta, crédito e serviços financeiros.",
+        shareVolume:17,
+        shareUsers:26,
+        shareLabel:"17%",
+        usersLabel:"26%",
+        segment:"Longtail + SMB + online",
+        segmentKey:"Longtail / SMB",
+        growth:"TPV R$ 395,1 bi em 2023, R$ 518,4 bi em 2024 (+31,2%) e R$ 531 bi em 2025. Em 3T25, TPV caiu -4,7% a/a por repricing e ambiente macro.",
+        funding:"95%-108% CDI",
+        fundingMid:101.5,
+        confidence:"Média",
+        channel:"Performance digital, app PagBank, revendedores, venda de maquininhas e cross-sell para base de clientes.",
+        cac:"Não divulgado; tende a médio/alto no longtail por mídia e device subsidiado, compensado por banco digital e base de 34 mi clientes.",
+        device:"Forte modelo de venda de POS sem aluguel; site oficial informa compra da maquininha e ausência de cobrança de aluguel.",
+        strengths:["Marca forte entre pequenos vendedores","Conta digital e liquidez instantânea","Grande rede de 6,3 mi merchants em 2024"],
+        weaknesses:["Funding mais sensível à Selic que bancões","Desaceleração em 2025 após repricing"],
+        sourceIds:["ubs","pags2024","pags2025","pagsDevice"]
+      },
+      {
+        name:"Stone / Ton / Pagar.me",
+        initials:"ST",
+        modelGroup:"Fintech com banco digital",
+        bankModel:"StoneCo independente; Stone foca SMB, Ton foca longtail e Pagar.me foca online/plataformas.",
+        shareVolume:15,
+        shareUsers:22,
+        shareLabel:"15%",
+        usersLabel:"22%",
+        segment:"SMB + longtail + online",
+        segmentKey:"Longtail / SMB",
+        growth:"TPV R$ 438,3 bi em 2023, R$ 516,2 bi em 2024 (+17,8%) e R$ 560,9 bi em 2025. Clientes ativos de pagamentos chegaram a 4,8 mi em 2025.",
+        funding:"100%-112% CDI",
+        fundingMid:106,
+        confidence:"Média",
+        channel:"Hubs e consultores Stone, inside sales, Ton digital/performance, Pagar.me em e-commerce e plataformas.",
+        cac:"Médio/alto no SMB por venda consultiva; menor no Ton digital. Não há CAC por seller divulgado.",
+        device:"Stone combina aluguel/assinatura, serviços e POS; Ton tende a modelo de compra/adesão sem aluguel em planos digitais.",
+        strengths:["Serviço forte no SMB","Ton melhora captura do micro seller","Banking e depósitos reduzem custo de funding gradualmente"],
+        weaknesses:["Funding ainda inferior ao de bancões","Maior custo comercial no SMB consultivo"],
+        sourceIds:["ubs","stone2024","stone2025","stoneFunding","stoneMoodys"]
+      },
+      {
+        name:"Mercado Pago",
+        initials:"MP",
+        modelGroup:"Ecossistema / fintech",
+        bankModel:"Fintech do Mercado Livre; adquirência, wallet, conta, crédito, marketplace e serviços para sellers.",
+        shareVolume:9,
+        shareUsers:14,
+        shareLabel:"9%",
+        usersLabel:"14%",
+        segment:"Longtail, sellers do marketplace e online",
+        segmentKey:"Longtail / Online",
+        growth:"Itaú BBA estimou TPV Brasil de R$ 320 bi em 2024 (+31%) e share de 7,7%. Mercado Libre reportou acquiring TPV LatAm de US$ 55,7 bi em 2025, +33% em USD.",
+        funding:"95%-110% CDI",
+        fundingMid:102.5,
+        confidence:"Média-baixa",
+        channel:"Marketplace Mercado Livre, app Mercado Pago, wallet, checkout, base de sellers e campanhas digitais.",
+        cac:"Estruturalmente baixo em sellers do ecossistema; maior para aquisição fora do marketplace. Não divulgado.",
+        device:"Point e Tap; modelo majoritário de compra sem aluguel, mas tabela oficial também lista aluguel para Point Smart em certas ofertas.",
+        strengths:["CAC nativo pelo marketplace","Engajamento de wallet e crédito","Crescimento alto fora da plataforma"],
+        weaknesses:["Menor legado em TEF/large retail físico","Funding local menos transparente"],
+        sourceIds:["ubs","meliBrasil","meli2025","meliDevice"]
+      },
+      {
+        name:"Getnet",
+        initials:"GN",
+        modelGroup:"Banco incumbente",
+        bankModel:"Santander / PagoNxt. Adquirência global do grupo, com Brasil como mercado relevante.",
+        shareVolume:5,
+        shareUsers:9,
+        shareLabel:"5%",
+        usersLabel:"9%",
+        segment:"SMB bancarizado + grandes contas Santander",
+        segmentKey:"SMB / Big sellers",
+        growth:"UBS BB mostrou 5% de volume em jan/26. Santander reportou Getnet global com EUR 222 bi de TPV em 2024 e EUR 238 bi em 2025 (+14%); Brasil não foi isolado nesse relatório.",
+        funding:"93%-101% CDI",
+        fundingMid:97,
+        confidence:"Média",
+        channel:"Santander Empresas, conta PJ, gerentes, canais Getnet e parcerias.",
+        cac:"Baixo em clientes Santander; médio fora da carteira bancária. Não divulgado.",
+        device:"Ofertas de aluguel zero e maquininha + conta integrada; antecipação via cessão de recebíveis sujeita a aprovação.",
+        strengths:["Funding e cross-sell Santander","Plataforma global PagoNxt","Boa integração com conta PJ"],
+        weaknesses:["Share menor que pares bancários","Menos visibilidade de TPV Brasil após consolidação global"],
+        sourceIds:["ubs","getnet2025","getnetInst","getnetDevice"]
+      },
+      {
+        name:"SafraPay",
+        initials:"SF",
+        modelGroup:"Banco incumbente",
+        bankModel:"Banco Safra; adquirência conectada a Conta PJ, crédito, antecipação e relacionamento empresarial.",
+        shareVolume:null,
+        shareUsers:null,
+        shareLabel:"n.d.",
+        usersLabel:"n.d.",
+        segment:"SMB/PJ com relação bancária",
+        segmentKey:"SMB / Big sellers",
+        growth:"Sem TPV público recente em base comparável. Entra no bloco de 'demais players' no consolidado UBS BB.",
+        funding:"95%-105% CDI",
+        fundingMid:100,
+        confidence:"Média",
+        channel:"Carteira Safra Empresas, relacionamento bancário, conta PJ e oferta digital de maquininhas.",
+        cac:"Baixo em clientes Safra; médio para aquisição aberta. Não divulgado.",
+        device:"SafraPay divulga modelos com aluguel grátis conforme faturamento, incluindo referência de R$ 25 mil/mês para isenção em determinadas ofertas.",
+        strengths:["Banco sólido por trás","Boa capacidade de cross-sell financeiro","Potencial em PJ de maior volume"],
+        weaknesses:["Pouca transparência pública de TPV/share","Marca menos forte no longtail"],
+        sourceIds:["safraDevice","ubs"]
+      },
+      {
+        name:"InfinitePay / CloudWalk",
+        initials:"IP",
+        modelGroup:"Fintech FIDC-heavy",
+        bankModel:"Fintech independente; CloudWalk opera InfinitePay e usa FIDCs para financiar antecipação de recebíveis.",
+        shareVolume:null,
+        shareUsers:null,
+        shareLabel:"n.d.",
+        usersLabel:"n.d.",
+        segment:"Longtail + SMB digital",
+        segmentKey:"Longtail / SMB",
+        growth:"Receita R$ 2,7 bi em 2024 (+67%) e R$ 5,44 bi em 2025 (+104% em base neutra de câmbio). Empreendedores ativos no Brasil saltaram de 3 mi para 6,3 mi em 2025.",
+        funding:"105%-125% CDI",
+        fundingMid:115,
+        confidence:"Média",
+        channel:"Produto digital, app InfinitePay, Tap to Pay, indicação, mídia digital e preço agressivo.",
+        cac:"Provavelmente baixo/médio por aquisição digital e produto self-service; não divulgado.",
+        device:"Foco crescente em Tap to Pay e POS leve; redução de dependência de hardware tradicional.",
+        strengths:["Crescimento muito rápido","Eficiência operacional e tecnologia/IA","Proposta de preço agressiva"],
+        weaknesses:["Funding mais caro que bancões","Menor transparência de TPV e share"],
+        sourceIds:["cloud2024","cloud2025","cloudFidc"]
+      },
+      {
+        name:"SumUp",
+        initials:"SU",
+        modelGroup:"Fintech internacional",
+        bankModel:"Fintech europeia; operação brasileira focada em microempreendedores, POS simples e conta digital.",
+        shareVolume:null,
+        shareUsers:null,
+        shareLabel:"n.d.",
+        usersLabel:"n.d.",
+        segment:"MEI, autônomos e micro sellers",
+        segmentKey:"Longtail",
+        growth:"Sem TPV Brasil público em base comparável. Relevância concentrada em longtail e micro sellers.",
+        funding:"110%-130% CDI",
+        fundingMid:120,
+        confidence:"Baixa",
+        channel:"Aquisição digital, busca orgânica, comparadores de maquininha e venda direta.",
+        cac:"Médio no digital; depende de performance e conversão por preço. Não divulgado.",
+        device:"Modelo sem aluguel ou mensalidade; cliente paga taxas quando vende.",
+        strengths:["Simplicidade para micro sellers","Sem mensalidade","Baixa fricção de entrada"],
+        weaknesses:["Menor escala em SMB médio e enterprise","Funding e share pouco transparentes"],
+        sourceIds:["sumup"]
+      },
+      {
+        name:"Adyen",
+        initials:"AD",
+        modelGroup:"Enterprise global",
+        bankModel:"Plataforma global de pagamentos; foco em e-commerce, omnichannel, acquiring e orquestração para grandes merchants.",
+        shareVolume:null,
+        shareUsers:null,
+        shareLabel:"n.d.",
+        usersLabel:"n.d.",
+        segment:"Big sellers e enterprise digital",
+        segmentKey:"Big sellers / Online",
+        growth:"Não divulga TPV Brasil isolado. Crescimento deve ser lido por expansão global e wins enterprise no Brasil, não por share público de maquininha.",
+        funding:"n.a.",
+        fundingMid:null,
+        confidence:"Baixa",
+        channel:"Vendas enterprise, parcerias com plataformas, e-commerce, unified commerce e times globais de contas.",
+        cac:"Alto por ciclo enterprise, mas contrato tende a ter LTV elevado. Não divulgado.",
+        device:"Terminais e unified commerce, mais relevante para varejo omnichannel que para maquininha de longtail.",
+        strengths:["Plataforma global e aprovação","Forte em enterprise cross-border","Dados unificados de canais"],
+        weaknesses:["Pouco competitiva no longtail","Ciclo de venda mais longo e customizado"],
+        sourceIds:["adyen"]
+      },
+      {
+        name:"Bin / Fiserv",
+        initials:"BN",
+        modelGroup:"Processador / adquirente global",
+        bankModel:"Fiserv opera adquirência no Brasil com Bin, azulzinha CAIXA, Sicredi e soluções de processamento/TEF.",
+        shareVolume:null,
+        shareUsers:null,
+        shareLabel:"n.d.",
+        usersLabel:"n.d.",
+        segment:"SMB, franquias, parceiros e varejo físico",
+        segmentKey:"SMB / Big sellers",
+        growth:"Sem TPV Brasil público comparável. Fiserv informou que 7% das transações Pix P2B no Brasil passavam por sua plataforma em 2024.",
+        funding:"100%-115% CDI",
+        fundingMid:107.5,
+        confidence:"Baixa",
+        channel:"Parcerias bancárias, canais de parceiros, TEF, franquias e distribuição B2B.",
+        cac:"Variável; parte via parceiros reduz CAC direto, mas divide economics. Não divulgado.",
+        device:"POS Bin e marcas parceiras; oferta física, digital, TEF e Tap on Phone.",
+        strengths:["Tecnologia global de processamento","Parcerias com bancos e bandeiras","Boa presença em TEF e soluções B2B"],
+        weaknesses:["Baixa transparência de share/TPV","Marca menos visível para seller final"],
+        sourceIds:["fiserv","fiservPix"]
+      },
+      {
+        name:"Vero / Banrisul",
+        initials:"VR",
+        modelGroup:"Banco regional",
+        bankModel:"Rede de adquirência da Banrisul Pagamentos; força regional no Rio Grande do Sul.",
+        shareVolume:null,
+        shareUsers:null,
+        shareLabel:"n.d.",
+        usersLabel:"n.d.",
+        segment:"SMB regional e clientes Banrisul",
+        segmentKey:"SMB regional",
+        growth:"R$ 46,5 bi transacionados em 2023 (+8,2%) e R$ 51,1 bi em 2024 (+9,9%). Vero declara liderança relevante no RS.",
+        funding:"98%-110% CDI",
+        fundingMid:104,
+        confidence:"Média-baixa",
+        channel:"Agências Banrisul, relacionamento regional, Banricompras e canais Vero.",
+        cac:"Baixo na carteira regional Banrisul; expansão nacional teria CAC maior. Não divulgado.",
+        device:"POS Vero e soluções integradas à base Banrisul; modelo de condições comerciais por perfil.",
+        strengths:["Força regional e banco por trás","Conhecimento do mercado gaúcho","Base Banrisul/Banricompras"],
+        weaknesses:["Escala nacional limitada","Baixa comparabilidade com líderes nacionais"],
+        sourceIds:["vero2024","vero2023","abecs2024"]
+      }
+    ];
+
+    const els = {
+      body:document.getElementById("playersBody"),
+      search:document.getElementById("searchInput"),
+      segment:document.getElementById("segmentFilter"),
+      model:document.getElementById("modelFilter"),
+      confidence:document.getElementById("confidenceFilter"),
+      rowCount:document.getElementById("rowCount"),
+      toast:document.getElementById("toast")
+    };
+
+    let sortDesc = true;
+    let shareChart;
+    let fundingChart;
+
+    function fmtShare(value, label) {
+      if (value == null) return `<span class="badge gray">${label}</span>`;
+      return `
+        <div class="share-cell">
+          <div class="share-top"><span>${label}</span><span>${value.toFixed(0)}%</span></div>
+          <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.min(value / 20 * 100,100)}%"></div></div>
+        </div>
+      `;
+    }
+
+    function sourceLinks(ids) {
+      return ids.map(id => {
+        const src = sources[id];
+        if (!src) return "";
+        return `<a class="source-pill" href="${src.url}" target="_blank" rel="noopener" title="${src.title}">${src.label}</a>`;
+      }).join("");
+    }
+
+    function listItems(items) {
+      return `<ul class="list">${items.map(item => `<li>${item}</li>`).join("")}</ul>`;
+    }
+
+    function rowTemplate(player) {
+      const fundingBadge = player.confidence === "Alta" || player.confidence === "Média-alta" ? "good" : player.confidence === "Média" ? "warn" : "gray";
+      return `
+        <tr>
+          <td class="sticky-col">
+            <div class="player-cell">
+              <span class="avatar">${player.initials}</span>
+              <div>
+                <div class="player-name">${player.name}</div>
+                <div class="player-sub">${player.modelGroup}</div>
+              </div>
+            </div>
+          </td>
+          <td>${player.bankModel}</td>
+          <td>${fmtShare(player.shareVolume, player.shareLabel)}</td>
+          <td>${fmtShare(player.shareUsers, player.usersLabel)}</td>
+          <td><span class="badge blue">${player.segment}</span></td>
+          <td>${player.growth}</td>
+          <td><strong style="color:#111827">${player.funding}</strong><br><span class="badge ${fundingBadge}" style="margin-top:6px">${player.confidence}</span></td>
+          <td>${player.channel}</td>
+          <td>${player.cac}</td>
+          <td>${player.device}</td>
+          <td>${listItems(player.strengths)}</td>
+          <td>${listItems(player.weaknesses)}</td>
+          <td><div class="sources">${sourceLinks(player.sourceIds)}</div></td>
+        </tr>
+      `;
+    }
+
+    function getFilteredPlayers() {
+      const term = els.search.value.trim().toLowerCase();
+      const segment = els.segment.value;
+      const model = els.model.value;
+      const confidence = els.confidence.value;
+
+      const filtered = players.filter(player => {
+        const haystack = [
+          player.name,
+          player.bankModel,
+          player.segment,
+          player.growth,
+          player.funding,
+          player.channel,
+          player.cac,
+          player.device,
+          player.strengths.join(" "),
+          player.weaknesses.join(" ")
+        ].join(" ").toLowerCase();
+
+        return (!term || haystack.includes(term))
+          && (segment === "all" || player.segmentKey === segment)
+          && (model === "all" || player.modelGroup === model)
+          && (confidence === "all" || player.confidence === confidence);
+      });
+
+      return filtered.sort((a,b) => {
+        const av = a.shareVolume == null ? -1 : a.shareVolume;
+        const bv = b.shareVolume == null ? -1 : b.shareVolume;
+        return sortDesc ? bv - av : av - bv;
+      });
+    }
+
+    function renderTable() {
+      const filtered = getFilteredPlayers();
+      els.body.innerHTML = filtered.map(rowTemplate).join("");
+      els.rowCount.textContent = `${filtered.length} players`;
+      renderCharts(filtered);
+    }
+
+    function populateFilters() {
+      [...new Set(players.map(p => p.segmentKey))].sort().forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        els.segment.appendChild(option);
+      });
+
+      [...new Set(players.map(p => p.modelGroup))].sort().forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        els.model.appendChild(option);
+      });
+    }
+
+    function renderSources() {
+      const list = document.getElementById("sourceList");
+      list.innerHTML = Object.entries(sources).map(([id, src]) => `
+        <li><strong>${src.label}</strong><a href="${src.url}" target="_blank" rel="noopener">${src.title}</a></li>
+      `).join("");
+    }
+
+    function renderCharts(currentPlayers) {
+      const sharePlayers = currentPlayers.filter(p => p.shareVolume != null);
+      const fundingPlayers = currentPlayers.filter(p => p.fundingMid != null);
+
+      const colors = ["#3483FA","#FFE600","#00A650","#7C3AED","#FF9F1C","#E53935","#111827","#94A3B8"];
+      const tooltipDefaults = {
+        backgroundColor:"#111827",
+        titleColor:"#F9FAFB",
+        bodyColor:"#D1D5DB",
+        padding:14,
+        cornerRadius:14,
+        titleFont:{ size:13, weight:"800" },
+        bodyFont:{ size:12 },
+        displayColors:true,
+        boxPadding:4
+      };
+
+      if (shareChart) shareChart.destroy();
+      if (fundingChart) fundingChart.destroy();
+
+      shareChart = new Chart(document.getElementById("shareChart"), {
+        type:"doughnut",
+        data:{
+          labels:[...sharePlayers.map(p => p.name), "Demais players"],
+          datasets:[{
+            data:[...sharePlayers.map(p => p.shareVolume), 19],
+            backgroundColor:[...colors.slice(0, sharePlayers.length), "#CBD5E1"],
+            borderColor:"#fff",
+            borderWidth:5,
+            hoverOffset:8
+          }]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          cutout:"66%",
+          plugins:{
+            legend:{ position:"right", labels:{ usePointStyle:true, padding:16, font:{ weight:"700" } } },
+            tooltip:tooltipDefaults,
+            datalabels:{
+              color:"#fff",
+              font:{ size:11, weight:"800" },
+              formatter:(v) => v >= 8 ? `${v}%` : ""
+            }
+          }
+        }
+      });
+
+      fundingChart = new Chart(document.getElementById("fundingChart"), {
+        type:"bar",
+        data:{
+          labels:fundingPlayers.map(p => p.name),
+          datasets:[{
+            label:"Ponto médio estimado (% CDI)",
+            data:fundingPlayers.map(p => p.fundingMid),
+            backgroundColor:fundingPlayers.map(p => p.fundingMid <= 100 ? "rgba(0,166,80,.82)" : p.fundingMid <= 108 ? "rgba(52,131,250,.82)" : "rgba(255,159,28,.85)"),
+            borderRadius:12,
+            borderSkipped:false
+          }]
+        },
+        options:{
+          indexAxis:"y",
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{
+            legend:{ display:false },
+            tooltip:tooltipDefaults,
+            datalabels:{
+              anchor:"end",
+              align:"right",
+              offset:5,
+              color:"#111827",
+              font:{ size:11, weight:"800" },
+              formatter:(v) => `${v.toFixed(1)}% CDI`
+            }
+          },
+          scales:{
+            x:{ display:false, min:85, max:132 },
+            y:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ weight:"700" } } }
+          }
+        }
+      });
+    }
+
+    function exportExcel() {
+      const rows = getFilteredPlayers().map(player => ({
+        Player:player.name,
+        "Banco/modelo":player.bankModel,
+        "Share volume":player.shareLabel,
+        "Share usuários":player.usersLabel,
+        "Segmento":player.segment,
+        "Crescimento":player.growth,
+        "Custo financeiro estimado":player.funding,
+        "Confiança funding":player.confidence,
+        "Canal de captação":player.channel,
+        "CAC":player.cac,
+        "Device":player.device,
+        "Pontos fortes":player.strengths.join("; "),
+        "Pontos fracos":player.weaknesses.join("; "),
+        "Fontes":player.sourceIds.map(id => sources[id]?.url || id).join("; ")
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Grid");
+      XLSX.writeFile(wb, "grid_adquirencia_brasil.xlsx");
+    }
+
+    async function copyLink() {
+      const url = window.location.href;
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast("Link copiado");
+      } catch {
+        showToast(url);
+      }
+    }
+
+    function showToast(text) {
+      els.toast.textContent = text;
+      els.toast.classList.add("show");
+      setTimeout(() => els.toast.classList.remove("show"), 2200);
+    }
+
+    function resetFilters() {
+      els.search.value = "";
+      els.segment.value = "all";
+      els.model.value = "all";
+      els.confidence.value = "all";
+      renderTable();
+    }
+
+    function bindEvents() {
+      ["input","change"].forEach(evt => {
+        els.search.addEventListener(evt, renderTable);
+        els.segment.addEventListener(evt, renderTable);
+        els.model.addEventListener(evt, renderTable);
+        els.confidence.addEventListener(evt, renderTable);
+      });
+
+      document.getElementById("exportBtn").addEventListener("click", exportExcel);
+      document.getElementById("copyBtn").addEventListener("click", copyLink);
+      document.getElementById("resetBtn").addEventListener("click", resetFilters);
+      document.getElementById("sortBtn").addEventListener("click", () => {
+        sortDesc = !sortDesc;
+        renderTable();
+      });
+    }
+
+    function init() {
+      if (window.ChartDataLabels) {
+        Chart.register(ChartDataLabels);
+      }
+      Chart.defaults.font.family = "'Inter', sans-serif";
+      populateFilters();
+      renderSources();
+      bindEvents();
+      renderTable();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
