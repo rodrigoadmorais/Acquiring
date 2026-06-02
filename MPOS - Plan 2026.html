@@ -4696,13 +4696,33 @@
             return { estoque, monthKeys };
         }
 
-        // Find the array index corresponding to monthNum (1-12) inside monthKeys
-        function stockMonthIdx(monthKeys, monthNum) {
+        // Find the array index corresponding to monthNum (1-12) and year inside monthKeys.
+        // monthKeys format: "Jan 25", "Apr 26", etc. (abbrev + 2-digit year)
+        // When year is provided, prefers the entry matching that year to avoid
+        // reading "Apr 25" when the user wants "Apr 26".
+        function stockMonthIdx(monthKeys, monthNum, year) {
             const PREFIXES = [
                 ['jan'],['feb','fev'],['mar'],['apr','abr'],['may','mai'],['jun'],
                 ['jul'],['aug','ago'],['sep','set'],['oct','out'],['nov'],['dec','dez']
             ];
-            const pref = PREFIXES[monthNum - 1];
+            const pref  = PREFIXES[monthNum - 1];
+            const yr2   = year ? String(year).slice(-2) : null;   // "2026" → "26"
+            const yr4   = year ? String(year) : null;             // "2026"
+
+            // First pass: try to find an entry matching BOTH month and year
+            if (yr2) {
+                const exactIdx = monthKeys.findIndex(k => {
+                    const parts    = k.trim().toLowerCase().split(/\s+/);
+                    const mPart    = parts[0];
+                    const yPart    = parts[1] || null;
+                    const monthOk  = pref.some(p => mPart === p || mPart.startsWith(p.substring(0, 3)));
+                    if (!monthOk) return false;
+                    return yPart === yr2 || yPart === yr4;
+                });
+                if (exactIdx >= 0) return exactIdx;
+            }
+
+            // Fallback: month only (keys without year, or year not provided)
             return monthKeys.findIndex(k => {
                 const kl = k.trim().toLowerCase().split(/\s+/)[0];
                 return pref.some(p => kl === p || kl.startsWith(p.substring(0, 3)));
@@ -4735,8 +4755,9 @@
             let prevMonthNum = monthNum > 1 ? monthNum - 1 : null;
 
             if (stockParsed) {
-                const idxCurr = stockMonthIdx(stockParsed.monthKeys, monthNum);
-                const idxPrev = prevMonthNum ? stockMonthIdx(stockParsed.monthKeys, prevMonthNum) : -1;
+                const idxCurr = stockMonthIdx(stockParsed.monthKeys, monthNum, year);
+                // prevMonth is always in the same year (January → prevMonthNum=null handled above)
+                const idxPrev = prevMonthNum ? stockMonthIdx(stockParsed.monthKeys, prevMonthNum, year) : -1;
                 stockAvailable = idxCurr >= 0 && idxPrev >= 0;
                 stockCurr = idxCurr >= 0 ? (stockParsed.estoque[idxCurr] || 0) : 0;
                 stockPrev = idxPrev >= 0 ? (stockParsed.estoque[idxPrev] || 0) : 0;
