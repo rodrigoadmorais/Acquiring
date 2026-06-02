@@ -4795,7 +4795,7 @@
             const previaTotal = deltaEstoqueR + deltaResultado;
 
             // ── DRAW ──────────────────────────────────────────────────────
-            const W = 960, H = 460;
+            const W = 960, H = 548;
             const DPR = 2;
             const canvas = document.getElementById('previa-canvas');
             canvas.width  = W * DPR;
@@ -4880,150 +4880,32 @@
             }
 
             // ── Fixed layout ──────────────────────────────────────────────
-            const PAD = 22, GAP = 10;
+            // Order: Header → ANÁLISE EXECUTIVA (destaque) → Cards → Footer
+            const PAD = 24, GAP = 14;
             const COL = (W - PAD*2 - GAP) / 2;
             const LX  = PAD, RX = PAD + COL + GAP;
-            const HDR_H    = 60;
-            const CARD_Y   = HDR_H + 7;
-            const CARD_H   = 222;
-            const COMM_Y   = CARD_Y + CARD_H + 6;
-            const COMM_H   = 68;
-            const FOOTER_Y = COMM_Y + COMM_H + 4;
-            const FOOTER_H = H - FOOTER_Y;
+            const HDR_H    = 64;
 
-            // ── Background ────────────────────────────────────────────────
-            ctx.fillStyle = '#f8fafc';
-            ctx.fillRect(0, 0, W, H);
-
-            // ── Header ────────────────────────────────────────────────────
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(0, 0, W, HDR_H);
-
-            ctx.fillStyle = '#FFF159';
-            ctx.beginPath(); ctx.arc(PAD+18, HDR_H/2, 17, 0, Math.PI*2); ctx.fill();
-            txt('M', PAD+18, HDR_H/2+6, 'bold 14px Inter,Arial', '#0f172a', 'center');
-
-            txt('PRÉVIA MPOS', PAD+46, 24, 'bold 16px Inter,Arial', '#ffffff');
-            const sub = (nameA+'  ×  '+nameB).length > 56
-                ? nameA.substring(0,25)+'…  ×  '+nameB.substring(0,25)+'…'
-                : nameA+'  ×  '+nameB;
-            txt(sub, PAD+46, 46, '12px Inter,Arial', '#475569');
-
-            ctx.fillStyle = '#1e293b'; rRect(W-110, 14, 90, 32, 7); ctx.fill();
-            txt(monthLabel.substring(0,3).toUpperCase()+' / '+year.slice(-2),
-                W-65, 36, 'bold 14px Inter,Arial', '#f1f5f9', 'center');
-
-            // ── Cards ────────────────────────────────────────────────────
-            [LX, RX].forEach(x => {
-                ctx.fillStyle = '#ffffff'; rRect(x, CARD_Y, COL, CARD_H, 10); ctx.fill();
-                ctx.strokeStyle = '#e8edf2'; ctx.lineWidth = 1;
-                rRect(x, CARD_Y, COL, CARD_H, 10); ctx.stroke();
-            });
-
-            // ═══════════════════════════════════════════════════════════
-            // LEFT CARD — Delta Estoque
-            // ═══════════════════════════════════════════════════════════
-            const LP = LX+22, LR = LX+COL-22;
-
-            // Teal accent bar
-            ctx.fillStyle = '#0d9488'; rRect(LX, CARD_Y, COL, 4, {tl:10,tr:10,br:0,bl:0}); ctx.fill();
-
-            let cy = CARD_Y + 24;
-            txt('DELTA ESTOQUE', LP, cy, 'bold 13px Inter,Arial', '#0f766e'); cy += 26;
-
-            if (!stockAvailable) {
-                txt('Dados de estoque indisponíveis para este mês.', LP, cy+10, '12px Inter,Arial', '#94a3b8');
-            } else {
-                // Arrow comparison — full numbers
-                const prevLbl = prevMonthLabel ? prevMonthLabel.substring(0,3)+'/'+year.slice(-2) : 'Mês ant.';
-                const currLbl = monthLabel.substring(0,3)+'/'+year.slice(-2);
-                txt(`${prevLbl}:  ${Math.round(stockPrev).toLocaleString('pt-BR')} un`, LP, cy, '12px Inter,Arial', '#64748b');
-                cy += 20;
-                txt(`${currLbl}:  ${Math.round(stockCurr).toLocaleString('pt-BR')} un`, LP, cy, '12px Inter,Arial', '#374151');
-                cy += 22;
-
-                // Δ units (medium-large)
-                const dSign = totalDeltaUnits < 0 ? '−' : '+';
-                const dN    = Math.round(Math.abs(totalDeltaUnits)).toLocaleString('pt-BR');
-                ctx.fillStyle = colSign(totalDeltaUnits); ctx.font = 'bold 20px Inter,Arial';
-                ctx.fillText(`${dSign}${dN} unidades`, LP, cy); cy += 20;
-
-                // CMV
-                txt(`CMV médio ponderado: R$ ${Math.round(weightedCMV).toLocaleString('pt-BR')}/un`, LP, cy, '11px Inter,Arial', '#94a3b8');
-                cy += 22;
-
-                ln(LP, cy, LR, cy, '#e2e8f0', 1.5); cy += 22;
-
-                txt('IMPACTO NO CAPITAL DE GIRO', LP, cy, 'bold 10px Inter,Arial', '#0f766e'); cy += 38;
-
-                // Hero
-                ctx.fillStyle = colSign(deltaEstoqueR); ctx.font = 'bold 38px Inter,Arial';
-                ctx.fillText(fmtM(deltaEstoqueR), LP, cy); cy += 14;
-
-                // Formula
-                txt(`${dSign}${dN} un  ×  R$ ${Math.round(weightedCMV).toLocaleString('pt-BR')}/un`, LP, cy, '11px Inter,Arial', '#cbd5e1');
-            }
-
-            // ═══════════════════════════════════════════════════════════
-            // RIGHT CARD — Delta Vendas (2×2 grid + hero)
-            // ═══════════════════════════════════════════════════════════
-            const RP = RX+22, RR = RX+COL-22, RW = COL-44;
-
-            // Blue accent bar
-            ctx.fillStyle = '#2563eb'; rRect(RX, CARD_Y, COL, 4, {tl:10,tr:10,br:0,bl:0}); ctx.fill();
-
-            cy = CARD_Y + 24;
-            txt('DELTA VENDAS', RP, cy, 'bold 13px Inter,Arial', '#1d4ed8');
-            ctx.font = '11px Inter,Arial'; ctx.fillStyle = '#93c5fd'; ctx.textAlign = 'right';
-            ctx.fillText('vs '+nameB, RR, cy); ctx.textAlign = 'left';
-            cy += 26;
-
-            // 2×2 metric tiles
-            const HCOL = (RW - 12) / 2;
-            const tiles = [
-                ['VOLUME',      deltaVolume,     'u', 0, 0],
-                ['RECEITA',     deltaReceita,    'm', 1, 0],
-                ['SALES TAXES', deltaSalesTaxes, 'm', 0, 1],
-                ['CMV',         deltaCMV,        'm', 1, 1],
-            ];
-            tiles.forEach(([lbl, val, fmt, col, row]) => {
-                const mx = RP + col*(HCOL+12);
-                const my = cy + row*48;
-                txt(lbl, mx, my, '10px Inter,Arial', '#94a3b8');
-                ctx.fillStyle = colSign(val); ctx.font = 'bold 18px Inter,Arial';
-                ctx.fillText(fmt === 'u' ? fmtU(val) : fmtM(val), mx, my+20);
-            });
-            cy += 96;
-
-            ln(RP, cy, RR, cy, '#e2e8f0', 1.5); cy += 40;
-
-            // Hero resultado
-            ctx.fillStyle = colSign(deltaResultado); ctx.font = 'bold 38px Inter,Arial';
-            ctx.fillText(fmtM(deltaResultado), RP, cy);
-
-            // ═══════════════════════════════════════════════════════════
-            // ANÁLISE EXECUTIVA
-            // ═══════════════════════════════════════════════════════════
+            // ── Sentence generation (computed before drawing the band) ─────
             const yr2 = year.slice(-2);
             const pShort = prevMonthLabel ? prevMonthLabel.substring(0,3) : 'mês ant.';
             const cShort = monthLabel.substring(0,3);
 
-            // Stock sentence
             const sDir = totalDeltaUnits < 0 ? 'Redução' : 'Aumento';
             const sN   = Math.round(Math.abs(totalDeltaUnits)).toLocaleString('pt-BR');
             const sImp = deltaEstoqueR >= 0
                 ? `benefício de ${fmtM(deltaEstoqueR)} (capital liberado)`
                 : `impacto de ${fmtM(deltaEstoqueR)} (capital imobilizado)`;
-            const stockSent = `📦 ${sDir} de ${sN} un em estoque (${pShort}→${cShort}/${yr2}): ${sImp}.`;
+            const stockSent = stockAvailable
+                ? `${sDir} de ${sN} un em estoque (${pShort}→${cShort}/${yr2}), gerando ${sImp}.`
+                : `Dados de estoque indisponíveis para o período — análise baseada apenas no resultado de vendas.`;
 
-            // P&L main driver
             const mainD = [
                 { lbl:'CMV', val:deltaCMV },
                 { lbl:'Receita', val:deltaReceita },
                 { lbl:'Sales Taxes', val:deltaSalesTaxes },
             ].sort((a,b) => Math.abs(b.val)-Math.abs(a.val))[0];
 
-            // Top canal
             let cNote = '';
             const cA = (byCanal&&byCanal.A)||{}, cB = (byCanal&&byCanal.B)||{};
             const topC = [...new Set([...Object.keys(cA),...Object.keys(cB)])]
@@ -5034,38 +4916,154 @@
             const vN = Math.round(Math.abs(deltaVolume)).toLocaleString('pt-BR');
             let salesSent;
             if (deltaVolume<0 && deltaResultado>=0)
-                salesSent = `📊 Volume ${vN} un menor vs ${nameB}${cNote}. Mesmo assim, resultado ${fmtM(deltaResultado)} acima — puxado pelo ${mainD.lbl} favorável (${fmtM(mainD.val)}).`;
+                salesSent = `Volume ${vN} un menor vs ${nameB}${cNote}; ainda assim, resultado ${fmtM(deltaResultado)} acima, puxado pelo ${mainD.lbl} favorável (${fmtM(mainD.val)}).`;
             else if (deltaVolume>=0 && deltaResultado>=0)
-                salesSent = `📊 Volume ${vN} un maior vs ${nameB}${cNote}, com resultado ${fmtM(deltaResultado)} acima. Principal driver: ${mainD.lbl} (${fmtM(mainD.val)}).`;
+                salesSent = `Volume ${vN} un maior vs ${nameB}${cNote}, com resultado ${fmtM(deltaResultado)} acima. Principal driver: ${mainD.lbl} (${fmtM(mainD.val)}).`;
             else if (deltaVolume<0 && deltaResultado<0)
-                salesSent = `📊 Volume ${vN} un menor vs ${nameB}${cNote}, pressionando o resultado em ${fmtM(deltaResultado)}. Maior impacto: ${mainD.lbl} (${fmtM(mainD.val)}).`;
+                salesSent = `Volume ${vN} un menor vs ${nameB}${cNote}, pressionando o resultado em ${fmtM(deltaResultado)}. Maior impacto: ${mainD.lbl} (${fmtM(mainD.val)}).`;
             else
-                salesSent = `📊 Volume ${vN} un maior vs ${nameB}${cNote}, porém resultado ${fmtM(deltaResultado)} abaixo. Maior pressão: ${mainD.lbl} (${fmtM(mainD.val)}).`;
+                salesSent = `Volume ${vN} un maior vs ${nameB}${cNote}, porém resultado ${fmtM(deltaResultado)} abaixo. Maior pressão: ${mainD.lbl} (${fmtM(mainD.val)}).`;
 
-            // Accent bar
-            ctx.fillStyle = '#6366f1';
-            ctx.fillRect(PAD, COMM_Y, 3, COMM_H);
+            // ── Background ────────────────────────────────────────────────
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, W, H);
 
-            const cX = PAD+13, cW = W-PAD*2-18;
-            txt('ANÁLISE EXECUTIVA', cX, COMM_Y+14, 'bold 9px Inter,Arial', '#6366f1');
-            wrapTxt(stockSent,  cX, COMM_Y+30, cW, 16, '12px Inter,Arial', '#374151');
-            wrapTxt(salesSent,  cX, COMM_Y+50, cW, 16, '12px Inter,Arial', '#374151');
+            // ── Header ────────────────────────────────────────────────────
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, W, HDR_H);
+
+            ctx.fillStyle = '#FFF159';
+            ctx.beginPath(); ctx.arc(PAD+18, HDR_H/2, 18, 0, Math.PI*2); ctx.fill();
+            txt('M', PAD+18, HDR_H/2+6, 'bold 15px Inter,Arial', '#0f172a', 'center');
+
+            txt('PRÉVIA MPOS', PAD+48, 27, 'bold 17px Inter,Arial', '#ffffff');
+            const sub = (nameA+'  ×  '+nameB).length > 56
+                ? nameA.substring(0,25)+'…  ×  '+nameB.substring(0,25)+'…'
+                : nameA+'  ×  '+nameB;
+            txt(sub, PAD+48, 49, '12px Inter,Arial', '#94a3b8');
+
+            ctx.fillStyle = '#1e293b'; rRect(W-118, 16, 96, 32, 7); ctx.fill();
+            txt(monthLabel.substring(0,3).toUpperCase()+' / '+year.slice(-2),
+                W-70, 38, 'bold 14px Inter,Arial', '#f1f5f9', 'center');
+
+            // ═══════════════════════════════════════════════════════════
+            // ANÁLISE EXECUTIVA — destaque, mensagem principal (topo)
+            // ═══════════════════════════════════════════════════════════
+            const ANA_Y = HDR_H + GAP;
+            const ANA_H = 150;
+            const ANA_X = PAD;
+            const ANA_W = W - PAD*2;
+
+            // Card with subtle indigo tint + indigo accent bar
+            ctx.fillStyle = '#eef2ff'; rRect(ANA_X, ANA_Y, ANA_W, ANA_H, 12); ctx.fill();
+            ctx.strokeStyle = '#c7d2fe'; ctx.lineWidth = 1;
+            rRect(ANA_X, ANA_Y, ANA_W, ANA_H, 12); ctx.stroke();
+            ctx.fillStyle = '#4f46e5'; rRect(ANA_X, ANA_Y, 5, ANA_H, {tl:12,tr:0,br:0,bl:12}); ctx.fill();
+
+            const aX = ANA_X + 26, aW = ANA_W - 26 - 24;
+            // Heading
+            txt('ANÁLISE EXECUTIVA', aX, ANA_Y+28, 'bold 12px Inter,Arial', '#4f46e5');
+            // Two prominent sentences (15px, generous line-height, dynamic flow)
+            const last1 = wrapTxt('\u{1F4E6}  '+stockSent, aX, ANA_Y+58, aW, 24, '15px Inter,Arial', '#1e293b');
+            wrapTxt('\u{1F4CA}  '+salesSent, aX, last1+30, aW, 24, '15px Inter,Arial', '#1e293b');
+
+            // ── Cards ────────────────────────────────────────────────────
+            const CARD_Y = ANA_Y + ANA_H + GAP;
+            const CARD_H = 220;
+            [LX, RX].forEach(x => {
+                ctx.fillStyle = '#ffffff'; rRect(x, CARD_Y, COL, CARD_H, 10); ctx.fill();
+                ctx.strokeStyle = '#e8edf2'; ctx.lineWidth = 1;
+                rRect(x, CARD_Y, COL, CARD_H, 10); ctx.stroke();
+            });
+
+            // ═══════════════════════════════════════════════════════════
+            // LEFT CARD — Delta Estoque
+            // ═══════════════════════════════════════════════════════════
+            const LP = LX+24, LR = LX+COL-24;
+            ctx.fillStyle = '#0d9488'; rRect(LX, CARD_Y, COL, 4, {tl:10,tr:10,br:0,bl:0}); ctx.fill();
+
+            let cy = CARD_Y + 30;
+            txt('DELTA ESTOQUE', LP, cy, 'bold 13px Inter,Arial', '#0f766e'); cy += 28;
+
+            if (!stockAvailable) {
+                txt('Dados de estoque indisponíveis', LP, cy, '13px Inter,Arial', '#94a3b8');
+                cy += 18;
+                txt('para este mês.', LP, cy, '13px Inter,Arial', '#94a3b8');
+            } else {
+                const prevLbl = prevMonthLabel ? prevMonthLabel.substring(0,3)+'/'+year.slice(-2) : 'Mês ant.';
+                const currLbl = monthLabel.substring(0,3)+'/'+year.slice(-2);
+                txt(`${prevLbl}:  ${Math.round(stockPrev).toLocaleString('pt-BR')} un`, LP, cy, '12px Inter,Arial', '#64748b');
+                cy += 21;
+                txt(`${currLbl}:  ${Math.round(stockCurr).toLocaleString('pt-BR')} un`, LP, cy, '12px Inter,Arial', '#374151');
+                cy += 26;
+
+                const dSign = totalDeltaUnits < 0 ? '−' : '+';
+                const dN    = Math.round(Math.abs(totalDeltaUnits)).toLocaleString('pt-BR');
+                ctx.fillStyle = colSign(totalDeltaUnits); ctx.font = 'bold 21px Inter,Arial';
+                ctx.fillText(`${dSign}${dN} unidades`, LP, cy); cy += 22;
+
+                txt(`CMV médio ponderado: R$ ${Math.round(weightedCMV).toLocaleString('pt-BR')}/un`, LP, cy, '11px Inter,Arial', '#94a3b8');
+                cy += 18;
+
+                ln(LP, cy, LR, cy, '#e2e8f0', 1.5); cy += 24;
+
+                txt('IMPACTO NO CAPITAL DE GIRO', LP, cy, 'bold 10px Inter,Arial', '#0f766e'); cy += 40;
+
+                ctx.fillStyle = colSign(deltaEstoqueR); ctx.font = 'bold 38px Inter,Arial';
+                ctx.fillText(fmtM(deltaEstoqueR), LP, cy);
+            }
+
+            // ═══════════════════════════════════════════════════════════
+            // RIGHT CARD — Delta Vendas (2×2 grid + hero)
+            // ═══════════════════════════════════════════════════════════
+            const RP = RX+24, RR = RX+COL-24, RW = COL-48;
+            ctx.fillStyle = '#2563eb'; rRect(RX, CARD_Y, COL, 4, {tl:10,tr:10,br:0,bl:0}); ctx.fill();
+
+            cy = CARD_Y + 30;
+            txt('DELTA VENDAS', RP, cy, 'bold 13px Inter,Arial', '#1d4ed8');
+            ctx.font = '11px Inter,Arial'; ctx.fillStyle = '#93c5fd'; ctx.textAlign = 'right';
+            ctx.fillText('vs '+nameB, RR, cy); ctx.textAlign = 'left';
+            cy += 28;
+
+            const HCOL = (RW - 14) / 2;
+            const tiles = [
+                ['VOLUME',      deltaVolume,     'u', 0, 0],
+                ['RECEITA',     deltaReceita,    'm', 1, 0],
+                ['SALES TAXES', deltaSalesTaxes, 'm', 0, 1],
+                ['CMV',         deltaCMV,        'm', 1, 1],
+            ];
+            tiles.forEach(([lbl, val, fmt, col, row]) => {
+                const mx = RP + col*(HCOL+14);
+                const my = cy + row*46;
+                txt(lbl, mx, my, '10px Inter,Arial', '#94a3b8');
+                ctx.fillStyle = colSign(val); ctx.font = 'bold 18px Inter,Arial';
+                ctx.fillText(fmt === 'u' ? fmtU(val) : fmtM(val), mx, my+21);
+            });
+            cy += 92;
+
+            ln(RP, cy, RR, cy, '#e2e8f0', 1.5); cy += 24;
+
+            txt('Δ RESULTADO P&L', RP, cy, 'bold 10px Inter,Arial', '#1d4ed8'); cy += 40;
+            ctx.fillStyle = colSign(deltaResultado); ctx.font = 'bold 38px Inter,Arial';
+            ctx.fillText(fmtM(deltaResultado), RP, cy);
 
             // ═══════════════════════════════════════════════════════════
             // FOOTER
             // ═══════════════════════════════════════════════════════════
+            const FOOTER_Y = CARD_Y + CARD_H + GAP;
+            const FOOTER_H = H - FOOTER_Y;
             ctx.fillStyle = '#1e3a8a';
             ctx.fillRect(0, FOOTER_Y, W, FOOTER_H);
 
             const FMX = W/2, FMY = FOOTER_Y + FOOTER_H/2;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-            txt('PRÉVIA MPOS', FMX, FMY-24, 'bold 9px Inter,Arial', '#93c5fd', 'center');
+            txt('PRÉVIA TOTAL', FMX, FMY-23, 'bold 9px Inter,Arial', '#93c5fd', 'center');
             const formula = `Δ Estoque (${stockAvailable?fmtM(deltaEstoqueR):'n/d'})  +  Δ Resultado (${fmtM(deltaResultado)})`;
-            txt(formula, FMX, FMY-6, '11px Inter,Arial', '#bfdbfe', 'center');
+            txt(formula, FMX, FMY-5, '11px Inter,Arial', '#bfdbfe', 'center');
             ctx.fillStyle = previaTotal>0?'#4ade80':previaTotal<0?'#f87171':'#ffffff';
             ctx.font = 'bold 30px Inter,Arial';
-            ctx.fillText(fmtM(previaTotal), FMX, FMY+18);
+            ctx.fillText(fmtM(previaTotal), FMX, FMY+19);
 
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         }
