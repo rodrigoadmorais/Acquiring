@@ -112,6 +112,9 @@
                 <button onclick="showCorpPLModal()" class="flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-violet-700 transition-all active:scale-95">
                     <i data-lucide="building-2" class="w-4 h-4"></i> P&amp;L Corp
                 </button>
+                <button onclick="showPreviaModal()" class="flex items-center gap-2 bg-teal-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-teal-700 transition-all active:scale-95">
+                    <i data-lucide="image" class="w-4 h-4"></i> Prévia
+                </button>
                 <button onclick="showDocsModal()" class="flex items-center gap-2 bg-slate-700 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-slate-800 transition-all active:scale-95">
                     <i data-lucide="book-open" class="w-4 h-4"></i> Documentação
                 </button>
@@ -653,6 +656,65 @@
         </div> <!-- end tab-content-estoque -->
 
     </main>
+
+    <!-- Prévia Modal -->
+    <div id="previa-modal" class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm items-center justify-center" style="display:none;" onclick="if(event.target===this)hidePreviaModal()">
+        <div class="bg-white rounded-2xl shadow-2xl w-[700px] max-h-[92vh] overflow-y-auto p-7" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h2 class="text-base font-black text-gray-900 flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-lg bg-teal-600 flex items-center justify-center">
+                            <i data-lucide="image" class="w-4 h-4 text-white"></i>
+                        </span>
+                        Prévia MPOS
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-1 ml-9">Delta Estoque + Delta Vendas → imagem para download</p>
+                </div>
+                <button onclick="hidePreviaModal()" class="text-gray-400 hover:text-gray-700 text-lg leading-none">&times;</button>
+            </div>
+            <!-- Form -->
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Cenário A — Base</label>
+                    <select id="previa-sc-a" class="w-full bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400"></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Cenário B — Comparação</label>
+                    <select id="previa-sc-b" class="w-full bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400"></select>
+                </div>
+            </div>
+            <div class="grid grid-cols-[1fr_100px] gap-3 mb-5">
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Mês de referência</label>
+                    <select id="previa-month" class="w-full bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                        <option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option>
+                        <option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option>
+                        <option value="07">Julho</option><option value="08" selected>Agosto</option><option value="09">Setembro</option>
+                        <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5">Ano</label>
+                    <input id="previa-year" type="number" value="2026" class="w-full bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                </div>
+            </div>
+            <!-- Canvas preview (shown after calc) -->
+            <div id="previa-canvas-wrap" class="mb-4" style="display:none;">
+                <canvas id="previa-canvas" class="w-full rounded-xl border border-gray-200 shadow-sm"></canvas>
+            </div>
+            <!-- Action buttons -->
+            <div class="flex gap-2">
+                <button onclick="computeAndDrawPrevia()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white text-xs font-black uppercase tracking-widest py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i> Calcular &amp; Visualizar
+                </button>
+                <button id="previa-download-btn" onclick="downloadPreviaImage()" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-black uppercase tracking-widest py-3 rounded-xl transition-all flex items-center justify-center gap-2" style="display:none;">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar Imagem
+                </button>
+                <button onclick="hidePreviaModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-black uppercase tracking-widest px-5 py-3 rounded-xl transition-all">Fechar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Docs Modal -->
     <div id="docs-modal" class="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm" style="display:none;" onclick="if(event.target===this)hideDocsModal()">
@@ -4543,6 +4605,442 @@
             document.getElementById('tpv-total-pct').innerText = (totDA >= 0 ? '+' : '') + formatBRPct(totDP);
             document.getElementById('tpv-total-pct').className = `p-4 text-xs font-black ${totPC}`;
             lucide.createIcons();
+        }
+
+        // =====================================================================
+        // PRÉVIA MPOS — Delta Estoque + Delta Vendas → imagem PNG
+        // =====================================================================
+
+        function showPreviaModal() {
+            const modal = document.getElementById('previa-modal');
+            const selA  = document.getElementById('previa-sc-a');
+            const selB  = document.getElementById('previa-sc-b');
+
+            // Populate scenario selects (same grouping as comparison tab)
+            let htmlA = '', htmlB = '';
+            const seen = new Set();
+            ['PLAN','ACTUAL','FORECAST'].forEach(t => {
+                const group = scenarioList.filter(s => s.type === t || s.id.startsWith(t + '|'));
+                const unique = group.filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
+                if (!unique.length) return;
+                const lbl = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                let opts = `<optgroup label="--- ${lbl} ---">`;
+                unique.forEach(s => { opts += `<option value="${s.id}">${s.label}</option>`; });
+                opts += '</optgroup>';
+                htmlA += opts; htmlB += opts;
+            });
+            selA.innerHTML = htmlA; selB.innerHTML = htmlB;
+
+            // Defaults: A = FORECAST, B = PLAN
+            const fcOpt   = Array.from(selA.options).find(o => o.value.startsWith('FORECAST|'));
+            const planOpt = Array.from(selB.options).find(o => o.value.startsWith('PLAN|'));
+            if (fcOpt)   selA.value = fcOpt.value;
+            if (planOpt) selB.value = planOpt.value;
+
+            document.getElementById('previa-canvas-wrap').style.display  = 'none';
+            document.getElementById('previa-download-btn').style.display = 'none';
+            modal.style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function hidePreviaModal() {
+            document.getElementById('previa-modal').style.display = 'none';
+        }
+
+        // Parse dbStock and return { devData, monthKeys } — mirrors renderEstoqueTab logic
+        function parsePreviaStock() {
+            if (!dbStock || !dbStock.length) return null;
+            const PERIOD_KEY_RE = /^(jan(uary)?|feb(ruary)?|fev(ereiro)?|mar(ch|co)?|abr(il)?|apr(il)?|mai(o)?|may|jun(e|ho)?|jul(y|ho)?|ago(sto)?|aug(ust)?|set(embro)?|sep(tember)?|out(ubro)?|oct(ober)?|nov(ember|embro)?|dez(embro)?|dec(ember)?)(\s+\d{2,4})?$/i;
+            const META_RE = /^(row_number|col_\d+|__row|rowIndex|_|\s*)$/i;
+            const allKeys  = Object.keys(dbStock[0] || {});
+            const monthKeys = allKeys.filter(k => PERIOD_KEY_RE.test(k.trim()) && !META_RE.test(k.trim()));
+
+            function rowVals(row) {
+                return monthKeys.map(k => {
+                    const v = row[k];
+                    if (v === null || v === undefined || v === '') return 0;
+                    const n = parseFloat(String(v).replace(',', '.'));
+                    return isNaN(n) ? 0 : n;
+                });
+            }
+            function rowDevice(row) {
+                const RE = /^(smart|pro|air|mini)$/i;
+                for (const v of Object.values(row)) {
+                    const s = String(v ?? '').trim();
+                    if (RE.test(s)) return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+                }
+                return null;
+            }
+            const devData = { Smart: null, Pro: null, Air: null, Mini: null };
+            for (const row of dbStock) {
+                const dev = rowDevice(row);
+                if (dev && !devData[dev]) devData[dev] = rowVals(row);
+            }
+            Object.keys(devData).forEach(d => { if (!devData[d]) devData[d] = new Array(monthKeys.length).fill(0); });
+            return { devData, monthKeys };
+        }
+
+        // Find the array index corresponding to monthNum (1-12) inside monthKeys
+        function stockMonthIdx(monthKeys, monthNum) {
+            const PREFIXES = [
+                ['jan'],['feb','fev'],['mar'],['apr','abr'],['may','mai'],['jun'],
+                ['jul'],['aug','ago'],['sep','set'],['oct','out'],['nov'],['dec','dez']
+            ];
+            const pref = PREFIXES[monthNum - 1];
+            return monthKeys.findIndex(k => {
+                const kl = k.trim().toLowerCase().split(/\s+/)[0];
+                return pref.some(p => kl === p || kl.startsWith(p.substring(0, 3)));
+            });
+        }
+
+        function computeAndDrawPrevia() {
+            const scAId    = document.getElementById('previa-sc-a').value;
+            const scBId    = document.getElementById('previa-sc-b').value;
+            const monthStr = document.getElementById('previa-month').value;   // "01"–"12"
+            const year     = String(document.getElementById('previa-year').value || '2026');
+            if (!scAId || !scBId || !monthStr) return;
+
+            const [typeA] = scAId.split('|');
+            const [typeB] = scBId.split('|');
+            const monthNum  = parseInt(monthStr, 10);
+            const yyyymm    = year + monthStr;
+            const scA = scenarioList.find(s => s.id === scAId);
+            const scB = scenarioList.find(s => s.id === scBId);
+            const nameA = scA ? scA.label : typeA;
+            const nameB = scB ? scB.label : typeB;
+
+            // ── DELTA ESTOQUE ──────────────────────────────────────────────
+            const stockParsed = parsePreviaStock();
+            const DEV_NAMES  = ['Smart','Pro','Air','Mini'];
+            const DEV_UPPER  = ['SMART','PRO','AIR','MINI'];
+
+            let stockCurr = {}, stockPrev = {};
+            DEV_NAMES.forEach(d => { stockCurr[d] = 0; stockPrev[d] = 0; });
+            let stockAvailable = false;
+
+            if (stockParsed) {
+                const idxCurr = stockMonthIdx(stockParsed.monthKeys, monthNum);
+                const idxPrev = monthNum > 1 ? stockMonthIdx(stockParsed.monthKeys, monthNum - 1) : -1;
+                stockAvailable = idxCurr >= 0;
+                DEV_NAMES.forEach(d => {
+                    const arr = stockParsed.devData[d] || [];
+                    stockCurr[d] = idxCurr >= 0 ? (arr[idxCurr] || 0) : 0;
+                    stockPrev[d] = idxPrev >= 0 ? (arr[idxPrev] || 0) : 0;
+                });
+            }
+
+            const deltaUnits   = {};
+            DEV_NAMES.forEach(d => { deltaUnits[d] = stockCurr[d] - stockPrev[d]; });
+            const totalDeltaUnits = DEV_NAMES.reduce((s, d) => s + deltaUnits[d], 0);
+
+            // CMV ponderado pelo mix de vendas do mês (Cenário A)
+            const dataA = extractValue(typeA, `MONTH|${yyyymm}`, 'ALL', 'ALL');
+            const dataB = extractValue(typeB, `MONTH|${yyyymm}`, 'ALL', 'ALL');
+            const totalQtyA = dataA.total || 0;
+            let weightedCMV = 0;   // R$ / un (positive magnitude)
+            DEV_UPPER.forEach((dU, i) => {
+                const qty = (dataA.byDevice && dataA.byDevice[dU]) || 0;
+                const w   = totalQtyA > 0 ? qty / totalQtyA : 0.25;
+                weightedCMV += w * Math.abs(PL_COST_BRL[dU] || 0);
+            });
+
+            // Delta Estoque financeiro: ΔUnits × (−CMV_médio) per device
+            const perDevDeltaR = {};
+            DEV_NAMES.forEach((d, i) => {
+                perDevDeltaR[d] = deltaUnits[d] * (-Math.abs(PL_COST_BRL[DEV_UPPER[i]] || 0));
+            });
+            const deltaEstoqueR = Object.values(perDevDeltaR).reduce((s, v) => s + v, 0);
+
+            // ── DELTA VENDAS (P&L) ────────────────────────────────────────
+            const plA = computePLPeriod(typeA, `MONTH|${yyyymm}`, 'ALL', 'ALL');
+            const plB = computePLPeriod(typeB, `MONTH|${yyyymm}`, 'ALL', 'ALL');
+
+            const deltaVolume     = (dataA.total || 0) - (dataB.total || 0);
+            const deltaReceita    = (plA.totalReceita    || 0) - (plB.totalReceita    || 0);
+            const deltaSalesTaxes = (plA.totalSalesTaxes || 0) - (plB.totalSalesTaxes || 0);
+            const deltaCMV        = (plA.totalCMV        || 0) - (plB.totalCMV        || 0);
+            const deltaResultado  = (plA.totalResultado  || 0) - (plB.totalResultado  || 0);
+
+            // ── PRÉVIA TOTAL ──────────────────────────────────────────────
+            const previaTotal = deltaEstoqueR + deltaResultado;
+
+            // ── DRAW ──────────────────────────────────────────────────────
+            const W = 960, H = 510;
+            const DPR = 2;
+            const canvas = document.getElementById('previa-canvas');
+            canvas.width  = W * DPR;
+            canvas.height = H * DPR;
+            canvas.style.width  = '100%';
+            canvas.style.height = 'auto';
+            const ctx = canvas.getContext('2d');
+            ctx.scale(DPR, DPR);
+
+            _drawPreviaCanvas(ctx, W, H, {
+                nameA, nameB,
+                monthLabel: PT_MONTHS[monthNum - 1],
+                monthShort: PT_MONTHS[monthNum - 1].substring(0, 3),
+                year,
+                DEV_NAMES, deltaUnits, perDevDeltaR,
+                totalDeltaUnits, weightedCMV, deltaEstoqueR, stockAvailable,
+                deltaVolume, deltaReceita, deltaSalesTaxes, deltaCMV, deltaResultado,
+                previaTotal
+            });
+
+            document.getElementById('previa-canvas-wrap').style.display = 'block';
+            document.getElementById('previa-download-btn').style.display = 'flex';
+        }
+
+        function _drawPreviaCanvas(ctx, W, H, d) {
+            const {
+                nameA, nameB, monthLabel, monthShort, year,
+                DEV_NAMES, deltaUnits, perDevDeltaR,
+                totalDeltaUnits, weightedCMV, deltaEstoqueR, stockAvailable,
+                deltaVolume, deltaReceita, deltaSalesTaxes, deltaCMV, deltaResultado,
+                previaTotal
+            } = d;
+
+            // ── tiny helpers ──────────────────────────────────────────────
+            function rRect(x, y, w, h, r) {
+                if (typeof r === 'number') r = { tl:r, tr:r, br:r, bl:r };
+                ctx.beginPath();
+                ctx.moveTo(x + r.tl, y);
+                ctx.lineTo(x + w - r.tr, y);  ctx.quadraticCurveTo(x+w, y, x+w, y+r.tr);
+                ctx.lineTo(x + w, y + h - r.br); ctx.quadraticCurveTo(x+w, y+h, x+w-r.br, y+h);
+                ctx.lineTo(x + r.bl, y + h);   ctx.quadraticCurveTo(x, y+h, x, y+h-r.bl);
+                ctx.lineTo(x, y + r.tl);       ctx.quadraticCurveTo(x, y, x+r.tl, y);
+                ctx.closePath();
+            }
+            function colSign(v, neutral) {
+                if (v > 0) return '#16a34a';
+                if (v < 0) return '#dc2626';
+                return neutral || '#374151';
+            }
+            function fmtU(v) {
+                const abs = Math.round(Math.abs(v)).toLocaleString('pt-BR');
+                return (v >= 0 ? '+' : '−') + abs + ' un';
+            }
+            function fmtM(v) {
+                const sign  = v >= 0 ? '+' : '−';
+                const abs   = Math.abs(v);
+                if (abs >= 1e6) return sign + 'R$ ' + (abs/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + 'M';
+                if (abs >= 1e3) return sign + 'R$ ' + (abs/1e3).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}) + 'K';
+                return sign + 'R$ ' + Math.round(abs).toLocaleString('pt-BR');
+            }
+            function fmtFull(v) {
+                const sign = v >= 0 ? '+' : '−';
+                return sign + ' ' + formatBRL(Math.abs(v));
+            }
+            function txt(str, x, y, font, color, align) {
+                ctx.font  = font;
+                ctx.fillStyle = color;
+                ctx.textAlign = align || 'left';
+                ctx.fillText(str, x, y);
+            }
+            function line(x1, y1, x2, y2, color, w) {
+                ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = w || 1;
+                ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+            }
+
+            const PAD = 24;
+            const GAP = 12;
+            const COL = (W - PAD*2 - GAP) / 2;
+            const LX  = PAD;            // left card x
+            const RX  = PAD + COL + GAP; // right card x
+            const HDR_H = 84;
+            const FOOTER_H = 88;
+            const FOOTER_Y = H - FOOTER_H;
+            const CARD_Y   = HDR_H + 8;
+            const CARD_H   = FOOTER_Y - CARD_Y - 8;
+
+            // ── Background ────────────────────────────────────────────────
+            ctx.fillStyle = '#f1f5f9';
+            ctx.fillRect(0, 0, W, H);
+
+            // ── Header ────────────────────────────────────────────────────
+            ctx.fillStyle = '#0f172a';
+            rRect(0, 0, W, HDR_H, {tl:0,tr:0,br:0,bl:0}); ctx.fill();
+
+            // Yellow circle logo
+            ctx.fillStyle = '#FFF159';
+            ctx.beginPath(); ctx.arc(PAD + 20, HDR_H/2, 20, 0, Math.PI*2); ctx.fill();
+            txt('M', PAD+20, HDR_H/2+1, 'bold 16px Inter,Arial', '#0f172a', 'center');
+            ctx.textBaseline = 'alphabetic';
+
+            // Title & subtitle
+            txt('PRÉVIA MPOS', PAD+52, 34, 'bold 17px Inter,Arial', '#ffffff');
+            const sub = nameA.length + nameB.length > 50
+                ? `${nameA.substring(0,22)}…  vs  ${nameB.substring(0,22)}…`
+                : `${nameA}  vs  ${nameB}`;
+            txt(sub, PAD+52, 56, '11px Inter,Arial', '#94a3b8');
+
+            // Month badge
+            ctx.fillStyle = '#1e293b';
+            rRect(W-120, 22, 100, 38, 8); ctx.fill();
+            txt(monthShort.toUpperCase() + ' / ' + year.substring(2), W-70, 46, 'bold 12px Inter,Arial', '#e2e8f0', 'center');
+
+            // ── Cards ─────────────────────────────────────────────────────
+            [LX, RX].forEach(x => {
+                ctx.fillStyle = '#ffffff';
+                rRect(x, CARD_Y, COL, CARD_H, 12); ctx.fill();
+                ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+                rRect(x, CARD_Y, COL, CARD_H, 12); ctx.stroke();
+            });
+
+            // ── LEFT CARD: Delta Estoque ──────────────────────────────────
+            const LP  = LX + 20;   // inner left padding
+            const LR  = LX + COL - 20; // inner right edge for right-aligned text
+            let CY = CARD_Y + 22;
+
+            // Card header strip
+            ctx.fillStyle = '#f0fdfa';
+            rRect(LX, CARD_Y, COL, 38, {tl:12,tr:12,br:0,bl:0}); ctx.fill();
+            txt('📦 DELTA ESTOQUE', LP, CARD_Y + 24, 'bold 11px Inter,Arial', '#0f766e');
+            line(LX, CARD_Y+38, LX+COL, CARD_Y+38, '#ccfbf1', 1);
+
+            CY = CARD_Y + 58;
+
+            // Per-device rows
+            DEV_NAMES.forEach(d => {
+                const dU   = d.toUpperCase();
+                const du   = deltaUnits[d] || 0;
+                const dr   = perDevDeltaR[d] || 0;
+                txt(d, LP, CY, '11px Inter,Arial', '#64748b');
+                ctx.textAlign = 'right';
+                ctx.font = 'bold 11px Inter,Arial';
+                if (stockAvailable) {
+                    ctx.fillStyle = colSign(du, '#94a3b8');
+                    ctx.fillText(fmtU(du), LR - 86, CY);
+                    ctx.fillStyle = colSign(dr, '#94a3b8');
+                    ctx.fillText(fmtM(dr), LR, CY);
+                } else {
+                    ctx.fillStyle = '#d1d5db';
+                    ctx.fillText('—', LR, CY);
+                }
+                ctx.textAlign = 'left';
+                CY += 22;
+            });
+
+            // Sub-header for columns
+            CY -= (22 * DEV_NAMES.length) + 2;
+            ctx.fillStyle = '#94a3b8'; ctx.font = '9px Inter,Arial'; ctx.textAlign = 'right';
+            ctx.fillText('UNIDADES', LR - 86, CARD_Y + 53);
+            ctx.fillText('R$ CMV', LR, CARD_Y + 53);
+            ctx.textAlign = 'left';
+            CY = CARD_Y + 58 + 22 * DEV_NAMES.length;
+
+            // Separator
+            line(LP, CY+2, LR, CY+2, '#e2e8f0'); CY += 14;
+
+            // Totals row
+            txt('Total Δ Unidades', LP, CY, 'bold 11px Inter,Arial', '#374151');
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 11px Inter,Arial';
+            ctx.fillStyle = stockAvailable ? colSign(totalDeltaUnits, '#374151') : '#d1d5db';
+            ctx.fillText(stockAvailable ? fmtU(totalDeltaUnits) : '—', LR - 86, CY);
+            ctx.textAlign = 'left';
+            CY += 18;
+
+            txt('CMV médio ponderado', LP, CY, '10px Inter,Arial', '#94a3b8');
+            ctx.textAlign = 'right'; ctx.font = '10px Inter,Arial'; ctx.fillStyle = '#94a3b8';
+            ctx.fillText(stockAvailable ? ('R$ ' + (-weightedCMV).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'/un') : '—', LR, CY);
+            ctx.textAlign = 'left';
+            CY += 20;
+
+            // Thick separator
+            line(LP, CY, LR, CY, '#cbd5e1', 1.5); CY += 14;
+
+            // Impact label
+            txt('IMPACTO Δ ESTOQUE', LP, CY, 'bold 9px Inter,Arial', '#0f766e');
+            CY += 22;
+
+            // Big number
+            const estLbl = stockAvailable ? fmtFull(deltaEstoqueR) : '— sem dados de estoque';
+            const estColor = stockAvailable ? colSign(deltaEstoqueR, '#0f172a') : '#94a3b8';
+            ctx.fillStyle = estColor;
+            ctx.font = stockAvailable ? 'bold 22px Inter,Arial' : 'bold 14px Inter,Arial';
+            ctx.fillText(estLbl, LP, CY);
+
+            // ── RIGHT CARD: Delta Vendas ──────────────────────────────────
+            const RP  = RX + 20;
+            const RR  = RX + COL - 20;
+            CY = CARD_Y + 22;
+
+            // Card header strip
+            ctx.fillStyle = '#eff6ff';
+            rRect(RX, CARD_Y, COL, 38, {tl:12,tr:12,br:0,bl:0}); ctx.fill();
+            txt('📊 DELTA VENDAS', RP, CARD_Y + 24, 'bold 11px Inter,Arial', '#1d4ed8');
+            const vsLabel = nameA.length > 22 ? nameA.substring(0,20)+'…' : nameA;
+            txt('vs ' + (nameB.length > 20 ? nameB.substring(0,18)+'…' : nameB), RX+COL-20 - ctx.measureText('vs '+nameB).width, CARD_Y + 24, '10px Inter,Arial', '#93c5fd');
+            line(RX, CARD_Y+38, RX+COL, CARD_Y+38, '#dbeafe', 1);
+            CY = CARD_Y + 56;
+
+            // Sub-headers
+            ctx.fillStyle = '#94a3b8'; ctx.font = '9px Inter,Arial';
+            ctx.textAlign = 'right'; ctx.fillText('DELTA', RR, CY); ctx.textAlign = 'left';
+            CY += 4;
+
+            const vendaRows = [
+                ['Volume',       deltaVolume,     true],
+                ['Receita',      deltaReceita,    false],
+                ['Sales Taxes',  deltaSalesTaxes, false],
+                ['CMV',          deltaCMV,        false],
+            ];
+            vendaRows.forEach(([label, val, isUnits]) => {
+                CY += 18;
+                txt(label, RP, CY, '12px Inter,Arial', '#64748b');
+                ctx.textAlign = 'right';
+                ctx.font = 'bold 12px Inter,Arial';
+                ctx.fillStyle = colSign(val, '#374151');
+                ctx.fillText(isUnits ? fmtU(val) : fmtM(val), RR, CY);
+                ctx.textAlign = 'left';
+            });
+
+            CY += 18;
+            line(RP, CY+4, RR, CY+4, '#cbd5e1', 1.5); CY += 20;
+
+            // Resultado — big emphasis
+            txt('Resultado (A − B)', RP, CY, 'bold 12px Inter,Arial', '#1e293b');
+            CY += 26;
+            ctx.fillStyle = colSign(deltaResultado, '#1e293b');
+            ctx.font = 'bold 26px Inter,Arial';
+            ctx.fillText(fmtFull(deltaResultado), RP, CY);
+
+            // ── FOOTER: Prévia total ──────────────────────────────────────
+            ctx.fillStyle = '#1e3a8a';
+            rRect(0, FOOTER_Y, W, FOOTER_H, {tl:0,tr:0,br:0,bl:0}); ctx.fill();
+
+            const FMX = W / 2;
+            const FMY = FOOTER_Y + FOOTER_H / 2;
+
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            txt('PRÉVIA MPOS', FMX, FMY - 28, 'bold 10px Inter,Arial', '#93c5fd', 'center');
+            const formula = `Δ Estoque (${stockAvailable ? fmtM(deltaEstoqueR) : 'n/d'})  +  Δ Resultado (${fmtM(deltaResultado)})`;
+            txt(formula, FMX, FMY - 8, '11px Inter,Arial', '#bfdbfe', 'center');
+
+            const totColor = previaTotal > 0 ? '#4ade80' : (previaTotal < 0 ? '#f87171' : '#ffffff');
+            ctx.fillStyle = totColor;
+            ctx.font = 'bold 30px Inter,Arial';
+            ctx.fillText(fmtFull(previaTotal), FMX, FMY + 22);
+
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        }
+
+        function downloadPreviaImage() {
+            const canvas  = document.getElementById('previa-canvas');
+            const scAId   = document.getElementById('previa-sc-a').value;
+            const scBId   = document.getElementById('previa-sc-b').value;
+            const monthStr = document.getElementById('previa-month').value;
+            const year     = document.getElementById('previa-year').value || '2026';
+            const [tA]     = scAId.split('|');
+            const [tB]     = scBId.split('|');
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a   = document.createElement('a');
+                a.href = url;
+                a.download = `Previa_MPOS_${tA}_vs_${tB}_${year}${monthStr}.png`;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+            }, 'image/png');
         }
 
         // =====================================================================
