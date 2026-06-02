@@ -4647,8 +4647,9 @@
             document.getElementById('previa-modal').style.display = 'none';
         }
 
-        // Parse dbStock and return { estoque, monthKeys } — same parsing as renderEstoqueTab
-        // estoque[] = total stock units per month (the bar chart values like 140K, 182K…)
+        // Parse dbStock and return { estoque, monthKeys } — mirrors renderEstoqueTab() exactly
+        // so the values match the "Devices Stock vs Cover Days" bar chart.
+        // Key difference vs old code: NO break → last "stock" row wins, same as the chart.
         function parsePreviaStock() {
             if (!dbStock || !dbStock.length) return null;
             const PERIOD_KEY_RE = /^(jan(uary)?|feb(ruary)?|fev(ereiro)?|mar(ch|co)?|abr(il)?|apr(il)?|mai(o)?|may|jun(e|ho)?|jul(y|ho)?|ago(sto)?|aug(ust)?|set(embro)?|sep(tember)?|out(ubro)?|oct(ober)?|nov(ember|embro)?|dez(embro)?|dec(ember)?)(\s+\d{2,4})?$/i;
@@ -4664,41 +4665,32 @@
                     return isNaN(n) ? 0 : n;
                 });
             }
+            // Identical to renderEstoqueTab's rowLabel
             function rowLabel(row) {
                 for (const k of ['col_1','col_2','','label','Label','tipo','metric','Metric']) {
                     const v = row[k];
                     if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
                 }
-                // fallback: first non-numeric, non-empty value
-                for (const v of Object.values(row)) {
-                    const s = String(v ?? '').trim();
-                    if (s && !/^\d/.test(s)) return s;
-                }
                 return '';
             }
-            function rowIsDevice(row) {
+            // Identical to renderEstoqueTab's rowDevice
+            function rowDevice(row) {
                 const RE = /^(smart|pro|air|mini)$/i;
                 for (const v of Object.values(row)) {
-                    if (RE.test(String(v ?? '').trim())) return true;
+                    const s = String(v ?? '').trim();
+                    if (RE.test(s)) return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
                 }
-                return false;
+                return null;
             }
 
             let estoque = new Array(monthKeys.length).fill(0);
+            // NO break — iterate all rows and overwrite, identical to renderEstoqueTab()
+            // This ensures we use the same "stock" row the chart uses (the last match wins)
             for (const row of dbStock) {
-                if (rowIsDevice(row)) continue;  // skip per-device rows
+                if (rowDevice(row)) continue;   // skip per-device rows
                 const lbl = rowLabel(row).toLowerCase();
-                if (lbl.includes('stock') || lbl.includes('estoque') || lbl.includes('devices stock')) {
-                    estoque = rowVals(row);
-                    break;  // first matching row wins
-                }
-            }
-            // If no labelled "stock" row found, try the first non-device row with non-zero values
-            if (estoque.every(v => v === 0)) {
-                for (const row of dbStock) {
-                    if (rowIsDevice(row)) continue;
-                    const vals = rowVals(row);
-                    if (vals.some(v => v > 0)) { estoque = vals; break; }
+                if (lbl.includes('stock') || lbl.includes('estoque')) {
+                    estoque = rowVals(row);     // keeps overwriting until last matching row
                 }
             }
             return { estoque, monthKeys };
