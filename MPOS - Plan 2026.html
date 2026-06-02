@@ -4885,7 +4885,7 @@
             const LX  = PAD, RX = PAD + COL + GAP;
             const HDR_H    = 60;
             const CARD_Y   = HDR_H + 7;
-            const CARD_H   = 208;
+            const CARD_H   = 222;
             const COMM_Y   = CARD_Y + CARD_H + 6;
             const COMM_H   = 68;
             const FOOTER_Y = COMM_Y + COMM_H + 4;
@@ -4940,7 +4940,7 @@
                 txt(`${prevLbl}:  ${Math.round(stockPrev).toLocaleString('pt-BR')} un`, LP, cy, '12px Inter,Arial', '#64748b');
                 cy += 20;
                 txt(`${currLbl}:  ${Math.round(stockCurr).toLocaleString('pt-BR')} un`, LP, cy, '12px Inter,Arial', '#374151');
-                cy += 26;
+                cy += 22;
 
                 // Δ units (medium-large)
                 const dSign = totalDeltaUnits < 0 ? '−' : '+';
@@ -4954,7 +4954,7 @@
 
                 ln(LP, cy, LR, cy, '#e2e8f0', 1.5); cy += 22;
 
-                txt('IMPACTO NO CAPITAL DE GIRO', LP, cy, 'bold 10px Inter,Arial', '#0f766e'); cy += 26;
+                txt('IMPACTO NO CAPITAL DE GIRO', LP, cy, 'bold 10px Inter,Arial', '#0f766e'); cy += 38;
 
                 // Hero
                 ctx.fillStyle = colSign(deltaEstoqueR); ctx.font = 'bold 38px Inter,Arial';
