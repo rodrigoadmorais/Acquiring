@@ -4647,12 +4647,13 @@
             document.getElementById('previa-modal').style.display = 'none';
         }
 
-        // Parse dbStock and return { devData, monthKeys } — mirrors renderEstoqueTab logic
+        // Parse dbStock and return { estoque, monthKeys } — same parsing as renderEstoqueTab
+        // estoque[] = total stock units per month (the bar chart values like 140K, 182K…)
         function parsePreviaStock() {
             if (!dbStock || !dbStock.length) return null;
             const PERIOD_KEY_RE = /^(jan(uary)?|feb(ruary)?|fev(ereiro)?|mar(ch|co)?|abr(il)?|apr(il)?|mai(o)?|may|jun(e|ho)?|jul(y|ho)?|ago(sto)?|aug(ust)?|set(embro)?|sep(tember)?|out(ubro)?|oct(ober)?|nov(ember|embro)?|dez(embro)?|dec(ember)?)(\s+\d{2,4})?$/i;
             const META_RE = /^(row_number|col_\d+|__row|rowIndex|_|\s*)$/i;
-            const allKeys  = Object.keys(dbStock[0] || {});
+            const allKeys   = Object.keys(dbStock[0] || {});
             const monthKeys = allKeys.filter(k => PERIOD_KEY_RE.test(k.trim()) && !META_RE.test(k.trim()));
 
             function rowVals(row) {
@@ -4663,21 +4664,44 @@
                     return isNaN(n) ? 0 : n;
                 });
             }
-            function rowDevice(row) {
-                const RE = /^(smart|pro|air|mini)$/i;
+            function rowLabel(row) {
+                for (const k of ['col_1','col_2','','label','Label','tipo','metric','Metric']) {
+                    const v = row[k];
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+                }
+                // fallback: first non-numeric, non-empty value
                 for (const v of Object.values(row)) {
                     const s = String(v ?? '').trim();
-                    if (RE.test(s)) return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+                    if (s && !/^\d/.test(s)) return s;
                 }
-                return null;
+                return '';
             }
-            const devData = { Smart: null, Pro: null, Air: null, Mini: null };
+            function rowIsDevice(row) {
+                const RE = /^(smart|pro|air|mini)$/i;
+                for (const v of Object.values(row)) {
+                    if (RE.test(String(v ?? '').trim())) return true;
+                }
+                return false;
+            }
+
+            let estoque = new Array(monthKeys.length).fill(0);
             for (const row of dbStock) {
-                const dev = rowDevice(row);
-                if (dev && !devData[dev]) devData[dev] = rowVals(row);
+                if (rowIsDevice(row)) continue;  // skip per-device rows
+                const lbl = rowLabel(row).toLowerCase();
+                if (lbl.includes('stock') || lbl.includes('estoque') || lbl.includes('devices stock')) {
+                    estoque = rowVals(row);
+                    break;  // first matching row wins
+                }
             }
-            Object.keys(devData).forEach(d => { if (!devData[d]) devData[d] = new Array(monthKeys.length).fill(0); });
-            return { devData, monthKeys };
+            // If no labelled "stock" row found, try the first non-device row with non-zero values
+            if (estoque.every(v => v === 0)) {
+                for (const row of dbStock) {
+                    if (rowIsDevice(row)) continue;
+                    const vals = rowVals(row);
+                    if (vals.some(v => v > 0)) { estoque = vals; break; }
+                }
+            }
+            return { estoque, monthKeys };
         }
 
         // Find the array index corresponding to monthNum (1-12) inside monthKeys
@@ -4702,60 +4726,53 @@
 
             const [typeA] = scAId.split('|');
             const [typeB] = scBId.split('|');
-            const monthNum  = parseInt(monthStr, 10);
-            const yyyymm    = year + monthStr;
+            const monthNum = parseInt(monthStr, 10);
+            const yyyymm   = year + monthStr;
             const scA = scenarioList.find(s => s.id === scAId);
             const scB = scenarioList.find(s => s.id === scBId);
             const nameA = scA ? scA.label : typeA;
             const nameB = scB ? scB.label : typeB;
 
-            // ── DELTA ESTOQUE ──────────────────────────────────────────────
-            const stockParsed = parsePreviaStock();
-            const DEV_NAMES  = ['Smart','Pro','Air','Mini'];
-            const DEV_UPPER  = ['SMART','PRO','AIR','MINI'];
+            // ── DELTA ESTOQUE ─────────────────────────────────────────────
+            // Uses the TOTAL STOCK row from dbStock (same values shown in the
+            // "Devices Stock vs Cover Days" bar chart, e.g. 188K in May/26)
+            const stockParsed    = parsePreviaStock();
+            const DEV_UPPER      = ['SMART','PRO','AIR','MINI'];
 
-            let stockCurr = {}, stockPrev = {};
-            DEV_NAMES.forEach(d => { stockCurr[d] = 0; stockPrev[d] = 0; });
-            let stockAvailable = false;
+            let stockCurr = 0, stockPrev = 0, stockAvailable = false;
+            let prevMonthNum = monthNum > 1 ? monthNum - 1 : null;
 
             if (stockParsed) {
                 const idxCurr = stockMonthIdx(stockParsed.monthKeys, monthNum);
-                const idxPrev = monthNum > 1 ? stockMonthIdx(stockParsed.monthKeys, monthNum - 1) : -1;
-                stockAvailable = idxCurr >= 0;
-                DEV_NAMES.forEach(d => {
-                    const arr = stockParsed.devData[d] || [];
-                    stockCurr[d] = idxCurr >= 0 ? (arr[idxCurr] || 0) : 0;
-                    stockPrev[d] = idxPrev >= 0 ? (arr[idxPrev] || 0) : 0;
-                });
+                const idxPrev = prevMonthNum ? stockMonthIdx(stockParsed.monthKeys, prevMonthNum) : -1;
+                stockAvailable = idxCurr >= 0 && idxPrev >= 0;
+                stockCurr = idxCurr >= 0 ? (stockParsed.estoque[idxCurr] || 0) : 0;
+                stockPrev = idxPrev >= 0 ? (stockParsed.estoque[idxPrev] || 0) : 0;
             }
 
-            const deltaUnits   = {};
-            DEV_NAMES.forEach(d => { deltaUnits[d] = stockCurr[d] - stockPrev[d]; });
-            const totalDeltaUnits = DEV_NAMES.reduce((s, d) => s + deltaUnits[d], 0);
+            // Delta total de unidades em estoque entre os dois meses
+            const totalDeltaUnits = stockCurr - stockPrev;
 
-            // CMV ponderado pelo mix de vendas do mês (Cenário A)
-            const dataA = extractValue(typeA, `MONTH|${yyyymm}`, 'ALL', 'ALL');
-            const dataB = extractValue(typeB, `MONTH|${yyyymm}`, 'ALL', 'ALL');
+            // CMV unitário médio ponderado pelo mix de vendas do mês de referência (Cenário A)
+            const dataA     = extractValue(typeA, `MONTH|${yyyymm}`, 'ALL', 'ALL');
+            const dataB     = extractValue(typeB, `MONTH|${yyyymm}`, 'ALL', 'ALL');
             const totalQtyA = dataA.total || 0;
-            let weightedCMV = 0;   // R$ / un (positive magnitude)
-            DEV_UPPER.forEach((dU, i) => {
+            let weightedCMV = 0;   // R$/un (magnitude positiva)
+            DEV_UPPER.forEach(dU => {
                 const qty = (dataA.byDevice && dataA.byDevice[dU]) || 0;
                 const w   = totalQtyA > 0 ? qty / totalQtyA : 0.25;
                 weightedCMV += w * Math.abs(PL_COST_BRL[dU] || 0);
             });
 
-            // Delta Estoque financeiro: ΔUnits × (−CMV_médio) per device
-            const perDevDeltaR = {};
-            DEV_NAMES.forEach((d, i) => {
-                perDevDeltaR[d] = deltaUnits[d] * (-Math.abs(PL_COST_BRL[DEV_UPPER[i]] || 0));
-            });
-            const deltaEstoqueR = Object.values(perDevDeltaR).reduce((s, v) => s + v, 0);
+            // Impacto financeiro do delta de estoque
+            // Δ estoque (un) × CMV unitário médio = custo incremental do estoque
+            const deltaEstoqueR = totalDeltaUnits * (-weightedCMV);
 
             // ── DELTA VENDAS (P&L) ────────────────────────────────────────
             const plA = computePLPeriod(typeA, `MONTH|${yyyymm}`, 'ALL', 'ALL');
             const plB = computePLPeriod(typeB, `MONTH|${yyyymm}`, 'ALL', 'ALL');
 
-            const deltaVolume     = (dataA.total || 0) - (dataB.total || 0);
+            const deltaVolume     = (dataA.total         || 0) - (dataB.total         || 0);
             const deltaReceita    = (plA.totalReceita    || 0) - (plB.totalReceita    || 0);
             const deltaSalesTaxes = (plA.totalSalesTaxes || 0) - (plB.totalSalesTaxes || 0);
             const deltaCMV        = (plA.totalCMV        || 0) - (plB.totalCMV        || 0);
@@ -4775,12 +4792,15 @@
             const ctx = canvas.getContext('2d');
             ctx.scale(DPR, DPR);
 
+            const prevMonthLabel = prevMonthNum ? PT_MONTHS[prevMonthNum - 1] : null;
+
             _drawPreviaCanvas(ctx, W, H, {
                 nameA, nameB,
                 monthLabel: PT_MONTHS[monthNum - 1],
                 monthShort: PT_MONTHS[monthNum - 1].substring(0, 3),
+                prevMonthLabel,
                 year,
-                DEV_NAMES, deltaUnits, perDevDeltaR,
+                stockCurr, stockPrev,
                 totalDeltaUnits, weightedCMV, deltaEstoqueR, stockAvailable,
                 deltaVolume, deltaReceita, deltaSalesTaxes, deltaCMV, deltaResultado,
                 previaTotal
@@ -4792,8 +4812,8 @@
 
         function _drawPreviaCanvas(ctx, W, H, d) {
             const {
-                nameA, nameB, monthLabel, monthShort, year,
-                DEV_NAMES, deltaUnits, perDevDeltaR,
+                nameA, nameB, monthLabel, monthShort, prevMonthLabel, year,
+                stockCurr, stockPrev,
                 totalDeltaUnits, weightedCMV, deltaEstoqueR, stockAvailable,
                 deltaVolume, deltaReceita, deltaSalesTaxes, deltaCMV, deltaResultado,
                 previaTotal
@@ -4887,8 +4907,8 @@
             });
 
             // ── LEFT CARD: Delta Estoque ──────────────────────────────────
-            const LP  = LX + 20;   // inner left padding
-            const LR  = LX + COL - 20; // inner right edge for right-aligned text
+            const LP = LX + 20;        // inner left padding
+            const LR = LX + COL - 20; // inner right edge (right-align)
             let CY = CARD_Y + 22;
 
             // Card header strip
@@ -4897,68 +4917,70 @@
             txt('📦 DELTA ESTOQUE', LP, CARD_Y + 24, 'bold 11px Inter,Arial', '#0f766e');
             line(LX, CARD_Y+38, LX+COL, CARD_Y+38, '#ccfbf1', 1);
 
-            CY = CARD_Y + 58;
+            CY = CARD_Y + 60;
 
-            // Per-device rows
-            DEV_NAMES.forEach(d => {
-                const dU   = d.toUpperCase();
-                const du   = deltaUnits[d] || 0;
-                const dr   = perDevDeltaR[d] || 0;
-                txt(d, LP, CY, '11px Inter,Arial', '#64748b');
-                ctx.textAlign = 'right';
-                ctx.font = 'bold 11px Inter,Arial';
-                if (stockAvailable) {
-                    ctx.fillStyle = colSign(du, '#94a3b8');
-                    ctx.fillText(fmtU(du), LR - 86, CY);
-                    ctx.fillStyle = colSign(dr, '#94a3b8');
-                    ctx.fillText(fmtM(dr), LR, CY);
-                } else {
-                    ctx.fillStyle = '#d1d5db';
-                    ctx.fillText('—', LR, CY);
-                }
+            if (!stockAvailable) {
+                // No stock data
+                txt('Dados de estoque não disponíveis', LP, CY + 20, '11px Inter,Arial', '#94a3b8');
+                txt('Verifique o arquivo stock.json', LP, CY + 40, '10px Inter,Arial', '#cbd5e1');
+            } else {
+                // ── Stock comparison rows ──────────────────────────────────
+                // Column headers
+                ctx.fillStyle = '#94a3b8'; ctx.font = '9px Inter,Arial'; ctx.textAlign = 'right';
+                ctx.fillText('ESTOQUE (UN)', LR, CY - 6);
+                ctx.textAlign = 'left';
+
+                // Row: Mês anterior
+                const prevLbl = prevMonthLabel ? prevMonthLabel.substring(0,3) + '/' + year.substring(2) : 'Mês ant.';
+                txt(prevLbl, LP, CY, '11px Inter,Arial', '#64748b');
+                ctx.textAlign = 'right'; ctx.font = '11px Inter,Arial'; ctx.fillStyle = '#374151';
+                ctx.fillText(Math.round(stockPrev).toLocaleString('pt-BR') + ' un', LR, CY);
                 ctx.textAlign = 'left';
                 CY += 22;
-            });
 
-            // Sub-header for columns
-            CY -= (22 * DEV_NAMES.length) + 2;
-            ctx.fillStyle = '#94a3b8'; ctx.font = '9px Inter,Arial'; ctx.textAlign = 'right';
-            ctx.fillText('UNIDADES', LR - 86, CARD_Y + 53);
-            ctx.fillText('R$ CMV', LR, CARD_Y + 53);
-            ctx.textAlign = 'left';
-            CY = CARD_Y + 58 + 22 * DEV_NAMES.length;
+                // Row: Mês de referência
+                const currLbl = monthLabel.substring(0,3) + '/' + year.substring(2);
+                txt(currLbl, LP, CY, '11px Inter,Arial', '#64748b');
+                ctx.textAlign = 'right'; ctx.font = '11px Inter,Arial'; ctx.fillStyle = '#374151';
+                ctx.fillText(Math.round(stockCurr).toLocaleString('pt-BR') + ' un', LR, CY);
+                ctx.textAlign = 'left';
+                CY += 10;
 
-            // Separator
-            line(LP, CY+2, LR, CY+2, '#e2e8f0'); CY += 14;
+                // Separator thin
+                line(LP, CY+2, LR, CY+2, '#e2e8f0', 1); CY += 14;
 
-            // Totals row
-            txt('Total Δ Unidades', LP, CY, 'bold 11px Inter,Arial', '#374151');
-            ctx.textAlign = 'right';
-            ctx.font = 'bold 11px Inter,Arial';
-            ctx.fillStyle = stockAvailable ? colSign(totalDeltaUnits, '#374151') : '#d1d5db';
-            ctx.fillText(stockAvailable ? fmtU(totalDeltaUnits) : '—', LR - 86, CY);
-            ctx.textAlign = 'left';
-            CY += 18;
+                // Row: Δ Unidades
+                txt('Δ Estoque', LP, CY, 'bold 12px Inter,Arial', '#374151');
+                ctx.textAlign = 'right'; ctx.font = 'bold 14px Inter,Arial';
+                ctx.fillStyle = colSign(totalDeltaUnits, '#374151');
+                ctx.fillText(fmtU(totalDeltaUnits), LR, CY);
+                ctx.textAlign = 'left';
+                CY += 24;
 
-            txt('CMV médio ponderado', LP, CY, '10px Inter,Arial', '#94a3b8');
-            ctx.textAlign = 'right'; ctx.font = '10px Inter,Arial'; ctx.fillStyle = '#94a3b8';
-            ctx.fillText(stockAvailable ? ('R$ ' + (-weightedCMV).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'/un') : '—', LR, CY);
-            ctx.textAlign = 'left';
-            CY += 20;
+                // Row: CMV médio ponderado
+                txt('CMV unitário (mix médio)', LP, CY, '10px Inter,Arial', '#94a3b8');
+                ctx.textAlign = 'right'; ctx.font = '10px Inter,Arial'; ctx.fillStyle = '#94a3b8';
+                ctx.fillText('R$ ' + (-weightedCMV).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '/un', LR, CY);
+                ctx.textAlign = 'left';
+                CY += 22;
 
-            // Thick separator
-            line(LP, CY, LR, CY, '#cbd5e1', 1.5); CY += 14;
+                // Thick separator
+                line(LP, CY, LR, CY, '#cbd5e1', 1.5); CY += 16;
 
-            // Impact label
-            txt('IMPACTO Δ ESTOQUE', LP, CY, 'bold 9px Inter,Arial', '#0f766e');
-            CY += 22;
+                // Label
+                txt('IMPACTO Δ ESTOQUE', LP, CY, 'bold 9px Inter,Arial', '#0f766e');
+                CY += 24;
 
-            // Big number
-            const estLbl = stockAvailable ? fmtFull(deltaEstoqueR) : '— sem dados de estoque';
-            const estColor = stockAvailable ? colSign(deltaEstoqueR, '#0f172a') : '#94a3b8';
-            ctx.fillStyle = estColor;
-            ctx.font = stockAvailable ? 'bold 22px Inter,Arial' : 'bold 14px Inter,Arial';
-            ctx.fillText(estLbl, LP, CY);
+                // Big R$ result
+                ctx.fillStyle = colSign(deltaEstoqueR, '#0f172a');
+                ctx.font = 'bold 22px Inter,Arial';
+                ctx.fillText(fmtFull(deltaEstoqueR), LP, CY);
+
+                // Formula hint below
+                CY += 16;
+                ctx.fillStyle = '#94a3b8'; ctx.font = '9px Inter,Arial';
+                ctx.fillText(`${fmtU(totalDeltaUnits)} × R$ ${Math.abs(weightedCMV).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}/un`, LP, CY);
+            }
 
             // ── RIGHT CARD: Delta Vendas ──────────────────────────────────
             const RP  = RX + 20;
