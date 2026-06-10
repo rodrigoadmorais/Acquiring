@@ -254,12 +254,12 @@ function compute(rows) {
   const t_tpv  = MONTHS.map(m => +(v(tpvT,m)/1e6).toFixed(1));
   const t_tmed = MONTHS.map(m => +(v(tmedT,m)/1000).toFixed(1));
 
-  const hcReal   = MONTHS.map(m => v(hcR,m));
-  const hcPlan   = MONTHS.map(m => v(hcPl,m));
+  const hcReal   = MONTHS.map(m => Math.round(v(hcR,m)));
+  const hcPlan   = MONTHS.map(m => Math.round(v(hcPl,m)));
   const pct      = hcReal.map((r,i) => hcPlan[i]>0 ? +(r/hcPlan[i]*100).toFixed(1) : 0);
 
-  const t_hcReal = MONTHS.map(m => v(hcRT,m));
-  const t_hcPlan = MONTHS.map(m => v(hcPlt,m));
+  const t_hcReal = MONTHS.map(m => Math.round(v(hcRT,m)));
+  const t_hcPlan = MONTHS.map(m => Math.round(v(hcPlt,m)));
   const t_pct    = t_hcReal.map((r,i) => t_hcPlan[i]>0 ? +(r/t_hcPlan[i]*100).toFixed(1) : 0);
 
   const p_ns = MONTHS.map(m => +((v(nsP,m))/1000).toFixed(1));
