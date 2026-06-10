@@ -241,7 +241,7 @@ function compute(rows) {
   const invTP = r('INV_TP','R','FDVT');
 
   const p_inv  = MONTHS.map(m => Math.abs(v(invPP,m) + v(invV,m)) / 1e6);
-  const t_inv  = MONTHS.map(m => Math.abs(v(invTP,m)) / 1e6);
+  const t_inv  = MONTHS.map(m => -v(invTP,m) / 1e6);
 
   const tpvP  = r('TPV','R','FDVP'), tpvT = r('TPV','R','FDVT');
   const tmedP = r('TMED','R','FDVP'), tmedT = r('TMED','R','FDVT');
