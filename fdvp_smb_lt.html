@@ -88,6 +88,9 @@
         <button class="ctrl-btn" onclick="changeSize(1)"  title="Aumentar fonte">A+</button>
         <button class="ctrl-btn" id="btnBold" onclick="toggleBold()" title="Negrito">B</button>
       </div>
+      <div class="controls">
+        <button class="ctrl-btn" id="btnForceFdvpHc" onclick="toggleForceFdvpHc()" title="Forcar HCs FDVP">Forcar HC FDVP</button>
+      </div>
       <div class="tag">LC</div>
       <div class="tag">🌐 BRAZIL</div>
     </div>
@@ -120,6 +123,7 @@ Chart.register(ChartDataLabels);
 let LABEL_SIZE  = 9;
 let LEGEND_SIZE = 10;
 let LABEL_BOLD  = false;
+let FORCE_FDVP_HC = false;
 let currentData = null;
 let _lastRows = null;
 
@@ -130,6 +134,20 @@ const DARK    = '#222222';
 const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const DEFAULT_START_MONTH = '202502';
 const DEFAULT_END_MONTH = '202603';
+const FORCED_FDVP_HC = {
+  '202506': { real: 1020, pct: 96 },
+  '202507': { real: 1075, pct: 92 },
+  '202508': { real: 1127, pct: 93 },
+  '202509': { real: 1232, pct: 94 },
+  '202510': { real: 1220, pct: 94 },
+  '202511': { real: 1299, pct: 98 },
+  '202512': { real: 1386, pct: 99 },
+  '202601': { real: 1303, pct: 95 },
+  '202602': { real: 1351, pct: 90 },
+  '202603': { real: 1437, pct: 93 },
+  '202604': { real: 1401, pct: 92 },
+  '202605': { real: 1476, pct: 91 },
+};
 
 function monthLabel(monthKey) {
   const year = String(monthKey).slice(0, 4);
@@ -213,6 +231,14 @@ function toggleBold() {
   document.getElementById('btnBold').classList.toggle('active', LABEL_BOLD);
   if (currentData) renderCharts(currentData);
 }
+function toggleForceFdvpHc() {
+  FORCE_FDVP_HC = !FORCE_FDVP_HC;
+  document.getElementById('btnForceFdvpHc').classList.toggle('active', FORCE_FDVP_HC);
+  if (_lastRows) {
+    currentData = compute(_lastRows);
+    renderCharts(currentData);
+  }
+}
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 function num(v) {
@@ -254,9 +280,13 @@ function compute(rows) {
   const t_tpv  = MONTHS.map(m => +(v(tpvT,m)/1e6).toFixed(1));
   const t_tmed = MONTHS.map(m => +(v(tmedT,m)/1000).toFixed(1));
 
-  const hcReal   = MONTHS.map(m => Math.round(v(hcR,m)));
+  let hcReal     = MONTHS.map(m => Math.round(v(hcR,m)));
   const hcPlan   = MONTHS.map(m => Math.round(v(hcPl,m)));
-  const pct      = hcReal.map((r,i) => hcPlan[i]>0 ? +(r/hcPlan[i]*100).toFixed(1) : 0);
+  let pct        = hcReal.map((r,i) => hcPlan[i]>0 ? +(r/hcPlan[i]*100).toFixed(1) : 0);
+  if (FORCE_FDVP_HC) {
+    hcReal = MONTHS.map((m, i) => FORCED_FDVP_HC[m]?.real ?? hcReal[i]);
+    pct = MONTHS.map((m, i) => FORCED_FDVP_HC[m]?.pct ?? pct[i]);
+  }
 
   const t_hcReal = MONTHS.map(m => Math.round(v(hcRT,m)));
   const t_hcPlan = MONTHS.map(m => Math.round(v(hcPlt,m)));
