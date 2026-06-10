@@ -127,19 +127,45 @@ let _lastRows = null;
 const YELLOW  = '#FFE600';
 const DARK    = '#222222';
 
-const MONTH_LABELS = {
-  '202501':'Jan/25','202502':'Fev/25','202503':'Mar/25','202504':'Abr/25',
-  '202505':'Mai/25','202506':'Jun/25','202507':'Jul/25','202508':'Ago/25',
-  '202509':'Set/25','202510':'Out/25','202511':'Nov/25','202512':'Dez/25',
-  '202601':'Jan/26','202602':'Fev/26','202603':'Mar/26','202604':'Abr/26'
-};
+const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const DEFAULT_START_MONTH = '202502';
+const DEFAULT_END_MONTH = '202603';
 
-const ALL_MONTHS = [
-  '202501','202502','202503','202504','202505','202506','202507',
-  '202508','202509','202510','202511','202512',
-  '202601','202602','202603','202604'
-];
-let MONTHS = ALL_MONTHS.slice(ALL_MONTHS.indexOf('202502'), ALL_MONTHS.indexOf('202603') + 1); // default: Fev/25–Mar/26
+function monthLabel(monthKey) {
+  const year = String(monthKey).slice(0, 4);
+  const month = parseInt(String(monthKey).slice(4, 6), 10);
+  return `${MONTH_NAMES[month - 1]}/${year.slice(2)}`;
+}
+
+function buildMonthKeys(start, end) {
+  const startYear = parseInt(start.slice(0, 4), 10);
+  const startMonth = parseInt(start.slice(4, 6), 10);
+  const endYear = parseInt(end.slice(0, 4), 10);
+  const endMonth = parseInt(end.slice(4, 6), 10);
+  const keys = [];
+  for (let year = startYear; year <= endYear; year++) {
+    const from = year === startYear ? startMonth : 1;
+    const to = year === endYear ? endMonth : 12;
+    for (let month = from; month <= to; month++) {
+      keys.push(`${year}${String(month).padStart(2, '0')}`);
+    }
+  }
+  return keys;
+}
+
+function monthKeysFromRows(rows) {
+  const discovered = new Set(ALL_MONTHS);
+  rows.forEach(row => {
+    Object.keys(row).forEach(key => {
+      if (/^20\d{4}$/.test(key)) discovered.add(key);
+    });
+  });
+  return [...discovered].sort();
+}
+
+let ALL_MONTHS = buildMonthKeys('202501', '202612');
+let MONTH_LABELS = Object.fromEntries(ALL_MONTHS.map(m => [m, monthLabel(m)]));
+let MONTHS = ALL_MONTHS.slice(ALL_MONTHS.indexOf(DEFAULT_START_MONTH), ALL_MONTHS.indexOf(DEFAULT_END_MONTH) + 1); // default: Fev/25-Mar/26
 
 function setMonthRange() {
   const startSel = document.getElementById('startMonthSelect');
@@ -151,16 +177,29 @@ function setMonthRange() {
   if (_lastRows) { currentData = compute(_lastRows); renderCharts(currentData); }
 }
 
-function buildMonthSelect() {
+function buildMonthSelect(previousStart = DEFAULT_START_MONTH, previousEnd = DEFAULT_END_MONTH) {
   const startSel = document.getElementById('startMonthSelect');
   const endSel   = document.getElementById('endMonthSelect');
+  startSel.innerHTML = '';
+  endSel.innerHTML = '';
+  const selectedStart = ALL_MONTHS.includes(previousStart) ? previousStart : ALL_MONTHS[0];
+  const selectedEnd = ALL_MONTHS.includes(previousEnd) ? previousEnd : ALL_MONTHS[ALL_MONTHS.length - 1];
   ALL_MONTHS.forEach(m => {
     const label = MONTH_LABELS[m];
-    const o1 = new Option(label, m, m === '202502', m === '202502');
-    const o2 = new Option(label, m, m === '202603', m === '202603');
+    const o1 = new Option(label, m, m === selectedStart, m === selectedStart);
+    const o2 = new Option(label, m, m === selectedEnd, m === selectedEnd);
     startSel.appendChild(o1);
     endSel.appendChild(o2);
   });
+}
+
+function syncMonthControls(rows) {
+  const currentStart = document.getElementById('startMonthSelect').value || DEFAULT_START_MONTH;
+  const currentEnd = document.getElementById('endMonthSelect').value || DEFAULT_END_MONTH;
+  ALL_MONTHS = monthKeysFromRows(rows);
+  MONTH_LABELS = Object.fromEntries(ALL_MONTHS.map(m => [m, monthLabel(m)]));
+  buildMonthSelect(currentStart, currentEnd);
+  setMonthRange();
 }
 
 // ─── CONTROLS ───────────────────────────────────────────────────────────────
@@ -498,8 +537,7 @@ async function init() {
         rows = [...rows, ...hcFdvt];
       }
       _lastRows = rows;
-      currentData = compute(_lastRows);
-      renderCharts(currentData);
+      syncMonthControls(_lastRows);
       const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
       document.getElementById('lastUpdate').textContent = 'Atualizado: ' + now;
     }
