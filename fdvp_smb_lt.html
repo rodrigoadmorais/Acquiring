@@ -91,6 +91,9 @@
       <div class="controls">
         <button class="ctrl-btn" id="btnForceFdvpHc" onclick="toggleForceFdvpHc()" title="Forcar HCs FDVP">Forcar HC FDVP</button>
       </div>
+      <div class="controls">
+        <button class="ctrl-btn" id="btnForceFdvtInvMay" onclick="toggleForceFdvtInvMay()" title="Forcar investimento FDVT em Mai/26">Forcar Inv FDVT Mai/26</button>
+      </div>
       <div class="tag">LC</div>
       <div class="tag">🌐 BRAZIL</div>
     </div>
@@ -124,6 +127,7 @@ let LABEL_SIZE  = 9;
 let LEGEND_SIZE = 10;
 let LABEL_BOLD  = false;
 let FORCE_FDVP_HC = false;
+let FORCE_FDVT_INV_MAY = false;
 let currentData = null;
 let _lastRows = null;
 
@@ -239,6 +243,14 @@ function toggleForceFdvpHc() {
     renderCharts(currentData);
   }
 }
+function toggleForceFdvtInvMay() {
+  FORCE_FDVT_INV_MAY = !FORCE_FDVT_INV_MAY;
+  document.getElementById('btnForceFdvtInvMay').classList.toggle('active', FORCE_FDVT_INV_MAY);
+  if (_lastRows) {
+    currentData = compute(_lastRows);
+    renderCharts(currentData);
+  }
+}
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 function num(v) {
@@ -267,7 +279,10 @@ function compute(rows) {
   const invTP = r('INV_TP','R','FDVT');
 
   const p_inv  = MONTHS.map(m => Math.abs(v(invPP,m) + v(invV,m)) / 1e6);
-  const t_inv  = MONTHS.map(m => -v(invTP,m) / 1e6);
+  let t_inv    = MONTHS.map(m => -v(invTP,m) / 1e6);
+  if (FORCE_FDVT_INV_MAY) {
+    t_inv = MONTHS.map((m, i) => m === '202605' ? 4.1 : t_inv[i]);
+  }
 
   const tpvP  = r('TPV','R','FDVP'), tpvT = r('TPV','R','FDVT');
   const tmedP = r('TMED','R','FDVP'), tmedT = r('TMED','R','FDVT');
