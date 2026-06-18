@@ -198,10 +198,23 @@
     }
     .card-link:hover { gap: 10px; }
     .card-link svg { flex-shrink: 0; }
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      min-width: 120px;
+    }
     .card-platform {
       font-size: 0.75rem;
       color: #aab0c0;
       font-weight: 500;
+    }
+    .card-update {
+      font-size: 0.72rem;
+      color: #6b7280;
+      font-weight: 600;
+      white-space: nowrap;
     }
 
     /* ── Agent Search ── */
@@ -674,7 +687,7 @@
     </div>
 
     <!-- Card: Key Numbers MLB -->
-    <div class="card" data-label="Key Numbers MLB" data-tab="acquiring" data-keywords="key numbers mlb acquiring commerce fintech total meli mercado livre brasil realizado plano actual plan real vs plan p&l mng bigquery bq live nr bm tpv tpn take rate active merchant cards ytd fy quarter month mes grid">
+    <div class="card" data-label="Key Numbers MLB" data-tab="acquiring" data-update="Mensal" data-keywords="key numbers mlb acquiring commerce fintech total meli mercado livre brasil realizado plano actual plan real vs plan p&l mng bigquery bq live nr bm tpv tpn take rate active merchant cards ytd fy quarter month mes grid">
       <a class="card-thumb" href="https://grid.adminml.com/d/01KRK8V9Y4EXRE4DTJBX6VVZ9K/view" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#FFFFFF">
           <rect width="560" height="300" fill="#FFFFFF"/>
@@ -764,14 +777,14 @@
       </div>
     </div>
 
-    <!-- Card: Base Consigno -->
-    <div class="card" data-label="Base Consigno" data-tab="acquiring" data-keywords="base consigno informacao contabil contábil de para mng consigno conta ceco centro custo point apenas point grid acquiring mercado pago fpa fp&a brasil biblioteca">
+    <!-- Card: PYL Consigno / MNG Point -->
+    <div class="card" data-label="PYL Consigno / MNG Point" data-tab="acquiring" data-update="Mensal" data-keywords="pyl consigno mng point base consigno informacao contabil contábil de para mng consigno conta ceco centro custo point apenas point grid acquiring mercado pago fpa fp&a brasil biblioteca">
       <a class="card-thumb" href="https://grid.adminml.com/d/01KT7G1SQCEF4QA73AMN62C265/view" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#F5F5F5">
           <rect width="560" height="300" fill="#F5F5F5"/>
           <rect width="560" height="42" fill="#FFE600"/>
-          <text x="14" y="26" font-size="13" font-weight="bold" fill="#2D3277" font-family="Arial">Base Consigno</text>
-          <text x="150" y="26" font-size="9.5" fill="#555" font-family="Arial">Point · MNG x Consigno</text>
+          <text x="14" y="26" font-size="13" font-weight="bold" fill="#2D3277" font-family="Arial">PYL Consigno / MNG Point</text>
+          <text x="230" y="26" font-size="9.5" fill="#555" font-family="Arial">Point · MNG x Consigno</text>
           <rect x="458" y="10" width="88" height="22" rx="11" fill="#2D3277"/>
           <text x="502" y="25" text-anchor="middle" font-size="10" fill="white" font-family="Arial" font-weight="bold">Grid</text>
 
@@ -818,7 +831,7 @@
       <div class="card-body">
         <span class="card-tag">Contábil</span>
         <a class="card-title" href="https://grid.adminml.com/d/01KT7G1SQCEF4QA73AMN62C265/view" target="_blank" rel="noopener">
-          Base Consigno
+          PYL Consigno / MNG Point
         </a>
         <p class="card-desc">Informação contábil com de/para entre o MNG e Consigno, permitindo ver por conta e CeCo. Apenas Point.</p>
         <div class="card-footer">
@@ -918,7 +931,7 @@
     </div>
 
     <!-- ── Card 3: HCs FDVP e BS ── -->
-    <div class="card" data-label="HCs FDVP e Big Sellers" data-tab="acquiring" data-keywords="headcount hc funcionarios pessoas equipe time fdvp big sellers cargo canal ano recursos humanos rh vendedores forca de vendas quadro efetivo squad tribo organograma">
+    <div class="card" data-label="HCs FDVP e Big Sellers" data-tab="acquiring" data-update="Mensal" data-keywords="headcount hc funcionarios pessoas equipe time fdvp big sellers cargo canal ano recursos humanos rh vendedores forca de vendas quadro efetivo squad tribo organograma">
       <a class="card-thumb" href="https://rodrigoadmorais.github.io/Acquiring/dash_headcount_fdvp_bs.html" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#ffffff">
           <defs>
@@ -1174,13 +1187,13 @@
     </div>
 
 
-    <!-- ── Card: Grid Competitivo ── -->
-    <div class="card" data-label="Grid Competitivo Adquirência" data-tab="acquiring" data-keywords="grid competitivo adquirencia brasil players segmentos canais funding estimado devices market share acquiring competitors cielo rede stone getnet pagseguro pag mercado pago infinitepay safra atualização mai 2026 canal proprietario base transacional">
+    <!-- ── Card: Overview dos Concorrentes - Adquirência ── -->
+    <div class="card" data-label="Overview dos Concorrentes - Adquirência" data-tab="acquiring" data-update="Mensal" data-keywords="overview concorrentes adquirencia competitivo brasil players segmentos canais funding estimado devices market share acquiring competitors cielo rede stone getnet pagseguro pag mercado pago infinitepay safra atualização mai 2026 canal proprietario base transacional mensal">
       <a class="card-thumb" href="https://grid.adminml.com/d/01KSQY2PZZAY4CX1YKQSVH0AY4/view" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#0d1b3e">
           <rect width="560" height="38" fill="#2D3277"/>
-          <text x="14" y="25" font-size="13" font-weight="bold" fill="white" font-family="Arial">Grid Competitivo</text>
-          <text x="210" y="25" font-size="10" fill="rgba(255,255,255,0.55)" font-family="Arial">Adquirência Brasil · mai/2026</text>
+          <text x="14" y="25" font-size="13" font-weight="bold" fill="white" font-family="Arial">Overview Concorrentes</text>
+          <text x="225" y="25" font-size="10" fill="rgba(255,255,255,0.55)" font-family="Arial">Adquirência Brasil · mensal</text>
           <rect x="458" y="10" width="88" height="20" rx="10" fill="#FFF159"/>
           <text x="502" y="24" text-anchor="middle" font-size="9" fill="#2D3277" font-family="Arial" font-weight="bold">Grid</text>
           <!-- Horizontal bar chart: players -->
@@ -1225,8 +1238,8 @@
       </a>
       <div class="card-body">
         <span class="card-tag">Competitivo</span>
-        <a class="card-title" href="https://grid.adminml.com/d/01KSQY2PZZAY4CX1YKQSVH0AY4/view" target="_blank" rel="noopener">Grid Competitivo Adquirência</a>
-        <p class="card-desc">Players, segmentos, canais, funding estimado e devices — visão competitiva do mercado de adquirência no Brasil. Atualização mai/2026.</p>
+        <a class="card-title" href="https://grid.adminml.com/d/01KSQY2PZZAY4CX1YKQSVH0AY4/view" target="_blank" rel="noopener">Overview dos Concorrentes - Adquirência</a>
+        <p class="card-desc">Players, segmentos, canais, funding estimado e devices — overview competitivo do mercado de adquirência no Brasil.</p>
         <div class="card-footer">
           <a class="card-link" href="https://grid.adminml.com/d/01KSQY2PZZAY4CX1YKQSVH0AY4/view" target="_blank" rel="noopener">
             Abrir dashboard
@@ -1238,7 +1251,7 @@
     </div>
 
     <!-- ── Card: FDVP Point — OPEX ── -->
-    <div class="card" data-label="FDVP Point — OPEX" data-tab="acquiring" data-keywords="fdvp point opex p&l acquiring opex custo despesa operacional headcount hc categoria linha driver executive engine evolutivo comparativo plano actual forecast canal cargo ano ytd mensal trimestral grid">
+    <div class="card" data-label="FDVP Point — OPEX" data-tab="acquiring" data-update="Mensal" data-keywords="fdvp point opex p&l acquiring opex custo despesa operacional headcount hc categoria linha driver executive engine evolutivo comparativo plano actual forecast canal cargo ano ytd mensal trimestral grid">
       <a class="card-thumb" href="https://grid.adminml.com/d/01KRXRJRCQ8DZP98R0VPC9F6EE/view" target="_blank" rel="noopener">
         <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#F5F5F5">
           <rect width="560" height="38" fill="#FFE600"/>
@@ -1825,7 +1838,7 @@
       query: '// Grid HTML SDK / BigQuery live:\n// Fonte principal: P&L MNG + consultas BigQuery internas.\n// O dashboard calcula KPIs como NR, BM, TPV, TPN, Take Rate,\n// Active Merchants e Cards para Realizado vs Plano por periodo.\n\n// O codigo usa tabelas/configuracoes embarcadas no HTML e chamadas live\n// para compor Total MLB, Commerce, Fintech e Acquiring.',
       atualizacao: 'Tempo real (live) - dados consultados no Grid a cada acesso ao dashboard.',
     },
-    'Base Consigno': {
+    'PYL Consigno / MNG Point': {
       categoria: 'Contábil',
       audiencia: 'Time de Financial Planning – Acquiring Brasil',
       objetivo: 'Informação contábil com de/para entre o MNG e Consigno, permitindo ver por conta e CeCo. Apenas Point.',
@@ -1915,15 +1928,15 @@
       query: '// Grid HTML SDK — estado colaborativo:\nconst state = await window.GRID.state.get();\n// Estrutura: { versao_ativa: "FCST Mai/26", itens: [\n//   { nome, plan, fcst, ts, status, comentario }, ...\n// ] }\n\n// Planilha de referência via Grid.sheets:\nconst ref = await Grid.sheets.get("<SHEET_ID>");\n// Aba: "Base R&O" — valores de referência Plan/TS.',
       atualizacao: 'Colaborativo em tempo real via Grid state. Planilha de referência atualizada manualmente por ciclo de forecast.',
     },
-    'Grid Competitivo Adquirência': {
+    'Overview dos Concorrentes - Adquirência': {
       categoria: 'Competitivo',
       audiencia: 'Time de Financial Planning e lideranças de Acquiring Brasil',
-      objetivo: 'Visão competitiva do mercado de adquirência no Brasil — players, segmentos, canais, funding estimado e devices. Atualização mai/2026.',
+      objetivo: 'Overview competitivo do mercado de adquirência no Brasil — players, segmentos, canais, funding estimado e devices.',
       como_foi_construido: 'Dashboard HTML hospedado na plataforma Grid (grid.adminml.com, doc_id: 01KSQY2PZZAY4CX1YKQSVH0AY4). Construído com HTML/CSS/JS e Chart.js. Dados curados manualmente e atualizados periodicamente pelo time de FP&A.',
       como_funciona: 'Exibe market share por player (Mercado Pago, Stone, Cielo, Getnet, outros) com drill por segmento de mercado e canal. Inclui estimativas de funding, base de devices e insight editorial mensal. Filtros: Limpar, Copiar link, Exportar Excel.',
       fonte_dados: 'Fontes públicas (relatórios setoriais, ABECS, Bacen) + estimativas internas FP&A. Atualização manual pelo time.',
       query: '// Dados curados manualmente — sem query SQL automatizada.\n// Fontes: ABECS, Banco Central (relatórios de adquirência),\n// relatórios públicos dos players, estimativas FP&A.\n// Atualização: manual, a cada ciclo de revisão (mensal/bimestral).\n// Exportação disponível via botão "Exportar Excel" no dashboard.',
-      atualizacao: 'Manual — atualizado periodicamente pelo time de FP&A (última: mai/2026).',
+      atualizacao: 'Mensal.',
     },
     'Modelo Mental UE Acquiring': {
       categoria: 'Unit Economics',
@@ -1991,7 +2004,8 @@
       var desc  = (card.querySelector('.card-desc') || {}).textContent || '';
       var plat  = (card.querySelector('.card-platform') || {}).textContent || '';
       var tag   = (card.querySelector('.card-tag') || {}).textContent || '';
-      if (dashboards[tab]) dashboards[tab].push({ label, link, desc, plat, tag });
+      var update = card.dataset.update || 'Diária';
+      if (dashboards[tab]) dashboards[tab].push({ label, link, desc, plat, tag, update });
     });
 
     function renderCard(d, idx) {
@@ -2020,7 +2034,7 @@
           '<div class="doc-field"><div class="doc-field-label">Query / Conexão com a base</div>' +
             '<div class="doc-query">' + (reg.query || '— Query não documentada. Consulte o responsável pelo dashboard.') + '</div></div>' +
           '<div class="doc-field"><div class="doc-field-label">Frequência de atualização</div>' +
-            '<div class="doc-field-value">' + (reg.atualizacao || '—') + '</div></div>' +
+            '<div class="doc-field-value">' + (d.update || reg.atualizacao || '—') + '</div></div>' +
         '</div></div>';
     }
 
@@ -2210,6 +2224,23 @@
 
   agentClear.addEventListener('click', clearSearch);
 
+  function injectUpdateFrequency() {
+    document.querySelectorAll('.card[data-label]').forEach(function(card) {
+      var platform = card.querySelector('.card-platform');
+      if (!platform || platform.closest('.card-meta')) return;
+
+      var meta = document.createElement('div');
+      meta.className = 'card-meta';
+      platform.parentNode.insertBefore(meta, platform);
+      meta.appendChild(platform);
+
+      var update = document.createElement('span');
+      update.className = 'card-update';
+      update.textContent = 'Atualização: ' + (card.dataset.update || 'Diária');
+      meta.appendChild(update);
+    });
+  }
+
   /* ── Click-rank: ordena cards por número de cliques ── */
   var DC_CLICKS_KEY = 'dc_clicks_v1';
 
@@ -2282,6 +2313,7 @@
   });
 
   // Ordena na carga inicial
+  injectUpdateFrequency();
   sortCardsByClicks();
 </script>
 
