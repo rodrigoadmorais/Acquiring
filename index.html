@@ -182,6 +182,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
       margin-top: 18px;
       padding-top: 16px;
       border-top: 1px solid #f0f2f5;
@@ -198,6 +199,12 @@
     }
     .card-link:hover { gap: 10px; }
     .card-link svg { flex-shrink: 0; }
+    .deck-latest-links {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
     .card-meta {
       display: flex;
       flex-direction: column;
@@ -215,6 +222,41 @@
       color: #6b7280;
       font-weight: 600;
       white-space: nowrap;
+    }
+    .deck-months {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+      gap: 8px;
+    }
+    .deck-track { margin-top: 14px; }
+    .deck-track + .deck-track { margin-top: 12px; }
+    .deck-track-title {
+      display: block;
+      color: #6b7280;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+    }
+    .deck-month {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .deck-month:hover {
+      border-color: #3483FA;
+      background: #e0efff;
+      color: #1d4ed8;
     }
 
     /* ── Agent Search ── */
@@ -529,7 +571,7 @@
       <h1>Acquiring Data Center</h1>
       <p>Mercado Pago - FP&amp;A Acquiring MLB</p>
     </div>
-    <span class="header-badge">17 Dashboards</span>
+    <span class="header-badge">18 Itens</span>
     <button class="btn-doc" onclick="abrirDocumentacao()">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 2v4h4M5 8h5M5 11h3" stroke="white" stroke-width="1.3" stroke-linecap="round"/></svg>
       Gerar Documentação
@@ -840,6 +882,101 @@
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
           <span class="card-platform">Grid</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Apresentacoes de Resultados -->
+    <div class="card" data-label="Apresentacoes de Resultados 2026" data-tab="acquiring" data-update="Mensal" data-keywords="deck apresentacoes apresentações resultados explicacao financials actual acquiring fintech fp&a fpa mensal google slides janeiro fevereiro marco março abril maio 2026 financial review">
+      <a class="card-thumb" href="https://docs.google.com/presentation/d/1IayYvjAS-fCXZCCmUVtFXIfsFzwET57sgi_esPE8R1w" target="_blank" rel="noopener">
+        <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" style="background:#FFFFFF">
+          <rect width="560" height="300" fill="#FFFFFF"/>
+          <rect width="560" height="44" fill="#FFE600"/>
+          <text x="16" y="28" font-size="14" font-weight="bold" fill="#1B1B1B" font-family="Arial">Apresenta&ccedil;&otilde;es de Resultados</text>
+          <rect x="444" y="12" width="92" height="20" rx="10" fill="#2D3277"/>
+          <text x="490" y="26" text-anchor="middle" font-size="9" fill="#FFFFFF" font-family="Arial" font-weight="bold">Google Slides</text>
+
+          <rect x="18" y="64" width="154" height="46" rx="8" fill="#F8FAFC" stroke="#E5E7EB"/>
+          <text x="32" y="82" font-size="8" fill="#8898aa" font-family="Arial">&Uacute;LTIMO M&Ecirc;S</text>
+          <text x="32" y="104" font-size="18" font-weight="bold" fill="#2D3277" font-family="Arial">May'26</text>
+          <rect x="192" y="64" width="154" height="46" rx="8" fill="#F8FAFC" stroke="#E5E7EB"/>
+          <text x="206" y="82" font-size="8" fill="#8898aa" font-family="Arial">ESCOPO</text>
+          <text x="206" y="104" font-size="18" font-weight="bold" fill="#00A650" font-family="Arial">Acq + Fin</text>
+          <rect x="366" y="64" width="154" height="46" rx="8" fill="#F8FAFC" stroke="#E5E7EB"/>
+          <text x="380" y="82" font-size="8" fill="#8898aa" font-family="Arial">FREQU&Ecirc;NCIA</text>
+          <text x="380" y="104" font-size="18" font-weight="bold" fill="#3483FA" font-family="Arial">Mensal</text>
+
+          <rect x="18" y="132" width="504" height="124" rx="8" fill="#F8FAFC" stroke="#E5E7EB"/>
+          <text x="34" y="154" font-size="9" font-weight="bold" fill="#374151" font-family="Arial">Decks 2026 dispon&iacute;veis</text>
+          <g font-family="Arial" font-size="10" font-weight="bold">
+            <text x="34" y="180" fill="#6b7280" font-size="8">Acquiring</text>
+            <rect x="108" y="164" width="62" height="24" rx="7" fill="#EFF6FF" stroke="#BFDBFE"/>
+            <text x="139" y="180" text-anchor="middle" fill="#2563EB">Jan</text>
+            <rect x="182" y="164" width="62" height="24" rx="7" fill="#EFF6FF" stroke="#BFDBFE"/>
+            <text x="213" y="180" text-anchor="middle" fill="#2563EB">Feb</text>
+            <rect x="256" y="164" width="62" height="24" rx="7" fill="#EFF6FF" stroke="#BFDBFE"/>
+            <text x="287" y="180" text-anchor="middle" fill="#2563EB">Mar</text>
+            <rect x="330" y="164" width="62" height="24" rx="7" fill="#EFF6FF" stroke="#BFDBFE"/>
+            <text x="361" y="180" text-anchor="middle" fill="#2563EB">Apr</text>
+            <rect x="404" y="164" width="62" height="24" rx="7" fill="#DBEAFE" stroke="#3483FA"/>
+            <text x="435" y="180" text-anchor="middle" fill="#1D4ED8">May</text>
+
+            <text x="34" y="218" fill="#6b7280" font-size="8">Fintech</text>
+            <rect x="108" y="202" width="62" height="24" rx="7" fill="#ECFDF5" stroke="#BBF7D0"/>
+            <text x="139" y="218" text-anchor="middle" fill="#047857">Jan</text>
+            <rect x="182" y="202" width="62" height="24" rx="7" fill="#ECFDF5" stroke="#BBF7D0"/>
+            <text x="213" y="218" text-anchor="middle" fill="#047857">Feb</text>
+            <rect x="256" y="202" width="62" height="24" rx="7" fill="#ECFDF5" stroke="#BBF7D0"/>
+            <text x="287" y="218" text-anchor="middle" fill="#047857">Mar</text>
+            <rect x="330" y="202" width="62" height="24" rx="7" fill="#ECFDF5" stroke="#BBF7D0"/>
+            <text x="361" y="218" text-anchor="middle" fill="#047857">Apr</text>
+            <rect x="404" y="202" width="62" height="24" rx="7" fill="#D1FAE5" stroke="#10B981"/>
+            <text x="435" y="218" text-anchor="middle" fill="#047857">May</text>
+          </g>
+          <rect x="34" y="242" width="138" height="6" rx="3" fill="#2D3277" opacity="0.72"/>
+          <rect x="186" y="242" width="118" height="6" rx="3" fill="#3483FA" opacity="0.72"/>
+          <rect x="318" y="242" width="154" height="6" rx="3" fill="#00A650" opacity="0.72"/>
+          <text x="34" y="276" font-size="8" fill="#6b7280" font-family="Arial">Actual 2026 - explica&ccedil;&atilde;o mensal de resultados</text>
+        </svg>
+      </a>
+      <div class="card-body">
+        <span class="card-tag">Resultados</span>
+        <a class="card-title" href="https://docs.google.com/presentation/d/1IayYvjAS-fCXZCCmUVtFXIfsFzwET57sgi_esPE8R1w" target="_blank" rel="noopener">
+          Apresenta&ccedil;&otilde;es de Resultados 2026
+        </a>
+        <p class="card-desc">Decks mensais de explica&ccedil;&atilde;o de resultados, com links diretos para as apresenta&ccedil;&otilde;es de Acquiring e Fintech no Google Slides.</p>
+        <div class="deck-track">
+          <span class="deck-track-title">Acquiring</span>
+          <div class="deck-months" aria-label="Apresentacoes mensais de Acquiring disponiveis">
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1QaVOFdlGR99zEqfl20cIDXeegETbYDy4cWOj2d4smbA" target="_blank" rel="noopener">Jan'26</a>
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1CXRMtKfva307XRIE8cSF0CRqtm44dveXwbVbB3hGFUU" target="_blank" rel="noopener">Feb'26</a>
+            <a class="deck-month" href="https://docs.google.com/presentation/d/12jQToe7KzCjKAeX9JEDuzXaFpbcn5SrKDfCm_5ZcxwE" target="_blank" rel="noopener">Mar'26</a>
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1zwNPnCkvDGL3u_X5neH-JZG1tMRgDs6vQtn0abdpz5M" target="_blank" rel="noopener">Apr'26</a>
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1IayYvjAS-fCXZCCmUVtFXIfsFzwET57sgi_esPE8R1w" target="_blank" rel="noopener">May'26</a>
+          </div>
+        </div>
+        <div class="deck-track">
+          <span class="deck-track-title">Fintech</span>
+          <div class="deck-months" aria-label="Apresentacoes mensais de Fintech disponiveis">
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1DpQFIQAzEhGzxW5fBAAPri7hoRiwfUp04l1WxQUlcvg" target="_blank" rel="noopener">Jan'26</a>
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1t4ybweSo5rFoVABez9B0vV4Qhf1QUi_rjXfA3h2tW0A" target="_blank" rel="noopener">Feb'26</a>
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1THbp7jShg48GHK_RHT0geHKGJaM_K0W6yCYDstVTjP4" target="_blank" rel="noopener">Mar'26</a>
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1jpFmxtshBoOzEmxO_qWfhSied9W5PE9h94HJcTPSGOc" target="_blank" rel="noopener">Apr'26</a>
+            <a class="deck-month" href="https://docs.google.com/presentation/d/1dksU3tmKc4fkZT-kR6Q-5oCl9cCOaWWxxCVAcWejqgY" target="_blank" rel="noopener">May'26</a>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="deck-latest-links">
+            <a class="card-link" href="https://docs.google.com/presentation/d/1IayYvjAS-fCXZCCmUVtFXIfsFzwET57sgi_esPE8R1w" target="_blank" rel="noopener">
+              May Acq
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="card-link" href="https://docs.google.com/presentation/d/1dksU3tmKc4fkZT-kR6Q-5oCl9cCOaWWxxCVAcWejqgY" target="_blank" rel="noopener">
+              May Fintech
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#3483FA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <span class="card-platform">Google Slides</span>
         </div>
       </div>
     </div>
@@ -1847,6 +1984,16 @@
       fonte_dados: 'Base contábil de Consigno e mapeamento de/para MNG x Consigno, gerenciados no documento Grid original.',
       query: '// Query/documentacao tecnica nao disponivel localmente.\n// Consulte o documento Grid original: 01KT7G1SQCEF4QA73AMN62C265\n// Escopo: Point; visoes: conta e CeCo; mapeamento: MNG x Consigno.',
       atualizacao: 'Conforme configuracao do dashboard no Grid.',
+    },
+    'Apresentacoes de Resultados 2026': {
+      categoria: 'Resultados',
+      audiencia: 'Time de Financial Planning - Acquiring Brasil e stakeholders de fechamento mensal',
+      objetivo: 'Centralizar os decks mensais de explicacao de resultados de Acquiring e Fintech, com acesso direto a cada apresentacao do Google Slides.',
+      como_foi_construido: 'Card estatico no Acquiring Data Center com links diretos para as apresentacoes de resultados encontradas no Drive compartilhado FP&A / Planejamento / 01 - Actual / 2026 / <mes> / Acquiring e / Fintech.',
+      como_funciona: 'Cada botao de mes abre diretamente a apresentacao correspondente no Google Slides. O card separa os links em duas trilhas: Acquiring e Fintech.',
+      fonte_dados: 'Google Slides no Drive compartilhado FP&A. Caminhos mensais: G:\\Drives compartilhados\\FP&A\\Planejamento\\01 - Actual\\2026\\<mes>\\Acquiring e G:\\Drives compartilhados\\FP&A\\Planejamento\\01 - Actual\\2026\\<mes>\\Fintech.',
+      query: '// Links atuais mapeados no Data Center:\n// Acquiring Jan: 1QaVOFdlGR99zEqfl20cIDXeegETbYDy4cWOj2d4smbA\n// Acquiring Feb: 1CXRMtKfva307XRIE8cSF0CRqtm44dveXwbVbB3hGFUU\n// Acquiring Mar: 12jQToe7KzCjKAeX9JEDuzXaFpbcn5SrKDfCm_5ZcxwE\n// Acquiring Apr: 1zwNPnCkvDGL3u_X5neH-JZG1tMRgDs6vQtn0abdpz5M\n// Acquiring May: 1IayYvjAS-fCXZCCmUVtFXIfsFzwET57sgi_esPE8R1w\n// Fintech Jan: 1DpQFIQAzEhGzxW5fBAAPri7hoRiwfUp04l1WxQUlcvg\n// Fintech Feb: 1t4ybweSo5rFoVABez9B0vV4Qhf1QUi_rjXfA3h2tW0A\n// Fintech Mar: 1THbp7jShg48GHK_RHT0geHKGJaM_K0W6yCYDstVTjP4\n// Fintech Apr: 1jpFmxtshBoOzEmxO_qWfhSied9W5PE9h94HJcTPSGOc\n// Fintech May: 1dksU3tmKc4fkZT-kR6Q-5oCl9cCOaWWxxCVAcWejqgY',
+      atualizacao: 'Mensal - adicionar o novo link quando o deck do mes estiver disponivel no Drive.',
     },
     'MPOS Analytics': {
       categoria: 'Dispositivos',
