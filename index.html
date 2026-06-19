@@ -28,7 +28,7 @@
       background: #FFF159;
     }
     .header-inner {
-      max-width: 1200px;
+      max-width: 1440px;
       margin: 0 auto;
       padding: 28px 32px;
       display: flex;
@@ -97,8 +97,8 @@
 
     /* ── Main grid ── */
     main {
-      max-width: 1200px;
-      margin: 48px auto;
+      max-width: 1440px;
+      margin: 36px auto;
       padding: 0 32px 64px;
     }
     .section-title {
@@ -111,14 +111,15 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
-      gap: 28px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: start;
+      gap: 18px;
     }
 
     /* ── Card ── */
     .card {
       background: #fff;
-      border-radius: 16px;
+      border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
       overflow: hidden;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -126,8 +127,8 @@
       flex-direction: column;
     }
     .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 32px rgba(0,0,0,0.13);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.12);
     }
     .card-thumb {
       display: block;
@@ -144,7 +145,7 @@
     }
     .card-thumb:hover svg { opacity: 0.92; }
     .card-body {
-      padding: 22px 24px 24px;
+      padding: 16px 16px 18px;
       display: flex;
       flex-direction: column;
       flex: 1;
@@ -158,12 +159,12 @@
       background: #eef4ff;
       color: #3483FA;
       border-radius: 6px;
-      padding: 3px 9px;
-      margin-bottom: 10px;
+      padding: 3px 8px;
+      margin-bottom: 8px;
       width: fit-content;
     }
     .card-title {
-      font-size: 1.2rem;
+      font-size: 1.02rem;
       font-weight: 700;
       color: #1a1f3c;
       text-decoration: none;
@@ -173,25 +174,29 @@
     .card-title:hover { color: #3483FA; }
     .card-desc {
       color: #6b7280;
-      font-size: 0.9rem;
-      line-height: 1.6;
+      font-size: 0.82rem;
+      line-height: 1.45;
       margin-top: 8px;
       flex: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-top: 18px;
-      padding-top: 16px;
+      margin-top: 14px;
+      padding-top: 12px;
       border-top: 1px solid #f0f2f5;
     }
     .card-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: #3483FA;
       text-decoration: none;
@@ -213,20 +218,20 @@
       min-width: 120px;
     }
     .card-platform {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       color: #aab0c0;
       font-weight: 500;
     }
     .card-update {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       color: #6b7280;
       font-weight: 600;
       white-space: nowrap;
     }
     .deck-months {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+      gap: 6px;
     }
     .deck-track { margin-top: 14px; }
     .deck-track + .deck-track { margin-top: 12px; }
@@ -240,7 +245,7 @@
       text-transform: uppercase;
     }
     .deck-month {
-      min-height: 34px;
+      min-height: 30px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -248,7 +253,7 @@
       border-radius: 8px;
       background: #eff6ff;
       color: #2563eb;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-decoration: none;
       transition: border-color 0.15s, color 0.15s, background 0.15s;
@@ -338,7 +343,14 @@
     .click-badge-mid   { background: #f3f4f6; color: #6b7280; }
     .card-footer-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
-    @media (max-width: 700px) {
+    @media (max-width: 1180px) {
+      .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      main { margin-top: 30px; }
+    }
+    @media (max-width: 620px) {
       .grid { grid-template-columns: 1fr; }
       .header-inner { flex-wrap: wrap; }
       .header-badge { margin-left: 0; }
