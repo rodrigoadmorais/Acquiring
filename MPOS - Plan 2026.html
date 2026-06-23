@@ -949,9 +949,9 @@
             // Detects version from _version field OR from a column key matching a month pattern.
             // Handles: _version:"Forecast 3+9", column "ABR", "ABR v2", "forecast ABR v2", etc.
             if (row && row._version) return String(row._version).trim();
-            const monthMapV = { 'jan':'0+12','fev':'1+11','mar':'2+10','abr':'3+9',
-                                'mai':'4+8','jun':'5+7','jul':'6+6','ago':'7+5',
-                                'set':'8+4','out':'9+3','nov':'10+2','dez':'11+1' };
+            const monthMapV = { 'jan':'1+11','fev':'2+10','mar':'3+9','abr':'4+8',
+                                'mai':'5+7','jun':'6+6','jul':'7+5','ago':'8+4',
+                                'set':'9+3','out':'10+2','nov':'11+1','dez':'12+0' };
             for (const k of Object.keys(row || {})) {
                 let raw = String(k).trim();
                 if (raw.toLowerCase().startsWith('forecast ')) raw = raw.substring(9).trim();
@@ -5235,7 +5235,7 @@
       ${[
         ['Fetch paralelo','boot() dispara 6 fetches simultâneos com Promise.all(). Falhas individuais retornam { ok: false } e são tratadas — o dashboard inicializa parcialmente sem travar.'],
         ['Parse & normalização','Cada JSON é parseado e todas as chaves de string são normalizadas para UPPERCASE via parseAndNormalize(). Isso garante match entre dados de Plan, Realizado e Forecast independente de case nos arquivos.'],
-        ['Fusão Forecast + Realizado','fuseActualIntoForecast(actualDb, forecastDb) sobrescreve os meses com dados reais no forecast (meses 1..N, onde N = último mês com realizado > 0). O resultado é o cenário "Forecast (com Real)".'],
+        ['Fusão Forecast + Realizado','fuseActualIntoForecast(actualDb, forecastDb, label) sobrescreve os meses 1..N com dados reais, usando o N do rótulo do forecast. Ex.: Forecast 6+6 usa Realizado de Jan-Jun e Forecast de Jul-Dez.'],
         ['Construção do scenarioList','Array global de cenários disponíveis: Plan, Realizado, Forecast, Forecast Anterior e versões fusionadas. Cada cenário tem { id, name, type, months[] }.'],
         ['Render inicial','processDashboard() é chamado com os valores default dos selectors. A aba ativa (Comparação, P&L ou Estoque) é renderizada com os dados processados.'],
         ['Re-render reativo','Qualquer mudança nos selectors (cenário, período, canal, device) re-executa processDashboard() ou renderPLTab(), atualizando todos os gráficos e tabelas na tela.']
@@ -5327,7 +5327,7 @@
         <li><strong>Meses fechados (1..N):</strong> dados do Realizado (mais precisos)</li>
         <li><strong>Meses futuros (N+1..12):</strong> dados do Forecast</li>
       </ul>
-      <p><strong>Detecção de N:</strong> percorre meses 1 a 12 e identifica o maior com total de realizado &gt; 0 em qualquer linha do dataset.</p>
+      <p><strong>Detecção de N:</strong> usa o rótulo <code>Forecast N+M</code> do arquivo. Quando o arquivo vem identificado por mês, o mês representa o último realizado: <code>JUN</code> = <code>Forecast 6+6</code>.</p>
       <p><strong>Normalização:</strong> todas as chaves (CANAL, DEVICE, colunas YYYYMM) convertidas para UPPERCASE antes da fusão.</p>
       <p><strong>Resultado:</strong> novo array de linhas registrado como cenário separado no <code>scenarioList</code>.</p>
     </div>
@@ -5515,7 +5515,7 @@ O **MPOS Analytics Dashboard** é uma aplicação web de página única (SPA) em
 
 1. **Fetch paralelo** — \`boot()\` dispara 6 fetches com \`Promise.all()\` + cache-busting \`?_=Date.now()\`
 2. **Normalização** — todas as chaves convertidas para UPPERCASE via \`parseAndNormalize()\`
-3. **Fusão Forecast+Realizado** — \`fuseActualIntoForecast()\` sobrescreve meses 1..N com dados reais
+3. **Fusão Forecast+Realizado** — \`fuseActualIntoForecast()\` sobrescreve meses 1..N com dados reais, onde N vem do rótulo do forecast
 4. **scenarioList** — array global com todos os cenários e meses disponíveis
 5. **Render inicial** — \`processDashboard()\` com valores default dos selectors
 6. **Re-render reativo** — qualquer mudança nos selectors dispara novo processamento
@@ -5582,7 +5582,7 @@ ${costTable}
 
 \`fuseActualIntoForecast(actualDb, forecastDb, label)\`
 
-- **Meses 1..N:** dados do Realizado (N = último mês com total > 0)
+- **Meses 1..N:** dados do Realizado (N vem do rótulo do forecast; Forecast 6+6 = Jan-Jun realizado)
 - **Meses N+1..12:** dados do Forecast
 - Chaves normalizadas para UPPERCASE antes da fusão
 - Resultado registrado como cenário separado no \`scenarioList\`
