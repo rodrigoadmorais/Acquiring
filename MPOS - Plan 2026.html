@@ -1082,7 +1082,7 @@
                     if (/^\d{6}$/.test(k)) {
                         if (k.startsWith(forecastYear) && k <= cutoffYYYYMM) {
                             // Meses dentro do corte: serão substituídos pelo realizado → zera
-                            forecastMap[key][k] = 0;
+                            forecastMap[key][k] = (forecastMap[key][k] || 0) + parseNum(row[k]);
                         } else {
                             // Meses fora do corte: acumula valores do forecast
                             forecastMap[key][k] = (forecastMap[key][k] || 0) + parseNum(row[k]);
@@ -1109,7 +1109,9 @@
                 const fYear = forecastYear;
                 Object.keys(forecastMap[key]).forEach(k => {
                     if (/^\d{6}$/.test(k) && k.startsWith(fYear) && k <= cutoffYYYYMM) {
-                        forecastMap[key][k] = actual ? (actual[k] || 0) : 0;
+                        if (actual && Object.prototype.hasOwnProperty.call(actual, k)) {
+                            forecastMap[key][k] = actual[k] || 0;
+                        }
                     }
                 });
             });
