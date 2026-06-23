@@ -1053,6 +1053,7 @@
             // --- Passo 1: monta actualMap com chaves UPPERCASE para lookup ---
             // Só coleta meses do ano do forecast que estejam dentro do corte.
             const actualMap = {};
+            const actualMeta = {};
             actualDb.forEach(row => {
                 const rawC  = String(row[cols.ACTUAL.canal]||'').trim().toUpperCase();
                 const canal = (canalRegistry[rawC] || String(row[cols.ACTUAL.canal]||'').trim()).toUpperCase();
@@ -1061,6 +1062,7 @@
                 if (!canal || !dev) return;
                 const key = canal + '|' + dev;
                 if (!actualMap[key]) actualMap[key] = {};
+                if (!actualMeta[key]) actualMeta[key] = { Canal: canal, Device: dev };
                 for (const k in row) {
                     if (/^\d{6}$/.test(k) && k.startsWith(forecastYear) && k <= cutoffYYYYMM) {
                         actualMap[key][k] = (actualMap[key][k] || 0) + parseNum(row[k]);
@@ -1090,6 +1092,18 @@
             });
 
             // --- Passo 3: substitui meses ≤ cutoff pelo realizado (REPLACE, não ADD) ---
+            Object.keys(actualMap).forEach(key => {
+                if (!forecastMap[key]) {
+                    forecastMap[key] = {
+                        Canal: actualMeta[key].Canal,
+                        Device: actualMeta[key].Device
+                    };
+                    Object.keys(actualMap[key]).forEach(k => {
+                        forecastMap[key][k] = 0;
+                    });
+                }
+            });
+
             Object.keys(forecastMap).forEach(key => {
                 const actual = actualMap[key];
                 const fYear = forecastYear;
