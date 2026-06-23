@@ -327,7 +327,7 @@
                         </div>
                         <!-- Toggle ajuste CMV Smart -->
                         <button id="btn-smart-cost-adj" onclick="toggleSmartCostAdj()"
-                            title="Aplica +12,5% no CMV unitário do Smart a partir de Agosto&#10;e +7% adicional a partir de Novembro"
+                            title="Aplica +12,5% no CMV unitário do Smart a partir de Agosto"
                             class="flex items-center gap-1.5 border px-3 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all bg-orange-500 border-orange-600 text-white">
                             <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
                             <span>↑ CMV Smart</span>
@@ -2296,7 +2296,7 @@
         let plUnitMode = false;
         let plMetric = 'resultado';
         let plTimelineChartObj = null, plBarChartObj = null;
-        let smartCostAdjEnabled = true;   // toggle ajuste de custo Smart (ago +12,5% / nov +7% adicional) — ativo por padrão
+        let smartCostAdjEnabled = true;   // toggle ajuste de custo Smart (ago +12,5%) — ativo por padrão
         let proCostAdjEnabled   = true;   // toggle ajuste de custo Pro (ago +14,5% wave única) — ativo por padrão
 
         const PL_METRIC_LABELS = { resultado: 'Resultado', receita: 'Receita', salesTaxes: 'Sales Taxes', cmv: 'CMV' };
@@ -2340,10 +2340,9 @@
         }
 
         // Retorna multiplicador de custo para Smart baseado no mês (1-12).
-        // Ago-Out: +12,5%  |  Nov+: +12,5% × 1,07  |  demais: 1×
+        // Ago+: +12,5%  |  demais: 1×
         function getSmartCostMult(moNum) {
             if (!smartCostAdjEnabled || moNum == null) return 1;
-            if (moNum >= 11) return 1.125 * 1.07;
             if (moNum >= 8)  return 1.125;
             return 1;
         }
@@ -5283,7 +5282,7 @@
       <div class="bg-blue-50 border border-blue-200 rounded-xl p-4"><div class="font-black text-blue-800 mb-2">Resultado (Margem Bruta)</div><div class="text-blue-700 leading-relaxed"><code>Receita + Sales Taxes + CMV</code><br>Resultado final após tributos e custo de produto.</div></div>
     </div>
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-2">
-      <div><strong>↑ CMV Smart (botão toggle, ativo por padrão):</strong> Ago–Out: +12,5% | Nov+: +12,5% × 1,07 (duas waves de aumento)</div>
+      <div><strong>↑ CMV Smart (botão toggle, ativo por padrão):</strong> Ago+ +12,5% no custo unitário do Smart (wave única)</div>
       <div><strong>↑ CMV Pro (botão toggle, ativo por padrão):</strong> Ago+ +14,5% no custo unitário do Pro (wave única)</div>
       <div><strong>Impacto técnico:</strong> quando qualquer ajuste está ativo, <code>computePLPeriod()</code> itera mês a mês (em vez de usar a soma agregada) para aplicar o multiplicador correto de cada mês.</div>
     </div>
@@ -5552,7 +5551,7 @@ Função central: \`extractValue(type, periodId, filterCanal, filterDevice)\` �
 | Resultado | \`Receita + Sales Taxes + CMV\` |
 
 ### Ajustes de CMV (ativos por padrão)
-- **↑ CMV Smart:** Ago–Out +12,5% | Nov+ +12,5%×1,07 (duas waves)
+- **↑ CMV Smart:** Ago+ +12,5% (wave única)
 - **↑ CMV Pro:** Ago+ +14,5% (wave única)
 
 Quando qualquer ajuste está ativo, \`computePLPeriod()\` itera mês a mês para aplicar o multiplicador correto.
