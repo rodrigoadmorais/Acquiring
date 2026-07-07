@@ -579,64 +579,108 @@ function matchCenario(raw){
   return null;
 }
 
-function parseVolumeTab(tabName, values, field){
-  console.log('[MPOS Vol] Tab:',tabName,'rows:',values?values.length:0,'field:',field);
-  if(!values||values.length<2){console.warn('[MPOS Vol] Empty');return;}
+// Parse YYYYMM string → {year, month 0-11} or null
+function parseYYYYMM(h){
+  var s=String(h||'').replace(/[\s\.\-\/]/g,'');
+  if(/^\d{6}$/.test(s)){
+    var y=parseInt(s.slice(0,4),10);
+    var m=parseInt(s.slice(4,6),10)-1;
+    if(y>=2020&&m>=0&&m<=11)return{year:y,month:m};
+  }
+  return null;
+}
 
-  // Try to find a header row with month names (scan up to row 10)
-  let hdrIdx=-1, colIdx=new Array(12).fill(-1);
-  for(let ri=0;ri<Math.min(values.length,10);ri++){
-    const row=(values[ri]||[]).map(function(c){return String(c||'').trim();});
-    const tmp=new Array(12).fill(-1);
+// "Real"/"Plano" + year → D key
+function cenToKey(cen,year){
+  var n=String(cen||'').toLowerCase().trim();
+  var y=String(year);
+  if(n==='real'||n.indexOf('real')>=0)return'Realizado '+y;
+  if(n==='plano'||n.indexOf('plan')>=0)return'Plano '+y;
+  if(n.indexOf('fcst')>=0||n.indexOf('forecast')>=0)return'Forecast '+y;
+  return null;
+}
+
+// Generic parser for tabs with structure: ColA | ColB | ColC(cenário) | ... | YYYYMM cols ...
+// rowFilter(row) → true if this row's data should be captured into `field`
+function parseYYYYMMTab(tabName,values,field,rowFilter){
+  console.log('[MPOS Vol]',tabName,values?values.length:0,'rows');
+  if(!values||values.length<2)return;
+
+  // Find header row: first row with ≥3 YYYYMM values
+  var hdrIdx=-1;
+  var colMap={}; // "year_month" → colIndex
+  for(var ri=0;ri<Math.min(values.length,20);ri++){
+    var row=values[ri]||[];
+    var tmp={};var cnt=0;
     row.forEach(function(h,ci){
-      // Named months: "jan", "janeiro", "Jan/26" etc.
-      const byName=moIdx(h);
-      if(byName>=0&&tmp[byName]<0){tmp[byName]=ci;return;}
-      // Numeric months: 1-12 or "01"-"12"
-      const n=parseInt(h,10);
-      if(!isNaN(n)&&n>=1&&n<=12&&String(h).replace(/\D/g,'')==String(h).trim()&&tmp[n-1]<0)tmp[n-1]=ci;
+      var ym=parseYYYYMM(h);
+      if(ym){tmp[ym.year+'_'+ym.month]=ci;cnt++;}
     });
-    if(tmp.filter(function(x){return x>=0;}).length>=2){hdrIdx=ri;colIdx=tmp;break;}
+    if(cnt>=3){hdrIdx=ri;colMap=tmp;break;}
   }
-
-  // Fallback: if no header found, check if data rows have ≥13 cols and assume positional
-  // (col 0 = scenario, cols 2-13 = Jan-Dec)
   if(hdrIdx<0){
-    // Find a data row with ≥13 cols
-    var wideRow=null;
-    for(var ri2=0;ri2<Math.min(values.length,15);ri2++){
-      if((values[ri2]||[]).length>=13){wideRow=values[ri2];break;}
-    }
-    if(wideRow){
-      console.log('[MPOS Vol] Fallback posicional: col0=cenário, cols 2-13=Jan-Dez');
-      hdrIdx=-2; // sentinel: positional mode
-      colIdx=[2,3,4,5,6,7,8,9,10,11,12,13];
-    }
-  }
-
-  if(hdrIdx===-1){
-    console.warn('[MPOS Vol] Não encontrou header. Primeiras 3 linhas:',JSON.stringify(values.slice(0,3)));
+    console.warn('[MPOS Vol] Sem header YYYYMM em',tabName,'. Primeiras 3 linhas:',JSON.stringify(values.slice(0,3)));
     return;
   }
+  console.log('[MPOS Vol] Header em linha',hdrIdx,'cols YYYYMM:',Object.keys(colMap).length);
 
-  var startRow=hdrIdx===-2?0:hdrIdx+1;
+  // Collect unique years from colMap
+  var years={};
+  Object.keys(colMap).forEach(function(k){years[k.split('_')[0]]=1;});
+  var yearList=Object.keys(years).map(Number);
+
   var found=0;
-  for(var r=startRow;r<values.length;r++){
-    var row=values[r];
-    if(!row||row.length<2)continue;
-    var raw=String(row[0]||'').trim();
-    if(!raw)continue;
-    var key=matchCenario(raw);
-    if(!key)continue;
-    var vals=colIdx.map(function(ci){
-      var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
-      return isNaN(v)?null:v;
+  for(var r=hdrIdx+1;r<values.length;r++){
+    var row=values[r]||[];
+    if(!rowFilter(row))continue;
+    var cenRaw=String(row[2]||'').trim(); // col C = cenário
+    yearList.forEach(function(year){
+      var key=cenToKey(cenRaw,year);
+      if(!key||!D[key])return;
+      var vals=Array.from({length:12},function(_,m){
+        var ci=colMap[year+'_'+m];
+        if(ci===undefined||ci===null)return null;
+        var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+        return isNaN(v)?null:v;
+      });
+      console.log('[MPOS Vol] →',key,field,vals.slice(0,6));
+      D[key][field]=vals;
+      found++;
     });
-    console.log('[MPOS Vol] Match',raw,'→',key,vals.slice(0,6),'...');
-    D[key][field]=vals;
-    found++;
   }
-  if(found===0)console.warn('[MPOS Vol] Nenhum cenário matched. Linhas:',JSON.stringify(values.slice(0,5)));
+  if(found===0)console.warn('[MPOS Vol] Nenhum match em',tabName,'field=',field);
+}
+
+function parseVolDespacho(values){
+  parseYYYYMMTab('Vol Despachos',values,'vol_despacho',function(row){
+    var a=String(row[0]||'').toLowerCase();
+    var b=String(row[1]||'').toLowerCase();
+    return a.indexOf('warehouse')>=0&&b.indexOf('despacho')>=0;
+  });
+}
+
+function parseVolume(values){
+  // Volume tab: pick any row that has device units (not Plano/Real distinction in col C)
+  // Try generic approach: col A = scenario, YYYYMM cols
+  // Fallback: if structure is A=PYL, B=KPI, C=cenário → pick rows where B contains 'device' or 'volume' or 'point'
+  var isABC=false;
+  if(values.length>1){
+    var r1=values[1]||[];
+    // If col C looks like Real/Plano, it's the ABC structure
+    var c=String(r1[2]||'').toLowerCase().trim();
+    if(c==='real'||c==='plano'||c==='plan')isABC=true;
+  }
+  if(isABC){
+    parseYYYYMMTab('Volume',values,'vol',function(row){
+      // Accept any row (devices) — pick first matching; skip empty rows
+      return !!(row[0]||row[1]);
+    });
+  } else {
+    // Simpler structure: col 0 = scenario, YYYYMM cols from header
+    parseYYYYMMTab('Volume',values,'vol',function(row){
+      return !!matchCenario(String(row[0]||'').trim());
+    });
+  }
 }
 
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
@@ -655,18 +699,16 @@ function getRetry(range,attempt){
 }
 
 function doFetchSheets(){
-  function fetchTab(tabName,field){
-    return getRetry(tabName+'!A1:N500',0)
+  function fetchWith(tabName,parser){
+    return getRetry(tabName+'!A:AZ',0)
       .then(function(res){
-        console.log('[MPOS Vol]',tabName,res&&res.values?res.values.length+' rows':'empty');
-        if(res&&res.values)parseVolumeTab(tabName,res.values,field);
+        if(res&&res.values)parser(res.values);
       })
       .catch(function(e){console.error('[MPOS Vol] erro',tabName,e);});
   }
-  // Escalonar requests para evitar 429 (160ms entre elas, como acquiring faz)
-  fetchTab('Volume','vol')
+  fetchWith('Volume',parseVolume)
     .then(function(){return sleep(160);})
-    .then(function(){return fetchTab('Vol Despachos e Envios','vol_despacho');})
+    .then(function(){return fetchWith('Vol Despachos e Envios',parseVolDespacho);})
     .then(function(){render();});
 }
 
