@@ -532,67 +532,91 @@ function setPrimary(v){ST.prim=v;render();}
 function setCompare(v){ST.comp=v;render();}
 
 const MPOS_SHEET_ID='1zGp8an4VMzaY_Nu_BG5vD2WVY_gQxWNHjfQ-OUtxDVI';
-const CENARIO_KEY_MAP={
-  'Realizado 2024':'Realizado 2024',
-  'Realizado 2025':'Realizado 2025',
-  'Realizado 2026':'Realizado 2026',
-  'Forecast 2026':'Forecast 2026',
-  'Plano 2025':'Plano 2025',
-  'Plano 2026':'Plano 2026',
-};
-const MO3_PT=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-const MO3_ES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const MO3_EN=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 
-function isMonthHeader(h){
-  const s=String(h||'').toLowerCase().replace(/[^a-z]/g,'').slice(0,3);
-  return MO3_PT.indexOf(s)>=0||MO3_ES.indexOf(s)>=0||MO3_EN.indexOf(s)>=0;
-}
+// Month abbreviations in PT/ES/EN — 3 letters each
+const MO3_ALL=[
+  ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'], // PT
+  ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'], // ES
+  ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'], // EN
+];
 function moIdx(h){
   const s=String(h||'').toLowerCase().replace(/[^a-z]/g,'').slice(0,3);
-  let i=MO3_PT.indexOf(s); if(i>=0)return i;
-  i=MO3_ES.indexOf(s); if(i>=0)return i;
-  i=MO3_EN.indexOf(s); if(i>=0)return i;
+  for(let g=0;g<MO3_ALL.length;g++){const i=MO3_ALL[g].indexOf(s);if(i>=0)return i;}
   return -1;
 }
 
-function parseVolumeTab(values, field){
-  if(!values||values.length<2)return;
-  const hdr=(values[0]||[]).map(function(c){return String(c||'').trim();});
-  // build colIdx[0..11] = column index for each month
-  const colIdx=new Array(12).fill(-1);
-  hdr.forEach(function(h,i){
-    const idx=moIdx(h);
-    if(idx>=0&&colIdx[idx]<0)colIdx[idx]=i;
-  });
-  const hasMo=colIdx.some(function(x){return x>=0;});
-  if(!hasMo)return;
-  for(let r=1;r<values.length;r++){
+// Fuzzy scenario matching — tolerates extra/missing year, case, spaces
+function matchCenario(raw){
+  const s=String(raw||'').trim();
+  // Direct match
+  if(D[s])return s;
+  // Normalize: lowercase, collapse spaces
+  const n=s.toLowerCase().replace(/\s+/g,' ');
+  const map=[
+    ['realizado 2024','Realizado 2024'],['realizado2024','Realizado 2024'],
+    ['realizado 2025','Realizado 2025'],['realizado2025','Realizado 2025'],
+    ['realizado 2026','Realizado 2026'],['realizado2026','Realizado 2026'],
+    ['forecast 2026','Forecast 2026'],['fcst 2026','Forecast 2026'],['forecast2026','Forecast 2026'],
+    ['plano 2025','Plano 2025'],['plan 2025','Plano 2025'],['plano2025','Plano 2025'],
+    ['plano 2026','Plano 2026'],['plan 2026','Plano 2026'],['plano2026','Plano 2026'],
+  ];
+  for(let i=0;i<map.length;i++)if(n===map[i][0])return map[i][1];
+  return null;
+}
+
+function parseVolumeTab(tabName, values, field){
+  console.log('[MPOS Vol] Tab:',tabName,'rows:',values?values.length:0,'field:',field);
+  if(!values||values.length<2){console.warn('[MPOS Vol] Empty or too short');return;}
+
+  // Find header row (first row with ≥2 month columns) scanning up to row 10
+  let hdrIdx=-1, colIdx=new Array(12).fill(-1);
+  for(let ri=0;ri<Math.min(values.length,10);ri++){
+    const row=(values[ri]||[]).map(function(c){return String(c||'').trim();});
+    const tmp=new Array(12).fill(-1);
+    row.forEach(function(h,ci){const m=moIdx(h);if(m>=0&&tmp[m]<0)tmp[m]=ci;});
+    if(tmp.filter(function(x){return x>=0;}).length>=2){hdrIdx=ri;colIdx=tmp;break;}
+  }
+  console.log('[MPOS Vol] Header row idx:',hdrIdx,'colIdx:',colIdx);
+  if(hdrIdx<0){console.warn('[MPOS Vol] No month header found — first 3 rows:',values.slice(0,3));return;}
+
+  let found=0;
+  for(let r=hdrIdx+1;r<values.length;r++){
     const row=values[r];
-    if(!row||!row[0])continue;
-    const cen=String(row[0]).trim();
-    const key=CENARIO_KEY_MAP[cen];
-    if(!key||!D[key])continue;
-    D[key][field]=colIdx.map(function(ci){
+    if(!row)continue;
+    // Try col 0 then col 1 for scenario name
+    const raw=String(row[0]||'').trim()||String(row[1]||'').trim();
+    if(!raw)continue;
+    const key=matchCenario(raw);
+    if(!key){continue;}
+    const vals=colIdx.map(function(ci){
       if(ci<0)return null;
       const v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
       return isNaN(v)?null:v;
     });
+    console.log('[MPOS Vol] Matched',raw,'→',key,vals);
+    D[key][field]=vals;
+    found++;
   }
+  if(found===0)console.warn('[MPOS Vol] No scenarios matched. Sample rows:',values.slice(hdrIdx,hdrIdx+5));
 }
 
 function loadSheetsData(){
-  if(typeof Grid==='undefined'||!Grid.sheets)return;
+  if(typeof Grid==='undefined'||!Grid.sheets){
+    console.warn('[MPOS Vol] Grid.sheets not available');return;
+  }
   var loaded=0;
   function tryRender(){loaded++;if(loaded>=2)render();}
-  Grid.sheets.get(MPOS_SHEET_ID,'Volume').then(function(res){
-    if(res&&res.values)parseVolumeTab(res.values,'vol');
+  // Use explicit range syntax (SheetName!A1:N500) for reliability
+  Grid.sheets.get(MPOS_SHEET_ID,'Volume!A1:N500').then(function(res){
+    console.log('[MPOS Vol] Volume response:',res?'ok':'null', res&&res.values?res.values.length+' rows':'no values');
+    if(res&&res.values)parseVolumeTab('Volume',res.values,'vol');
     tryRender();
-  }).catch(function(){tryRender();});
-  Grid.sheets.get(MPOS_SHEET_ID,'Vol Despachos e Envios').then(function(res){
-    if(res&&res.values)parseVolumeTab(res.values,'vol_despacho');
+  }).catch(function(e){console.error('[MPOS Vol] Volume error:',e);tryRender();});
+  Grid.sheets.get(MPOS_SHEET_ID,'Vol Despachos e Envios!A1:N500').then(function(res){
+    console.log('[MPOS Vol] VolDespacho response:',res?'ok':'null', res&&res.values?res.values.length+' rows':'no values');
+    if(res&&res.values)parseVolumeTab('Vol Despachos e Envios',res.values,'vol_despacho');
     tryRender();
-  }).catch(function(){tryRender();});
+  }).catch(function(e){console.error('[MPOS Vol] VolDespacho error:',e);tryRender();});
 }
 
 window.addEventListener('DOMContentLoaded',function(){render();loadSheetsData();});
