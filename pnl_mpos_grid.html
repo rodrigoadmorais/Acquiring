@@ -269,6 +269,8 @@ const D={
 'Realizado 2024':{
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
   vol_despacho:[N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_envios:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_mads:    [N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [27.31,29.67,29.67,21.71,28.61,27.84,28.80,31.50,34.25,58.79,41.71,33.02],
   descuentos:  [-19.01,-21.49,-21.49,-14.56,-6.81,-19.29,-15.71,-15.71,-22.38,-22.51,-27.97,-24.94],
   icms:        [-3.72,-5.36,-4.30,-5.83,-5.20,-4.01,-6.86,-10.57,-7.81,-7.19,-10.52,-6.47],
@@ -294,6 +296,8 @@ const D={
 'Realizado 2025':{
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
   vol_despacho:[163953,152023,172172,165812,161762,158479,166644,170385,161505,165600,162632,147445],
+  vol_envios:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_mads:    [N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [34.51,45.90,40.98,42.69,38.50,40.97,42.23,42.60,39.13,40.48,45.84,37.35],
   descuentos:  [-24.14,-30.20,-28.68,-29.21,-25.02,-26.73,-27.41,-28.31,-24.42,-25.42,-30.89,-24.62],
   icms:        [-1.45,-7.71,0.28,-5.57,-3.18,-4.83,-1.63,-5.64,-4.83,-4.95,-7.71,-6.23],
@@ -320,6 +324,8 @@ const D={
   // Fonte: cenário "Realizado" da planilha MNG — dados disponíveis Jan-Jun/26
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
   vol_despacho:[366767,296670,365516,335184,N,N,N,N,N,N,N,N],
+  vol_envios:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_mads:    [N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [53.83,46.36,35.12,38.00,36.81,33.17,N,N,N,N,N,N],
   descuentos:  [-38.72,-32.61,-20.36,-24.05,-23.13,-19.81,N,N,N,N,N,N],
   icms:        [-0.92,-3.75,-8.86,-0.14,-4.85,-1.78,N,N,N,N,N,N],
@@ -345,6 +351,8 @@ const D={
 'Forecast 2026':{
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
   vol_despacho:[N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_envios:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_mads:    [N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [N,N,N,N,N,15.15,15.79,16.08,16.29,16.56,16.76,15.22],
   descuentos:  [N,N,N,N,N,N,N,N,N,N,N,N],
   icms:        [N,N,N,N,N,N,N,N,N,N,N,N],
@@ -370,6 +378,8 @@ const D={
 'Plano 2025':{
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
   vol_despacho:[N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_envios:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_mads:    [N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [16.42,16.27,17.19,17.60,18.03,19.41,19.90,21.19,21.87,21.93,19.81,20.95],
   descuentos:  [N,N,N,N,N,N,N,N,N,N,N,N],
   icms:        [-9.11,-9.03,-9.54,-9.77,-10.01,-10.77,-11.04,-11.76,-12.14,-12.17,-10.99,-11.63],
@@ -395,6 +405,8 @@ const D={
 'Plano 2026':{
   vol:         [120527,119836,126524,124867,127169,122643,128328,131478,N,N,N,N],
   vol_despacho:[N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_envios:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_mads:    [N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [65.60,65.18,70.52,69.80,71.66,69.57,73.60,75.53,77.41,76.69,76.25,73.41],
   descuentos:  [-52.30,-52.16,-56.13,-56.26,-57.74,-55.34,-58.56,-60.12,-62.01,-62.47,-62.19,-58.53],
   icms:        [N,N,N,N,N,N,N,N,N,N,N,N],
@@ -476,7 +488,9 @@ const ROWS=[
   {id:'refurb',      lbl:'Reacondicionamentos Point',     t:'cur', sub:true},
   {id:'provision',        lbl:'Estoque',            orig:'MPOS Ajuste VNR',   t:'cur', sub:true},
   {id:'hedge',            lbl:'Hedge',                                        t:'cur', sub:true},
-  {id:'vol_despacho',     lbl:'Vol. Despachos & Envios',                      t:'vol', sub:true},
+  {id:'vol_despacho',     lbl:'Vol. Despachos (Warehouse)',                   t:'vol', sub:true},
+  {id:'vol_envios',       lbl:'Total Envios (Shipping)',                      t:'vol', sub:true},
+  {id:'vol_mads',         lbl:'MADs Totais (Telemetria)',                     t:'vol', sub:true},
   {id:'distribución',     lbl:'Distribución',                                 t:'cur', sub:true},
   {id:'warehousing_total',lbl:'Warehousing',                                  t:'cur', sub:true},
   {id:'telemetria',  lbl:'Telemetria Point',              t:'cur', sub:true},
@@ -509,7 +523,9 @@ const ROWS_OFICIAL=[
   {id:'provision',   lbl:'MPOS Ajuste VNR',                                       t:'cur', sub:true},
   {id:'prev_costo',  lbl:'Previsión Costo MPOS (Legacy)',                         t:'cur', sub:true},
   {id:'hedge',       lbl:'Previsión Costo MPOS (Hedge)',                          t:'cur', sub:true},
-  {id:'vol_despacho',lbl:'Vol. Despachos & Envios',                               t:'vol', sub:true},
+  {id:'vol_despacho',lbl:'Vol. Despachos (Warehouse)',                             t:'vol', sub:true},
+  {id:'vol_envios', lbl:'Total Envios (Shipping)',                                t:'vol', sub:true},
+  {id:'vol_mads',   lbl:'MADs Totais (Telemetria)',                               t:'vol', sub:true},
   {id:'shipping',    lbl:'Distribución Point',                                    t:'cur', sub:true},
   {id:'interco_dist',lbl:'COGS Interco Distribucion Productos – Egresos',         t:'cur', sub:true},
   {id:'interco_egr', lbl:'COGS Interco Allocations – Egresos',                   t:'cur', sub:true},
@@ -953,11 +969,88 @@ function parseYYYYMMTab(tabName,values,field,rowFilter){
 }
 
 function parseVolDespacho(values){
-  parseYYYYMMTab('Vol Despachos',values,'vol_despacho',function(row){
-    var a=String(row[0]||'').toLowerCase();
-    var b=String(row[1]||'').toLowerCase();
-    return a.indexOf('warehouse')>=0&&b.indexOf('despacho')>=0;
-  });
+  if(!values||values.length<2)return;
+  console.log('[MPOS Vol] Vol Despachos',values.length,'rows');
+
+  // KPI rules for YYYYMM section (ColA=Linha PYL, ColB=KPI, ColC=Cenário)
+  var yRules=[
+    {pyl:'warehouse', kpi:'despacho',     field:'vol_despacho'},
+    {pyl:'shipping',  kpi:'total envios', field:'vol_envios'},
+  ];
+
+  // ── YYYYMM section ──
+  var yHdr=-1,yColMap={};
+  for(var ri=0;ri<Math.min(values.length,30);ri++){
+    var row=values[ri]||[];var tmp={};var cnt=0;
+    row.forEach(function(h,ci){var ym=parseYYYYMM(h);if(ym){tmp[ym.year+'_'+ym.month]=ci;cnt++;}});
+    if(cnt>=3){yHdr=ri;yColMap=tmp;break;}
+  }
+  if(yHdr>=0){
+    var yy={};Object.keys(yColMap).forEach(function(k){yy[k.split('_')[0]]=1;});
+    var yyList=Object.keys(yy).map(Number);
+    for(var r=yHdr+1;r<values.length;r++){
+      var row=values[r]||[];
+      var pylRaw=String(row[0]||'').toLowerCase().trim();
+      var kpiRaw=String(row[1]||'').toLowerCase().trim();
+      var cenRaw=String(row[2]||'').trim();
+      yRules.forEach(function(rule){
+        if(pylRaw.indexOf(rule.pyl)<0||kpiRaw.indexOf(rule.kpi)<0)return;
+        yyList.forEach(function(year){
+          var key=cenToKey(cenRaw,year);
+          if(!key||!D[key])return;
+          var vals=Array.from({length:12},function(_,m){
+            var ci=yColMap[year+'_'+m];if(ci===undefined)return null;
+            var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+            return isNaN(v)?null:v;
+          });
+          // Merge: keep existing non-null if new is null
+          var existing=D[key][rule.field]||Array(12).fill(null);
+          D[key][rule.field]=vals.map(function(v,i){return v!==null?v:existing[i];});
+          console.log('[MPOS Vol] →',key,rule.field,D[key][rule.field].slice(0,4));
+        });
+      });
+    }
+  }
+
+  // ── Date section (DD/MM/YYYY) for Telemetria/MADs Totais ──
+  var dHdr=-1,dColMap={};
+  for(var ri=0;ri<values.length;ri++){
+    var row=values[ri]||[];var tmp={};var cnt=0;
+    row.forEach(function(h,ci){
+      var s=String(h||'').trim();
+      var mt=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(mt){
+        var mon=parseInt(mt[2],10)-1;var yr=parseInt(mt[3],10);
+        if(yr>=2020&&mon>=0&&mon<=11){tmp[yr+'_'+mon]=ci;cnt++;}
+      }
+    });
+    if(cnt>=3){dHdr=ri;dColMap=tmp;break;}
+  }
+  if(dHdr>=0){
+    var dy={};Object.keys(dColMap).forEach(function(k){dy[k.split('_')[0]]=1;});
+    var dyList=Object.keys(dy).map(Number);
+    for(var r=dHdr+1;r<values.length;r++){
+      var row=values[r]||[];
+      var pylRaw=String(row[0]||'').toLowerCase().trim();
+      var kpiRaw=String(row[1]||'').toLowerCase().trim();
+      var cenRaw=String(row[2]||'').trim();
+      if(pylRaw.indexOf('telemetria')<0)continue;
+      // Accept "mads totais" or bold/total rows (kpi contains 'total' or 'totais')
+      if(kpiRaw.indexOf('totais')<0&&kpiRaw.indexOf('total')<0)continue;
+      dyList.forEach(function(year){
+        var key=cenToKey(cenRaw,year);
+        if(!key||!D[key])return;
+        var vals=Array.from({length:12},function(_,m){
+          var ci=dColMap[year+'_'+m];if(ci===undefined)return null;
+          var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+          return isNaN(v)?null:v;
+        });
+        var existing=D[key].vol_mads||Array(12).fill(null);
+        D[key].vol_mads=vals.map(function(v,i){return v!==null?v:existing[i];});
+        console.log('[MPOS Vol] →',key,'vol_mads',D[key].vol_mads.slice(0,4));
+      });
+    }
+  }
 }
 
 var VOL_DEVS=['AIR','MINI','PRO','SMART'];
