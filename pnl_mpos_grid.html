@@ -99,6 +99,18 @@
     tbody tr.expandable-row:hover td{background:rgba(52,131,250,.06)!important}
     tbody tr.bm-row td{border-top:2px solid var(--ml-navy)!important;background:rgba(45,50,119,.08)!important;font-weight:800!important;color:var(--ml-navy)!important;font-size:.8rem}
     tbody tr.bm-row:hover td{background:rgba(45,50,119,.13)!important}
+    .tip-wrap{position:relative;display:inline}
+    .tip-wrap .tip{
+      display:none;position:absolute;bottom:calc(100% + 6px);left:0;
+      background:#1F2937;color:#F9FAFB;font-size:.72rem;font-weight:500;
+      white-space:nowrap;padding:5px 10px;border-radius:8px;
+      box-shadow:0 4px 14px rgba(0,0,0,.22);pointer-events:none;z-index:999;
+    }
+    .tip-wrap .tip::after{
+      content:'';position:absolute;top:100%;left:14px;
+      border:5px solid transparent;border-top-color:#1F2937;
+    }
+    .tip-wrap:hover .tip{display:block}
     .col-fy{background:rgba(52,131,250,.05)!important;border-left:2px solid rgba(52,131,250,.25)!important;font-weight:700!important}
 
     .vn{color:var(--red)}.vp{color:var(--green)}.vz{color:var(--muted)}.v-{color:#C4C9D4;font-style:italic;font-size:.67rem}
@@ -500,7 +512,9 @@ function renderTable(){
     const icon=isExp?`<span class="expand-icon${isOpen?' open':''}">▶</span>`:'';
     const onclk=isExp?`onclick="toggleExpand('${isExp}')" title="Clique para ${isOpen?'ocultar':'ver'} detalhes"`:'';
 
-    const lblCell=row.orig?`${icon}<span title="${row.orig}" style="cursor:help;border-bottom:1px dashed var(--muted)">${row.lbl}</span>`:icon+row.lbl;
+    const lblCell=row.orig
+      ?`${icon}<span class="tip-wrap" style="cursor:help;border-bottom:1px dashed var(--muted)">${row.lbl}<span class="tip">Nome original: ${row.orig}</span></span>`
+      :icon+row.lbl;
     tb+=`<tr class="${rc} ${sub} ${expCls}"><td ${onclk}>${lblCell}</td>`;
 
     if(isComp){
