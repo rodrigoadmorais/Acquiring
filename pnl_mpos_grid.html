@@ -885,27 +885,83 @@ function parseVolDespacho(values){
 }
 
 function parseVolume(values){
-  // Volume tab: pick any row that has device units (not Plano/Real distinction in col C)
-  // Try generic approach: col A = scenario, YYYYMM cols
-  // Fallback: if structure is A=PYL, B=KPI, C=cenário → pick rows where B contains 'device' or 'volume' or 'point'
-  var isABC=false;
-  if(values.length>1){
-    var r1=values[1]||[];
-    // If col C looks like Real/Plano, it's the ABC structure
-    var c=String(r1[2]||'').toLowerCase().trim();
-    if(c==='real'||c==='plano'||c==='plan')isABC=true;
+  if(!values||values.length<2){console.warn('[MPOS Vol] Volume: sem dados');return;}
+  console.log('[MPOS Vol] Volume',values.length,'rows');
+
+  // ── Section 1: Plano/Forecast ─ YYYYMM cols in header, cenário in col 0 ──
+  var planoHdr=-1,planoColMap={};
+  for(var ri=0;ri<Math.min(values.length,30);ri++){
+    var row=values[ri]||[];var tmp={};var cnt=0;
+    row.forEach(function(h,ci){var ym=parseYYYYMM(h);if(ym){tmp[ym.year+'_'+ym.month]=ci;cnt++;}});
+    if(cnt>=3){planoHdr=ri;planoColMap=tmp;break;}
   }
-  if(isABC){
-    parseYYYYMMTab('Volume',values,'vol',function(row){
-      // Accept any row (devices) — pick first matching; skip empty rows
-      return !!(row[0]||row[1]);
-    });
-  } else {
-    // Simpler structure: col 0 = scenario, YYYYMM cols from header
-    parseYYYYMMTab('Volume',values,'vol',function(row){
-      return !!matchCenario(String(row[0]||'').trim());
+  if(planoHdr>=0){
+    var years={};
+    Object.keys(planoColMap).forEach(function(k){years[k.split('_')[0]]=1;});
+    var yList=Object.keys(years).map(Number);
+    var acc={};
+    for(var r=planoHdr+1;r<values.length;r++){
+      var row=values[r]||[];
+      var cenRaw=String(row[0]||'').trim();
+      if(!cenRaw)continue;
+      yList.forEach(function(year){
+        var key=cenToKey(cenRaw,year);
+        if(!key||!D[key])return;
+        if(!acc[key])acc[key]=Array(12).fill(null);
+        for(var m=0;m<12;m++){
+          var ci=planoColMap[year+'_'+m];if(ci===undefined)continue;
+          var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+          if(!isNaN(v)&&v>0)acc[key][m]=(acc[key][m]||0)+v;
+        }
+      });
+    }
+    Object.keys(acc).forEach(function(key){
+      console.log('[MPOS Vol] → Plano',key,'vol',acc[key].slice(0,6));
+      D[key].vol=acc[key];
     });
   }
+
+  // ── Section 2: Actual/Realizado ─ date cols DD/MM/YYYY in header ──
+  // Dates like 01/01/2024 = 1st Jan 2024 (Brazilian format DD/MM/YYYY)
+  var actualHdr=-1,actualColMap={};
+  for(var ri=0;ri<values.length;ri++){
+    var row=values[ri]||[];var tmp={};var cnt=0;
+    row.forEach(function(h,ci){
+      var s=String(h||'').trim();
+      var m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(m){
+        var mon=parseInt(m[2],10)-1;var yr=parseInt(m[3],10);
+        if(yr>=2020&&mon>=0&&mon<=11){tmp[yr+'_'+mon]=ci;cnt++;}
+      }
+    });
+    if(cnt>=3){actualHdr=ri;actualColMap=tmp;break;}
+  }
+  if(actualHdr>=0){
+    var ayears={};
+    Object.keys(actualColMap).forEach(function(k){ayears[k.split('_')[0]]=1;});
+    var ayList=Object.keys(ayears).map(Number);
+    var acc2={};
+    for(var r=actualHdr+1;r<values.length;r++){
+      var row=values[r]||[];
+      ayList.forEach(function(year){
+        var key='Realizado '+year;
+        if(!D[key])return;
+        if(!acc2[key])acc2[key]=Array(12).fill(null);
+        for(var m=0;m<12;m++){
+          var ci=actualColMap[year+'_'+m];if(ci===undefined)continue;
+          var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+          if(!isNaN(v)&&v>0)acc2[key][m]=(acc2[key][m]||0)+v;
+        }
+      });
+    }
+    Object.keys(acc2).forEach(function(key){
+      var hasData=acc2[key].some(function(v){return v!==null&&v>0;});
+      if(hasData){console.log('[MPOS Vol] → Actual',key,'vol',acc2[key].slice(0,6));D[key].vol=acc2[key];}
+    });
+  }
+
+  if(planoHdr<0&&actualHdr<0)
+    console.warn('[MPOS Vol] Nenhum header encontrado em Volume. Primeiras 3 linhas:',JSON.stringify(values.slice(0,3)));
 }
 
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
