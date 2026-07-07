@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P&L MPOS · Mercado Livre</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ml-yellow:#FFE600; --ml-blue:#3483FA; --ml-blue-dark:#1259C3;
+      --ml-navy:#2D3277; --green:#00A650; --red:#E53935; --orange:#FF9F1C;
+      --bg:#F5F7FA; --bg-soft:#EEF2F7; --card:#FFFFFF;
+      --text:#1F2937; --muted:#6B7280; --border:#E5E7EB;
+      --shadow:0 18px 45px rgba(15,23,42,0.07);
+      --radius-xl:28px; --radius-lg:22px; --radius-md:16px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{
+      min-height:100vh; font-family:"Inter",system-ui,sans-serif; color:var(--text);
+      background:
+        radial-gradient(circle at top left,rgba(255,230,0,0.22),transparent 34%),
+        radial-gradient(circle at top right,rgba(52,131,250,0.14),transparent 30%),
+        #F5F7FA;
+    }
+    h1,h2,h3{letter-spacing:-0.06em;font-weight:800}
+
+    /* HEADER */
+    .hdr{background:var(--ml-yellow);padding:14px 32px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(255,200,0,0.28)}
+    .hdr-inner{max-width:1520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .hdr-brand{display:flex;align-items:center;gap:12px}
+    .hdr-badge{background:var(--ml-navy);border-radius:12px;padding:8px 10px}
+    .hdr-title{color:var(--ml-navy);font-size:1.2rem;font-weight:800;letter-spacing:-0.05em;line-height:1.1}
+    .hdr-sub{color:var(--ml-navy);opacity:.7;font-size:.72rem;font-weight:600}
+    .mode-toggle{display:flex;background:rgba(255,255,255,.38);border-radius:12px;padding:4px;gap:2px}
+    .mode-btn{display:flex;align-items:center;gap:6px;padding:7px 16px;border-radius:9px;border:none;
+      background:transparent;color:var(--ml-navy);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s}
+    .mode-btn.active{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+
+    /* LAYOUT */
+    .wrapper{width:min(1520px,calc(100% - 40px));margin:0 auto;padding:24px 0 48px}
+
+    /* CARD */
+    .card{background:rgba(255,255,255,.88);border:1px solid rgba(229,231,235,.9);
+      border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:24px 28px;
+      transition:transform .2s,box-shadow .2s}
+    .card:hover{transform:translateY(-2px);box-shadow:0 28px 60px rgba(15,23,42,.11)}
+
+    /* FILTERS */
+    .filters-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;border-radius:var(--radius-md);padding:14px 20px}
+    .q-btns{display:flex;gap:6px;align-items:center}
+    .q-btn{padding:5px 14px;border-radius:999px;border:none;background:var(--bg-soft);color:var(--muted);
+      font-family:inherit;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .q-btn.active{background:var(--ml-navy);color:#fff}
+    .ver-selectors{display:flex;align-items:center;gap:14px}
+    .ver-selectors.hidden{display:none}
+    .ver-group{display:flex;align-items:center;gap:8px}
+    .ver-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+    .ver-select{appearance:none;padding:6px 24px 6px 10px;background:var(--bg-soft);border:1px solid var(--border);
+      border-radius:10px;font-family:inherit;font-size:.78rem;font-weight:600;color:var(--ml-navy);cursor:pointer;outline:none}
+    .ver-sep{color:var(--border);font-size:1.2rem}
+
+    /* KPI */
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:20px}
+    .kpi-card{padding:18px 22px}
+    .kpi-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+    .kpi-val{font-size:1.7rem;font-weight:800;letter-spacing:-0.07em;color:var(--ml-navy);display:block}
+    .kpi-delta{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;font-weight:700;
+      padding:3px 9px;border-radius:999px;margin-top:6px}
+    .kpi-delta.pos{background:rgba(0,166,80,.1);color:var(--green)}
+    .kpi-delta.neg{background:rgba(229,57,53,.1);color:var(--red)}
+    .kpi-sub{font-size:.7rem;color:var(--muted);margin-top:3px}
+
+    /* TABLE */
+    .tbl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .tbl-title{font-size:.95rem;font-weight:800;letter-spacing:-0.04em}
+    .view-badge{display:flex;align-items:center;gap:5px;background:var(--bg-soft);border:1px solid var(--border);
+      border-radius:8px;padding:4px 10px;font-size:.7rem;color:var(--muted);font-weight:600}
+    .tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.03)}
+    .tbl-wrap::-webkit-scrollbar{height:5px;width:5px}
+    .tbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+    table{width:100%;border-collapse:collapse;font-size:.75rem}
+    thead th{
+      background:#F8FAFC;text-align:right;font-size:.68rem;font-weight:700;
+      text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+      padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:5
+    }
+    thead th:first-child{text-align:left;min-width:220px;padding-left:14px}
+    tbody td{padding:7px 10px;border-bottom:1px solid rgba(229,231,235,.45);white-space:nowrap;text-align:right}
+    tbody td:first-child{text-align:left;padding-left:14px}
+    tbody tr:hover{background:rgba(255,230,0,.06)}
+    tbody tr.hl{background:rgba(255,230,0,.11);font-weight:700}
+    tbody tr.hl td{color:var(--ml-navy)}
+    tbody tr.hl:hover{background:rgba(255,230,0,.18)}
+    .col-fy{background:rgba(52,131,250,.05)!important;border-left:1px solid rgba(52,131,250,.18)!important;font-weight:700!important}
+    .bm-row td{border-top:2px solid var(--ml-navy)!important;background:rgba(45,50,119,.06)!important;font-weight:800!important;color:var(--ml-navy)!important}
+    .bm-row:hover td{background:rgba(45,50,119,.1)!important}
+
+    /* value colors */
+    .vn{color:var(--red)} .vp{color:var(--green)} .vz{color:var(--muted)} .v-{color:var(--border);font-style:italic;font-size:.68rem}
+    .pp{color:var(--green);font-weight:700} .pn{color:var(--red);font-weight:700}
+
+    /* expand btn */
+    .xbtn{background:none;border:none;cursor:pointer;padding:1px 4px;border-radius:4px;
+      color:var(--ml-blue);display:inline-flex;align-items:center;vertical-align:middle;margin-right:3px;transition:background .12s}
+    .xbtn:hover{background:rgba(52,131,250,.1)}
+
+    /* responsive */
+    @media(max-width:1180px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:768px){.wrapper{width:calc(100% - 24px)}.kpi-grid{grid-template-columns:1fr}.hdr{padding:12px 16px}}
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-brand">
+      <div class="hdr-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFE600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+      </div>
+      <div>
+        <div class="hdr-title">P&amp;L MPOS</div>
+        <div class="hdr-sub">Mercado Livre · Financial Planning · R$ Milhões</div>
+      </div>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-btn" id="btn-comp" onclick="setMode('comparison')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12H3M3 6h18M3 18h18"/></svg>Comparativo
+      </button>
+      <button class="mode-btn active" id="btn-evol" onclick="setMode('evolution')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Evolução
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="wrapper">
+
+  <!-- FILTERS -->
+  <div class="card filters-bar">
+    <div class="q-btns" id="qf"></div>
+    <div class="ver-selectors hidden" id="vs">
+      <div class="ver-group">
+        <span class="ver-label">Principal</span>
+        <select class="ver-select" id="sel-p" onchange="setPrimary(this.value)"></select>
+      </div>
+      <span class="ver-sep">|</span>
+      <div class="ver-group">
+        <span class="ver-label">Comparar vs</span>
+        <select class="ver-select" id="sel-c" onchange="setCompare(this.value)"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid hidden" id="kpi"></div>
+
+  <!-- TABLE -->
+  <div class="card" style="padding:20px 24px">
+    <div class="tbl-hdr">
+      <h3 class="tbl-title" id="tbl-title">Detalhamento Financeiro · P&amp;L MPOS</h3>
+      <div class="view-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <span id="vlbl">FY</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:20px;font-size:.68rem;color:var(--muted)">
+    Fonte: Google Sheets MNG · Valores em R$ Milhões · Vol em unidades · Atualizado <span id="upd"></span>
+    <br><span style="opacity:.6">Actual 2025 = Realizado | Other Costs inclui Telemetria + Scrap | Linhas de volume pendentes (aba Volume / Vol Despachos)</span>
+  </div>
+</div>
+
+<script>
+const VERS = ['Actual 2025','Plano 2025','Plano 2026'];
+const MOS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const QS = {FY:[0,1,2,3,4,5,6,7,8,9,10,11],Q1:[0,1,2],Q2:[3,4,5],Q3:[6,7,8],Q4:[9,10,11]};
+
+const ROWS = [
+  {id:'vol',          lbl:'Vol (Devices)',            t:'vol',   hl:true },
+  {id:'net_sales',    lbl:'Sales Net',                t:'cur',   hl:true, x:'salesX'},
+  {id:'sales',        lbl:'&nbsp;&nbsp;Sales Bruto',  t:'cur',   hl:false,sub:true},
+  {id:'taxes',        lbl:'&nbsp;&nbsp;Taxes',        t:'cur',   hl:false,sub:true},
+  {id:'cmv',          lbl:'CMV',                      t:'cur',   hl:true },
+  {id:'provision',    lbl:'Provisão Estoque (VNR)',   t:'cur',   hl:true },
+  {id:'hedge',        lbl:'Hedge FX',                 t:'cur',   hl:true },
+  {id:'supplies',     lbl:'Insumos',                  t:'cur',   hl:false,x:'supplX'},
+  {id:'supplies_qty', lbl:'&nbsp;&nbsp;Qtd Bobinas',  t:'vol',   hl:false,sub:true},
+  {id:'shipping',     lbl:'Shipping',                 t:'cur',   hl:false,x:'shipX'},
+  {id:'ship_tot',     lbl:'&nbsp;&nbsp;Total Despachos',t:'vol', hl:false,sub:true,x:'shipDX'},
+  {id:'ship_dev',     lbl:'&nbsp;&nbsp;&nbsp;&nbsp;Devices',t:'vol',hl:false,sub:true,sub2:true},
+  {id:'ship_ref',     lbl:'&nbsp;&nbsp;&nbsp;&nbsp;Recond.',t:'vol',hl:false,sub:true,sub2:true},
+  {id:'ship_sup',     lbl:'&nbsp;&nbsp;&nbsp;&nbsp;Bobinas',t:'vol',hl:false,sub:true,sub2:true},
+  {id:'ship_uc',      lbl:'&nbsp;&nbsp;Valor/Despacho', t:'uc', hl:false,sub:true},
+  {id:'warehousing',  lbl:'Warehousing',              t:'cur',   hl:false},
+  {id:'refurb',       lbl:'Recondicionamento',        t:'cur',   hl:false,x:'refurX'},
+  {id:'refurb_qty',   lbl:'&nbsp;&nbsp;Qtd Devices',  t:'vol',   hl:false,sub:true},
+  {id:'other_costs',  lbl:'Other Costs',              t:'cur',   hl:true },
+  {id:'bm',           lbl:'BM',                       t:'cur',   hl:true, bm:true},
+];
+
+const N=null;
+const D={
+'Actual 2025':{
+  vol:          [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales:        [14.82,14.29,14.71,15.07,14.95,12.73,15.11,13.76,14.76,13.95,13.68,13.37],
+  taxes:        [-7.17,-7.35,-10.22,-6.43,-12.85,-8.91,-4.40,-6.08,-15.63,-1.60,-10.18,-3.43],
+  net_sales:    [7.65,6.94,4.49,8.64,2.10,3.83,10.71,7.67,-0.86,12.35,3.50,9.94],
+  cmv:          [-45.68,-45.29,-46.92,-61.82,-49.18,-45.48,-52.74,-58.11,-56.09,-61.23,-63.76,-55.99],
+  provision:    [-0.91,15.99,16.11,22.69,-13.29,6.39,-3.13,9.06,-4.22,-14.39,19.07,25.21],
+  hedge:        [2.15,2.96,4.23,1.17,-0.18,-1.32,-2.65,-5.26,-3.74,-5.52,-6.73,-5.61],
+  supplies:     [0.00,-3.14,-2.13,-1.15,-0.96,-0.38,-0.13,-0.27,-0.22,-0.33,-0.13,-0.01],
+  supplies_qty: [N,N,N,N,N,N,N,N,N,N,N,N],
+  shipping:     [-2.47,-3.07,-2.63,-14.73,-3.87,-3.47,-2.06,-3.62,-2.52,-3.69,-0.32,-4.98],
+  ship_tot:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_dev:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_ref:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_sup:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_uc:      [N,N,N,N,N,N,N,N,N,N,N,N],
+  warehousing:  [-0.97,-1.05,-1.35,-0.92,-1.42,-0.85,0.44,-0.81,-0.19,-0.41,-1.14,-0.66],
+  refurb:       [-8.83,-4.80,-3.50,-4.21,-5.69,-3.90,-3.08,-3.36,-2.56,-3.34,-2.63,-2.44],
+  refurb_qty:   [N,N,N,N,N,N,N,N,N,N,N,N],
+  other_costs:  [-6.04,-17.39,-25.15,-12.91,-11.32,-11.65,-11.23,-10.69,-10.47,-13.22,-14.15,-13.24],
+  bm:           [-55.11,-48.85,-56.85,-63.24,-83.81,-56.83,-63.87,-65.39,-80.87,-89.77,-66.28,-47.77]
+},
+'Plano 2025':{
+  vol:          [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales:        [16.42,16.27,17.19,17.60,18.03,19.41,19.90,21.19,21.87,21.93,19.81,20.95],
+  taxes:        [-9.11,-9.03,-9.54,-9.77,-10.01,-10.77,-11.04,-11.76,-12.14,-12.17,-10.99,-11.63],
+  net_sales:    [7.31,7.24,7.65,7.83,8.02,8.64,8.85,9.43,9.73,9.76,8.82,9.32],
+  cmv:          [-54.64,-52.74,-55.42,-57.88,-61.24,-61.41,-67.52,-66.01,-69.02,-72.66,-68.53,-64.57],
+  provision:    [25.83,7.34,-0.58,-2.35,1.07,-1.97,1.91,0.48,-1.52,3.71,4.58,9.07],
+  hedge:        [0,0,0,0,0,0,0,0,0,0,0,0],
+  supplies:     [-0.54,-0.53,-0.56,-0.55,-0.58,-0.59,-0.60,-0.62,-0.64,-0.66,-0.67,-0.73],
+  supplies_qty: [N,N,N,N,N,N,N,N,N,N,N,N],
+  shipping:     [-4.08,-4.08,-4.28,-4.32,-4.51,-4.47,-4.64,-4.60,-4.74,-4.85,-4.81,-4.60],
+  ship_tot:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_dev:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_ref:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_sup:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_uc:      [N,N,N,N,N,N,N,N,N,N,N,N],
+  warehousing:  [-1.01,-0.98,-1.52,-1.54,-1.08,-1.08,-1.13,-1.12,-1.16,-1.19,-1.16,-1.12],
+  refurb:       [-4.24,-4.31,-4.37,-4.10,-4.13,-4.11,-3.92,-3.97,-3.98,-3.80,-3.80,-3.77],
+  refurb_qty:   [N,N,N,N,N,N,N,N,N,N,N,N],
+  other_costs:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  bm:           [-31.37,-48.07,-59.08,-62.91,-62.45,-65.00,-67.04,-66.41,-71.33,-69.69,-65.58,-56.39]
+},
+'Plano 2026':{
+  vol:          [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales:        [13.30,13.02,14.39,13.55,13.91,14.23,15.05,15.42,15.40,14.23,14.07,14.89],
+  taxes:        [-7.45,-7.29,-8.06,-7.59,-7.79,-7.97,-8.42,-8.63,-8.62,-7.97,-7.88,-8.33],
+  net_sales:    [5.85,5.73,6.34,5.96,6.12,6.26,6.62,6.79,6.78,6.26,6.19,6.55],
+  cmv:          [-49.03,-48.59,-52.22,-51.44,-52.52,-51.01,-53.44,-54.54,-55.51,-54.97,-54.40,-52.38],
+  provision:    [-0.26,2.00,2.07,-0.38,1.18,0.80,-0.13,0.79,-0.42,-1.61,-0.43,2.26],
+  hedge:        [0,0,0,0,0,0,0,0,0,0,0,0],
+  supplies:     [-1.11,-1.10,-1.23,-1.20,-1.28,-1.26,-1.31,-1.35,-1.32,-1.39,-1.41,-1.54],
+  supplies_qty: [N,N,N,N,N,N,N,N,N,N,N,N],
+  shipping:     [-5.64,-5.72,-6.16,-6.47,-6.72,-6.71,-6.90,-7.23,-7.24,-7.37,-7.40,-7.64],
+  ship_tot:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_dev:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_ref:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_sup:     [N,N,N,N,N,N,N,N,N,N,N,N],
+  ship_uc:      [N,N,N,N,N,N,N,N,N,N,N,N],
+  warehousing:  [-1.48,-1.52,-1.53,-1.40,-1.41,-1.40,-1.41,-1.44,-1.45,-1.44,-1.47,-1.44],
+  refurb:       [-5.36,-5.46,-5.67,-5.60,-5.76,-5.71,-5.32,-5.66,-5.62,-5.52,-5.56,-5.61],
+  refurb_qty:   [N,N,N,N,N,N,N,N,N,N,N,N],
+  other_costs:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  bm:           [-57.04,-54.66,-58.41,-60.51,-60.40,-59.03,-61.89,-62.63,-64.79,-66.04,-64.47,-59.81]
+}};
+
+const ST={mode:'evolution',q:'FY',prim:'Actual 2025',comp:'Plano 2025',
+  salesX:false,supplX:false,shipX:false,shipDX:false,refurX:false};
+
+function agg(){
+  const idx=QS[ST.q], r={};
+  VERS.forEach(v=>{
+    const t={};
+    ROWS.forEach(row=>{
+      const a=D[v][row.id];
+      if(!a){t[row.id]=null;return}
+      const vals=idx.map(i=>a[i]);
+      t[row.id]=vals.every(x=>x===null)?null:vals.reduce((s,x)=>s+(x??0),0);
+    });
+    r[v]=t;
+  });
+  return r;
+}
+
+function fc(v){
+  if(v===null||v===undefined) return '<span class="v-">—</span>';
+  const s=v.toFixed(1)+'M';
+  return v<0?`<span class="vn">${s}</span>`:v>0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
+}
+function fv(v){
+  if(v===null||v===undefined) return '<span class="v-">—</span>';
+  const abs=Math.abs(v);
+  if(abs>=1e6) return (v/1e6).toFixed(1)+'M';
+  if(abs>=1e3) return (v/1e3).toFixed(1)+'k';
+  return v.toFixed(0);
+}
+function fu(v){
+  if(v===null||v===undefined) return '<span class="v-">—</span>';
+  return 'R$'+v.toFixed(2);
+}
+function fmtV(v,t){return t==='vol'?fv(v):t==='uc'?fu(v):fc(v)}
+
+function visible(id){
+  if(id==='sales'||id==='taxes') return ST.salesX;
+  if(id==='supplies_qty') return ST.supplX;
+  if(id==='ship_tot'||id==='ship_uc') return ST.shipX;
+  if(id==='ship_dev'||id==='ship_ref'||id==='ship_sup') return ST.shipDX&&ST.shipX;
+  if(id==='refurb_qty') return ST.refurX;
+  return true;
+}
+
+function chevron(open){
+  return open
+    ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>'
+    : '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>';
+}
+
+function renderQ(){
+  document.getElementById('qf').innerHTML=Object.keys(QS).map(q=>
+    `<button class="q-btn${ST.q===q?' active':''}" onclick="setQ('${q}')">${q}</button>`).join('');
+}
+function renderV(){
+  const o=VERS.map(v=>`<option value="${v}">${v}</option>`).join('');
+  ['sel-p','sel-c'].forEach(id=>document.getElementById(id).innerHTML=o);
+  document.getElementById('sel-p').value=ST.prim;
+  document.getElementById('sel-c').value=ST.comp;
+  document.getElementById('vs').classList.toggle('hidden',ST.mode!=='evolution');
+}
+function renderKPI(){
+  const c=document.getElementById('kpi');
+  if(ST.mode==='comparison'){c.classList.add('hidden');return}
+  c.classList.remove('hidden');
+  const g=agg(), p=g[ST.prim], cm=g[ST.comp];
+  const ks=[
+    {l:'Sales Net',v:p.net_sales,pv:cm.net_sales,icon:'💰',hi:true},
+    {l:'BM',v:p.bm,pv:cm.bm,icon:'📊',hi:true},
+    {l:'CMV',v:p.cmv,pv:cm.cmv,icon:'🏭',hi:false},
+    {l:'Shipping',v:p.shipping,pv:cm.shipping,icon:'🚚',hi:false}
+  ];
+  c.innerHTML=ks.map(k=>{
+    const d=(k.pv&&k.pv!==0&&k.v!==null)?((k.v-k.pv)/Math.abs(k.pv)*100):null;
+    const ip=d!==null?(k.hi?d>=0:d<=0):null;
+    const dh=d!==null?`<div class="kpi-delta ${ip?'pos':'neg'}">${ip?'▲':'▼'} ${Math.abs(d).toFixed(1)}%</div>`:'';
+    const vh=k.v!==null?`<span class="kpi-val">${k.v.toFixed(1)}M</span>`:`<span class="kpi-val" style="color:var(--muted)">—</span>`;
+    return `<article class="card kpi-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <span class="kpi-lbl">${k.l}</span><span style="font-size:1rem">${k.icon}</span>
+      </div>${vh}${dh}
+      <div class="kpi-sub">R$ vs ${ST.comp}</div>
+    </article>`;
+  }).join('');
+}
+function renderTable(){
+  const g=agg(), idx=QS[ST.q];
+  document.getElementById('tbl-title').textContent=ST.mode==='comparison'?'Comparativo Multi-Versão · P&L MPOS':'Detalhamento Financeiro · P&L MPOS';
+  document.getElementById('vlbl').textContent=`Visualização: ${ST.q}`;
+
+  let th='<th>P&L Line</th>';
+  if(ST.mode==='comparison'){
+    th+='<th>Plano 2025</th><th>Var% (Act/P25)</th><th>Actual 2025</th><th>Var% (P26/Act)</th><th>Plano 2026</th>';
+  } else {
+    idx.forEach(i=>th+=`<th>${MOS[i]}</th>`);
+    th+='<th class="col-fy">FY</th>';
+  }
+  document.getElementById('th').innerHTML=th;
+
+  let tb='';
+  ROWS.forEach(row=>{
+    if(!visible(row.id)) return;
+    const rc=(row.bm?'bm-row':row.hl?'hl':'');
+
+    // build label
+    let lbl=row.lbl;
+    const xmap={net_sales:'salesX',supplies:'supplX',shipping:'shipX',ship_tot:'shipDX',refurb:'refurX'};
+    const xfn={net_sales:'txS',supplies:'txSu',shipping:'txSh',ship_tot:'txShD',refurb:'txR'};
+    if(xmap[row.id]){
+      const open=ST[xmap[row.id]];
+      lbl=`<button class="xbtn" onclick="${xfn[row.id]}(event)">${chevron(open)}</button>${row.lbl}`;
+    }
+
+    tb+=`<tr class="${rc}"><td>${lbl}</td>`;
+
+    if(ST.mode==='comparison'){
+      const a=g['Actual 2025'][row.id], p25=g['Plano 2025'][row.id], p26=g['Plano 2026'][row.id];
+      const d1=(p25&&a!==null)?((a-p25)/Math.abs(p25)*100):null;
+      const d2=(a&&a!==0&&p26!==null)?((p26-a)/Math.abs(a)*100):null;
+      const c1=d1!==null?(d1>=0?'pp':'pn'):'';
+      const c2=d2!==null?(d2>=0?'pp':'pn'):'';
+      tb+=`<td>${fmtV(p25,row.t)}</td>
+           <td class="${c1}">${d1!==null?d1.toFixed(1)+'%':'—'}</td>
+           <td>${fmtV(a,row.t)}</td>
+           <td class="${c2}">${d2!==null?d2.toFixed(1)+'%':'—'}</td>
+           <td>${fmtV(p26,row.t)}</td>`;
+    } else {
+      const src=D[ST.prim];
+      idx.forEach(i=>{const v=src[row.id]?src[row.id][i]:null; tb+=`<td>${fmtV(v,row.t)}</td>`;});
+      tb+=`<td class="col-fy">${fmtV(g[ST.prim][row.id],row.t)}</td>`;
+    }
+    tb+='</tr>';
+  });
+  document.getElementById('tb').innerHTML=tb;
+}
+
+function ui(){
+  ['comp','evol'].forEach(x=>document.getElementById('btn-'+x).className='mode-btn'+(ST.mode===(x==='comp'?'comparison':'evolution')?' active':''));
+  renderQ(); renderV(); renderKPI(); renderTable();
+  document.getElementById('upd').textContent=new Date().toLocaleDateString('pt-BR');
+}
+
+window.setMode=m=>{ST.mode=m;ui()};
+window.setQ=q=>{ST.q=q;ui()};
+window.setPrimary=v=>{ST.prim=v;ui()};
+window.setCompare=v=>{ST.comp=v;ui()};
+window.txS=e=>{e.stopPropagation();ST.salesX=!ST.salesX;ui()};
+window.txSu=e=>{e.stopPropagation();ST.supplX=!ST.supplX;ui()};
+window.txSh=e=>{e.stopPropagation();ST.shipX=!ST.shipX;if(!ST.shipX)ST.shipDX=false;ui()};
+window.txShD=e=>{e.stopPropagation();ST.shipDX=!ST.shipDX;ui()};
+window.txR=e=>{e.stopPropagation();ST.refurX=!ST.refurX;ui()};
+
+document.addEventListener('DOMContentLoaded',ui);
+</script>
+</body>
+</html>
