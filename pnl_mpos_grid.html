@@ -239,12 +239,7 @@
         <h3 class="tbl-title">Bridge · Variação entre Cenários</h3>
         <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="bridge-sub"></span>
       </div>
-      <div class="tbl-wrap" style="margin-top:12px">
-        <table style="width:100%;border-collapse:collapse;font-size:.75rem">
-          <thead><tr id="bridge-hdr"></tr></thead>
-          <tbody id="bridge-body"></tbody>
-        </table>
-      </div>
+      <div id="bridge-chart" style="margin-top:16px;overflow-x:auto"></div>
     </div>
   </div>
 
@@ -715,68 +710,141 @@ function fcBr(v,t){
 }
 
 function renderBridge(){
-  const N=null;
   const idxL=PERIODS[ST.br_lq]||PERIODS.FY;
   const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
   document.getElementById('bridge-sub').textContent=ST.br_lv+' '+ST.br_lq+' → '+ST.br_rv+' '+ST.br_rq;
 
-  // Compute values for all rows
-  const rows=ROWS.filter(r=>!r.grp);
-  const vals=rows.map(r=>({
-    row:r,
-    a:getA(ST.br_lv,r.id,idxL),
-    b:getA(ST.br_rv,r.id,idxR),
-  }));
-  vals.forEach(v=>{v.delta=(v.a!==N&&v.b!==N)?v.b-v.a:N;});
+  // Build waterfall items: BM start → each BM_KEY delta → BM end
+  const bmA=getA(ST.br_lv,'bm',idxL);
+  const bmB=getA(ST.br_rv,'bm',idxR);
 
-  // Max delta for bar scaling (only currency rows)
-  const maxD=vals.filter(v=>v.row.t==='cur'&&v.delta!==N).reduce((m,v)=>Math.max(m,Math.abs(v.delta)),0.01);
+  const rowMap={};
+  [...ROWS,...ROWS_OFICIAL].forEach(function(r){if(!rowMap[r.id])rowMap[r.id]=r;});
 
-  // Header
-  const lbl=`${ST.br_lv} <span style="font-size:.65em;opacity:.7">${ST.br_lq}</span>`;
-  const rlbl=`${ST.br_rv} <span style="font-size:.65em;opacity:.7">${ST.br_rq}</span>`;
-  document.getElementById('bridge-hdr').innerHTML=
-    `<th style="text-align:left">Linha P&L</th><th>${lbl}</th><th colspan="3" style="text-align:center">Variação A→B</th><th>${rlbl}</th>`;
+  const items=BM_KEYS.map(function(key){
+    const r=rowMap[key]||{lbl:key};
+    const a=getA(ST.br_lv,key,idxL);
+    const b=getA(ST.br_rv,key,idxR);
+    const delta=(a!==null&&b!==null)?b-a:null;
+    return{key,lbl:r.lbl||key,a,b,delta};
+  }).filter(function(it){return it.delta!==null&&Math.abs(it.delta)>=0.001;});
 
-  let tb='';
-  vals.forEach(v=>{
-    const {row,a,b,delta}=v;
-    const isBM=row.bm;
-    const isHL=row.hl||isBM;
-    const cls=isBM?'br-bm':isHL?'br-hl':'';
-    const indent=row.sub||row.childOf?'padding-left:24px':'';
-
-    let barHtml='';
-    if(row.t==='cur'&&delta!==N){
-      const pct=Math.min(Math.abs(delta)/maxD,1)*100;
-      const isGood=delta>=0;
-      const fillCls=delta===0?'neu':isGood?'pos':'neg';
-      barHtml=`<td class="br-bar">
-        <div class="br-bar-track">
-          <div class="br-bar-left"><div class="br-fill ${delta<0?fillCls:'neu'}" style="width:${delta<0?pct:0}%"></div></div>
-          <div class="br-center"></div>
-          <div class="br-bar-right"><div class="br-fill ${delta>0?fillCls:'neu'}" style="width:${delta>0?pct:0}%"></div></div>
-        </div>
-      </td>`;
-    } else {
-      barHtml='<td class="br-bar"></td>';
-    }
-
-    const dCls=delta===null?'':delta>0?'pos':'neg';
-    const dStr=delta===null?'—':(delta>=0?'+':'')+delta.toFixed(2)+'M';
-    const pctStr=(a!==N&&b!==N&&a!==0)?((delta/Math.abs(a))*100).toFixed(1)+'%':'—';
-    const pctCls=delta===null?'':delta>0?'pos':'neg';
-
-    tb+=`<tr class="${cls}">
-      <td style="${indent}">${row.orig?`<span class="tip-wrap" style="cursor:help;border-bottom:1px dashed var(--muted)">${row.lbl}<span class="tip">Nome original: ${row.orig}</span></span>`:row.lbl}</td>
-      <td class="br-val">${fcBr(a,row.t)}</td>
-      ${barHtml}
-      <td class="br-delta ${dCls}">${dStr}</td>
-      <td class="br-pct ${pctCls}">${pctStr}</td>
-      <td class="br-val">${fcBr(b,row.t)}</td>
-    </tr>`;
+  // Waterfall sequence: [start, ...deltas..., end]
+  // start/end bars go from 0 to value; delta bars float
+  const bars=[];
+  bars.push({lbl:ST.br_lq,sublbl:ST.br_lv,val:bmA,from:0,to:bmA,type:'anchor'});
+  let running=bmA;
+  items.forEach(function(it){
+    bars.push({lbl:it.lbl,val:it.delta,from:running,to:running+it.delta,type:'delta'});
+    running+=it.delta;
   });
-  document.getElementById('bridge-body').innerHTML=tb;
+  bars.push({lbl:ST.br_rq,sublbl:ST.br_rv,val:bmB,from:0,to:bmB,type:'anchor'});
+
+  // Layout constants
+  const W=Math.max(bars.length*96+120,700);
+  const H=420;
+  const MT=30,MB=100,ML=72,MR=24;
+  const cW=W-ML-MR,cH=H-MT-MB;
+  const barW=Math.min(60,cW/bars.length*0.6);
+  const gap=cW/bars.length;
+
+  // Y scale
+  const allVals=[];
+  bars.forEach(function(b){allVals.push(b.from,b.to);});
+  allVals.push(0);
+  let yMin=Math.min.apply(null,allVals);
+  let yMax=Math.max.apply(null,allVals);
+  const yPad=(yMax-yMin)*0.18||1;
+  yMin-=yPad; yMax+=yPad;
+  function yPx(v){return MT+cH-(v-yMin)/(yMax-yMin)*cH;}
+  const y0=yPx(0);
+
+  // Colors
+  const C_ANCHOR='#2D3277';
+  const C_POS='#00A650';
+  const C_NEG='#E53935';
+  const C_ZERO='#6B7280';
+
+  // Build SVG
+  let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="font-family:Inter,sans-serif;display:block">`;
+
+  // Y axis grid lines & labels
+  const yTicks=5;
+  for(let i=0;i<=yTicks;i++){
+    const v=yMin+(yMax-yMin)*i/yTicks;
+    const py=yPx(v);
+    const isZero=Math.abs(v)<(yMax-yMin)*0.04;
+    svg+=`<line x1="${ML}" y1="${py}" x2="${W-MR}" y2="${py}" stroke="${isZero?'#9CA3AF':'#E5E7EB'}" stroke-width="${isZero?1.5:1}" stroke-dasharray="${isZero?'':'4,3'}"/>`;
+    svg+=`<text x="${ML-8}" y="${py+4}" text-anchor="end" font-size="10" fill="#6B7280">${v>=0?'':'-'}${Math.abs(v).toFixed(1)}M</text>`;
+  }
+  // Zero line emphasis
+  svg+=`<line x1="${ML}" y1="${y0}" x2="${W-MR}" y2="${y0}" stroke="#9CA3AF" stroke-width="1.5"/>`;
+
+  // Connector lines (thin dotted between bars)
+  bars.forEach(function(b,i){
+    if(i===0||b.type==='anchor')return;
+    const prev=bars[i-1];
+    const prevTopY=yPx(Math.max(prev.from,prev.to));
+    const prevBotY=yPx(Math.min(prev.from,prev.to));
+    const prevToY=yPx(prev.to);
+    const x1=ML+i*gap-gap/2+barW/2+2;
+    const x2=ML+i*gap-gap/2-barW/2-2;
+    const y_connector=yPx(prev.to);
+    svg+=`<line x1="${x1}" y1="${y_connector}" x2="${x2}" y2="${y_connector}" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>`;
+  });
+
+  // Bars
+  bars.forEach(function(b,i){
+    const cx=ML+i*gap+gap/2;
+    const x=cx-barW/2;
+    let color,yBar,hBar;
+    if(b.type==='anchor'){
+      color=C_ANCHOR;
+      if(b.val>=0){yBar=yPx(b.val);hBar=y0-yBar;}
+      else{yBar=y0;hBar=yPx(b.val)-y0;}
+    } else {
+      color=b.val>0?C_POS:b.val<0?C_NEG:C_ZERO;
+      const yTop=yPx(Math.max(b.from,b.to));
+      const yBot=yPx(Math.min(b.from,b.to));
+      yBar=yTop; hBar=Math.max(yBot-yTop,2);
+    }
+    // Bar shadow
+    svg+=`<rect x="${x+2}" y="${yBar+2}" width="${barW}" height="${Math.max(hBar,2)}" rx="5" fill="rgba(0,0,0,.07)"/>`;
+    // Bar
+    svg+=`<rect x="${x}" y="${yBar}" width="${barW}" height="${Math.max(hBar,2)}" rx="5" fill="${color}"/>`;
+
+    // Value label on bar
+    const labelY=b.val>=0?yBar-6:yBar+Math.max(hBar,2)+14;
+    const labelTxt=b.type==='anchor'
+      ?Math.abs(b.val).toFixed(2)+'M'
+      :(b.val>=0?'+':'')+b.val.toFixed(2)+'M';
+    svg+=`<text x="${cx}" y="${labelY}" text-anchor="middle" font-size="10" font-weight="700" fill="${color}">${labelTxt}</text>`;
+
+    // Bottom label (rotated)
+    const lblY=H-MB+18;
+    if(b.type==='anchor'){
+      svg+=`<text transform="rotate(-38,${cx},${lblY})" x="${cx}" y="${lblY}" text-anchor="end" font-size="10" font-weight="700" fill="${C_ANCHOR}">${b.sublbl}</text>`;
+      svg+=`<text transform="rotate(-38,${cx},${lblY+13})" x="${cx}" y="${lblY+13}" text-anchor="end" font-size="9" fill="#6B7280">${b.lbl}</text>`;
+    } else {
+      // Truncate long labels
+      const short=b.lbl.length>18?b.lbl.slice(0,17)+'…':b.lbl;
+      svg+=`<text transform="rotate(-38,${cx},${lblY})" x="${cx}" y="${lblY}" text-anchor="end" font-size="10" fill="#374151">${short}</text>`;
+    }
+  });
+
+  svg+=`</svg>`;
+
+  // Legend
+  svg=`<div style="overflow-x:auto">
+    <div style="display:flex;gap:20px;align-items:center;margin-bottom:12px;flex-wrap:wrap;font-size:.72rem;font-weight:600">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#2D3277;display:inline-block"></span>Valor absoluto BM</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#00A650;display:inline-block"></span>Melhora BM</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#E53935;display:inline-block"></span>Piora BM</span>
+    </div>
+    ${svg}
+  </div>`;
+
+  document.getElementById('bridge-chart').innerHTML=svg;
 }
 
 const MPOS_SHEET_ID='1zGp8an4VMzaY_Nu_BG5vD2WVY_gQxWNHjfQ-OUtxDVI';
