@@ -963,7 +963,23 @@ function parseVolDespacho(values){
 var VOL_DEVS=['AIR','MINI','PRO','SMART'];
 var VOL_DEV_FIELDS={AIR:'vol_air',MINI:'vol_mini',PRO:'vol_pro',SMART:'vol_smart'};
 
-function accumVolRow(row,key,colMap,months,acc,devAcc,devCol){
+// Detect which column holds AIR/MINI/PRO/SMART by scanning first N data rows
+function detectDevCol(values,hdrIdx){
+  var votes={};
+  for(var r=hdrIdx+1;r<Math.min(hdrIdx+30,values.length);r++){
+    var row=values[r]||[];
+    for(var c=0;c<Math.min(row.length,8);c++){
+      var v=String(row[c]||'').trim().toUpperCase();
+      if(VOL_DEVS.indexOf(v)>=0)votes[c]=(votes[c]||0)+1;
+    }
+  }
+  var best=-1,bestCnt=0;
+  Object.keys(votes).forEach(function(c){if(votes[c]>bestCnt){bestCnt=votes[c];best=parseInt(c,10);}});
+  console.log('[MPOS Vol] devCol detectado:',best,'(votos:',JSON.stringify(votes),')');
+  return best>=0?best:2; // fallback col 2 (coluna C)
+}
+
+function accumVolRow(row,colMap,months,acc,devAcc,devCol){
   var devRaw=String(row[devCol]||'').trim().toUpperCase();
   var isDev=VOL_DEVS.indexOf(devRaw)>=0;
   for(var m=0;m<months;m++){
@@ -991,7 +1007,7 @@ function parseVolume(values){
   if(!values||values.length<2){console.warn('[MPOS Vol] Volume: sem dados');return;}
   console.log('[MPOS Vol] Volume',values.length,'rows');
 
-  // ── Section 1: Plano/Forecast ─ YYYYMM cols in header, cenário in col 0, device in col 3 ──
+  // ── Section 1: Plano/Forecast ─ YYYYMM cols in header, cenário in col 0 ──
   var planoHdr=-1,planoColMap={};
   for(var ri=0;ri<Math.min(values.length,30);ri++){
     var row=values[ri]||[];var tmp={};var cnt=0;
@@ -999,10 +1015,10 @@ function parseVolume(values){
     if(cnt>=3){planoHdr=ri;planoColMap=tmp;break;}
   }
   if(planoHdr>=0){
+    var pDevCol=detectDevCol(values,planoHdr);
     var pyears={};
     Object.keys(planoColMap).forEach(function(k){pyears[k.split('_')[0]]=1;});
     var pyList=Object.keys(pyears).map(Number);
-    // Build per-year col arrays [ci for month 0..11]
     var pyColArr={};
     pyList.forEach(function(y){
       pyColArr[y]=Array.from({length:12},function(_,m){return planoColMap[y+'_'+m];});
@@ -1016,7 +1032,7 @@ function parseVolume(values){
         if(!key||!D[key])return;
         if(!acc[key])acc[key]=Array(12).fill(null);
         if(!devAcc[key])devAcc[key]={};
-        accumVolRow(row,key,pyColArr[year],12,acc[key],devAcc[key],3);
+        accumVolRow(row,pyColArr[year],12,acc[key],devAcc[key],pDevCol);
       });
     }
     Object.keys(acc).forEach(function(key){
@@ -1025,7 +1041,7 @@ function parseVolume(values){
     });
   }
 
-  // ── Section 2: Actual/Realizado ─ date cols DD/MM/YYYY in header, device in col 3 ──
+  // ── Section 2: Actual/Realizado ─ date cols DD/MM/YYYY in header ──
   var actualHdr=-1,actualColMap={};
   for(var ri=0;ri<values.length;ri++){
     var row=values[ri]||[];var tmp={};var cnt=0;
@@ -1040,6 +1056,7 @@ function parseVolume(values){
     if(cnt>=3){actualHdr=ri;actualColMap=tmp;break;}
   }
   if(actualHdr>=0){
+    var aDevCol=detectDevCol(values,actualHdr);
     var ayears={};
     Object.keys(actualColMap).forEach(function(k){ayears[k.split('_')[0]]=1;});
     var ayList=Object.keys(ayears).map(Number);
@@ -1055,7 +1072,7 @@ function parseVolume(values){
         if(!D[key])return;
         if(!acc2[key])acc2[key]=Array(12).fill(null);
         if(!devAcc2[key])devAcc2[key]={};
-        accumVolRow(row,key,ayColArr[year],12,acc2[key],devAcc2[key],3);
+        accumVolRow(row,ayColArr[year],12,acc2[key],devAcc2[key],aDevCol);
       });
     }
     Object.keys(acc2).forEach(function(key){
