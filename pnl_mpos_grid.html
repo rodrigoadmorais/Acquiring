@@ -282,6 +282,7 @@ const D={
   alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
   bad_debt:    [0.43,0.70,N,2.02,0.27,N,N,N,N,N,N,0.58],
   telemetria:  [-7.65,-6.09,-9.52,-9.33,-8.73,-6.81,-10.49,-7.48,-8.62,-7.25,-8.30,-9.88],
+  other_vfc:   [N,N,N,N,N,N,N,N,N,N,N,N],
 },
 
 'Realizado 2025':{
@@ -306,6 +307,7 @@ const D={
   alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
   bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
   telemetria:  [-9.41,-10.59,-9.62,-10.74,-8.08,-9.40,-11.12,-8.19,-8.32,-10.61,-13.08,-19.30],
+  other_vfc:   [N,N,N,N,N,N,N,N,N,N,N,N],
 },
 
 'Realizado 2026':{
@@ -331,6 +333,7 @@ const D={
   alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
   bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
   telemetria:  [-11.78,-12.82,-16.89,-11.65,-12.22,-12.59,N,N,N,N,N,N],
+  other_vfc:   [N,N,N,N,N,N,N,N,N,N,N,N],
 },
 
 'Forecast 2026':{
@@ -355,6 +358,7 @@ const D={
   alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
   bad_debt:    [N,N,N,N,N,-2.70,-2.70,-2.70,-2.70,-2.70,-2.70,-2.70],
   telemetria:  [35.31,N,N,N,N,N,N,N,N,N,N,N],
+  other_vfc:   [N,N,N,N,N,N,N,N,N,N,N,N],
 },
 
 'Plano 2025':{
@@ -379,6 +383,7 @@ const D={
   alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
   bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
   telemetria:  [N,N,-8.30,-8.20,-8.50,-8.59,-8.92,-9.12,-9.26,-9.15,-9.32,-9.27],
+  other_vfc:   [N,N,N,N,N,N,N,N,N,N,N,N],
 },
 
 'Plano 2026':{
@@ -403,12 +408,13 @@ const D={
   alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
   bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
   telemetria:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  other_vfc:   [N,N,N,N,N,N,N,N,N,N,N,N],
 },
 
 };
 
 // All P&L line IDs that feed into BM
-const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','insumos','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
+const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','bobinas','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
 
 // Get single-month value (handles computed rows)
 function getM(ver,rowId,mi){
@@ -421,6 +427,7 @@ function getM(ver,rowId,mi){
     case 'receita_liq':return add(add(r('sales_gross'),r('descuentos')),add(r('icms'),r('pis_cofins')));
     case 'distribución':return add(add(r('shipping'),r('interco_dist')),r('interco_egr'));
     case 'warehousing_total':return add(r('interco_wh'),r('warehousing'));
+    case 'bobinas':return add(r('insumos'),r('other_vfc'));
     case 'bm':{
       let s=N;
       BM_KEYS.forEach(k=>{const v=r(k);if(v!==N)s=(s??0)+v;});
@@ -454,7 +461,7 @@ const ROWS=[
   // COGS
   {id:'_cogs',       lbl:'COGS & PROVISÕES',              t:'hdr', grp:true},
   {id:'cmv',         lbl:'CMV – Cost of Products Sold',   t:'cur', sub:true},
-  {id:'insumos',     lbl:'Insumos Point',                 t:'cur', sub:true},
+  {id:'bobinas',     lbl:'Bobinas',                       t:'cur', sub:true},
   {id:'scrap',       lbl:'Scrap MPOS',                    t:'cur', sub:true},
   {id:'refurb',      lbl:'Reacondicionamentos Point',     t:'cur', sub:true},
   {id:'provision',        lbl:'Estoque',            orig:'MPOS Ajuste VNR',   t:'cur', sub:true},
