@@ -164,10 +164,11 @@
 
 <script>
 const N=null;
-const VERS=['Realizado 2024','Realizado 2025','Forecast 2026','Plano 2025','Plano 2026'];
+const VERS=['Realizado 2024','Realizado 2025','Realizado 2026','Forecast 2026','Plano 2025','Plano 2026'];
 const VER_MOS={
   'Realizado 2024':['Jan/24','Fev/24','Mar/24','Abr/24','Mai/24','Jun/24','Jul/24','Ago/24','Set/24','Out/24','Nov/24','Dez/24'],
   'Realizado 2025':['Jan/25','Fev/25','Mar/25','Abr/25','Mai/25','Jun/25','Jul/25','Ago/25','Set/25','Out/25','Nov/25','Dez/25'],
+  'Realizado 2026':['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'],
   'Forecast 2026': ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'],
   'Plano 2025':    ['Jan/25','Fev/25','Mar/25','Abr/25','Mai/25','Jun/25','Jul/25','Ago/25','Set/25','Out/25','Nov/25','Dez/25'],
   'Plano 2026':    ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'],
@@ -221,6 +222,29 @@ const D={
   alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
   bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
   telemetria:  [-9.41,-10.59,-9.62,-10.74,-8.08,-9.40,-11.12,-8.19,-8.32,-10.61,-13.08,-19.30],
+},
+
+'Realizado 2026':{
+  vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales_gross: [N,N,N,N,N,N,N,N,N,N,N,N],
+  descuentos:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  icms:        [N,N,N,N,N,N,N,N,N,N,N,N],
+  pis_cofins:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  cmv:         [-59.04,-41.46,-33.20,-39.37,-51.72,-45.95,N,N,N,N,N,N],
+  insumos:     [0.06,-0.10,-0.29,-0.01,-0.52,-0.27,0.44,N,N,N,N,N],
+  scrap:       [-1.60,-0.74,-0.32,-4.30,-0.90,-1.79,3.02,N,N,N,N,N],
+  refurb:      [-3.17,1.30,-2.54,-2.23,-5.08,-2.80,4.18,N,N,N,N,N],
+  provision:   [-10.00,-11.91,-16.03,-17.08,9.12,3.91,N,N,N,N,N,N],
+  prev_costo:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  hedge:       [-4.00,-4.31,-5.11,-5.55,-7.70,-9.07,N,N,N,N,N,N],
+  shipping:    [-2.58,-2.63,-14.98,-4.41,-5.45,-1.41,1.98,N,N,N,N,N],
+  interco_dist:[-3.77,-3.74,-3.36,-3.29,-3.99,-2.92,-1.14,N,N,N,N,N],
+  interco_wh:  [-0.83,-0.93,-0.81,-1.01,-1.27,-1.03,N,N,N,N,N,N],
+  interco_egr: [-0.37,-0.37,-0.81,-0.81,-2.24,-1.55,N,N,N,N,N,N],
+  warehousing: [-0.07,-0.13,0.07,0.00,-0.05,0.00,0.10,N,N,N,N,N],
+  alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  telemetria:  [35.31,N,N,N,N,N,N,N,N,N,N,N],
 },
 
 'Forecast 2026':{
