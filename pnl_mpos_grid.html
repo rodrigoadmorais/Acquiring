@@ -741,12 +741,14 @@ function renderBridge(){
     const r=rowMap[key]||{lbl:key};
     const a=getA(ST.br_lv,key,idxL);
     const b=getA(ST.br_rv,key,idxR);
-    const delta=(a!==null&&b!==null)?b-a:null;
+    // Treat null as 0: line that exists only in one scenario is a real effect
+    const aV=a!==null?a:0;
+    const bV=b!==null?b:0;
+    const delta=bV-aV;
     return{key,lbl:r.lbl||key,a,b,delta};
-  }).filter(function(it){return it.delta!==null&&Math.abs(it.delta)>=0.001;});
+  }).filter(function(it){return Math.abs(it.delta)>=0.001;});
 
   // Waterfall sequence: [start, ...deltas..., end]
-  // start/end bars go from 0 to value; delta bars float
   const bars=[];
   bars.push({lbl:ST.br_lq,sublbl:ST.br_lv,val:bmA,from:0,to:bmA,type:'anchor'});
   let running=bmA;
@@ -754,6 +756,12 @@ function renderBridge(){
     bars.push({lbl:it.lbl,val:it.delta,from:running,to:running+it.delta,type:'delta'});
     running+=it.delta;
   });
+  // Residual: floating-point drift or any BM component not in BM_KEYS
+  const residual=bmB!==null&&bmA!==null?bmB-running:0;
+  if(Math.abs(residual)>=0.01){
+    bars.push({lbl:'Outros',val:residual,from:running,to:running+residual,type:'delta',isOther:true});
+    running+=residual;
+  }
   bars.push({lbl:ST.br_rq,sublbl:ST.br_rv,val:bmB,from:0,to:bmB,type:'anchor'});
 
   // Layout constants
@@ -819,7 +827,7 @@ function renderBridge(){
       if(b.val>=0){yBar=yPx(b.val);hBar=y0-yBar;}
       else{yBar=y0;hBar=yPx(b.val)-y0;}
     } else {
-      color=b.val>0?C_POS:b.val<0?C_NEG:C_ZERO;
+      color=b.isOther?'#9CA3AF':b.val>0?C_POS:b.val<0?C_NEG:C_ZERO;
       const yTop=yPx(Math.max(b.from,b.to));
       const yBot=yPx(Math.min(b.from,b.to));
       yBar=yTop; hBar=Math.max(yBot-yTop,2);
