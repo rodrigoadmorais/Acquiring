@@ -601,20 +601,35 @@ function parseVolumeTab(tabName, values, field){
   if(found===0)console.warn('[MPOS Vol] No scenarios matched. Sample rows:',values.slice(hdrIdx,hdrIdx+5));
 }
 
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+function getRetry(range,attempt){
+  return Grid.sheets.get(MPOS_SHEET_ID,range).catch(function(err){
+    var status=(err&&(err.status||err.code))||0;
+    var transient=(status===429||status===503||status===0);
+    if(transient&&attempt<6){
+      var wait=Math.min(800*Math.pow(2,attempt),12000);
+      console.warn('[MPOS Vol] 429/503, retry',attempt+1,'em',wait+'ms',range);
+      return sleep(wait).then(function(){return getRetry(range,attempt+1);});
+    }
+    throw err;
+  });
+}
+
 function doFetchSheets(){
-  var loaded=0;
-  function done(){loaded++;if(loaded>=2)render();}
   function fetchTab(tabName,field){
-    Grid.sheets.get(MPOS_SHEET_ID,tabName+'!A1:N500')
+    return getRetry(tabName+'!A1:N500',0)
       .then(function(res){
         console.log('[MPOS Vol]',tabName,res&&res.values?res.values.length+' rows':'empty');
         if(res&&res.values)parseVolumeTab(tabName,res.values,field);
-        done();
       })
-      .catch(function(e){console.error('[MPOS Vol] erro',tabName,e);done();});
+      .catch(function(e){console.error('[MPOS Vol] erro',tabName,e);});
   }
-  fetchTab('Volume','vol');
-  fetchTab('Vol Despachos e Envios','vol_despacho');
+  // Escalonar requests para evitar 429 (160ms entre elas, como acquiring faz)
+  fetchTab('Volume','vol')
+    .then(function(){return sleep(160);})
+    .then(function(){return fetchTab('Vol Despachos e Envios','vol_despacho');})
+    .then(function(){render();});
 }
 
 function initGrid(tries){
