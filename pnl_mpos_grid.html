@@ -91,6 +91,11 @@
     tbody tr.hl td{background:rgba(255,230,0,.13);font-weight:700;color:var(--ml-navy)}
     tbody tr.hl:hover td{background:rgba(255,230,0,.2)}
     tbody tr.sub td:first-child{padding-left:26px;color:var(--muted)}
+    tbody tr.child-row td:first-child{padding-left:36px;color:var(--muted);font-style:italic}
+    .expand-icon{display:inline-block;margin-right:6px;font-size:.65rem;transition:transform .15s;color:var(--ml-blue);cursor:pointer}
+    .expand-icon.open{transform:rotate(90deg)}
+    tbody tr.expandable-row td:first-child{cursor:pointer}
+    tbody tr.expandable-row:hover td{background:rgba(52,131,250,.06)!important}
     tbody tr.bm-row td{border-top:2px solid var(--ml-navy)!important;background:rgba(45,50,119,.08)!important;font-weight:800!important;color:var(--ml-navy)!important;font-size:.8rem}
     tbody tr.bm-row:hover td{background:rgba(45,50,119,.13)!important}
     .col-fy{background:rgba(52,131,250,.05)!important;border-left:2px solid rgba(52,131,250,.25)!important;font-weight:700!important}
@@ -158,7 +163,7 @@
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
     Fonte: Google Sheets MPOS MNG · Valores em R$ Milhões · Atualizado Jul/2026
-    <br><span style="opacity:.6">Forecast 2026 = Actual Sin Distribuir (Jan–Jul) + Forecast (Ago–Dez) · Volume (aba Volume) pendente</span>
+    <br><span style="opacity:.6">Forecast 2026 = Actual Sin Distribuir (Jan–Jul) + Forecast (Ago–Dez) · Vol. Devices Plano 2026 = MLB Plan Point V1 · Vol. Despachos = Acompanhamento Custo Despacho · Aba Volume pendente de leitura via API</span>
   </div>
 </div>
 
@@ -180,6 +185,7 @@ const D={
 
 'Realizado 2024':{
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_despacho:[N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [27.31,29.67,29.67,21.71,28.61,27.84,28.80,31.50,34.25,58.79,41.71,33.02],
   descuentos:  [-19.01,-21.49,-21.49,-14.56,-6.81,-19.29,-15.71,-15.71,-22.38,-22.51,-27.97,-24.94],
   icms:        [-3.72,-5.36,-4.30,-5.83,-5.20,-4.01,-6.86,-10.57,-7.81,-7.19,-10.52,-6.47],
@@ -203,6 +209,7 @@ const D={
 
 'Realizado 2025':{
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_despacho:[163953,152023,172172,165812,161762,158479,166644,170385,161505,165600,162632,147445],
   sales_gross: [34.51,45.90,40.98,42.69,38.50,40.97,42.23,42.60,39.13,40.48,45.84,37.35],
   descuentos:  [-24.14,-30.20,-28.68,-29.21,-25.02,-26.73,-27.41,-28.31,-24.42,-25.42,-30.89,-24.62],
   icms:        [-1.45,-7.71,0.28,-5.57,-3.18,-4.83,-1.63,-5.64,-4.83,-4.95,-7.71,-6.23],
@@ -227,6 +234,7 @@ const D={
 'Realizado 2026':{
   // Fonte: cenário "Realizado" da planilha MNG — dados disponíveis Jan-Jun/26
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_despacho:[366767,296670,365516,335184,N,N,N,N,N,N,N,N],
   sales_gross: [53.83,46.36,35.12,38.00,36.81,33.17,N,N,N,N,N,N],
   descuentos:  [-38.72,-32.61,-20.36,-24.05,-23.13,-19.81,N,N,N,N,N,N],
   icms:        [-0.92,-3.75,-8.86,-0.14,-4.85,-1.78,N,N,N,N,N,N],
@@ -250,6 +258,7 @@ const D={
 
 'Forecast 2026':{
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_despacho:[N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [N,N,N,N,N,15.15,15.79,16.08,16.29,16.56,16.76,15.22],
   descuentos:  [N,N,N,N,N,N,N,N,N,N,N,N],
   icms:        [N,N,N,N,N,N,N,N,N,N,N,N],
@@ -273,6 +282,7 @@ const D={
 
 'Plano 2025':{
   vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol_despacho:[N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [16.42,16.27,17.19,17.60,18.03,19.41,19.90,21.19,21.87,21.93,19.81,20.95],
   descuentos:  [N,N,N,N,N,N,N,N,N,N,N,N],
   icms:        [-9.11,-9.03,-9.54,-9.77,-10.01,-10.77,-11.04,-11.76,-12.14,-12.17,-10.99,-11.63],
@@ -295,7 +305,8 @@ const D={
 },
 
 'Plano 2026':{
-  vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  vol:         [104738,106899,107784,109841,113260,109978,114616,114961,111253,111548,111933,105921],
+  vol_despacho:[N,N,N,N,N,N,N,N,N,N,N,N],
   sales_gross: [65.60,65.18,70.52,69.80,71.66,69.57,73.60,75.53,77.41,76.69,76.25,73.41],
   descuentos:  [-52.30,-52.16,-56.13,-56.26,-57.74,-55.34,-58.56,-60.12,-62.01,-62.47,-62.19,-58.53],
   icms:        [N,N,N,N,N,N,N,N,N,N,N,N],
@@ -351,14 +362,14 @@ const ROWS=[
   {id:'vol',         lbl:'Volume (Devices)',              t:'vol', hl:true},
   // Receita
   {id:'_rec',        lbl:'RECEITA',                       t:'hdr', grp:true},
-  {id:'sales_gross', lbl:'Sales MPOS Bruto',              t:'cur', sub:true},
-  {id:'descuentos',  lbl:'Descuentos MPOS',               t:'cur', sub:true},
-  {id:'net_sales',   lbl:'Sales MPOS Líquido',            t:'cur', comp:true, hl:true},
+  {id:'net_sales',   lbl:'Sales MPOS Líquido',            t:'cur', comp:true, hl:true, expandable:'net_sales'},
+  {id:'sales_gross', lbl:'Sales MPOS Bruto',              t:'cur', sub:true, childOf:'net_sales'},
+  {id:'descuentos',  lbl:'Descuentos MPOS',               t:'cur', sub:true, childOf:'net_sales'},
   // Impostos
   {id:'_imp',        lbl:'IMPOSTOS',                      t:'hdr', grp:true},
-  {id:'icms',        lbl:'ICMS',                          t:'cur', sub:true},
-  {id:'pis_cofins',  lbl:'PIS/COFINS',                    t:'cur', sub:true},
-  {id:'total_taxes', lbl:'Total Impostos',                t:'cur', comp:true, hl:true},
+  {id:'total_taxes', lbl:'Total Impostos',                t:'cur', comp:true, hl:true, expandable:'_imp'},
+  {id:'icms',        lbl:'ICMS',                          t:'cur', sub:true, childOf:'_imp'},
+  {id:'pis_cofins',  lbl:'PIS/COFINS',                    t:'cur', sub:true, childOf:'_imp'},
   // Receita Líquida
   {id:'receita_liq', lbl:'RECEITA LÍQUIDA',               t:'cur', comp:true, hl:true},
   // COGS
@@ -372,6 +383,7 @@ const ROWS=[
   {id:'prev_costo',  lbl:'Prev. Custo MPOS (Legacy)',     t:'cur', sub:true},
   // Logística
   {id:'_log',        lbl:'LOGÍSTICA',                     t:'hdr', grp:true},
+  {id:'vol_despacho',lbl:'Vol. Despachos & Envios',       t:'vol', sub:true},
   {id:'shipping',    lbl:'Distribución Point',            t:'cur', sub:true},
   {id:'interco_dist',lbl:'Interco Distribucion COGS',     t:'cur', sub:true},
   {id:'interco_wh',  lbl:'Interco Warehousing COGS',      t:'cur', sub:true},
@@ -379,14 +391,14 @@ const ROWS=[
   {id:'warehousing', lbl:'Warehousing Point',             t:'cur', sub:true},
   // Outros
   {id:'_out',        lbl:'OUTROS CUSTOS',                 t:'hdr', grp:true},
-  {id:'alquiler',    lbl:'Aluguel MPOS',                  t:'cur', sub:true},
-  {id:'bad_debt',    lbl:'Incobrables / Bad Debt',        t:'cur', sub:true},
   {id:'telemetria',  lbl:'Telemetria Point',              t:'cur', sub:true},
   // BM
   {id:'bm',          lbl:'BM (Gross Profit)',             t:'cur', comp:true, hl:true, bm:true},
 ];
 
 const ST={mode:'evolution',q:'FY',prim:'Realizado 2025',comp:'Plano 2025'};
+const EXPANDED={net_sales:false,_imp:false};
+function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
 function fc(v,t){
   if(v===N||v===undefined)return'<span class="v-">—</span>';
@@ -476,19 +488,24 @@ function renderTable(){
 
   // Body
   let tb='';
+  const nc=isComp?(1+VERS.length):(2+idx.length+(ST.comp!==ST.prim?1:0));
   ROWS.forEach(row=>{
     if(row.grp){
-      // Section header
-      const nc=isComp?(1+VERS.length):(2+idx.length+(ST.comp!==ST.prim?1:0));
       tb+=`<tr class="grp-hdr"><td colspan="${nc}">${row.lbl}</td></tr>`;
       return;
     }
+    // Skip child rows if parent not expanded
+    if(row.childOf && !EXPANDED[row.childOf]) return;
 
+    const isExp=row.expandable;
+    const isOpen=isExp&&EXPANDED[isExp];
     const rc=row.bm?'bm-row':row.hl?'hl':'';
-    const sub=row.sub?'sub':'';
-    let lblH=row.lbl;
+    const sub=row.childOf?'child-row':row.sub?'sub':'';
+    const expCls=isExp?'expandable-row':'';
+    const icon=isExp?`<span class="expand-icon${isOpen?' open':''}">▶</span>`:'';
+    const onclk=isExp?`onclick="toggleExpand('${isExp}')" title="Clique para ${isOpen?'ocultar':'ver'} detalhes"`:'';
 
-    tb+=`<tr class="${rc} ${sub}"><td>${lblH}</td>`;
+    tb+=`<tr class="${rc} ${sub} ${expCls}"><td ${onclk}>${icon}${row.lbl}</td>`;
 
     if(isComp){
       VERS.forEach(v=>{
