@@ -118,6 +118,32 @@
 
     @media(max-width:1180px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:768px){.wrapper{width:calc(100% - 20px)}.kpi-grid{grid-template-columns:1fr}.hdr{padding:12px 16px}}
+
+    /* Bridge */
+    #bridge-hdr th{background:#F8FAFC;text-align:right;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+    #bridge-hdr th:first-child{text-align:left}
+    #bridge-body td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    #bridge-body tr:hover td{background:rgba(255,230,0,.06)}
+    #bridge-body tr.br-hdr td{background:var(--ml-navy)!important;color:#fff!important;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+    #bridge-body tr.br-hl td{background:rgba(255,230,0,.13);font-weight:700;color:var(--ml-navy)}
+    #bridge-body tr.br-bm td{border-top:2px solid var(--ml-navy)!important;background:rgba(45,50,119,.08)!important;font-weight:800!important;color:var(--ml-navy)!important}
+    #bridge-body td.br-val{text-align:right;font-variant-numeric:tabular-nums;min-width:72px}
+    #bridge-body td.br-bar{width:220px;padding:8px 16px}
+    .br-bar-track{display:flex;align-items:center;height:16px;position:relative}
+    .br-bar-left{flex:1;display:flex;justify-content:flex-end}
+    .br-bar-right{flex:1;display:flex;justify-content:flex-start}
+    .br-fill{height:10px;border-radius:3px;transition:width .3s}
+    .br-fill.pos{background:var(--green)}
+    .br-fill.neg{background:var(--red)}
+    .br-fill.neu{background:var(--muted);opacity:.4}
+    .br-center{width:2px;background:var(--border);height:18px;flex-shrink:0}
+    .br-delta{text-align:right;min-width:72px;font-variant-numeric:tabular-nums}
+    .br-delta.pos{color:var(--green);font-weight:700}
+    .br-delta.neg{color:var(--red);font-weight:700}
+    .br-pct{text-align:right;min-width:52px;font-size:.7rem;font-variant-numeric:tabular-nums}
+    .br-pct.pos{color:var(--green)}
+    .br-pct.neg{color:var(--red)}
+    .comp-q-select{display:none}
   </style>
 </head>
 <body>
@@ -143,6 +169,9 @@
       <button class="mode-btn" id="btn-comp" onclick="setMode('comparison')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12H3M3 6h18M3 18h18"/></svg>Comparativo
       </button>
+      <button class="mode-btn" id="btn-bridge" onclick="setMode('bridge')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Bridge
+      </button>
     </div>
   </div>
 </header>
@@ -160,17 +189,51 @@
         <select class="ver-select" id="sel-c" onchange="setCompare(this.value)"></select>
       </div>
     </div>
+    <div class="bridge-selectors" id="bridge-sel" style="display:none;align-items:center;gap:14px;flex-wrap:wrap">
+      <div class="ver-group">
+        <span class="ver-label">Cenário A</span>
+        <select class="ver-select" id="br-lv" onchange="ST.br_lv=this.value;render()"></select>
+      </div>
+      <div class="ver-group">
+        <span class="ver-label">Período A</span>
+        <select class="ver-select" id="br-lq" onchange="ST.br_lq=this.value;render()"></select>
+      </div>
+      <span style="font-size:.8rem;font-weight:800;color:var(--ml-navy)">→</span>
+      <div class="ver-group">
+        <span class="ver-label">Cenário B</span>
+        <select class="ver-select" id="br-rv" onchange="ST.br_rv=this.value;render()"></select>
+      </div>
+      <div class="ver-group">
+        <span class="ver-label">Período B</span>
+        <select class="ver-select" id="br-rq" onchange="ST.br_rq=this.value;render()"></select>
+      </div>
+    </div>
   </div>
 
   <div class="kpi-grid" id="kpi"></div>
 
-  <div class="card" style="padding:20px 24px">
+  <div class="card" id="main-tbl-card" style="padding:20px 24px">
     <div class="tbl-hdr">
       <h3 class="tbl-title" id="tbl-title">Detalhamento · P&amp;L MPOS</h3>
       <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="tbl-sub"></span>
     </div>
     <div class="tbl-wrap">
       <table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table>
+    </div>
+  </div>
+
+  <div id="bridge-sec" style="display:none;margin-top:0">
+    <div class="card" style="padding:20px 24px">
+      <div class="tbl-hdr">
+        <h3 class="tbl-title">Bridge · Variação entre Cenários</h3>
+        <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="bridge-sub"></span>
+      </div>
+      <div class="tbl-wrap" style="margin-top:12px">
+        <table style="width:100%;border-collapse:collapse;font-size:.75rem">
+          <thead><tr id="bridge-hdr"></tr></thead>
+          <tbody id="bridge-body"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -192,6 +255,7 @@ const VER_MOS={
   'Plano 2026':    ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'],
 };
 const QS={FY:[0,1,2,3,4,5,6,7,8,9,10,11],Q1:[0,1,2],Q2:[3,4,5],Q3:[6,7,8],Q4:[9,10,11]};
+const PERIODS=Object.assign({},QS,{Jan:[0],Fev:[1],Mar:[2],Abr:[3],Mai:[4],Jun:[5],Jul:[6],Ago:[7],Set:[8],Out:[9],Nov:[10],Dez:[11]});
 
 // All P&L lines — data in R$ Millions
 const D={
@@ -403,7 +467,7 @@ const ROWS=[
   {id:'bm',          lbl:'BM (Gross Profit)',             t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026'};
+const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY'};
 const EXPANDED={net_sales:false,_imp:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
@@ -540,11 +604,113 @@ function renderTable(){
   document.getElementById('tb').innerHTML=tb;
 }
 
-function render(){renderQ();renderVer();renderKPI();renderTable();}
-function setMode(m){ST.mode=m;document.getElementById('btn-evol').classList.toggle('active',m==='evolution');document.getElementById('btn-comp').classList.toggle('active',m==='comparison');render();}
+function render(){
+  renderQ();renderVer();
+  const isBr=ST.mode==='bridge';
+  document.getElementById('bridge-sel').style.display=isBr?'flex':'none';
+  document.getElementById('evol-sel').style.display=isBr?'none':(ST.mode==='evolution'?'flex':'none');
+  document.getElementById('kpi').style.display=isBr?'none':'';
+  document.getElementById('bridge-sec').style.display=isBr?'block':'none';
+  document.getElementById('main-tbl-card').style.display=isBr?'none':'block';
+  if(isBr){renderBridgeSelectors();renderBridge();}
+  else{renderKPI();renderTable();}
+}
+function setMode(m){
+  ST.mode=m;
+  ['evol','comp','bridge'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',m==={evol:'evolution',comp:'comparison',bridge:'bridge'}[k]));
+  render();
+}
 function setQ(q){ST.q=q;render();}
 function setPrimary(v){ST.prim=v;render();}
 function setCompare(v){ST.comp=v;render();}
+function setCompQ(v){ST.comp_q=v;render();}
+
+function renderBridgeSelectors(){
+  const ops=VERS.map(v=>`<option value="${v}">${v}</option>`).join('');
+  const qops=Object.keys(PERIODS).map(k=>`<option value="${k}">${k}</option>`).join('');
+  ['br-lv','br-rv'].forEach(id=>{document.getElementById(id).innerHTML=ops;});
+  ['br-lq','br-rq'].forEach(id=>{document.getElementById(id).innerHTML=qops;});
+  document.getElementById('br-lv').value=ST.br_lv;
+  document.getElementById('br-lq').value=ST.br_lq;
+  document.getElementById('br-rv').value=ST.br_rv;
+  document.getElementById('br-rq').value=ST.br_rq;
+}
+
+function fcBr(v,t){
+  if(v===null||v===undefined)return'<span style="color:var(--muted)">—</span>';
+  if(t==='vol'){
+    const abs=Math.abs(v);
+    if(abs>=1e6)return(v/1e6).toFixed(1)+'M';
+    if(abs>=1e3)return(v/1e3).toFixed(1)+'k';
+    return Math.round(v).toLocaleString('pt-BR');
+  }
+  return (v>=0?'':'')+v.toFixed(2)+'M';
+}
+
+function renderBridge(){
+  const N=null;
+  const idxL=PERIODS[ST.br_lq]||PERIODS.FY;
+  const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
+  document.getElementById('bridge-sub').textContent=ST.br_lv+' '+ST.br_lq+' → '+ST.br_rv+' '+ST.br_rq;
+
+  // Compute values for all rows
+  const rows=ROWS.filter(r=>!r.grp);
+  const vals=rows.map(r=>({
+    row:r,
+    a:getA(ST.br_lv,r.id,idxL),
+    b:getA(ST.br_rv,r.id,idxR),
+  }));
+  vals.forEach(v=>{v.delta=(v.a!==N&&v.b!==N)?v.b-v.a:N;});
+
+  // Max delta for bar scaling (only currency rows)
+  const maxD=vals.filter(v=>v.row.t==='cur'&&v.delta!==N).reduce((m,v)=>Math.max(m,Math.abs(v.delta)),0.01);
+
+  // Header
+  const lbl=`${ST.br_lv} <span style="font-size:.65em;opacity:.7">${ST.br_lq}</span>`;
+  const rlbl=`${ST.br_rv} <span style="font-size:.65em;opacity:.7">${ST.br_rq}</span>`;
+  document.getElementById('bridge-hdr').innerHTML=
+    `<th style="text-align:left">Linha P&L</th><th>${lbl}</th><th colspan="3" style="text-align:center">Variação A→B</th><th>${rlbl}</th>`;
+
+  let tb='';
+  vals.forEach(v=>{
+    const {row,a,b,delta}=v;
+    const isBM=row.bm;
+    const isHL=row.hl||isBM;
+    const cls=isBM?'br-bm':isHL?'br-hl':'';
+    const indent=row.sub||row.childOf?'padding-left:24px':'';
+
+    let barHtml='';
+    if(row.t==='cur'&&delta!==N){
+      const pct=Math.min(Math.abs(delta)/maxD,1)*100;
+      const isGood=delta>=0;
+      const fillCls=delta===0?'neu':isGood?'pos':'neg';
+      barHtml=`<td class="br-bar">
+        <div class="br-bar-track">
+          <div class="br-bar-left"><div class="br-fill ${delta<0?fillCls:'neu'}" style="width:${delta<0?pct:0}%"></div></div>
+          <div class="br-center"></div>
+          <div class="br-bar-right"><div class="br-fill ${delta>0?fillCls:'neu'}" style="width:${delta>0?pct:0}%"></div></div>
+        </div>
+      </td>`;
+    } else {
+      barHtml='<td class="br-bar"></td>';
+    }
+
+    const dCls=delta===null?'':delta>0?'pos':'neg';
+    const dStr=delta===null?'—':(delta>=0?'+':'')+delta.toFixed(2)+'M';
+    const pctStr=(a!==N&&b!==N&&a!==0)?((delta/Math.abs(a))*100).toFixed(1)+'%':'—';
+    const pctCls=delta===null?'':delta>0?'pos':'neg';
+
+    tb+=`<tr class="${cls}">
+      <td style="${indent}">${row.orig?`<span class="tip-wrap" style="cursor:help;border-bottom:1px dashed var(--muted)">${row.lbl}<span class="tip">Nome original: ${row.orig}</span></span>`:row.lbl}</td>
+      <td class="br-val">${fcBr(a,row.t)}</td>
+      ${barHtml}
+      <td class="br-delta ${dCls}">${dStr}</td>
+      <td class="br-pct ${pctCls}">${pctStr}</td>
+      <td class="br-val">${fcBr(b,row.t)}</td>
+    </tr>`;
+  });
+  document.getElementById('bridge-body').innerHTML=tb;
+}
 
 const MPOS_SHEET_ID='1zGp8an4VMzaY_Nu_BG5vD2WVY_gQxWNHjfQ-OUtxDVI';
 
