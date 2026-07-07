@@ -567,38 +567,62 @@ function matchCenario(raw){
 
 function parseVolumeTab(tabName, values, field){
   console.log('[MPOS Vol] Tab:',tabName,'rows:',values?values.length:0,'field:',field);
-  if(!values||values.length<2){console.warn('[MPOS Vol] Empty or too short');return;}
+  if(!values||values.length<2){console.warn('[MPOS Vol] Empty');return;}
 
-  // Find header row (first row with ≥2 month columns) scanning up to row 10
+  // Try to find a header row with month names (scan up to row 10)
   let hdrIdx=-1, colIdx=new Array(12).fill(-1);
   for(let ri=0;ri<Math.min(values.length,10);ri++){
     const row=(values[ri]||[]).map(function(c){return String(c||'').trim();});
     const tmp=new Array(12).fill(-1);
-    row.forEach(function(h,ci){const m=moIdx(h);if(m>=0&&tmp[m]<0)tmp[m]=ci;});
+    row.forEach(function(h,ci){
+      // Named months: "jan", "janeiro", "Jan/26" etc.
+      const byName=moIdx(h);
+      if(byName>=0&&tmp[byName]<0){tmp[byName]=ci;return;}
+      // Numeric months: 1-12 or "01"-"12"
+      const n=parseInt(h,10);
+      if(!isNaN(n)&&n>=1&&n<=12&&String(h).replace(/\D/g,'')==String(h).trim()&&tmp[n-1]<0)tmp[n-1]=ci;
+    });
     if(tmp.filter(function(x){return x>=0;}).length>=2){hdrIdx=ri;colIdx=tmp;break;}
   }
-  console.log('[MPOS Vol] Header row idx:',hdrIdx,'colIdx:',colIdx);
-  if(hdrIdx<0){console.warn('[MPOS Vol] No month header found — first 3 rows:',values.slice(0,3));return;}
 
-  let found=0;
-  for(let r=hdrIdx+1;r<values.length;r++){
-    const row=values[r];
-    if(!row)continue;
-    // Try col 0 then col 1 for scenario name
-    const raw=String(row[0]||'').trim()||String(row[1]||'').trim();
+  // Fallback: if no header found, check if data rows have ≥13 cols and assume positional
+  // (col 0 = scenario, cols 2-13 = Jan-Dec)
+  if(hdrIdx<0){
+    // Find a data row with ≥13 cols
+    var wideRow=null;
+    for(var ri2=0;ri2<Math.min(values.length,15);ri2++){
+      if((values[ri2]||[]).length>=13){wideRow=values[ri2];break;}
+    }
+    if(wideRow){
+      console.log('[MPOS Vol] Fallback posicional: col0=cenário, cols 2-13=Jan-Dez');
+      hdrIdx=-2; // sentinel: positional mode
+      colIdx=[2,3,4,5,6,7,8,9,10,11,12,13];
+    }
+  }
+
+  if(hdrIdx===-1){
+    console.warn('[MPOS Vol] Não encontrou header. Primeiras 3 linhas:',JSON.stringify(values.slice(0,3)));
+    return;
+  }
+
+  var startRow=hdrIdx===-2?0:hdrIdx+1;
+  var found=0;
+  for(var r=startRow;r<values.length;r++){
+    var row=values[r];
+    if(!row||row.length<2)continue;
+    var raw=String(row[0]||'').trim();
     if(!raw)continue;
-    const key=matchCenario(raw);
-    if(!key){continue;}
-    const vals=colIdx.map(function(ci){
-      if(ci<0)return null;
-      const v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+    var key=matchCenario(raw);
+    if(!key)continue;
+    var vals=colIdx.map(function(ci){
+      var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
       return isNaN(v)?null:v;
     });
-    console.log('[MPOS Vol] Matched',raw,'→',key,vals);
+    console.log('[MPOS Vol] Match',raw,'→',key,vals.slice(0,6),'...');
     D[key][field]=vals;
     found++;
   }
-  if(found===0)console.warn('[MPOS Vol] No scenarios matched. Sample rows:',values.slice(hdrIdx,hdrIdx+5));
+  if(found===0)console.warn('[MPOS Vol] Nenhum cenário matched. Linhas:',JSON.stringify(values.slice(0,5)));
 }
 
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
