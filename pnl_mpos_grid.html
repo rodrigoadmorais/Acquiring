@@ -331,7 +331,7 @@ const D={
 };
 
 // All P&L line IDs that feed into BM
-const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','insumos','scrap','refurb','provision','prev_costo','hedge','shipping','interco_dist','interco_wh','interco_egr','warehousing','alquiler','bad_debt','telemetria'];
+const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','insumos','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
 
 // Get single-month value (handles computed rows)
 function getM(ver,rowId,mi){
@@ -342,6 +342,8 @@ function getM(ver,rowId,mi){
     case 'net_sales':  return add(r('sales_gross'),r('descuentos'));
     case 'total_taxes':return add(r('icms'),r('pis_cofins'));
     case 'receita_liq':return add(add(r('sales_gross'),r('descuentos')),add(r('icms'),r('pis_cofins')));
+    case 'distribución':return add(add(r('shipping'),r('interco_dist')),r('interco_egr'));
+    case 'warehousing_total':return add(r('interco_wh'),r('warehousing'));
     case 'bm':{
       let s=N;
       BM_KEYS.forEach(k=>{const v=r(k);if(v!==N)s=(s??0)+v;});
@@ -378,14 +380,11 @@ const ROWS=[
   {id:'insumos',     lbl:'Insumos Point',                 t:'cur', sub:true},
   {id:'scrap',       lbl:'Scrap MPOS',                    t:'cur', sub:true},
   {id:'refurb',      lbl:'Reacondicionamentos Point',     t:'cur', sub:true},
-  {id:'provision',   lbl:'MPOS Ajuste VNR',               t:'cur', sub:true},
-  {id:'hedge',       lbl:'Hedge FX (Prev. MPOS)',         t:'cur', sub:true},
-  {id:'vol_despacho',lbl:'Vol. Despachos & Envios',       t:'vol', sub:true},
-  {id:'shipping',    lbl:'Distribución Point',            t:'cur', sub:true},
-  {id:'interco_dist',lbl:'Interco Distribucion COGS',     t:'cur', sub:true},
-  {id:'interco_wh',  lbl:'Interco Warehousing COGS',      t:'cur', sub:true},
-  {id:'interco_egr', lbl:'Interco Alocações COGS',        t:'cur', sub:true},
-  {id:'warehousing', lbl:'Warehousing Point',             t:'cur', sub:true},
+  {id:'provision',        lbl:'Estoque',            orig:'MPOS Ajuste VNR',   t:'cur', sub:true},
+  {id:'hedge',            lbl:'Hedge',                                        t:'cur', sub:true},
+  {id:'vol_despacho',     lbl:'Vol. Despachos & Envios',                      t:'vol', sub:true},
+  {id:'distribución',     lbl:'Distribución',                                 t:'cur', sub:true},
+  {id:'warehousing_total',lbl:'Warehousing',                                  t:'cur', sub:true},
   {id:'telemetria',  lbl:'Telemetria Point',              t:'cur', sub:true},
   // BM
   {id:'bm',          lbl:'BM (Gross Profit)',             t:'cur', comp:true, hl:true, bm:true},
@@ -500,7 +499,8 @@ function renderTable(){
     const icon=isExp?`<span class="expand-icon${isOpen?' open':''}">▶</span>`:'';
     const onclk=isExp?`onclick="toggleExpand('${isExp}')" title="Clique para ${isOpen?'ocultar':'ver'} detalhes"`:'';
 
-    tb+=`<tr class="${rc} ${sub} ${expCls}"><td ${onclk}>${icon}${row.lbl}</td>`;
+    const lblCell=row.orig?`${icon}<span title="${row.orig}" style="cursor:help;border-bottom:1px dashed var(--muted)">${row.lbl}</span>`:icon+row.lbl;
+    tb+=`<tr class="${rc} ${sub} ${expCls}"><td ${onclk}>${lblCell}</td>`;
 
     if(isComp){
       VERS.forEach(v=>{
