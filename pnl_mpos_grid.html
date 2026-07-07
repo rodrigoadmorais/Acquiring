@@ -34,6 +34,11 @@
     .hdr-title{color:var(--ml-navy);font-size:1.2rem;font-weight:800;letter-spacing:-0.05em;line-height:1.1}
     .hdr-sub{color:var(--ml-navy);opacity:.7;font-size:.72rem;font-weight:600}
     .mode-toggle{display:flex;background:rgba(255,255,255,.38);border-radius:12px;padding:4px;gap:2px}
+    .pyl-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;
+      border:1.5px solid var(--border);background:#fff;color:var(--muted);
+      font-family:inherit;font-size:.76rem;font-weight:700;cursor:pointer;transition:all .15s}
+    .pyl-btn:hover{border-color:var(--ml-blue);color:var(--ml-blue)}
+    .pyl-btn.active{background:var(--ml-blue);border-color:var(--ml-blue);color:#fff}
     .mode-btn{display:flex;align-items:center;gap:6px;padding:7px 16px;border-radius:9px;border:none;
       background:transparent;color:var(--ml-navy);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s}
     .mode-btn.active{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.1)}
@@ -179,6 +184,12 @@
 <div class="wrapper">
   <div class="card filters-bar">
     <div class="q-btns" id="qf"></div>
+    <div style="margin-left:auto">
+      <button id="pyl-btn" class="pyl-btn" onclick="togglePYL()" title="Mostrar nomes oficiais do PYL">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        PYL Oficial
+      </button>
+    </div>
     <div class="evol-selectors" id="evol-sel">
       <div class="ver-group">
         <span class="ver-label">Cenário</span>
@@ -474,9 +485,50 @@ const ROWS=[
   {id:'bm',          lbl:'BM (Gross Profit)',             t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY'};
+// PYL Oficial view — original line names as they appear in the MNG spreadsheet
+const ROWS_OFICIAL=[
+  {id:'vol',         lbl:'Volume (Devices)',                                      t:'vol', hl:true},
+  {id:'_rec',        lbl:'RECEITA',                                               t:'hdr', grp:true},
+  {id:'net_sales',   lbl:'Sales MPOS Líquido',                                   t:'cur', comp:true, hl:true, expandable:'net_sales'},
+  {id:'sales_gross', lbl:'Sales MPOS Bruto',                                      t:'cur', sub:true, childOf:'net_sales'},
+  {id:'descuentos',  lbl:'Descuentos MPOS',                                       t:'cur', sub:true, childOf:'net_sales'},
+  {id:'_imp',        lbl:'IMPOSTOS',                                              t:'hdr', grp:true},
+  {id:'total_taxes', lbl:'Total Impostos',                                        t:'cur', comp:true, hl:true, expandable:'_imp'},
+  {id:'icms',        lbl:'ICMS',                                                  t:'cur', sub:true, childOf:'_imp'},
+  {id:'pis_cofins',  lbl:'PIS/COFINS',                                            t:'cur', sub:true, childOf:'_imp'},
+  {id:'receita_liq', lbl:'RECEITA LÍQUIDA',                                       t:'cur', comp:true, hl:true},
+  {id:'_cogs',       lbl:'COGS & PROVISÕES',                                      t:'hdr', grp:true},
+  {id:'cmv',         lbl:'CMV – Cost of Products Sold',                           t:'cur', sub:true},
+  {id:'insumos',     lbl:'Insumos Point',                                         t:'cur', sub:true},
+  {id:'other_vfc',   lbl:'Other Variable Fintech Costs',                          t:'cur', sub:true},
+  {id:'scrap',       lbl:'Scrap MPOS',                                            t:'cur', sub:true},
+  {id:'refurb',      lbl:'Reacondicionamentos Point',                             t:'cur', sub:true},
+  {id:'provision',   lbl:'MPOS Ajuste VNR',                                       t:'cur', sub:true},
+  {id:'prev_costo',  lbl:'Previsión Costo MPOS (Legacy)',                         t:'cur', sub:true},
+  {id:'hedge',       lbl:'Previsión Costo MPOS (Hedge)',                          t:'cur', sub:true},
+  {id:'vol_despacho',lbl:'Vol. Despachos & Envios',                               t:'vol', sub:true},
+  {id:'shipping',    lbl:'Distribución Point',                                    t:'cur', sub:true},
+  {id:'interco_dist',lbl:'COGS Interco Distribucion Productos – Egresos',         t:'cur', sub:true},
+  {id:'interco_egr', lbl:'COGS Interco Allocations – Egresos',                   t:'cur', sub:true},
+  {id:'interco_wh',  lbl:'COGS Interco Warehousing Productos – Egresos',         t:'cur', sub:true},
+  {id:'warehousing', lbl:'Warehousing Point',                                     t:'cur', sub:true},
+  {id:'alquiler',    lbl:'Aluguel MPOS',                                          t:'cur', sub:true},
+  {id:'bad_debt',    lbl:'Incobrables / Bad Debt',                               t:'cur', sub:true},
+  {id:'telemetria',  lbl:'Telemetria Point',                                      t:'cur', sub:true},
+  {id:'bm',          lbl:'BM (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
+];
+
+const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false};
 const EXPANDED={net_sales:false,_imp:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
+
+function togglePYL(){
+  ST.pyl_oficial=!ST.pyl_oficial;
+  var btn=document.getElementById('pyl-btn');
+  if(btn){btn.classList.toggle('active',ST.pyl_oficial);btn.title=ST.pyl_oficial?'Voltar para visão gestão':'Mostrar nomes oficiais do PYL';}
+  renderTable();
+}
+function activeRows(){return ST.pyl_oficial?ROWS_OFICIAL:ROWS;}
 
 function fc(v,t){
   if(v===N||v===undefined)return'<span class="v-">—</span>';
@@ -567,7 +619,7 @@ function renderTable(){
   // Body
   let tb='';
   const nc=isComp?(1+VERS.length):(2+idx.length+(ST.comp!==ST.prim?1:0));
-  ROWS.forEach(row=>{
+  activeRows().forEach(row=>{
     if(row.grp){
       tb+=`<tr class="grp-hdr"><td colspan="${nc}">${row.lbl}</td></tr>`;
       return;
