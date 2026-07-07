@@ -69,7 +69,9 @@ body{font-family:'Nunito','Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe
 .hdr h1{font-size:14.5px;font-weight:800;color:#1a1a1a;letter-spacing:-.3px;
         display:flex;align-items:center;gap:8px;margin:0}
 .hdr h1::before{display:none}
-.brand-logo{flex-shrink:0;display:block}
+.brand-logo{flex-shrink:0;display:block;width:38px;height:38px;
+            border-radius:8px;object-fit:cover;
+            box-shadow:0 2px 7px rgba(0,0,0,.12)}
 .hdr-divider{width:1px;height:22px;background:rgba(0,0,0,.2);margin:0 2px}
 .hdr-r{display:flex;gap:8px;align-items:center}
 .upd{font-size:12px;color:rgba(0,0,0,.55);font-weight:500;
@@ -316,6 +318,10 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .cpa-filter-bar label{font-size:11px;font-weight:700;color:var(--muted);
                       text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;
                       display:block;margin-bottom:3px}
+#mposPanel .cpa-filter-bar{padding:8px 20px;gap:12px}
+.mpos-filter-actions{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.mpos-toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(108px,1fr));gap:4px}
+.mpos-toggle-grid .cpa-cfg-btn{padding:4px 8px;font-size:12px;white-space:nowrap}
 .cpa-tbl-wrap{flex:1 1 0;min-height:0;overflow-x:auto;overflow-y:auto;padding:0 24px 20px}
 .cpa-tbl-wrap::-webkit-scrollbar{height:6px;width:6px}
 .cpa-tbl-wrap::-webkit-scrollbar-track{background:transparent}
@@ -428,14 +434,66 @@ tr.pnl-gap td{height:8px;background:var(--bg);border:none;padding:0}
 .kn-table.kn-hide-adj-ytd th.kn-sub-ytdadj,
 .kn-table.kn-hide-adj-ytd td.kn-adj-ytd{display:none}
 /* ── Proj. Eficiências tab ── */
-.efic-panel{flex:1 1 0;min-height:0;overflow-y:auto;background:var(--bg)}
-.efic-wrap{padding:20px 24px 32px;overflow-x:auto}
+.efic-panel{flex:1 1 0;min-height:0;overflow:auto;background:var(--bg)}
+.efic-wrap{padding:20px 24px 32px;overflow:visible;min-width:0;width:max-content}
 .efic-tbl{border-collapse:collapse;width:100%;font-size:13px;min-width:600px}
+.efic-tbl.efic-avg-mode{width:auto;min-width:0;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.efic-tbl.efic-avg-mode thead th{font-size:11px;padding:7px 10px;line-height:1.25;white-space:normal}
+.efic-tbl.efic-avg-mode thead th{background:#FFF1A8;color:#1a1a1a;border:none}
+.efic-tbl.efic-avg-mode td{border:none;padding:7px 12px}
+.efic-tbl.efic-avg-mode tr:not(:last-child) td{border-bottom:1px solid #F2F2F2}
+.efic-tbl.efic-avg-mode col.efic-label-col{width:360px}
+.efic-tbl.efic-avg-mode col.efic-scenario-col{width:136px}
+.efic-tbl.efic-avg-mode col.efic-delta-col{width:104px}
+.efic-tbl.efic-avg-mode th.efic-label-col,
+.efic-tbl.efic-avg-mode td.efic-label-col,
+.efic-tbl.efic-avg-mode thead th:first-child{width:360px;min-width:360px;max-width:360px}
+.efic-tbl.efic-avg-mode tbody td:first-child:not([colspan]){width:360px;min-width:360px;max-width:360px}
+.efic-tbl.efic-avg-mode th.efic-scenario-col,
+.efic-tbl.efic-avg-mode td.efic-scenario-col{width:136px;min-width:136px;max-width:136px;font-weight:700}
+.efic-tbl.efic-avg-mode th.efic-delta-col,
+.efic-tbl.efic-avg-mode td.efic-delta-col{width:104px;min-width:104px;max-width:104px;font-weight:500!important;background:#FFFEFA;color:#3F3F3F}
+.efic-tbl.efic-avg-mode th.efic-delta-col{background:#FFF8D8;color:#1a1a1a;font-weight:700!important}
+.efic-tbl.efic-avg-mode th.efic-delta-start,
+.efic-tbl.efic-avg-mode td.efic-delta-start{border-left:3px solid #E9DFAF!important}
+.efic-tbl.efic-avg-mode th.efic-scenario-after-delta,
+.efic-tbl.efic-avg-mode td.efic-scenario-after-delta{border-left:3px solid #EFE4B5!important}
+.efic-tbl.efic-avg-mode td.efic-delta-col.vpos{color:var(--green)!important;font-weight:500!important}
+.efic-tbl.efic-avg-mode td.efic-delta-col.vneg{color:var(--red)!important;font-weight:500!important}
+.efic-tbl.efic-avg-mode .efic-grp>td{background:#FFF0A3!important;color:#1a1a1a}
+.efic-tbl.efic-avg-mode .efic-det>td{background:#fff}
+.efic-tbl.efic-avg-mode .efic-det>td.efic-scenario-col{background:#FFFEF8}
+.efic-tbl.efic-avg-mode .efic-driver-main>td{background:#FFFBEA;color:#1a1a1a;font-weight:700}
+.efic-tbl.efic-avg-mode .efic-driver-main>td:first-child{border-left:4px solid #E8D36A}
+.efic-tbl.efic-avg-mode .efic-driver-sub>td{background:#FFF8D7;color:#1a1a1a;font-size:11.5px}
+.efic-tbl.efic-avg-mode .efic-driver-sub>td:first-child{padding-left:44px;color:#6B5A00}
+.efic-tbl.efic-avg-mode .efic-breakdown-row>td{background:#FFFDF6;color:#2f2f2f;font-size:11.5px}
+.efic-tbl.efic-avg-mode .efic-breakdown-row>td:first-child{padding-left:48px;color:#6B6047}
+.efic-tbl.efic-avg-mode .efic-breakdown-label{
+  white-space:normal;overflow:hidden;line-height:1.25;overflow-wrap:anywhere;word-break:break-word;
+  vertical-align:middle
+}
+.efic-tbl.efic-avg-mode .efic-source-row>td{background:#F7F7F4;color:#5F5F57;font-size:11.5px;font-weight:500}
+.efic-origin-list{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;white-space:normal}
+.efic-origin-pill{display:inline-block;border:1px solid #E3DFC8;background:#FFFDF4;border-radius:4px;
+  padding:2px 5px;color:#6B6047;font-size:11px;line-height:1.25}
+.efic-src-btn{margin-left:6px;border:1px solid #DDD7B6;background:#FFFDF2;color:#6B5A00;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;cursor:pointer;vertical-align:middle}
+.efic-src-btn:hover{background:#FFF8D7}
+.efic-drill-btn{background:none;border:none;cursor:pointer;font-size:11px;opacity:.6;margin-left:4px;padding:0;color:#6B5A00;font-weight:800;vertical-align:middle}
+.efic-drill-btn:hover{opacity:.95}
+.efic-precision-btn{margin-left:7px;border:1px solid #DDD7B6;background:#FFFDF2;color:#6B5A00;border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;cursor:pointer;vertical-align:middle}
+.efic-precision-btn:hover{background:#FFF8D7}
+.efic-tbl.efic-avg-mode .efic-grp>td.efic-delta-col{background:#FFF6C8!important}
+.efic-tbl.efic-avg-mode .efic-det>td.efic-delta-col{background:#FFFEFA}
+.efic-tbl.efic-avg-mode .efic-driver-main>td.efic-delta-col{background:#FFFDF2}
+.efic-tbl.efic-avg-mode .efic-driver-sub>td.efic-delta-col{background:#FFFBE8}
+.efic-tbl.efic-avg-mode .efic-breakdown-row>td.efic-delta-col{background:#FFFCF3}
 .efic-tbl thead th{
   background:var(--meli-blue);color:#fff;padding:8px 14px;
   text-align:right;font-weight:700;font-size:12px;letter-spacing:.3px;
-  border:1px solid rgba(255,255,255,.12);white-space:nowrap}
-.efic-tbl thead th:first-child{text-align:left;min-width:240px;position:sticky;left:0;z-index:2}
+  border:1px solid rgba(255,255,255,.12);white-space:nowrap;
+  position:sticky;top:var(--efic-filter-h,58px);z-index:140;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.efic-tbl thead th:first-child{text-align:left;min-width:240px;left:0;z-index:160}
 .efic-tbl td{padding:5px 14px;border-bottom:1px solid var(--border);
   text-align:right;white-space:nowrap;transition:background .1s}
 .efic-tbl td:first-child{text-align:left;font-size:13px}
@@ -631,6 +689,27 @@ td.cpa-ytd-cell{color:#1a3a6a;font-weight:500}
 .mbu-filter-bar label{font-size:11px;font-weight:700;color:var(--muted);
   text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:3px}
 .mbu-tbl-wrap{flex:1 1 0;min-height:0;overflow:auto;padding:0 24px 24px}
+.total-meli-box{flex:0 0 auto;margin:12px 24px 10px;background:var(--card);
+  border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--sh-xs);
+  overflow:hidden}
+.total-meli-head{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:9px 12px;background:#FFFDE7;border-bottom:1px solid #F0E6A0}
+.total-meli-title{font-size:12px;font-weight:900;color:#1a1a1a;letter-spacing:.4px;
+  text-transform:uppercase}
+.total-meli-meta{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
+.total-meli-table{width:100%;border-collapse:collapse;font-size:12px}
+.total-meli-table th{background:#FFF9C4;color:#1a1a1a;padding:7px 10px;text-align:right;
+  font-size:11px;font-weight:800;border-bottom:1px solid #F0E6A0;white-space:nowrap}
+.total-meli-table th:first-child,.total-meli-table td:first-child{text-align:left}
+.total-meli-table td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--border);
+  white-space:nowrap;color:var(--text-2)}
+.total-meli-table tbody tr:last-child td{border-bottom:none}
+.total-meli-bu{font-weight:800;color:#1a1a1a}
+.total-meli-nr{font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase}
+.total-meli-empty{padding:12px;color:var(--muted);font-size:12px}
+[data-theme=dark] .total-meli-head,[data-theme=dark] .total-meli-table th{
+  background:#1E1A00;color:#FFE600;border-color:#3A3100}
+[data-theme=dark] .total-meli-bu{color:#FFE600}
 .mbu-table{border-collapse:separate;border-spacing:0;font-size:12.5px;white-space:nowrap}
 .mbu-table thead tr:first-child th:first-child{border-radius:var(--r-md) 0 0 0}
 .mbu-table thead tr:first-child th:last-child{border-radius:0 var(--r-md) 0 0}
@@ -846,11 +925,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 <!-- ── Header ── -->
 <header class="hdr">
   <h1>
-    <!-- Mercado Libre logo badge -->
-    <svg class="brand-logo" viewBox="0 0 30 28" width="30" height="28" aria-label="Mercado Livre">
-      <rect width="30" height="28" rx="5" fill="#1a1a1a"></rect>
-      <text x="15" y="20" text-anchor="middle" fill="#FFE600" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="14" letter-spacing="-0.5">ML</text>
-    </svg>
+    <img class="brand-logo" src="data:image/png;base64,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" alt="Mercado Pago">
     <span class="hdr-divider"></span>
     MBL P&amp;L Managerial - Analytics
   </h1>
@@ -872,7 +947,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
   <button class="tab-btn" data-tab="keynums" onclick="switchTab(this)">Key-numbers</button>
   <button class="tab-btn" data-tab="mpos" onclick="switchTab(this)">MPOS</button>
   <button class="tab-btn" data-tab="cpa" onclick="switchTab(this)">CPA</button>
-  <button class="tab-btn" data-tab="mkt" onclick="switchTab(this)">MKT</button>
+  <button class="tab-btn" data-tab="mkt" onclick="switchTab(this)" style="display:none" aria-hidden="true">MKT</button>
   <button class="tab-btn" data-tab="efic" onclick="switchTab(this)">Proj. Eficiências</button>
   <button id="exportDocsBtn" onclick="downloadDashDocs()" title="Baixar documentação completa do dashboard (Markdown)" style="margin-left:auto;padding:2px 8px;border-radius:5px;border:1px solid var(--border);
            background:transparent;color:var(--muted);cursor:pointer;font-size:11px;
@@ -880,7 +955,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
            onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75">
     📘 Docs
   </button>
-  <button id="exportXlsxBtn" onclick="exportXlsx(currentTab)" title="Exportar dados da aba atual em Excel (.xlsx)" style="padding:2px 8px;border-radius:5px;border:1px solid var(--border);
+  <button id="exportXlsxBtn" onclick="exportXlsx()" title="Exportar dados da aba atual em Excel (.xlsx)" style="padding:2px 8px;border-radius:5px;border:1px solid var(--border);
            background:transparent;color:var(--muted);cursor:pointer;font-size:11px;
            font-weight:500;display:flex;align-items:center;gap:4px;white-space:nowrap;opacity:.75;transition:opacity .15s"
            onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.75">
@@ -1651,6 +1726,10 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         </div>
       </div>
       <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Colunas</label>
+        <button class="cpa-cfg-btn" id="cpaForecastColsBtn" onclick="toggleCpaForecastCols('cpa')" title="Mostra Forecast e delta vs Forecast">Forecast + Δ</button>
+      </div>
+      <div>
         <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">P&amp;L</label>
         <button class="cpa-cfg-btn" onclick="openLcm('cpa')">⚙ Editar P&amp;L</button>
       </div>
@@ -1692,13 +1771,22 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       <select id="mposMacroBUSel" onchange="mposMacroBU=this.value;renderMposTab();renderMposLightTabMerged()" style="padding:4px 8px;border:1.5px solid var(--border);border-radius:7px;
                background:var(--card);color:var(--text);font-size:13px;min-width:110px;cursor:pointer"><option value="">Todos</option><option value="Acquiring" selected="">Acquiring</option><option value="BU Corp">BU Corp</option><option value="Commerce">Commerce</option><option value="Fintech Services">Fintech Services</option><option value="Overhead">Overhead</option></select>
     </div>
-    <div style="margin-left:auto;display:flex;align-items:flex-end;gap:8px">
+    <div class="mpos-filter-actions">
       <div>
         <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Largura</label>
         <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:7px;overflow:hidden">
           <button class="cpa-cfg-btn" id="mposWidenBtn" onclick="stepDensity('mpos',-1)" style="border:none;border-radius:0;padding:4px 9px;font-size:14px;line-height:1" title="Aumentar largura">+</button>
           <span id="mposDensityLbl" style="font-size:11px;font-weight:700;color:var(--muted);padding:0 6px;white-space:nowrap;min-width:52px;text-align:center">Normal</span>
           <button class="cpa-cfg-btn" id="mposNarrowBtn" onclick="stepDensity('mpos',1)" style="border:none;border-radius:0;padding:4px 9px;font-size:14px;line-height:1" title="Diminuir largura">−</button>
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Colunas</label>
+        <div class="mpos-toggle-grid">
+          <button class="cpa-cfg-btn" id="mposForecastColsBtn" onclick="toggleCpaForecastCols('mpos')" title="Mostra Forecast e delta vs Forecast">Forecast + Δ</button>
+          <button class="cpa-cfg-btn" id="mposYtdOnlyBtn" onclick="toggleMposYtdOnly()" title="Mostra apenas Real YTD, Plano YTD e delta vs Plano YTD">YTD vs Plano</button>
+          <button class="cpa-cfg-btn" id="mposHideSalesBtn" onclick="toggleMposHideSalesBreakdown()" title="Ocultar as quebras abaixo de Sales MPOS Total">Ocultar Sales</button>
+          <button class="cpa-cfg-btn" id="mposCmvStockBtn" onclick="toggleMposCmvStock()" title="Juntar Cost of Product Sold, Previsión Costo MPOS e Scrapy + Abastecimento FDV em CMV and Stock">CMV+Stock</button>
         </div>
       </div>
       <div>
@@ -1714,6 +1802,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
         <tbody id="mposBody"><tr><td colspan="12" class="empty">⏳ Carregando...</td></tr></tbody>
       </table>
     </div>
+    <div id="mposFootnote" class="mpos-light-footnote"></div>
     <!-- ── MPOS Light section (merged below MPOS table) ── -->
     <div style="margin-top:28px;padding-top:6px;border-top:2px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 10px">
@@ -2065,27 +2154,41 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       </div>
     </div>
     <!-- Coluna Base -->
-    <div>
+    <div id="eficCompareAWrap" style="display:none">
       <label>Base (Col. A)</label>
       <div style="display:flex;gap:6px;align-items:center">
-        <select id="eficAnoA" onchange="eficAnoA=+this.value;renderEficTab()" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+        <select id="eficAnoA" onchange="setEficCompareInput('anoA',this.value)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
                  background:var(--card);color:var(--text);font-size:13px;cursor:pointer;width:80px"></select>
-        <select id="eficCenA" onchange="eficCenarioA=this.value;renderEficTab()" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+        <select id="eficCenA" onchange="setEficCompareInput('cenA',this.value)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
                  background:var(--card);color:var(--text);font-size:13px;cursor:pointer;min-width:110px"></select>
       </div>
     </div>
     <!-- Coluna Comparativa -->
-    <div>
+    <div id="eficCompareBWrap" style="display:none">
       <label>Comparativo (Col. B)</label>
       <div style="display:flex;gap:6px;align-items:center">
-        <select id="eficAnoB" onchange="eficAnoB=+this.value;renderEficTab()" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+        <select id="eficAnoB" onchange="setEficCompareInput('anoB',this.value)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
                  background:var(--card);color:var(--text);font-size:13px;cursor:pointer;width:80px"></select>
-        <select id="eficCenB" onchange="eficCenarioB=this.value;renderEficTab()" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
+        <select id="eficCenB" onchange="setEficCompareInput('cenB',this.value)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);
                  background:var(--card);color:var(--text);font-size:13px;cursor:pointer;min-width:110px"></select>
       </div>
     </div>
-    <!-- Vista Abs / % -->
+    <!-- Media mensal comparavel -->
     <div>
+      <label>Calculo</label>
+      <button id="eficMonthlyAvgBtn" class="btn-hdr on" onclick="toggleEficMonthlyAvg()" title="Alterna entre media mensal e total para Real 2025, Plano 2026 e Actual 2026 Jan-Mai" style="white-space:nowrap">Media mensal</button>
+    </div>
+    <!-- Delta display -->
+    <div id="eficAvgDeltaWrap" style="display:none">
+      <label>Delta</label>
+      <div style="display:flex;gap:4px" id="eficAvgDeltaGrp">
+        <button class="btn-hdr" data-delta="abs" onclick="setEficAvgDeltaMode(this)">Abs</button>
+        <button class="btn-hdr" data-delta="pct" onclick="setEficAvgDeltaMode(this)">%</button>
+        <button class="btn-hdr on" data-delta="both" onclick="setEficAvgDeltaMode(this)">Ambos</button>
+      </div>
+    </div>
+    <!-- Vista Abs / % -->
+    <div id="eficVistaWrap">
       <label>Vista</label>
       <div style="display:flex;gap:4px" id="eficVistaGrp">
         <button class="btn-hdr on" data-rel="0" onclick="setEficRelMode(false)" title="Valores absolutos">Abs</button>
@@ -2093,7 +2196,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
       </div>
     </div>
     <!-- Sinal variação (toggle para itens de custo) -->
-    <div>
+    <div id="eficSignWrap" style="display:none">
       <label>Sinal Var.</label>
       <button id="eficSignBtn" class="btn-hdr" onclick="toggleEficSign()" title="Inverte a cor da variação — útil para linhas de custo onde redução é positivo">
         Custo ↕
@@ -2104,7 +2207,7 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
     <table class="efic-tbl" id="eficTable">
       <thead id="eficHead"></thead>
       <tbody id="eficBody">
-        <tr><td colspan="5" style="padding:24px;color:var(--muted);text-align:center">⏳ Selecione a aba para carregar…</td></tr>
+        <tr><td colspan="8" style="padding:24px;color:var(--muted);text-align:center">⏳ Selecione a aba para carregar…</td></tr>
       </tbody>
     </table>
   </div>
@@ -2146,7 +2249,13 @@ tr.mbu-gap td{height:6px;background:var(--bg);border:none;padding:0}
 let allData = [];         // dados ativos (= rawMng com one-offs aplicados conforme oneOffMode)
 let rawMng  = [];         // snapshot imutável da MNG após unpivot
 let oneOffEntries = [];   // [{MES, Macro_BU, BU, BU_XSELL, MNG_2, MNG_4, Value}]
+let totalMeliRows = [];   // [{BU, Cenario, MES, ANO, Value}] - Net Revenue USD MM
+let totalMeliLoadError = null;
 let oneOffMode = 'total'; // 'total' | 'exclude' | 'only'
+let shipWareReclassMode = false; // reclassifica S&W Fixed de Acquiring Point pela aba Shipping Warehousing
+let shipWareReclassRows = [];    // [{MES, target, Value, sourceRows}]
+let shipWareLoadError = null;
+try { localStorage.removeItem('acq_shipware_reclass'); } catch(e) {}
 
 // ── HISTÓRICO DE FORECASTS ──────────────────────────────────
 // fcstHistory: Map<'YYYYMM', {capturedAt, rows}>  — snapshots persistidos em
@@ -2252,6 +2361,107 @@ function getFcstBaseData() {
   }
   return base;
 }
+
+const SHIP_WARE_RECLASS_SOURCE = {
+  Macro_BU: 'Acquiring',
+  Product: 'Point',
+  BU_XSELL: 'Point',
+  Cenario: 'Realizado',
+  MNG_2: 'Shipping Ops Fixed',
+  MNG_3: 'S&W Fixed',
+  MNG_4: 'S&W Fixed',
+};
+const SHIP_WARE_TARGET_LINES = new Set(['Shipping Costs Point','Warehousing Point']);
+const SHIP_WARE_ACCOUNT_TARGET = {
+  '693001': 'Shipping Costs Point',
+  '693004': 'Shipping Costs Point',
+  '693005': 'Warehousing Point',
+};
+
+function isShipWareReclassSourceRow(d) {
+  return d.Macro_BU === SHIP_WARE_RECLASS_SOURCE.Macro_BU &&
+         d.Product === SHIP_WARE_RECLASS_SOURCE.Product &&
+         d.BU_XSELL === SHIP_WARE_RECLASS_SOURCE.BU_XSELL &&
+         d.Cenario === SHIP_WARE_RECLASS_SOURCE.Cenario &&
+         d.MNG_2 === SHIP_WARE_RECLASS_SOURCE.MNG_2 &&
+         d.MNG_3 === SHIP_WARE_RECLASS_SOURCE.MNG_3 &&
+         d.MNG_4 === SHIP_WARE_RECLASS_SOURCE.MNG_4;
+}
+
+function applyShippingWarehousingView(rows) {
+  if(!shipWareReclassMode || !rows || !rows.length || !shipWareReclassRows.length) return rows || [];
+  const allocByMesTarget = new Map();
+  const allocTotalByMes = new Map();
+  for(const r of shipWareReclassRows) {
+    if(!r || !r.MES || !SHIP_WARE_TARGET_LINES.has(r.target) || !r.Value) continue;
+    const mes = parseInt(r.MES);
+    const key = mes + '|' + r.target;
+    allocByMesTarget.set(key, (allocByMesTarget.get(key) || 0) + r.Value);
+    allocTotalByMes.set(mes, (allocTotalByMes.get(mes) || 0) + r.Value);
+  }
+  if(!allocByMesTarget.size) return rows || [];
+
+  const sourceRowsByMes = new Map();
+  for(const d of rows) {
+    if(!isShipWareReclassSourceRow(d)) continue;
+    if(!sourceRowsByMes.has(d.MES)) sourceRowsByMes.set(d.MES, []);
+    sourceRowsByMes.get(d.MES).push(d);
+  }
+  const sourceTotalByMes = new Map();
+  for(const [mes, items] of sourceRowsByMes) {
+    sourceTotalByMes.set(mes, items.reduce((s, d) => s + (d.Value || 0), 0));
+  }
+
+  const adjusted = rows.map(d => {
+    if(!isShipWareReclassSourceRow(d)) return d;
+    const allocTotal = allocTotalByMes.get(d.MES) || 0;
+    if(!allocTotal) return d;
+    const sourceTotal = sourceTotalByMes.get(d.MES) || 0;
+    const share = sourceTotal ? (d.Value || 0) / sourceTotal : 1 / (sourceRowsByMes.get(d.MES) || [d]).length;
+    return { ...d, Value: (d.Value || 0) - allocTotal * share, _shipWareReclassSource: true };
+  });
+
+  for(const [key, value] of allocByMesTarget) {
+    const [mesStr, target] = key.split('|');
+    const mes = parseInt(mesStr);
+    if(!sourceRowsByMes.has(mes) || !value) continue;
+    const ano = Math.floor(mes / 100);
+    const mm = mes % 100;
+    adjusted.push({
+      Macro_BU: 'Acquiring',
+      Product: 'Point',
+      BU_XSELL: 'Point',
+      Cenario: 'Realizado',
+      MNG_1: 'Direct Contribution',
+      MNG_2: 'Customer Acquisition Cost',
+      MNG_3: 'Point COGS',
+      MNG_4: target,
+      MES: mes,
+      ANO: ano,
+      QUARTER: mm <= 3 ? 'Q1' : mm <= 6 ? 'Q2' : mm <= 9 ? 'Q3' : 'Q4',
+      Value: value,
+      _shipWareReclass: true,
+    });
+  }
+
+  return adjusted.filter(d => Math.abs(d.Value || 0) > 1e-6);
+}
+
+function setActiveData(rows) {
+  allData = applyShippingWarehousingView(rows);
+  syncShippingWarehousingButton();
+}
+
+function syncShippingWarehousingButton() {
+  const btn = document.getElementById('shipWareBtn');
+  if(!btn) return;
+  btn.classList.toggle('on', shipWareReclassMode);
+  btn.style.background = shipWareReclassMode ? '#1a1a1a' : 'transparent';
+  btn.style.color = shipWareReclassMode ? '#FFE600' : 'var(--muted)';
+  btn.style.borderColor = shipWareReclassMode ? '#000' : 'var(--border)';
+  btn.style.fontWeight = shipWareReclassMode ? '700' : '600';
+}
+
 let selCen   = [];   // selected cenarios
 let selAnos  = [];   // selected anos (strings)
 let selMacro = [];
@@ -2512,11 +2722,11 @@ function applyAlteryxReclassif(rows) {
 // mode='only'    : allData contém apenas os one-offs como linhas sintetizadas
 //                  (Cenario=Realizado), pra auditar como estão atribuídos
 function applyOneOffMode() {
-  if(!rawMng.length) { allData = []; return; }
+  if(!rawMng.length) { setActiveData([]); return; }
   const base = getFcstBaseData();
 
   if(oneOffMode === 'total' || !oneOffEntries.length) {
-    allData = base;
+    setActiveData(base);
     return;
   }
 
@@ -2551,7 +2761,7 @@ function applyOneOffMode() {
         _oneoff : true,
       });
     }
-    allData = synth;
+    setActiveData(synth);
     return;
   }
 
@@ -2562,13 +2772,13 @@ function applyOneOffMode() {
     const k = o.MES+'|'+o.Macro_BU+'|'+o.BU+'|'+o.BU_XSELL+'|'+o.MNG_4;
     adj.set(k, (adj.get(k)||0) + o.Value);
   }
-  allData = base.map(d => {
+  setActiveData(base.map(d => {
     if(d.Cenario !== 'Realizado') return d;
     const k = d.MES+'|'+d.Macro_BU+'|'+d.Product+'|'+(d.BU_XSELL||'')+'|'+d.MNG_4;
     const delta = adj.get(k);
     if(!delta) return d;
     return { ...d, Value: d.Value - delta };
-  });
+  }));
 }
 
 function setFcstSnapshot(key) {
@@ -2669,6 +2879,13 @@ function setOneOffMode(mode) {
 // docId é extraído do path /d/{docId}/raw ou /d/{docId}/view onde o iframe roda.
 const SHEET_ID   = '1HyGBd3c7hgyIWHUYg9HRxU46EQWeuVOckAxYqOWPFKk';
 const SHEET_NAME = 'MNG';
+const SHIPPING_WAREHOUSING_RANGE = 'Shipping Warehousing!A1:AZ5000';
+const TOTAL_MELI_SHEET_ID = '1G3OlgMAncu6QVa0nKhuoQgOdDoMw-f9gWjL5uiFKCtU';
+const TOTAL_MELI_RANGE = 'Data!A1:L25000';
+const TOTAL_MELI_COUNTRIES = new Set([
+  'argentina','brasil','brazil','chile','colombia','mexico','others','peru','uruguay'
+]);
+const TOTAL_MELI_BU_ORDER = ['Acquiring','Commerce','Fintech Services','BU Corp','Overhead'];
 
 function showLoadError(message, hint, retryFn, autoRetryMs) {
   const tr  = document.createElement('tr');
@@ -2746,6 +2963,192 @@ function parseBRNumber(raw) {
 //   linha N+1..: dados
 // Meses chegam como "202.401" (locale BR) — normalizamos para "202401".
 // Valores chegam como "-1.114.765" (BR) — convertemos para Number.
+function totalMeliNorm(raw) {
+  return String(raw == null ? '' : raw)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function totalMeliHtml(raw) {
+  return String(raw == null ? '' : raw).replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+
+function parseTotalMeliNumber(raw) {
+  if(raw === null || raw === undefined || raw === '') return null;
+  if(typeof raw === 'number') return isFinite(raw) ? raw : null;
+  let s = String(raw).trim().replace(/[^\d.,-]/g, '');
+  if(!s) return null;
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  if(lastComma >= 0 && lastDot >= 0) {
+    s = lastComma > lastDot
+      ? s.replace(/\./g, '').replace(',', '.')
+      : s.replace(/,/g, '');
+  } else if(lastComma >= 0) {
+    s = s.replace(',', '.');
+  }
+  const n = parseFloat(s);
+  return isFinite(n) ? n : null;
+}
+
+function totalMeliMonth(raw) {
+  if(typeof raw === 'number') return raw >= 1 && raw <= 12 ? raw : null;
+  const key = totalMeliNorm(raw);
+  const map = {
+    jan:1,janeiro:1,feb:2,fev:2,fevereiro:2,mar:3,marco:3,apr:4,abr:4,abril:4,
+    may:5,mai:5,maio:5,jun:6,june:6,julho:7,jul:7,july:7,aug:8,ago:8,agosto:8,
+    sep:9,set:9,setembro:9,sept:9,oct:10,out:10,outubro:10,nov:11,novembro:11,
+    dec:12,dez:12,dezembro:12
+  };
+  if(map[key]) return map[key];
+  const first3 = key.slice(0, 3);
+  if(map[first3]) return map[first3];
+  const n = parseInt(key, 10);
+  return n >= 1 && n <= 12 ? n : null;
+}
+
+function totalMeliScenario(raw) {
+  const key = totalMeliNorm(raw);
+  if(key === 'realizado' || key === 'actual') return 'Realizado';
+  if(['planeado','planejado','plan','plano','planned'].includes(key)) return 'Plan';
+  return null;
+}
+
+function totalMeliHeaderIndex(headers, aliases, startsWith) {
+  const normHeaders = headers.map(totalMeliNorm);
+  for(const alias of aliases) {
+    const idx = normHeaders.indexOf(alias);
+    if(idx >= 0) return idx;
+  }
+  if(startsWith) {
+    const idx = normHeaders.findIndex(h => startsWith.some(prefix => h.startsWith(prefix)));
+    if(idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function parseTotalMeliRows(values) {
+  if(!values || values.length < 2) return [];
+  let hdrIdx = -1;
+  for(let i = 0; i < Math.min(values.length, 10); i++) {
+    const row = values[i] || [];
+    const norm = row.map(totalMeliNorm);
+    if(norm.includes('year') && norm.includes('month') && norm.some(h => h.startsWith('netrevenue'))) {
+      hdrIdx = i;
+      break;
+    }
+  }
+  if(hdrIdx < 0) return [];
+  const headers = values[hdrIdx].map(h => String(h || '').trim());
+  const idx = {
+    year: totalMeliHeaderIndex(headers, ['year','ano']),
+    month: totalMeliHeaderIndex(headers, ['month','mes']),
+    scenario: totalMeliHeaderIndex(headers, ['indicator','cenario','scenario','escenario']),
+    bu: totalMeliHeaderIndex(headers, ['bu']),
+    subbu: totalMeliHeaderIndex(headers, ['subbu']),
+    country: totalMeliHeaderIndex(headers, ['country','pais']),
+    nr: totalMeliHeaderIndex(headers, [], ['netrevenue'])
+  };
+  if(Object.values(idx).some(v => v < 0)) return [];
+
+  const agg = new Map();
+  for(let i = hdrIdx + 1; i < values.length; i++) {
+    const r = values[i] || [];
+    const cenario = totalMeliScenario(r[idx.scenario]);
+    if(!cenario) continue;
+    const subbu = String(r[idx.subbu] == null ? '' : r[idx.subbu]).trim();
+    if(subbu) continue;
+    const country = totalMeliNorm(r[idx.country]);
+    if(!TOTAL_MELI_COUNTRIES.has(country)) continue;
+    const bu = String(r[idx.bu] || '').trim();
+    if(!bu) continue;
+    const year = parseInt(String(r[idx.year] || '').replace(/[^\d]/g, ''), 10);
+    const month = totalMeliMonth(r[idx.month]);
+    if(!year || !month) continue;
+    const value = parseTotalMeliNumber(r[idx.nr]);
+    if(value === null) continue;
+    const mes = year * 100 + month;
+    const key = bu + '|' + cenario + '|' + mes;
+    if(!agg.has(key)) agg.set(key, {BU:bu, Cenario:cenario, MES:mes, ANO:year, Value:0});
+    agg.get(key).Value += value;
+  }
+  return [...agg.values()].sort((a,b) =>
+    a.BU.localeCompare(b.BU, 'pt-BR') || a.MES - b.MES || a.Cenario.localeCompare(b.Cenario, 'pt-BR')
+  );
+}
+
+function totalMeliSum(bu, fromMes, toMes, cenario) {
+  let sum = 0, found = false;
+  for(const r of totalMeliRows) {
+    if(r.BU !== bu || r.Cenario !== cenario || r.MES < fromMes || r.MES > toMes) continue;
+    sum += r.Value || 0;
+    found = true;
+  }
+  return found ? sum : null;
+}
+
+function totalMeliFmt(v) {
+  if(v == null) return '&mdash;';
+  return v.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
+}
+
+function totalMeliRangeLabel(fromMes, toMes) {
+  const fmt = m => {
+    const yr = Math.floor(m / 100), mo = String(m % 100).padStart(2, '0');
+    return (MN[mo] || mo) + '/' + String(yr).slice(2);
+  };
+  return fromMes === toMes ? fmt(fromMes) : fmt(fromMes) + ' - ' + fmt(toMes);
+}
+
+function renderTotalMeliBox(fromMes, toMes) {
+  const el = document.getElementById('totalMeliBox');
+  if(!el) return;
+  if(totalMeliLoadError) {
+    el.innerHTML = '<div class="total-meli-empty">Total MeLi indisponivel: ' +
+      totalMeliHtml(totalMeliLoadError) + '</div>';
+    return;
+  }
+  if(!totalMeliRows.length) {
+    el.innerHTML = '<div class="total-meli-empty">Carregando Total MeLi...</div>';
+    return;
+  }
+  const available = [...new Set(totalMeliRows.map(r => r.BU))];
+  const bus = mbuMacro === '__MLB__'
+    ? [...TOTAL_MELI_BU_ORDER.filter(b => available.includes(b)), ...available.filter(b => !TOTAL_MELI_BU_ORDER.includes(b)).sort()]
+    : [mbuMacro].filter(b => available.includes(b));
+  if(!bus.length) {
+    el.innerHTML = '<div class="total-meli-empty">Sem Total MeLi para o recorte selecionado.</div>';
+    return;
+  }
+  let rows = '';
+  for(const bu of bus) {
+    const plan = totalMeliSum(bu, fromMes, toMes, 'Plan');
+    const real = totalMeliSum(bu, fromMes, toMes, 'Realizado');
+    const delta = plan == null || real == null ? null : real - plan;
+    const deltaPct = plan ? delta / Math.abs(plan) * 100 : null;
+    rows += '<tr>' +
+      '<td><span class="total-meli-bu">' + totalMeliHtml(bu) + '</span><br><span class="total-meli-nr">NR</span></td>' +
+      '<td>' + totalMeliFmt(plan) + '</td>' +
+      '<td>' + totalMeliFmt(real) + '</td>' +
+      '<td class="' + (delta != null && delta < 0 ? 'vneg' : 'vpos') + '">' + totalMeliFmt(delta) + '</td>' +
+      '<td class="' + (deltaPct != null && deltaPct < 0 ? 'vneg' : 'vpos') + '">' +
+        (deltaPct == null ? '&mdash;' : (deltaPct >= 0 ? '+' : '') + deltaPct.toFixed(1) + '%') +
+      '</td>' +
+    '</tr>';
+  }
+  el.innerHTML =
+    '<div class="total-meli-head">' +
+      '<div class="total-meli-title">Total MeLi - Net Revenue</div>' +
+      '<div class="total-meli-meta">US$ MM | ' + totalMeliHtml(totalMeliRangeLabel(fromMes, toMes)) + ' | paises: AR, BR, CL, CO, MX, Others, PE, UY</div>' +
+    '</div>' +
+    '<table class="total-meli-table">' +
+      '<thead><tr><th>BU</th><th>Plan</th><th>Real</th><th>Var</th><th>Var %</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+}
+
 function valuesToRows(values) {
   if(!values || values.length < 2) return [];
   // Detecta linha de header procurando "Macro_BU" / "Cenario" / "MNG_1"
@@ -2787,6 +3190,65 @@ function valuesToRows(values) {
     rows.push(obj);
   }
   return rows;
+}
+
+function parseShippingWarehousingRows(values) {
+  if(!values || values.length < 2) return [];
+
+  let hdrIdx = -1;
+  for(let i = 0; i < Math.min(values.length, 20); i++) {
+    const row = values[i] || [];
+    const norm = row.map(totalMeliNorm);
+    const hasAccount = norm.includes('contacontabil') || norm.includes('contacontbil') || norm.includes('account');
+    const hasMonth = row.some(c => /^\d{6}$/.test(String(c == null ? '' : c).replace(/[.,\s]/g, '')));
+    if(hasAccount && hasMonth) {
+      hdrIdx = i;
+      break;
+    }
+  }
+  if(hdrIdx < 0) return [];
+
+  const headers = (values[hdrIdx] || []).map(h => String(h == null ? '' : h).trim());
+  const normHeaders = headers.map(totalMeliNorm);
+  const idxProduct = normHeaders.findIndex(h => h === 'produto' || h === 'product');
+  const idxAccount = normHeaders.findIndex(h => h === 'contacontabil' || h === 'contacontbil' || h === 'account');
+
+  const monthCols = headers
+    .map((h, i) => ({ i, mes: String(h || '').replace(/[.,\s]/g, '') }))
+    .filter(x => /^\d{6}$/.test(x.mes))
+    .map(x => ({ i: x.i, mes: parseInt(x.mes) }));
+
+  if(idxAccount < 0 || !monthCols.length) return [];
+
+  const agg = new Map();
+  let lastProduct = '';
+  let lastAccount = '';
+
+  for(let i = hdrIdx + 1; i < values.length; i++) {
+    const row = values[i] || [];
+    const productRaw = idxProduct >= 0 ? String(row[idxProduct] == null ? '' : row[idxProduct]).trim() : '';
+    if(productRaw) lastProduct = productRaw;
+    const productKey = totalMeliNorm(productRaw || lastProduct);
+    if(productKey && productKey !== 'point') continue;
+
+    const accountRaw = String(row[idxAccount] == null ? '' : row[idxAccount]).trim();
+    if(accountRaw) lastAccount = accountRaw;
+    const account = String(accountRaw || lastAccount).replace(/[^\d]/g, '');
+    const target = SHIP_WARE_ACCOUNT_TARGET[account];
+    if(!target) continue;
+
+    for(const {i: colIdx, mes} of monthCols) {
+      const value = parseBRNumber(row[colIdx]);
+      if(value === null || value === 0) continue;
+      const key = mes + '|' + target;
+      const cur = agg.get(key) || { MES: mes, target, Value: 0, sourceRows: 0 };
+      cur.Value += value;
+      cur.sourceRows += 1;
+      agg.set(key, cur);
+    }
+  }
+
+  return [...agg.values()].sort((a,b) => a.MES - b.MES || a.target.localeCompare(b.target, 'pt-BR'));
 }
 
 function loadFromGridSheets() {
@@ -2851,22 +3313,66 @@ function loadFromGridSheets() {
       throw err;
     });
   }
+  function getShippingWarehousingWithRetry(attempt) {
+    return Grid.sheets.get(SHEET_ID, SHIPPING_WAREHOUSING_RANGE).catch(function(err) {
+      const status = err && (err.status || err.code);
+      const is429 = status === 429 || /\b429\b|rate.?limit|too many requests/i.test(String(err && (err.detail || err.message) || err));
+      const transient = !status || status === 500 || status === 502 || status === 503 || status === 504 || is429;
+      if(attempt < MAX_ATTEMPTS - 1 && transient) {
+        const wait = retryWait(attempt, is429);
+        return new Promise(function(res) { setTimeout(res, wait); })
+          .then(function() { return getShippingWarehousingWithRetry(attempt + 1); });
+      }
+      throw err;
+    });
+  }
+  function getTotalMeliWithRetry(attempt) {
+    return Grid.sheets.get(TOTAL_MELI_SHEET_ID, TOTAL_MELI_RANGE).catch(function(err) {
+      const status = err && (err.status || err.code);
+      const is429 = status === 429 || /\b429\b|rate.?limit|too many requests/i.test(String(err && (err.detail || err.message) || err));
+      const transient = !status || status === 500 || status === 502 || status === 503 || status === 504 || is429;
+      if(attempt < MAX_ATTEMPTS - 1 && transient) {
+        const wait = retryWait(attempt, is429);
+        return new Promise(function(res) { setTimeout(res, wait); })
+          .then(function() { return getTotalMeliWithRetry(attempt + 1); });
+      }
+      throw err;
+    });
+  }
+
   Promise.all([
     getWithRetry(SHEET_NAME, 0),
     getOneoffsWithRetry(0).catch(function(err) {
       console.warn('Aba Oneoffs não carregada:', err && (err.detail || err.message) || err);
       return { values: [] };
+    }),
+    getShippingWarehousingWithRetry(0).catch(function(err) {
+      const detail = err && (err.detail || err.message) || String(err);
+      console.warn('Aba Shipping Warehousing nao carregada:', detail);
+      return { values: [], error: detail };
+    }),
+    getTotalMeliWithRetry(0).catch(function(err) {
+      const detail = err && (err.detail || err.message) || String(err);
+      console.warn('Total MeLi nao carregado:', detail);
+      return { values: [], error: detail };
     })
   ])
     .then(function(results) {
       const mngData    = results[0];
       const oneoffData = results[1];
+      const shipWareData = results[2];
+      const totalMeliData = results[3];
       const rows = valuesToRows(mngData && mngData.values);
       if(!rows.length) throw new Error('Aba "' + SHEET_NAME + '" sem linhas de dados');
       const normalized = unpivot(rows);
       if(!normalized.length) throw new Error('Nenhuma linha válida após normalização (verifique colunas Cenario, MNG_1 e colunas mensais YYYYMM)');
       rawMng        = applyAlteryxReclassif(normalized);
       oneOffEntries = parseOneoffs(oneoffData && oneoffData.values);
+      shipWareLoadError = shipWareData && shipWareData.error ? shipWareData.error : null;
+      shipWareReclassRows = shipWareLoadError ? [] : parseShippingWarehousingRows(shipWareData && shipWareData.values);
+      totalMeliLoadError = totalMeliData && totalMeliData.error ? totalMeliData.error : null;
+      totalMeliRows = totalMeliLoadError ? [] : parseTotalMeliRows(totalMeliData && totalMeliData.values);
+      if(!totalMeliLoadError && !totalMeliRows.length) totalMeliLoadError = 'sem linhas validas em Data!A1:L25000';
       // Histórico de Forecasts: carrega do GRID.state, snapshota se preciso,
       // salva (best-effort), e popula o dropdown + pseudo-cenários nas pills.
       // Roda em background — se falhar, o dashboard segue em modo Live.
@@ -2890,6 +3396,9 @@ function loadFromGridSheets() {
       document.getElementById('lastUpd').textContent =
         'MNG Online' +
         (oneOffEntries.length ? ' · ' + oneOffEntries.length + ' one-offs' : '');
+      if(shipWareReclassRows.length) document.getElementById('lastUpd').textContent += ' | SW reclass';
+      else if(shipWareLoadError) document.getElementById('lastUpd').textContent += ' | SW reclass indisponivel';
+      if(totalMeliRows.length) document.getElementById('lastUpd').textContent += ' | Total MeLi NR';
       initFilters();
       initCompSelects();
       render();
@@ -3933,7 +4442,7 @@ const MNG2_ORDER = {
     'Fraud Prevention Variable'
   ],
   'Direct Contribution': [
-    'Shipping Ops Fixed','Marketing Fixed','Loyalty Content',
+    'Shipping Ops Fixed','Demand Gen, Branding & Others','Marketing Fixed','Loyalty Content',
     'S&M Local DC','Other Fixed Costs','Sales Expenses',
     'Customer Acquisition Cost','Sales MPOS','Point COGS',
     'CX Fixed','Hosting Fixed','Fraud Prevention Fixed','Fraud Prevention'
@@ -3982,6 +4491,10 @@ function renderBody(l1map, cols, cens) {
   let nmvByCen = null;
   if(displayMode === 'pct_tpv') tpvByCen = l1map.get('Metrics')?.children?.get('TPV')?.byCen || null;
   if(displayMode === 'pct_nmv') nmvByCen = l1map.get('Metrics')?.children?.get('NMV')?.byCen || null;
+  // Commerce uses NMV as the denominator even when the global display mode is % TPV.
+  if(displayMode === 'pct_tpv' && selMacro.length === 1 && selMacro[0] === 'Commerce') {
+    nmvByCen = l1map.get('Metrics')?.children?.get('NMV')?.byCen || null;
+  }
 
   let html = '';
 
@@ -3993,12 +4506,16 @@ function renderBody(l1map, cols, cens) {
     if(!m) return 0;
     return cols.reduce((s,k) => s + (m.get(k)||0), 0);
   }
+  function pctDenomByCen() {
+    if(displayMode === 'pct_nmv') return nmvByCen;
+    if(displayMode !== 'pct_tpv') return null;
+    return (selMacro.length === 1 && selMacro[0] === 'Commerce') ? nmvByCen : tpvByCen;
+  }
 
   // Feature 5: Format value as % TPV or % NMV if applicable
   function fmtCell(v, cen, col, isMetrics) {
     if(!isMetrics) {
-      const refByCen = displayMode === 'pct_tpv' ? tpvByCen
-                     : displayMode === 'pct_nmv'  ? nmvByCen : null;
+      const refByCen = pctDenomByCen();
       if(refByCen) {
         const refVal = col === '__grand__' ? totalVal(refByCen, cen)
                                            : (refByCen.get(cen)?.get(col) || 0);
@@ -4020,8 +4537,7 @@ function renderBody(l1map, cols, cens) {
       c += `<td class="col-total-cell ${aVal<0?'neg':''}" style="border-left:3px solid #1a1a1a">${fmtCell(aVal, comp1x1CenA, '1x1_a', isMetrics)}</td>`;
       c += `<td class="col-total-cell ${bVal<0?'neg':''}" style="border-left:3px solid #4a7fc1">${fmtCell(bVal, comp1x1CenB, '1x1_b', isMetrics)}</td>`;
       // In % TPV/NMV mode → show pp difference; otherwise absolute delta
-      const refByCenVar = !isMetrics && displayMode !== 'abs'
-        ? (displayMode === 'pct_tpv' ? tpvByCen : nmvByCen) : null;
+      const refByCenVar = !isMetrics && displayMode !== 'abs' ? pctDenomByCen() : null;
       if(refByCenVar) {
         const refA   = (refByCenVar.get(comp1x1CenA)?.get('1x1_a')) || 0;
         const refB   = (refByCenVar.get(comp1x1CenB)?.get('1x1_b')) || 0;
@@ -4146,39 +4662,31 @@ function renderBody(l1map, cols, cens) {
     // Gap row between sections
     html += `<tr class="pnl-gap"><td colspan="99"></td></tr>`;
 
-    // Store in chartData
+    // Store in chartData. Metrics is non-additive, so only children are chartable.
     const chartKey1 = k1;
-    chartData.set(chartKey1, n1.byCen);
+    if(!isMetrics) chartData.set(chartKey1, n1.byCen);
 
     if(isMetrics) {
-      // Metrics: cabeçalho METRICS no topo + uma linha por MNG_2 (NMV, TPV, etc).
-      // Quando Commerce é o macro selecionado (sozinho ou junto), suprimimos
-      // GMV / TPV On / TPV Off da exibição porque Commerce usa NMV como volume.
-      // Se depois dos filtros sobrar UMA única métrica visível (típico do
-      // Commerce: só NMV), o próprio cabeçalho METRICS deixa de fazer sentido
-      // (seria a "soma" de um único item) — então também é suprimido.
+      // Metrics is non-additive: NMV, TPV On, TPV Off, TPV, etc. stay as
+      // separate rows and are never summed into a section total.
       const hasCommerce = selMacro.includes('Commerce');
       const isCommerceFocus = (selMacro.length === 1 && selMacro[0] === 'Commerce')
                               || (hasCommerce && selMacro.length === 1);
       if(isCommerceFocus && !_pnl_lastCommerceOnly) expL1.add('Metrics');
       _pnl_lastCommerceOnly = isCommerceFocus;
-      const HIDE_FOR_COMMERCE = new Set(['GMV','TPV On','TPV Off']);
-      // Conta métricas que vão sobreviver à filtragem
-      const visibleK2List = [...sortedBy(n1.children, MNG2_ORDER[k1])]
-        .filter(([k2]) => !(hasCommerce && HIDE_FOR_COMMERCE.has(k2)));
+      const visibleK2List = [...sortedBy(n1.children, MNG2_ORDER[k1])];
       const skipMetricsHeader = visibleK2List.length <= 1;
       const open1 = isCommerceFocus || skipMetricsHeader || expL1.has(k1);
       if(!skipMetricsHeader) {
-        html += `<tr class="row-l1" data-k1="${escAttr(k1)}" data-rk="${escAttr(chartKey1)}" ${chartClickAttr(chartKey1)}>
+        html += `<tr class="row-l1" data-k1="${escAttr(k1)}">
           <td class="sticky-col">
             <span class="xbtn" onclick="toggleL1(event,this)">
               <span class="xarr${open1?' open':''}">▶</span>METRICS
             </span>
-          </td>${cells(n1.byCen, true)}</tr>`;
+          </td><td colspan="99" style="background:var(--l1bg);border-bottom:1px solid var(--border)"></td></tr>`;
       }
       if(open1) {
         for(const [k2, n2] of sortedBy(n1.children, MNG2_ORDER[k1])) {
-          if(hasCommerce && HIDE_FOR_COMMERCE.has(k2)) continue;
           const chartKey2 = k1+'|||'+k2;
           chartData.set(chartKey2, n2.byCen);
           html += `<tr class="row-l3" data-rk="${escAttr(chartKey2)}" ${chartClickAttr(chartKey2)}>
@@ -4639,6 +5147,16 @@ let cpaUnitDiv       = 1_000_000;
 let mposUnitDiv      = 1_000_000;
 let mposLightUnitDiv = 1_000_000;
 let mbuUnitDiv       = 1_000_000;
+let cpaShowForecastCols  = false;
+let mposShowForecastCols = false;
+let mposYtdOnlyMode      = false;
+let mposHideSalesBreakdown = false;
+let mposMergeCmvStockMode  = false;
+try {
+  localStorage.removeItem('acq_mpos_ytd_only');
+  localStorage.removeItem('acq_mpos_hide_sales');
+  localStorage.removeItem('acq_mpos_cmv_stock');
+} catch(e) {}
 
 let cpaMacroBU       = 'Acquiring';
 let mposMacroBU      = 'Acquiring';
@@ -4700,6 +5218,7 @@ function toggleFilterBar() {
 function switchTab(btn) {
   currentTab = btn.dataset.tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b===btn));
+  syncShippingWarehousingButton();
 
   const isPnl     = currentTab === 'pnl';
   const isCpa     = currentTab === 'cpa';
@@ -4747,6 +5266,34 @@ function switchTab(btn) {
   if(isEfic)    renderEficTab();
 }
 
+function renderCurrentTab() {
+  if(currentTab === 'pnl')      render();
+  if(currentTab === 'cpa')      renderCpaTab();
+  if(currentTab === 'mpos')     { renderMposTab(); renderMposLightTabMerged(); }
+  if(currentTab === 'keynums')  renderKeyNumTab();
+  if(currentTab === 'evo')      renderEvoTab();
+  if(currentTab === 'mbu')      renderMbuTab();
+  if(currentTab === 'bridges')  renderBridgesTab();
+  if(currentTab === 'grafgen')  renderGrafgenTab();
+  if(currentTab === 'mkt')      renderMktTab();
+  if(currentTab === 'efic')     renderEficTab();
+}
+
+function toggleShippingWarehousingView() {
+  shipWareReclassMode = !shipWareReclassMode;
+  if(shipWareReclassMode && shipWareLoadError) {
+    alert('Aba Shipping Warehousing nao carregada: ' + shipWareLoadError);
+  } else if(shipWareReclassMode && !shipWareReclassRows.length) {
+    alert('Aba Shipping Warehousing carregada, mas sem linhas validas para reclassificacao.');
+  }
+  selectedRows.clear();
+  const selBar = document.getElementById('selectionBar');
+  if(selBar) selBar.style.display = 'none';
+  applyOneOffMode();
+  renderCurrentTab();
+  syncShippingWarehousingButton();
+}
+
 // ═══════════════════════════════════════════════════════════
 //  PROJ. EFICIÊNCIAS TAB
 // ═══════════════════════════════════════════════════════════
@@ -4756,62 +5303,87 @@ let eficAnoA      = 2025;
 let eficAnoB      = 2026;
 let eficCenarioA  = 'Realizado';
 let eficCenarioB  = 'Plan';
+let eficMonthlyAvgMode = true;  // true -> monthly average; false -> scenario totals
+let eficAvgDeltaMode = 'both';   // abs | pct | both
 let eficSignInvert = false;   // true → invert var color (cost mode: reduction = green)
 let eficRelMode    = false;   // true → relative mode (value / denominator, shown as %)
 let eficRemainderOpen = new Set();  // keys of remainder rows that are expanded
+let eficSourceOpen = new Set();     // keys of rows showing the P&L source mapping
 const _eficMap = {};  // runtime overrides: 'groupKey::itemLabel' → {mng2?,mng3?,mng4?,sumByMng2?}
 let _eficMapperCtx = null;  // { groupKey, itemLabel }
+
+function eficConfigBuses(cfg) {
+  if(!cfg?.bu) return null;
+  const vals = Array.isArray(cfg.bu) ? cfg.bu : [cfg.bu];
+  return vals.flatMap(v => KN_BU_MAP[v] || [v]);
+}
 
 function _eficGetEff(groupKey, item) {
   const ov = _eficMap[`${groupKey}::${item.label}`];
   return ov ? { ...item, ...ov } : item;
 }
-let eficCollapsed = new Set();// group keys that are collapsed
+let eficCollapsed = new Set(['opex']);// group keys that are collapsed
+
+const EFIC_MONTHLY_AVG_SPECS = [
+  { key:'real25', label:'Real 2025',         ano:2025, cen:'Realizado', from:202501, to:202512, months:12 },
+  { key:'plan26', label:'Plano 2026',        ano:2026, cen:'Plan',      from:202601, to:202612, months:12 },
+  { key:'real26', label:'Actual 2026 Jan-Mai', ano:2026, cen:'Realizado', from:202601, to:202605, months:5  },
+];
 
 // ── Row structure (mirrors the Excel layout from the image) ──────
 // mng2: exact MNG_2 value in the database
 // mng2extra: additional MNG_2 names to also sum (useful when a line spans multiple sub-items)
 const EFIC_GROUPS = [
-  { key:'var_neg', label:'Variáveis Negócio', items: [
-    { label:'Bad Debt',                       mng2:'Bad Debt',                                                              sumByMng2:true  },
-    { label:'Funding & Financing',            mng4:'Theoretical financing cost', mng2extra:'Funding'                                         },
-    { label:'Collection Fees',                mng2:'Collection Fees',                                                       sumByMng2:true  },
+  { key:'var_neg', label:'Variable Contribution', items: [
+    { label:'Promotions',                     mng2:'Promotions',                                                            sumByMng2:true  },
     { label:'Sales Taxes',                    mng2:'Sales Taxes',                                                           sumByMng2:true  },
-    { label:'Hosting',                        mng2:'Hosting Variable'                                                                       },
     { label:'Investimentos',                  mng4:'Investment Revenues'                                                                      },
     { label:'Servicios de Cobranzas Credits', mng3:'Servicios de Cobranzas Credits'                                                        },
+    { label:'Collection Fees',                mng2:'Collection Fees',                                                       sumByMng2:true  },
     { label:'Chargebacks',                    mng2:'Chargebacks',                                                           sumByMng2:true  },
-    { label:'Fraud Prevention',               mng2:'Fraud Prevention Variable'                                                              },
-    { label:'Promotions',                     mng2:'Promotions',                                                            sumByMng2:true  },
-    { label:'CX',                             mng2:'CX Variable',                                                           sumByMng2:true  },
+    { label:'Bad Debt',                       mng2:'Bad Debt',                                                              sumByMng2:true  },
+    { label:'Funding & Financing - Acquiring',        mng4:'Theoretical financing cost', mng2extra:'Funding', bu:'Acquiring'                 },
+    { label:'Funding & Financing - Fintech Services', mng4:'Theoretical financing cost', mng2extra:'Funding', bu:'Fintech Services'          },
+    { label:'BPP',                            mng2:'BPP',                                                                 sumByMng2:true  },
+    { label:'CX',                             mng2:['CX Variable','CX Fixed'],                                             sumByMng2:true  },
+    { label:'Hosting',                        mng2:'Hosting Variable'                                                                       },
+    { label:'Bandeiras',                      mng2:'Direct Variable Costs', mng3:'Card Variable Costs', mng4:'Costos Banderas'              },
     { label:'Telemetria',                     mng3:'Telemetría'                                                                             },
-    { label:'Bandeiras',                      mng4:'Costos Banderas'                                                                          },
     { label:'Money-In/Out',                   mng3:['Money Out /Cash Out Costs','Money In Costs']                                           },
-    { label:'Resellers & MGM',                mng4:'Cashbacks'                                                                             },
-    { label:'Other CAC',                      mng4:['Fuerza de Venta de Terceros Point','Other Sales Expenses Point','Paid On Media']       },
-    { label:'Others',                         remainderOf:'var_neg', mng1:'Variable Contribution'                                      },
+    { label:'Resellers & MGM',                mng4:['Cashbacks','MGM']                                                                    },
+    { label:'Fraud Prevention - Acquiring',   mng2:['Fraud Prevention Variable','Fraud Prevention Fixed'], bu:'Acquiring', sumByMng2:true  },
+    { label:'Fraud Prevention - Fintech Services', mng2:['Fraud Prevention Variable','Fraud Prevention Fixed'], bu:'Fintech Services', sumByMng2:true },
   ]},
-  { key:'fix_neg', label:'Fixos Negócios', items: [
-    { label:'Device Cost',         mng3:['Point COGS','Previsión MPOS Cost','Sales MPOS']  },
-    { label:'FDV Propria',         mng4:'Fuerza de Venta Propia Point'                    },
-    { label:'Marketing Branding',  mng2:'Marketing Branding'                               },
+  { key:'fix_neg', label:'Direct Contribution', items: [
+    { label:'Device Cost',         mng3:['Point COGS','Previsión MPOS Cost','Sales MPOS','S&W Fixed'], drillBy:'mng3' },
+    { label:'CAC Marketing',       mng1:'Direct Contribution', mng2:'Demand Gen, Branding & Others', mng3:'Customer /Seller Acquisition Cost' },
+    { label:'Marketing Branding',  mng1:'Direct Contribution', mng3:'Marketing Branding' },
+    { label:'Marketing Fixed',     mng1:'Direct Contribution', mng3:['Demand Generation','Other Marketing Expenses'] },
     { label:'S&M Local DC',        mng2:'S&M Local DC',        sumByMng2:true              },
-    { label:'Hosting',             mng2:'Hosting Fixed'                                    },
-    { label:'Marketing Fixed',     mng2:'Marketing Fixed',     sumByMng2:true              },
-    { label:'Cards Issuing Costs', mng3:'Card Fixed Net'                                   },
-    { label:'POM',                 mng4:'Paid On Media'                                    },
-    { label:'Sales Expenses',      mng2:'Sales Expenses',      sumByMng2:true              },
     { label:'Other Fixed Costs',   mng2:'Other Fixed Costs'                                },
-    { label:'FDV 3o',              mng4:'Fuerza de Venta de Terceros Point'                },
+    { label:'Sales Expenses',      mng2:'Sales Expenses',      sumByMng2:true,
+                                   components:[
+                                     { label:'Sales Expenses', mng2:'Sales Expenses', sumByMng2:true },
+                                     { label:'Comisiones a Resellers Point', mng4:'Comisiones a Resellers Point' },
+                                     { label:'Other Sales Expenses Point', mng4:'Other Sales Expenses Point' },
+                                     { label:'Partner Online', mng4:'Venta en pagina web de terceros' },
+                                   ] },
+    { label:'FDV Propria',         mng4:'Fuerza de Venta Propia Point'                    },
+    { label:'FDVT',                mng4:'Fuerza de Venta de Terceros Point'                },
+    { label:'Cards Issuing Costs', mng3:'Card Fixed Net', mng4:'Issuing Costs'             },
+    { label:'Cards Shipping Distribution', mng3:'Card Fixed Net', mng4:'Shipping Distribution' },
+    { label:'Hosting',             mng2:'Hosting Fixed'                                    },
+    { label:'Others',              remainderOf:'fix_neg', mng1:'Direct Contribution', excludeMng2:['Fraud Prevention Fixed','CX Fixed'],
+                                    excludeMng4:['MGM'],
+                                    bu:['Acquiring','Fintech Services'], drillFields:['MNG_4','MNG_3','MNG_2'],
+                                    drillGranularOnly:true, drillSourceFields:['Product','MNG_2','MNG_3','MNG_4'] },
   ]},
-  { key:'aloc_dir', label:'Alocação Direta', items: [
+  { key:'opex', label:'OPEX', items: [
     { label:'PD Directo Corp',    mng3:'PD Directo Corp'    },
     { label:'PD Directo Local',   mng3:'PD Directo Local'   },
     { label:'G&A Directo Local',  mng3:'G&A Directo Local'  },
     { label:'S&M Directo Corp',   mng3:'S&M Directo Corp'   },
     { label:'G&A Directo Corp',   mng3:'G&A Directo Corp'   },
-  ]},
-  { key:'aloc_ind', label:'Alocação Indireta', items: [
     { label:'PD Corp Indirecto',    mng4:'PD Corp Indirecto'    },
     { label:'PD Local Indirecto',   mng4:'PD Local Indirecto'   },
     { label:'G&A Corp Indirecto',   mng4:'G&A Corp Indirecto'   },
@@ -4825,39 +5397,153 @@ const EFIC_GROUPS = [
 //  EFIC DRIVERS — driver de eficiência por linha P&L
 // ═══════════════════════════════════════════════════════════
 // Cada linha pode ter um "driver" associado pra calcular volume e custo
-// unitário ao expandir. Dois tipos:
+// unitário ao expandir. Três tipos:
 //   - kind:'data'      → busca em allData (MNG_2 + BU especificados)
 //   - kind:'hardcoded' → valores fixos por ano (HCs, TPN não na MNG)
+//   - kind:'line'      → soma linhas P&L existentes por filtros MNG/Product
 //
 // abbrev   (default true)  — usa K/M/B no volume
-// perDecimals (default 4)  — casas decimais do custo unitário
+// perDecimals (default 2)  — casas decimais do custo unitário
+const EFIC_ISSUED_CARDS_DRIVER = Object.freeze({
+  kind:'hardcoded',
+  valuesBySpec:{real25:31756303, plan26:15.075e6, real26:5.759e6},
+  valuesByScenario:{'2025:Realizado':31756303, '2026:Plan':15.075e6, '2026:Realizado':5.759e6},
+  periodMonthsBySpec:{real25:12, plan26:12, real26:5},
+  label:'Issued Cards',
+  perDecimals:2
+});
+
+const EFIC_PRODUCT_MONETIZATION_DRIVER = Object.freeze({
+  kind:'line',
+  mng1:'Product Monetization',
+  useCurrentBU:true,
+  label:'Product Monetization',
+  perDecimals:2,
+  calcTooltip:'Product Monetization = MNG_1=Product Monetization do BU selecionado.'
+});
+
+const EFIC_DIGITAL_CHANNEL_TPV_DRIVER = Object.freeze({
+  kind:'hardcoded',
+  valuesBySpec:{real25:17249664726, plan26:8762891064, real26:6714370031},
+  valuesByScenario:{'2025:Realizado':17249664726, '2026:Plan':8762891064, '2026:Realizado':6714370031},
+  periodMonthsBySpec:{real25:12, plan26:12, real26:5},
+  label:'TPV Canais digitais',
+  perDecimals:2,
+  calcTooltip:'TPV Canais digitais informado para CAC Marketing: Actual 2025, Plano 2026 e Actual 2026 YTD Maio.'
+});
+
 const EFIC_DRIVERS = {
-  'Bad Debt':                       { kind:'data', mng2:'Outstanding',    bu:'Credits',          label:'Outstanding' },
-  'Collection Fees':                { kind:'data', mng2:'TPV',            bu:'Acquiring',        label:'TPV' },
+  'Bad Debt':                       { kind:'data', mng2:'Outstanding',    bu:'Credits',          label:'Outstanding', perDecimals:2 },
+  'Funding & Financing - Acquiring': { kind:'hardcoded', valuesBySpec:{real25:131671088091, plan26:168096194826, real26:61303409732},
+                                      periodMonthsBySpec:{real25:12, plan26:12, real26:5}, label:'TPV crédito', perDecimals:2 },
+  'Funding & Financing - Fintech Services': { kind:'data', mng2:'Outstanding', bu:'Fintech Services', label:'Outstanding', perDecimals:2 },
+  'BPP':                            { kind:'data', mng2:'TPV',            bu:'Acquiring',        label:'TPV', perDecimals:2 },
+  'Collection Fees':                { kind:'data', mng2:'TPV',            bu:'Acquiring',        label:'TPV', perDecimals:2 },
+  'Sales Taxes':                    { kind:'revenueNet', useCurrentBU:true, label:'Revenue Net', perDecimals:2,
+                                      calcTooltip:'Revenue Net = Product Monetization + Financing Revenues - Collection Fees. Tracking: MNG_1=Product Monetization; MNG_1=Net Monetization > MNG_2=Financing Net > MNG_3=Financing Revenues; MNG_1=Variable Contribution > MNG_2=Collection Fees (descontado pelo valor absoluto do custo).' },
+  'Chargebacks':                    { kind:'data', mng2:'TPV',            bu:'Acquiring',        label:'TPV', perDecimals:2 },
+  'Fraud Prevention - Acquiring':    { kind:'data', mng2:'TPV',            bu:'Acquiring',        label:'TPV', perDecimals:2 },
+  'Fraud Prevention - Fintech Services': { kind:'data', mng2:'Originaciones', bu:'Fintech Services', label:'Originaciones', perDecimals:2 },
+  'CX':                              { kind:'hardcoded',
+                                      valuesBySpec:{real25:11414982, real26:3803542},
+                                      valuesByScenario:{'2025:Realizado':11414982, '2026:Realizado':3803542},
+                                      periodMonthsBySpec:{real25:12, real26:5},
+                                      label:'Interações', perDecimals:2,
+                                      calcTooltip:'Interações MLB informadas: Real 2025 soma jan-dez; Actual 2026 soma jan-mai. Plano 2026 ainda sem volume informado.' },
+  'Bandeiras':                       { kind:'data', mng2:'TPV Fintech Services', bu:'Fintech Services', label:'TPV Fintech Services', perDecimals:2 },
   'Investimentos':                  { kind:'data', mng2:'AUM Saldo EOP',  bu:'DA & Investments', label:'AUM' },
   'Servicios de Cobranzas Credits': { kind:'data', mng2:'Outstanding',    bu:'Credits',          label:'Outstanding' },
   'Money-In/Out':                   { kind:'data', mng2:'AUM Saldo EOP',  bu:'DA & Investments', label:'AUM' },
   'Resellers & MGM':                { kind:'data', mng2:'TPV',            bu:'Acquiring',        label:'TPV' },
+  'Promotions':                     EFIC_PRODUCT_MONETIZATION_DRIVER,
+  'S&M Local DC':                   EFIC_PRODUCT_MONETIZATION_DRIVER,
+  'Sales Expenses':                 { kind:'data', mng2:'TPV',            bu:'Acquiring',        label:'TPV', perDecimals:2 },
+  'Telemetria':                     { kind:'hardcoded', valuesBySpec:{real25:2.8e6, plan26:3.1e6, real26:2.728e6}, label:'Devices ativas',
+                                      noPeriodScale:true, perDecimals:2,
+                                      perLabelMonthly:'Custo mensal / Device ativa', perLabelTotal:'Custo total / Device ativa',
+                                      calcTooltip:'Devices ativas = base ativa, não cumulativa entre meses. Na média mensal, divide o gasto pelo número de meses e mantém o volume de devices ativas.' },
   // Hosting (Variável e Fixo compartilham o label 'Hosting' nos dois grupos)
-  'Hosting':                        { kind:'hardcoded', values:{2025:4050e6, 2026:4757e6}, label:'TPN' },
-  // FDV Propria — headcounts em valores absolutos (sem abreviação K/M, sem decimais)
-  'FDV Propria':                    { kind:'hardcoded', values:{2025:1106, 2026:1845}, label:'HCs',
-                                      abbrev:false, perDecimals:0 },
-  // Device Cost — custo por TPV com 2 casas decimais
-  'Device Cost':                    { kind:'data', mng2:'TPV', bu:'Acquiring', label:'TPV', perDecimals:2 },
+  'Hosting':                        { kind:'hardcoded',
+                                      valuesBySpec:{real25:4050275557, plan26:4757e6, real26:1777301321},
+                                      valuesByScenario:{'2024:Realizado':3384332952, '2025:Realizado':4050275557, '2026:Realizado':1777301321, '2026:Plan':4757e6},
+                                      periodMonthsBySpec:{real25:12, plan26:12, real26:5},
+                                      label:'TPN', perDecimals:2 },
+  'Cards Issuing Costs':            EFIC_ISSUED_CARDS_DRIVER,
+  'Cards Shipping Distribution':    EFIC_ISSUED_CARDS_DRIVER,
+  // FDV — headcounts médios/ativos, não cumulativos entre meses.
+  'FDV Propria':                    { kind:'hardcoded', values:{2025:1106, 2026:1845},
+                                      valuesBySpec:{real25:1106, plan26:1845, real26:1668},
+                                      valuesByScenario:{'2025:Realizado':1106, '2026:Plan':1845, '2026:Realizado':1668},
+                                      label:'HCs',
+                                      abbrev:false, perDecimals:2, perLabelMonthly:'Custo mensal / HC', perLabelTotal:'Custo total / HC' },
+  'FDVT':                           { kind:'hardcoded', values:{2025:1161, 2026:768},
+                                      valuesBySpec:{real25:1161, plan26:768, real26:962},
+                                      valuesByScenario:{'2025:Realizado':1161, '2026:Plan':768, '2026:Realizado':962},
+                                      label:'HCs',
+                                      abbrev:false, perDecimals:2, perLabelMonthly:'Custo mensal / HC', perLabelTotal:'Custo total / HC' },
+  'Marketing Branding':             EFIC_PRODUCT_MONETIZATION_DRIVER,
+  'Marketing Fixed':                EFIC_PRODUCT_MONETIZATION_DRIVER,
+  'Other Fixed Costs':              { kind:'line', mng1:'Product Monetization', bu:'Fintech Services', label:'Product Monetization Fintech Services', perDecimals:2,
+                                      calcTooltip:'Product Monetization = MNG_1=Product Monetization filtrado em Fintech Services, que corresponde praticamente à totalidade do custo de Other Fixed Costs.' },
+  'CAC Marketing':                  EFIC_DIGITAL_CHANNEL_TPV_DRIVER,
+  'Device Cost':                    { kind:'hardcoded', valuesBySpec:{real25:1478e3, plan26:1527e3, real26:622645}, label:'Devices vendidas', perDecimals:2 },
 };
 
+function eficHardcodedValue(cfg, ano, cen, specKey = null) {
+  if(specKey && cfg.valuesBySpec && cfg.valuesBySpec[specKey] != null) return cfg.valuesBySpec[specKey];
+  const scenKey = `${ano}:${cen}`;
+  if(cfg.valuesByScenario && cfg.valuesByScenario[scenKey] != null) return cfg.valuesByScenario[scenKey];
+  return cfg.values?.[ano] ?? null;
+}
+function eficDriverBuses(cfg) {
+  if(cfg?.useCurrentBU) return eficBU === '__ALL__' ? null : (KN_BU_MAP[eficBU] || [eficBU]);
+  return eficConfigBuses(cfg);
+}
+function eficMatchesFilter(value, filter) {
+  if(filter == null) return true;
+  return Array.isArray(filter) ? filter.includes(value) : value === filter;
+}
+
+function eficComputeRevenueNetDriver(cfg, ano, cen, monthMin = null, monthMax = null) {
+  const buses = eficDriverBuses(cfg);
+  let sum = 0, hasAny = false;
+  for(const d of allData) {
+    if(d.ANO !== ano || d.Cenario !== cen) continue;
+    if(monthMin != null && (d.MES < monthMin || d.MES > monthMax)) continue;
+    if(buses && !buses.includes(d.Product)) continue;
+    const isProductMonetization = d.MNG_1 === 'Product Monetization';
+    const isFinancingRevenue = d.MNG_1 === 'Net Monetization' &&
+      d.MNG_2 === 'Financing Net' && d.MNG_3 === 'Financing Revenues';
+    const isCollectionFee = d.MNG_1 === 'Variable Contribution' && d.MNG_2 === 'Collection Fees';
+    if(!isProductMonetization && !isFinancingRevenue && !isCollectionFee) continue;
+    sum += isCollectionFee ? -Math.abs(d.Value || 0) : (d.Value || 0);
+    hasAny = true;
+  }
+  return hasAny ? sum : null;
+}
+
 // Calcula o valor do driver para ano + cenário (cenário ignorado em hardcoded)
-function eficComputeDriver(cfg, ano, cen) {
+function eficComputeDriver(cfg, ano, cen, monthMin = null, monthMax = null) {
   if(!cfg) return null;
-  if(cfg.kind === 'hardcoded') return cfg.values?.[ano] ?? null;
-  if(cfg.kind === 'data') {
-    const buses = KN_BU_MAP[cfg.bu] || [cfg.bu];
+  if(cfg.kind === 'hardcoded') return eficHardcodedValue(cfg, ano, cen);
+  if(cfg.kind === 'revenueNet') return eficComputeRevenueNetDriver(cfg, ano, cen, monthMin, monthMax);
+  if(cfg.kind === 'data' || cfg.kind === 'line') {
+    const buses = eficDriverBuses(cfg);
     let sum = 0, hasAny = false;
     for(const d of allData) {
       if(d.ANO !== ano || d.Cenario !== cen) continue;
-      if(d.MNG_2 !== cfg.mng2) continue;
-      if(!buses.includes(d.Product)) continue;
+      if(monthMin != null && (d.MES < monthMin || d.MES > monthMax)) continue;
+      if(buses && !buses.includes(d.Product)) continue;
+      if(cfg.kind === 'data') {
+        if(d.MNG_1 !== 'Metrics') continue;
+        if(!eficMatchesFilter(d.MNG_2, cfg.mng2)) continue;
+      } else {
+        if(d.MNG_1 === 'Metrics') continue;
+        if(!eficMatchesFilter(d.MNG_1, cfg.mng1)) continue;
+        if(!eficMatchesFilter(d.MNG_2, cfg.mng2)) continue;
+        if(!eficMatchesFilter(d.MNG_3, cfg.mng3)) continue;
+        if(!eficMatchesFilter(d.MNG_4, cfg.mng4)) continue;
+      }
       sum += d.Value || 0;
       hasAny = true;
     }
@@ -4881,20 +5567,115 @@ function eficFmtVol(v, cfg) {
   return fmt1(v);
 }
 
-// Custo unitário formatter — perDecimals casas (default 4)
+const EFIC_DRIVER_DEFAULT_DECIMALS = 2;
+const EFIC_DRIVER_EXPANDED_DECIMALS = 4;
+
+// Custo unitário formatter — perDecimals casas (default 2)
 function eficFmtPer(itemValue, driverValue, cfg) {
   if(itemValue == null || driverValue == null || driverValue === 0) return '—';
   const per = itemValue / driverValue;
-  const d = cfg.perDecimals ?? 4;
+  const d = cfg.perDecimals ?? EFIC_DRIVER_DEFAULT_DECIMALS;
   return per.toLocaleString('pt-BR', {minimumFractionDigits:d, maximumFractionDigits:d});
 }
 
 // Estado: linhas com driver expandido
 let eficDriverOpen = new Set();
+let eficDriverPrecisionOpen = new Set();
 function toggleEficDriver(rowKey) {
   if(eficDriverOpen.has(rowKey)) eficDriverOpen.delete(rowKey);
   else eficDriverOpen.add(rowKey);
   renderEficTab();
+}
+function toggleEficDriverPrecision(rowKey) {
+  if(eficDriverPrecisionOpen.has(rowKey)) eficDriverPrecisionOpen.delete(rowKey);
+  else eficDriverPrecisionOpen.add(rowKey);
+  renderEficTab();
+}
+function eficEscJs(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+function eficDriverDecimals(cfg, rowKey) {
+  const base = cfg?.perDecimals ?? EFIC_DRIVER_DEFAULT_DECIMALS;
+  if(rowKey && eficDriverPrecisionOpen.has(rowKey))
+    return Math.max(base, cfg?.perDecimalsExpanded ?? EFIC_DRIVER_EXPANDED_DECIMALS);
+  return base;
+}
+function eficPrecisionButton(rowKey, cfg) {
+  const open = eficDriverPrecisionOpen.has(rowKey);
+  const base = cfg?.perDecimals ?? EFIC_DRIVER_DEFAULT_DECIMALS;
+  const expanded = Math.max(base, cfg?.perDecimalsExpanded ?? EFIC_DRIVER_EXPANDED_DECIMALS);
+  return `<button class="efic-precision-btn" onclick="event.stopPropagation();toggleEficDriverPrecision('${eficEscJs(rowKey)}')" title="${open ? `Voltar para ${base} casas` : `Mostrar ${expanded} casas`}">${open ? `${base} casas` : '+ casas'}</button>`;
+}
+function toggleEficSource(rowKey) {
+  if(eficSourceOpen.has(rowKey)) eficSourceOpen.delete(rowKey);
+  else eficSourceOpen.add(rowKey);
+  renderEficTab();
+}
+function eficFilterText(label, value) {
+  if(value == null) return null;
+  const vals = Array.isArray(value) ? value : [value];
+  return `${label}: ${vals.filter(Boolean).join(' + ')}`;
+}
+function eficSourceText(item) {
+  if(item.components) {
+    const compText = item.components.map(comp => {
+      const parts = [
+        eficFilterText('MNG_1', comp.mng1),
+        eficFilterText('MNG_2', comp.mng2),
+        eficFilterText('MNG_3', comp.mng3),
+        eficFilterText('MNG_4', comp.mng4),
+      ].filter(Boolean);
+      return `${comp.label || 'Componente'}${parts.length ? ` (${parts.join(' > ')})` : ''}`;
+    }).join('; ');
+    return `Fonte P&L: composição de ${compText}`;
+  }
+  if(item.remainderOf) {
+      const parts = [
+      eficFilterText('BU', item.bu),
+      eficFilterText('MNG_1', item.mng1),
+      eficFilterText('Exclui MNG_2', item.excludeMng2),
+    ].filter(Boolean);
+    const scope = parts.length ? ` (${parts.join(' > ')})` : '';
+    return `Fonte P&L: demais custos negativos${scope} da seção que não estão nas linhas acima`;
+  }
+  const parts = [
+    eficFilterText('BU', item.bu),
+    eficFilterText('MNG_1', item.mng1),
+    eficFilterText('MNG_2', item.mng2),
+    eficFilterText('MNG_2 extra', item.mng2extra),
+    eficFilterText('MNG_3', item.mng3),
+    eficFilterText('MNG_4', item.mng4),
+  ].filter(Boolean);
+  if(item.sumByMng2) parts.push('soma todas as sublinhas do MNG_2');
+  return parts.length ? `Fonte P&L: ${parts.join(' > ')}` : 'Fonte P&L: mapeamento não definido';
+}
+
+function eficToArr(value) {
+  return value == null ? [] : (Array.isArray(value) ? value : [value]);
+}
+function eficCollectClaimedFilters(item, cM4, cM3, cM2) {
+  if(!item) return;
+  eficToArr(item.mng4).forEach(v => cM4.add(v));
+  eficToArr(item.mng3).forEach(v => cM3.add(v));
+  eficToArr(item.mng2).forEach(v => cM2.add(v));
+  eficToArr(item.mng2extra).forEach(v => cM2.add(v));
+  eficToArr(item.components).forEach(comp => eficCollectClaimedFilters(comp, cM4, cM3, cM2));
+}
+
+function eficDrillParts(item) {
+  if(Array.isArray(item?.components)) {
+    return item.components.map(comp => ({
+      label: comp.label || compactPath([comp.mng4, comp.mng3, comp.mng2]),
+      item: { ...comp, components:null, drillBy:null }
+    }));
+  }
+  const field = item?.drillBy;
+  if(!field) return [];
+  const values = Array.isArray(item[field]) ? item[field].filter(Boolean) : [];
+  return values.map(value => ({
+    label: value,
+    item: { ...item, [field]: value, drillBy: null }
+  }));
 }
 
 // Denominator config for relative mode: mng1 = cumulative P&L sections sum; mng2metrics = Metrics row
@@ -4972,6 +5753,78 @@ function buildEficYearCenSels() {
   });
 }
 
+function syncEficControls() {
+  const values = {
+    eficAnoA: String(eficAnoA),
+    eficAnoB: String(eficAnoB),
+    eficCenA: eficCenarioA,
+    eficCenB: eficCenarioB,
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if(el && [...el.options].some(o => o.value === value)) el.value = value;
+  });
+  document.querySelectorAll('#eficVistaGrp button').forEach(b =>
+    b.classList.toggle('on', b.dataset.rel === (eficRelMode ? '1' : '0'))
+  );
+  const avgBtn = document.getElementById('eficMonthlyAvgBtn');
+  if(avgBtn) {
+    avgBtn.classList.toggle('on', eficMonthlyAvgMode);
+    avgBtn.textContent = eficMonthlyAvgMode ? 'Media mensal' : 'Total cenarios';
+  }
+  const deltaWrap = document.getElementById('eficAvgDeltaWrap');
+  if(deltaWrap) deltaWrap.style.display = '';
+  const vistaWrap = document.getElementById('eficVistaWrap');
+  if(vistaWrap) vistaWrap.style.display = 'none';
+  const compareAWrap = document.getElementById('eficCompareAWrap');
+  if(compareAWrap) compareAWrap.style.display = 'none';
+  const compareBWrap = document.getElementById('eficCompareBWrap');
+  if(compareBWrap) compareBWrap.style.display = 'none';
+  const signWrap = document.getElementById('eficSignWrap');
+  if(signWrap) signWrap.style.display = 'none';
+  document.querySelectorAll('#eficAvgDeltaGrp button').forEach(b =>
+    b.classList.toggle('on', b.dataset.delta === eficAvgDeltaMode)
+  );
+  syncEficStickyOffsets();
+}
+
+function syncEficStickyOffsets() {
+  const panel = document.getElementById('eficPanel');
+  const bar = document.getElementById('eficFilterBar');
+  if(!panel || !bar) return;
+  panel.style.setProperty('--efic-filter-h', `${bar.offsetHeight || 58}px`);
+}
+
+window.addEventListener('resize', () => {
+  if(currentTab === 'efic') syncEficStickyOffsets();
+});
+
+function setEficCompareInput(field, value) {
+  if(field === 'anoA') eficAnoA = +value;
+  if(field === 'anoB') eficAnoB = +value;
+  if(field === 'cenA') eficCenarioA = value;
+  if(field === 'cenB') eficCenarioB = value;
+  syncEficControls();
+  renderEficTab();
+}
+
+function toggleEficMonthlyAvg() {
+  eficMonthlyAvgMode = !eficMonthlyAvgMode;
+  eficAnoA = 2025;
+  eficCenarioA = 'Realizado';
+  eficAnoB = 2026;
+  eficCenarioB = 'Plan';
+  eficRelMode = false;
+  syncEficControls();
+  renderEficTab();
+}
+
+function setEficAvgDeltaMode(btn) {
+  eficAvgDeltaMode = btn.dataset.delta || 'both';
+  syncEficControls();
+  renderEficTab();
+}
+
 function setEficUnit(btn) {
   unitDiv = parseFloat(btn.dataset.u);
   // sync both the efic buttons and the main P&L unit buttons
@@ -4993,6 +5846,7 @@ function setEficRelMode(rel) {
   document.querySelectorAll('#eficVistaGrp button').forEach(b =>
     b.classList.toggle('on', b.dataset.rel === (rel?'1':'0'))
   );
+  syncEficControls();
   renderEficTab();
 }
 
@@ -5016,18 +5870,49 @@ function renderEficTab() {
   if(!allData || !allData.length) return;
   buildEficBUSel();
   buildEficYearCenSels();
+  syncEficControls();
+  const eficTableEl = document.getElementById('eficTable');
+  if(eficTableEl) {
+    eficTableEl.classList.add('efic-avg-mode');
+  }
 
   const buses = eficBU === '__ALL__' ? null : (KN_BU_MAP[eficBU] || [eficBU]);
   const inBU  = d => !buses || buses.includes(d.Product);
+  const inItemBU = (d, item) => {
+    const itemBuses = eficConfigBuses(item);
+    return !itemBuses || itemBuses.includes(d.Product);
+  };
   const ud    = unitDiv;   // share the same unit as the main P&L tab
   const udLbl = ud===1 ? 'R$' : ud===1000 ? 'R$ mil' : 'R$ M';
 
   // Sum for an item — matches against the DEEPEST non-null MNG level of each row.
   // This avoids both "—" (wrong level) and double-counting (subtotal + detail).
-  // Priority for the name to match: mng4 > mng2 > label (any can be a string or array)
-  const sumItem = (item, ano, cen) => {
+  // Priority for the name to match: mng4 > mng3 > mng2 > label (any can be a string or array)
+  const compactPath = parts =>
+    parts.filter(Boolean).filter((v, i, arr) => i === 0 || v !== arr[i - 1]).join(' > ') || '—';
+  const remainderDrillKey = (d, item) => {
+    const fields = item.drillFields || ['MNG_2'];
+    if(item.drillGranularOnly) {
+      for(const f of fields) if(d[f]) return d[f];
+      return '—';
+    }
+    return compactPath(fields.map(f => d[f]));
+  };
+  const remainderDrillSourceKey = (d, item) =>
+    compactPath((item.drillSourceFields || ['Product','MNG_2','MNG_3','MNG_4']).map(f => d[f]));
+
+  const sumItem = (item, ano, cen, monthMin=null, monthMax=null) => {
     const mng1f = item.mng1 || null;
     const toArr = v => v == null ? null : (Array.isArray(v) ? v : [v]);
+
+    if(item.components) {
+      let s = null;
+      for(const comp of item.components) {
+        const v = sumItem(comp, ano, cen, monthMin, monthMax);
+        if(v !== null) s = (s||0) + v;
+      }
+      return s;
+    }
 
     // Remainder mode: sum all negative-value rows NOT already claimed by sibling items
     if(item.remainderOf) {
@@ -5036,14 +5921,15 @@ function renderEficTab() {
       for(const oi of grp.items) {
         if(oi.label === item.label) continue;
         const eff = _eficGetEff(item.remainderOf, oi);
-        toArr(eff.mng4)?.forEach(v => cM4.add(v));
-        toArr(eff.mng3)?.forEach(v => cM3.add(v));
-        toArr(eff.mng2)?.forEach(v => cM2.add(v));
-        toArr(eff.mng2extra)?.forEach(v => cM2.add(v));
+        eficCollectClaimedFilters(eff, cM4, cM3, cM2);
       }
+      toArr(item.excludeMng4)?.forEach(v => cM4.add(v));
+      toArr(item.excludeMng3)?.forEach(v => cM3.add(v));
+      toArr(item.excludeMng2)?.forEach(v => cM2.add(v));
       let s = null;
       for(const d of allData) {
-        if(!inBU(d) || d.ANO !== ano || d.Cenario !== cen) continue;
+        if(!inBU(d) || !inItemBU(d, item) || d.ANO !== ano || d.Cenario !== cen) continue;
+        if(monthMin != null && (d.MES < monthMin || d.MES > monthMax)) continue;
         if(mng1f && d.MNG_1 !== mng1f) continue;
         if((d.Value||0) >= 0) continue;                          // only costs (negative)
         if(d.MNG_4 && cM4.has(d.MNG_4)) continue;              // skip already claimed
@@ -5059,9 +5945,11 @@ function renderEficTab() {
     const m2n = toArr(item.mng2) ?? [item.label];
     let s = null;
     for(const d of allData) {
-      if(!inBU(d)) continue;
+      if(!inBU(d) || !inItemBU(d, item)) continue;
       if(d.ANO !== ano || d.Cenario !== cen) continue;
+      if(monthMin != null && (d.MES < monthMin || d.MES > monthMax)) continue;
       if(mng1f && d.MNG_1 !== mng1f) continue;
+      if((m4n || m3n) && item.mng2 && !m2n.includes(d.MNG_2)) continue;
       if(m4n) {
         if(!d.MNG_4 || !m4n.includes(d.MNG_4)) continue;
       } else if(m3n) {
@@ -5078,8 +5966,9 @@ function renderEficTab() {
     if(item.mng2extra) {
       const extras = toArr(item.mng2extra);
       for(const d of allData) {
-        if(!inBU(d)) continue;
+        if(!inBU(d) || !inItemBU(d, item)) continue;
         if(d.ANO !== ano || d.Cenario !== cen) continue;
+        if(monthMin != null && (d.MES < monthMin || d.MES > monthMax)) continue;
         if(mng1f && d.MNG_1 !== mng1f) continue;
         if(!extras.includes(d.MNG_2)) continue;
         s = (s||0) + (d.Value||0);
@@ -5096,26 +5985,278 @@ function renderEficTab() {
     for(const oi of grp.items) {
       if(oi.label === item.label) continue;
       const eff = _eficGetEff(item.remainderOf, oi);
-      (Array.isArray(eff.mng4)?eff.mng4:[eff.mng4]).filter(Boolean).forEach(v=>cM4.add(v));
-      (Array.isArray(eff.mng3)?eff.mng3:[eff.mng3]).filter(Boolean).forEach(v=>cM3.add(v));
-      (Array.isArray(eff.mng2)?eff.mng2:[eff.mng2]).filter(Boolean).forEach(v=>cM2.add(v));
-      (Array.isArray(eff.mng2extra)?eff.mng2extra:[eff.mng2extra]).filter(Boolean).forEach(v=>cM2.add(v));
+      eficCollectClaimedFilters(eff, cM4, cM3, cM2);
     }
+    (Array.isArray(item.excludeMng4)?item.excludeMng4:[item.excludeMng4]).filter(Boolean).forEach(v=>cM4.add(v));
+    (Array.isArray(item.excludeMng3)?item.excludeMng3:[item.excludeMng3]).filter(Boolean).forEach(v=>cM3.add(v));
+    (Array.isArray(item.excludeMng2)?item.excludeMng2:[item.excludeMng2]).filter(Boolean).forEach(v=>cM2.add(v));
     const totA = new Map(), totB = new Map();
     for(const d of allData) {
-      if(!inBU(d)) continue;
+      if(!inBU(d) || !inItemBU(d, item)) continue;
       if(mng1f && d.MNG_1 !== mng1f) continue;
       if((d.Value||0) >= 0) continue;
       if(d.MNG_4 && cM4.has(d.MNG_4)) continue;
       if(d.MNG_3 && cM3.has(d.MNG_3)) continue;
       if(cM2.has(d.MNG_2)) continue;
-      const key = d.MNG_2 || '—';
+      const key = remainderDrillKey(d, item);
       if(d.ANO===eficAnoA && d.Cenario===eficCenarioA) totA.set(key,(totA.get(key)||0)+d.Value);
       if(d.ANO===eficAnoB && d.Cenario===eficCenarioB) totB.set(key,(totB.get(key)||0)+d.Value);
     }
     const keys = new Set([...totA.keys(), ...totB.keys()]);
     return [...keys].sort().map(k => ({ label:k, vA:totA.get(k)||null, vB:totB.get(k)||null }));
   };
+
+  // Comparable 3-scenario layout is the default; the button toggles the calculation only.
+  {
+    const avgSpecs = EFIC_MONTHLY_AVG_SPECS;
+    const avgItem = (item, spec) => {
+      const total = sumItem(item, spec.ano, spec.cen, spec.from, spec.to);
+      return total === null ? null : (eficMonthlyAvgMode ? total / spec.months : total);
+    };
+    const avgDriver = (cfg, spec) => {
+      if(!cfg) return null;
+      const driverSpec = spec.key === 'real26'
+        ? { ...spec, label:'Actual 2026 Jan-Mai', to:202605, months:5 }
+        : spec;
+      if(cfg.kind === 'hardcoded') {
+        const raw = eficHardcodedValue(cfg, driverSpec.ano, driverSpec.cen, driverSpec.key);
+        if(raw == null) return null;
+        if(cfg.abbrev === false || cfg.noPeriodScale) return raw;
+        const rawMonths = cfg.periodMonthsBySpec?.[driverSpec.key] || (cfg.valuesBySpec ? driverSpec.months : 12);
+        return eficMonthlyAvgMode ? raw / rawMonths : raw * (driverSpec.months / rawMonths);
+      }
+      if(cfg.kind === 'data' || cfg.kind === 'line' || cfg.kind === 'revenueNet') {
+        const sum = eficComputeDriver(cfg, driverSpec.ano, driverSpec.cen, driverSpec.from, driverSpec.to);
+        return sum == null ? null : (eficMonthlyAvgMode ? sum / driverSpec.months : sum);
+      }
+      return null;
+    };
+    const applyAvgColgroup = () => {
+      const table = document.getElementById('eficTable');
+      if(!table) return;
+      let colgroup = table.querySelector('colgroup[data-efic-avg]');
+      if(!colgroup) {
+        colgroup = document.createElement('colgroup');
+        colgroup.setAttribute('data-efic-avg', '1');
+        table.insertBefore(colgroup, table.firstChild);
+      }
+      const deltaCols = eficAvgDeltaMode === 'both' ? 2 : 1;
+      const cols = ['label', 'scenario', ...Array(deltaCols).fill('delta'),
+                    'scenario', ...Array(deltaCols).fill('delta'), 'scenario'];
+      const colPx = { label:360, scenario:136, delta:104 };
+      const tablePx = cols.reduce((sum, type) => sum + colPx[type], 0);
+      table.style.width = `${tablePx}px`;
+      table.style.minWidth = `${tablePx}px`;
+      colgroup.innerHTML = cols.map(type =>
+        `<col class="efic-${type}-col" style="width:${colPx[type]}px">`
+      ).join('');
+    };
+    applyAvgColgroup();
+
+    const cellClass = (...names) => names.filter(Boolean).join(' ');
+    const fval = (v, formatter, extraClass='') => {
+      const cls = cellClass('efic-scenario-col', extraClass, v === null ? 'vnull' : '');
+      if(v === null) return `<td class="${cls}">-</td>`;
+      return `<td class="${cls}">${formatter(v)}</td>`;
+    };
+    const fmtMoneyAvg = v => (v/ud).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+    const fmtSigned = (v, formatter) => v > 0 ? '+' + formatter(v) : formatter(v);
+    const fdelta = (base, current, formatter=fmtMoneyAvg, invert=eficSignInvert) => {
+      const tdCls = (extraClass='', signClass='') =>
+        cellClass('efic-delta-col', extraClass, signClass);
+      if(base === null || current === null) {
+        if(eficAvgDeltaMode === 'both') {
+          return `<td class="${tdCls('efic-delta-start', 'vnull')}">-</td><td class="${tdCls('', 'vnull')}">-</td>`;
+        }
+        return `<td class="${tdCls('efic-delta-start', 'vnull')}">-</td>`;
+      }
+      const delta = current - base;
+      const pct = base !== 0 ? (delta / Math.abs(base)) * 100 : null;
+      const cls = delta > 0 ? 'vpos' : delta < 0 ? 'vneg' : '';
+      const absStr = fmtSigned(delta, formatter);
+      const pctStr = pct !== null ? (pct > 0 ? '+' : '') + pct.toFixed(1) + '%' : '-';
+      if(eficAvgDeltaMode === 'abs') return `<td class="${tdCls('efic-delta-start', cls)}">${absStr}</td>`;
+      if(eficAvgDeltaMode === 'pct') return `<td class="${tdCls('efic-delta-start', cls)}">${pctStr}</td>`;
+      return `<td class="${tdCls('efic-delta-start', cls)}">${absStr}</td><td class="${tdCls('', cls)}">${pctStr}</td>`;
+    };
+    const deltaHead = (label) => {
+      const th = (sub, extraClass='') =>
+        `<th class="${cellClass('efic-delta-col', extraClass)}">${label}<br><span style="font-size:10px;font-weight:500">${sub}</span></th>`;
+      if(eficAvgDeltaMode === 'abs') return th(unitMonthLbl, 'efic-delta-start');
+      if(eficAvgDeltaMode === 'pct') return th('%', 'efic-delta-start');
+      return th(unitMonthLbl, 'efic-delta-start') + th('%');
+    };
+    const rowCells = (vals, formatter=fmtMoneyAvg, deltaFormatter=formatter, invert=eficSignInvert) => {
+      return [
+        fval(vals[0], formatter),
+        fdelta(vals[0], vals[1], deltaFormatter, invert),
+        fval(vals[1], formatter, 'efic-scenario-after-delta'),
+        fdelta(vals[1], vals[2], deltaFormatter, invert),
+        fval(vals[2], formatter, 'efic-scenario-after-delta'),
+      ].join('');
+    };
+    const displayThreshold = Math.max(0.000001, ud / 20);
+    const hasVisibleValue = vals =>
+      vals.some(v => v !== null && Number.isFinite(v) && Math.abs(v) >= displayThreshold);
+    const escJsKey = key => String(key).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const sourceButton = rowKey =>
+      `<button class="efic-src-btn" onclick="event.stopPropagation();toggleEficSource('${escJsKey(rowKey)}')" title="Mostrar fonte P&L">PYL</button>`;
+    const sourceRow = (rowKey, item, hidden) => eficSourceOpen.has(rowKey)
+      ? `<tr class="efic-det efic-source-row" data-efic-grp="${rowKey.split('::')[0]}" ${hidden}><td colspan="99">${eficSourceText(item)}</td></tr>`
+      : '';
+    const drillSourceRow = (rowKey, origins, hidden) => {
+      if(!eficSourceOpen.has(rowKey)) return '';
+      const originHtml = (origins || []).map(o => `<span class="efic-origin-pill">${escapeHtml(o)}</span>`).join('');
+      return `<tr class="efic-det efic-source-row" data-efic-grp="${rowKey.split('::')[0]}" ${hidden}>
+        <td colspan="99"><div class="efic-origin-list"><b>Origem P&L:</b>${originHtml || '<span class="efic-origin-pill">—</span>'}</div></td>
+      </tr>`;
+    };
+    const drillRemainderAvg = (item) => {
+      const grp = EFIC_GROUPS.find(g => g.key === item.remainderOf);
+      const mng1f = item.mng1 || null;
+      const cM4 = new Set(), cM3 = new Set(), cM2 = new Set();
+      for(const oi of grp.items) {
+        if(oi.label === item.label) continue;
+        const eff = _eficGetEff(item.remainderOf, oi);
+        eficCollectClaimedFilters(eff, cM4, cM3, cM2);
+      }
+      (Array.isArray(item.excludeMng4)?item.excludeMng4:[item.excludeMng4]).filter(Boolean).forEach(v=>cM4.add(v));
+      (Array.isArray(item.excludeMng3)?item.excludeMng3:[item.excludeMng3]).filter(Boolean).forEach(v=>cM3.add(v));
+      (Array.isArray(item.excludeMng2)?item.excludeMng2:[item.excludeMng2]).filter(Boolean).forEach(v=>cM2.add(v));
+      const byLabel = new Map();
+      for(const d of allData) {
+        if(!inBU(d) || !inItemBU(d, item)) continue;
+        if(mng1f && d.MNG_1 !== mng1f) continue;
+        if((d.Value||0) >= 0) continue;
+        if(d.MNG_4 && cM4.has(d.MNG_4)) continue;
+        if(d.MNG_3 && cM3.has(d.MNG_3)) continue;
+        if(cM2.has(d.MNG_2)) continue;
+        avgSpecs.forEach((spec, idx) => {
+          if(d.ANO !== spec.ano || d.Cenario !== spec.cen) return;
+          if(d.MES < spec.from || d.MES > spec.to) return;
+          const key = remainderDrillKey(d, item);
+          if(!byLabel.has(key)) byLabel.set(key, { vals:Array(avgSpecs.length).fill(null), origins:new Set() });
+          const bucket = byLabel.get(key);
+          bucket.vals[idx] = (bucket.vals[idx]||0) + (d.Value||0);
+          bucket.origins.add(remainderDrillSourceKey(d, item));
+        });
+      }
+      return [...byLabel.entries()].sort((a,b)=>a[0].localeCompare(b[0]))
+        .map(([label, bucket]) => ({
+          label,
+          vals: bucket.vals.map((v, i) => v === null ? null : (eficMonthlyAvgMode ? v / avgSpecs[i].months : v)),
+          origins: [...bucket.origins].sort()
+        }))
+        .filter(row => hasVisibleValue(row.vals));
+    };
+
+    const unitMonthLbl = eficMonthlyAvgMode ? `${udLbl}/mes` : udLbl;
+    const thead = document.getElementById('eficHead');
+    if(thead) thead.innerHTML = `<tr>
+      <th class="efic-label-col">Linha P&L</th>
+      <th class="efic-scenario-col">${avgSpecs[0].label}<br><span style="font-size:10px;font-weight:500">${unitMonthLbl}</span></th>
+      ${deltaHead('Delta 25 -> Plano 26')}
+      <th class="efic-scenario-col efic-scenario-after-delta">${avgSpecs[1].label}<br><span style="font-size:10px;font-weight:500">${unitMonthLbl}</span></th>
+      ${deltaHead('Delta Plano 26 -> Actual 26')}
+      <th class="efic-scenario-col efic-scenario-after-delta">${avgSpecs[2].label}<br><span style="font-size:10px;font-weight:500">${unitMonthLbl}</span></th>
+    </tr>`;
+
+    let html = '';
+    const grand = Array(avgSpecs.length).fill(null);
+    for(const grp of EFIC_GROUPS) {
+      const grpVals = Array(avgSpecs.length).fill(null);
+      let detailHtml = '';
+      for(const item of grp.items) {
+        const eff = _eficGetEff(grp.key, item);
+        const vals = avgSpecs.map(spec => avgItem(eff, spec));
+        vals.forEach((v, i) => { if(v !== null) grpVals[i] = (grpVals[i]||0) + v; });
+        const hidden = eficCollapsed.has(grp.key) ? 'style="display:none"' : '';
+        if(eff.remainderOf) {
+          const rowKey = `${grp.key}::${item.label}`;
+          const rkEsc = rowKey.replace(/'/g,"\\'");
+          const isOpen = eficRemainderOpen.has(rowKey);
+          const arrowClean = isOpen ? 'v' : '>';
+          detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
+            <td>${item.label}${sourceButton(rowKey)}
+              <button onclick="event.stopPropagation();toggleEficRemainder('${rkEsc}')"
+                style="background:none;border:none;cursor:pointer;font-size:11px;opacity:.55;margin-left:4px;padding:0"
+                title="Expandir detalhes">${arrowClean}</button>
+            </td>
+            ${rowCells(vals)}
+          </tr>`;
+          detailHtml += sourceRow(rowKey, eff, hidden);
+          if(isOpen) {
+            for(const d of drillRemainderAvg(eff)) {
+              const srcKey = `${rowKey}::drill::${d.label}`;
+              detailHtml += `<tr class="efic-det efic-breakdown-row" data-efic-grp="${grp.key}" ${hidden} style="font-size:12px;opacity:.85">
+                <td class="efic-breakdown-label" title="${escapeHtml(d.label)}">${escapeHtml(d.label)}${sourceButton(srcKey)}</td>
+                ${rowCells(d.vals)}
+              </tr>`;
+              detailHtml += drillSourceRow(srcKey, d.origins, hidden);
+            }
+          }
+        } else {
+          const rowKey = `${grp.key}::${item.label}`;
+          const drvCfg = EFIC_DRIVERS[item.label];
+          const drillParts = eficDrillParts(eff);
+          const hasDrillParts = drillParts.length > 1;
+          const hasDetailDrill = hasDrillParts || !!drvCfg;
+          const drillOpen = hasDetailDrill && eficRemainderOpen.has(rowKey);
+          const drillBtn = hasDetailDrill
+            ? `<button class="efic-drill-btn" onclick="event.stopPropagation();toggleEficRemainder('${escJsKey(rowKey)}')" title="Ver composiÃ§Ã£o">${drillOpen?'v':'>'}</button>`
+            : '';
+          detailHtml += `<tr class="efic-det${drvCfg?' efic-driver-main':''}" data-efic-grp="${grp.key}" ${hidden}>
+            <td>${item.label}${sourceButton(rowKey)}${drillBtn}</td>
+            ${rowCells(vals)}
+          </tr>`;
+          detailHtml += sourceRow(rowKey, eff, hidden);
+          if(hasDrillParts && drillOpen) {
+            for(const part of drillParts) {
+              const partVals = avgSpecs.map(spec => avgItem(part.item, spec));
+              if(!hasVisibleValue(partVals)) continue;
+              detailHtml += `<tr class="efic-det efic-breakdown-row" data-efic-grp="${grp.key}" ${hidden}>
+                <td class="efic-breakdown-label" title="${escapeHtml(part.label)}">${escapeHtml(part.label)}</td>
+                ${rowCells(partVals)}
+              </tr>`;
+            }
+          }
+          if(drvCfg && drillOpen) {
+            const drvVals = avgSpecs.map(spec => avgDriver(drvCfg, spec));
+            const volFmt = v => eficFmtVol(v, drvCfg);
+            const drvTitle = drvCfg.calcTooltip ? ` title="${escapeHtml(drvCfg.calcTooltip)}"` : '';
+            detailHtml += `<tr class="efic-det efic-driver-sub" data-efic-grp="${grp.key}" ${hidden}>
+              <td${drvTitle}>Volume - ${drvCfg.label}</td>
+              ${rowCells(drvVals, volFmt, volFmt, false)}
+            </tr>`;
+            const dec = eficDriverDecimals(drvCfg, rowKey);
+            const perVals = vals.map((v, i) =>
+              v != null && drvVals[i] ? v / drvVals[i] : null
+            );
+            const perFmt = v => v.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+            const perLabel = eficMonthlyAvgMode
+              ? (drvCfg.perLabelMonthly || drvCfg.perLabel || `Custo / ${drvCfg.label}`)
+              : (drvCfg.perLabelTotal || drvCfg.perLabel || `Custo / ${drvCfg.label}`);
+            detailHtml += `<tr class="efic-det efic-driver-sub" data-efic-grp="${grp.key}" ${hidden}>
+              <td${drvTitle}>${perLabel}${eficPrecisionButton(rowKey, drvCfg)}</td>
+              ${rowCells(perVals, perFmt, perFmt, eficSignInvert)}
+            </tr>`;
+          }
+        }
+      }
+      grpVals.forEach((v, i) => { if(v !== null) grand[i] = (grand[i]||0) + v; });
+      const collCls = eficCollapsed.has(grp.key) ? ' collapsed' : '';
+      html += `<tr class="efic-grp${collCls}" data-efic-hdr="${grp.key}" onclick="toggleEficGroup('${grp.key}')">
+        <td>${grp.label}</td>${rowCells(grpVals)}
+      </tr>`;
+      html += detailHtml;
+    }
+    html += `<tr class="efic-ttl">
+      <td>Grand Total</td>${rowCells(grand)}
+    </tr>`;
+    const tbody = document.getElementById('eficBody');
+    if(tbody) tbody.innerHTML = html;
+    return;
+  }
 
   // Denominators for relative mode
   const denomA = eficRelMode ? eficGetDenom(eficAnoA, eficCenarioA) : null;
@@ -5224,26 +6365,43 @@ function renderEficTab() {
         const drvBtn = drvCfg ? `<button onclick="event.stopPropagation();toggleEficDriver('${drvRowKey.replace(/'/g,"\\'")}')"
           style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);opacity:.75;margin-left:6px;padding:0;font-weight:600"
           title="Ver volume e custo unitário por ${drvCfg.label}">÷ ${drvCfg.label} ${drvOpen?'▼':'▶'}</button>` : '';
+        const drillParts = eficDrillParts(eff);
+        const hasDrillParts = drillParts.length > 1;
+        const drillOpen = hasDrillParts && eficRemainderOpen.has(drvRowKey);
+        const drillBtn = hasDrillParts
+          ? `<button class="efic-drill-btn" onclick="event.stopPropagation();toggleEficRemainder('${drvRowKey.replace(/'/g,"\\'")}')" title="Ver composiÃ§Ã£o">${drillOpen?'v':'>'}</button>`
+          : '';
         detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}>
-          <td>${item.label}${drvBtn}</td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
+          <td>${item.label}${drvBtn}${drillBtn}</td>${fv(vA,denomA)}${fv(vB,denomB)}${fvar(vA,vB,denomA,denomB)}
         </tr>`;
+        if(drillOpen) {
+          for(const part of drillParts) {
+            const pA = sumItem(part.item, eficAnoA, eficCenarioA);
+            const pB = sumItem(part.item, eficAnoB, eficCenarioB);
+            detailHtml += `<tr class="efic-det efic-breakdown-row" data-efic-grp="${grp.key}" ${hidden}>
+              <td>${part.label}</td>
+              ${fv(pA,denomA)}${fv(pB,denomB)}${fvar(pA,pB,denomA,denomB)}
+            </tr>`;
+          }
+        }
         // Sub-rows: volume + custo unitário, alinhados nas colunas A/B/Var/Var%
         if(drvCfg && drvOpen) {
           const drvA = eficComputeDriver(drvCfg, eficAnoA, eficCenarioA);
           const drvB = eficComputeDriver(drvCfg, eficAnoB, eficCenarioB);
           const drvVarA = (drvA != null && drvB != null) ? drvB - drvA : null;
           const drvVarP = (drvA && drvVarA != null) ? (drvVarA/Math.abs(drvA)*100) : null;
+          const drvTitle = drvCfg.calcTooltip ? ` title="${escapeHtml(drvCfg.calcTooltip)}"` : '';
           // Volume row
           detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}
             style="font-size:11px;opacity:.85">
-            <td style="padding-left:28px;color:var(--muted)">↳ ${drvCfg.label} (volume)</td>
+            <td${drvTitle} style="padding-left:28px;color:var(--muted)">↳ ${drvCfg.label} (volume)</td>
             <td>${eficFmtVol(drvA, drvCfg)}</td>
             <td>${eficFmtVol(drvB, drvCfg)}</td>
             <td>${drvVarA!=null?((drvVarA>0?'+':'')+eficFmtVol(drvVarA, drvCfg)):'—'}</td>
             <td>${drvVarP!=null?((drvVarP>0?'+':'')+drvVarP.toFixed(1)+'%'):'—'}</td>
           </tr>`;
           // Custo unitário row
-          const dec = drvCfg.perDecimals ?? 4;
+          const dec = eficDriverDecimals(drvCfg, drvRowKey);
           const perA = (vA != null && drvA) ? vA / drvA : null;
           const perB = (vB != null && drvB) ? vB / drvB : null;
           const perVarA = (perA != null && perB != null) ? perB - perA : null;
@@ -5252,7 +6410,7 @@ function renderEficTab() {
             : v.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
           detailHtml += `<tr class="efic-det" data-efic-grp="${grp.key}" ${hidden}
             style="font-size:11px;opacity:.85">
-            <td style="padding-left:28px;color:var(--muted)">↳ Custo / ${drvCfg.label}</td>
+            <td${drvTitle} style="padding-left:28px;color:var(--muted)">↳ ${(drvCfg.perLabelTotal || drvCfg.perLabel || `Custo / ${drvCfg.label}`)}${eficPrecisionButton(drvRowKey, drvCfg)}</td>
             <td>${fmtPerCell(perA)}</td>
             <td>${fmtPerCell(perB)}</td>
             <td>${perVarA!=null?((perVarA>0?'+':'')+fmtPerCell(Math.abs(perVarA))):'—'}</td>
@@ -5306,7 +6464,124 @@ function exportDashboardTxt() {
 }
 
 // ── Excel export ─────────────────────────────────────────────────
+const EXPORT_TAB_NAMES = {
+  pnl:'P&L',
+  bridges:'Bridges',
+  mbu:'Macro BU',
+  evo:'Evolution',
+  grafgen:'Graphic Generator',
+  keynums:'Key Numbers',
+  mpos:'MPOS',
+  cpa:'CPA',
+  mkt:'MKT',
+  efic:'Proj Eficiencias'
+};
+const EXPORT_TABLE_SELECTORS = {
+  pnl:'#pnlTable',
+  cpa:'#cpaPanel #cpaTable',
+  mpos:'#mposPanel #mposTable, #mposPanel #mposLightTable',
+  mbu:'#mbuPanel #mbuTable',
+  keynums:'#keyNumPanel #knTable',
+  mkt:'#mktPanel table',
+  efic:'#eficPanel #eficTable',
+  bridges:'#bridgesPanel table'
+};
+function resolveExportTab(tabId) {
+  const activeBtn = document.querySelector('#tabNav .tab-btn.on');
+  return activeBtn?.dataset?.tab || tabId || currentTab || 'pnl';
+}
+function isExportVisible(el) {
+  if(!el) return false;
+  let node = el;
+  while(node && node.nodeType === 1) {
+    const st = window.getComputedStyle(node);
+    if(st.display === 'none' || st.visibility === 'hidden') return false;
+    node = node.parentElement;
+  }
+  return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+}
+function safeSheetName(name, usedNames) {
+  const base = String(name || 'Aba')
+    .replace(/[\\/?*[\]:]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 31) || 'Aba';
+  let out = base;
+  let n = 2;
+  while(usedNames.has(out)) {
+    const suffix = ` ${n++}`;
+    out = base.slice(0, 31 - suffix.length) + suffix;
+  }
+  usedNames.add(out);
+  return out;
+}
+function tableExportLabel(tabId, table, index) {
+  if(table.id === 'mposLightTable') return 'MPOS Light';
+  if(table.id === 'mposTable') return 'MPOS';
+  if(table.id === 'pnlTable') return 'P&L';
+  if(table.id === 'cpaTable') return 'CPA';
+  if(table.id === 'mbuTable') return 'Macro BU';
+  if(table.id === 'knTable') return 'Key Numbers';
+  if(table.id === 'eficTable') return 'Proj Eficiencias';
+  const sectionTitle = table.closest('.mkt-section')?.querySelector('h3')?.textContent;
+  if(sectionTitle) return sectionTitle;
+  const tabName = EXPORT_TAB_NAMES[tabId] || tabId || 'Aba';
+  return index ? `${tabName} ${index + 1}` : tabName;
+}
+function visibleTableToAoa(table) {
+  const aoa = [];
+  for(const tr of [...table.querySelectorAll('tr')]) {
+    if(!isExportVisible(tr)) continue;
+    const cells = [...tr.children].filter(cell =>
+      /^(TH|TD)$/i.test(cell.tagName) && isExportVisible(cell)
+    );
+    if(!cells.length) continue;
+    const row = [];
+    for(const cell of cells) {
+      row.push((cell.innerText || cell.textContent || '').replace(/\s+/g, ' ').trim());
+      const span = Math.max(1, parseInt(cell.getAttribute('colspan') || cell.colSpan || 1, 10));
+      for(let i = 1; i < span; i++) row.push('');
+    }
+    aoa.push(row);
+  }
+  return aoa;
+}
+function setExportColumnWidths(ws, aoa) {
+  const maxCols = Math.max(0, ...aoa.map(r => r.length));
+  ws['!cols'] = Array.from({length:maxCols}, (_, c) => {
+    const w = Math.max(8, Math.min(42, ...aoa.map(r => String(r[c] ?? '').length + 2)));
+    return { wch:w };
+  });
+}
+function exportVisibleTablesXlsx(tabId, date) {
+  const selector = EXPORT_TABLE_SELECTORS[tabId];
+  if(!selector) return false;
+  const tables = [...document.querySelectorAll(selector)].filter(isExportVisible);
+  if(!tables.length) return false;
+
+  const wb = XLSX.utils.book_new();
+  const usedNames = new Set();
+  let sheetCount = 0;
+  tables.forEach((table, idx) => {
+    const aoa = visibleTableToAoa(table);
+    if(!aoa.length) return;
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    setExportColumnWidths(ws, aoa);
+    if(aoa[0]?.length) {
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:0,c:aoa[0].length-1}}) };
+      ws['!freeze'] = { xSplit:0, ySplit:1, topLeftCell:'A2', activePane:'bottomLeft' };
+    }
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(tableExportLabel(tabId, table, idx), usedNames));
+    sheetCount++;
+  });
+  if(!sheetCount) return false;
+  XLSX.writeFile(wb, `pnl_${tabId}_${date}.xlsx`);
+  return true;
+}
+
 function exportXlsx(tabId) {
+  tabId = resolveExportTab(tabId);
+  const date = new Date().toISOString().slice(0,10);
   if(!allData || !allData.length) { alert('Sem dados carregados.'); return; }
   if(typeof XLSX === 'undefined') { alert('Biblioteca XLSX não carregada.'); return; }
 
@@ -5318,6 +6593,8 @@ function exportXlsx(tabId) {
   };
   const buBuses = key => key==='__ALL__' ? null : (KN_BU_MAP[key] || [key]);
   const inBU    = (d, buses) => !buses || buses.includes(d.Product);
+
+  if(exportVisibleTablesXlsx(tabId, date)) return;
 
   let rows;
   switch(tabId) {
@@ -5340,6 +6617,15 @@ function exportXlsx(tabId) {
     case 'mbu':
       rows = allData.filter(d => inBU(d, buBuses(mbuMacro)));
       break;
+    case 'mkt': {
+      const yr = parseInt(mktAno) || new Date().getFullYear();
+      rows = allData.filter(d =>
+        d.ANO === yr &&
+        (d.Macro_BU === 'Acquiring' || d.Macro_BU === 'Fintech Services') &&
+        MKT_ROWS.some(r => r.match(d))
+      );
+      break;
+    }
     case 'grafgen': {
       const buses = buBuses(grafgenBU);
       const from  = grafgenFromMes || 0;
@@ -5350,21 +6636,36 @@ function exportXlsx(tabId) {
       break;
     }
     case 'cpa':
-      rows = allData.filter(d => inBU(d, buBuses(cpaMacroBU)));
+      rows = allData.filter(d => CPA_FILTER(d) && inBU(d, buBuses(cpaMacroBU)));
       break;
     case 'mpos':
-      rows = allData.filter(d => inBU(d, buBuses(mposMacroBU)));
+      rows = allData.filter(d =>
+        (MPOS_FILTERS.Sales(d) || MPOS_FILTERS.PointCogs(d)) &&
+        inBU(d, buBuses(mposMacroBU))
+      );
       break;
     case 'efic': {
       const buses = buBuses(eficBU);
       rows = allData.filter(d =>
         inBU(d, buses) &&
-        ((d.ANO === eficAnoA && d.Cenario === eficCenarioA) ||
-         (d.ANO === eficAnoB && d.Cenario === eficCenarioB))
+        EFIC_MONTHLY_AVG_SPECS.some(spec =>
+          d.ANO === spec.ano && d.Cenario === spec.cen && d.MES >= spec.from && d.MES <= spec.to
+        )
       );
       break;
     }
-    case 'keynums':
+    case 'keynums': {
+      const src = (rawMng && rawMng.length) ? rawMng : allData;
+      const yr = Math.floor((knMes || 0) / 100);
+      const sections = knCumSections(knMetric);
+      const keynumBuses = new Set(KN_ROWS.flatMap(r => KN_BU_MAP[r.buKey] || [r.buKey]));
+      rows = src.filter(d =>
+        d.ANO === yr && d.MES <= knMes &&
+        keynumBuses.has(d.Product) &&
+        sections.has(d.MNG_1)
+      );
+      break;
+    }
     default:
       rows = allData.slice();
   }
@@ -5405,7 +6706,6 @@ function exportXlsx(tabId) {
   ws['!freeze'] = { xSplit:0, ySplit:1, topLeftCell:'A2', activePane:'bottomLeft' };
 
   XLSX.utils.book_append_sheet(wb, ws, 'Dados');
-  const date = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `pnl_${tabId}_${date}.xlsx`);
 }
 
@@ -5426,7 +6726,51 @@ function setMposLightUnit(btn) {
   renderMposLightTab();
 }
 
+function syncCpaForecastColButtons() {
+  const cpaBtn = document.getElementById('cpaForecastColsBtn');
+  if(cpaBtn) cpaBtn.classList.toggle('on', cpaShowForecastCols);
+  const mposBtn = document.getElementById('mposForecastColsBtn');
+  if(mposBtn) mposBtn.classList.toggle('on', mposShowForecastCols);
+  const mposYtdBtn = document.getElementById('mposYtdOnlyBtn');
+  if(mposYtdBtn) mposYtdBtn.classList.toggle('on', mposYtdOnlyMode);
+  const mposHideSalesBtn = document.getElementById('mposHideSalesBtn');
+  if(mposHideSalesBtn) mposHideSalesBtn.classList.toggle('on', mposHideSalesBreakdown);
+  const mposCmvStockBtn = document.getElementById('mposCmvStockBtn');
+  if(mposCmvStockBtn) mposCmvStockBtn.classList.toggle('on', mposMergeCmvStockMode);
+}
+
+function toggleCpaForecastCols(tab) {
+  if(tab === 'cpa') {
+    cpaShowForecastCols = !cpaShowForecastCols;
+    renderCpaTab();
+  } else if(tab === 'mpos') {
+    mposShowForecastCols = !mposShowForecastCols;
+    renderMposTab();
+    renderMposLightTabMerged();
+  }
+  syncCpaForecastColButtons();
+}
+
 // ── Build month selectors for CPA/MPOS tabs ─────────────────
+function toggleMposYtdOnly() {
+  mposYtdOnlyMode = !mposYtdOnlyMode;
+  renderMposTab();
+  renderMposLightTabMerged();
+  syncCpaForecastColButtons();
+}
+
+function toggleMposHideSalesBreakdown() {
+  mposHideSalesBreakdown = !mposHideSalesBreakdown;
+  renderMposTab();
+  syncCpaForecastColButtons();
+}
+
+function toggleMposCmvStock() {
+  mposMergeCmvStockMode = !mposMergeCmvStockMode;
+  renderMposTab();
+  syncCpaForecastColButtons();
+}
+
 function buildCpaMonthSelectors() {
   // Show all months that have Realizado data for CPA lines
   const cpaMeses = [...new Set(
@@ -5569,7 +6913,6 @@ function renderMbuTab() {
     fromMes  = yr * 100 + 1;
     toMes    = yr * 100 + 12;
   }
-
   // Resolve scenario labels from mbuComp
   const compMap = {
     plan_fcast:  { cenA:'Plan',                  cenAFill:null,       cenB:'Forecast',           cenBFill:'Realizado', lblA:'Plan',   lblB:'Fcst'  },
@@ -6154,8 +7497,14 @@ function renderMbuTab() {
     }
 
     if(isOpen) {
-      const k2s = MNG2_ORDER[k1] ||
-        [...new Set(colBus.flatMap(bu => [...(buData.get(bu)?.get(k1)?.keys()||[])]))].filter(Boolean);
+      const allK2s = [...new Set(colBus.flatMap(bu => [...(buData.get(bu)?.get(k1)?.keys()||[])]))].filter(Boolean);
+      const preferredK2s = MNG2_ORDER[k1] || [];
+      const k2s = preferredK2s.length
+        ? [
+            ...preferredK2s.filter(k2 => allK2s.includes(k2)),
+            ...allK2s.filter(k2 => !preferredK2s.includes(k2)).sort()
+          ]
+        : allK2s.sort();
       for(const k2 of k2s) {
         if(!colBus.some(bu => buData.get(bu)?.get(k1)?.has(k2))) continue;
         const k3key = k1+'|||'+k2;
@@ -6546,27 +7895,54 @@ function normalizeName(s) {
 
 // ── Generic line aggregator ───────────────────────────────
 // filterFn(row) → bool; key derived from MNG_4 (or MNG_3 fallback), normalized
+function newCpaVals() {
+  return {real:0,plan:0,fcst:0,pm:0,ytdReal:0,ytdPlan:0,ytdPy:0,hasFcst:false};
+}
+
+function addCpaVals(target, source) {
+  if(!source) return target;
+  target.real    += source.real    || 0;
+  target.plan    += source.plan    || 0;
+  target.fcst    += source.fcst    || 0;
+  target.pm      += source.pm      || 0;
+  target.ytdReal += source.ytdReal || 0;
+  target.ytdPlan += source.ytdPlan || 0;
+  target.ytdPy   += source.ytdPy   || 0;
+  target.hasFcst = !!(target.hasFcst || source.hasFcst);
+  return target;
+}
+
+function cpaColspan(showForecast, viewMode='standard') {
+  if(viewMode === 'ytd_no_ly') return 5;
+  if(viewMode === 'ytd') return 7;
+  return showForecast ? 12 : 10;
+}
+
 function aggregateLines(filterFn, mes) {
-  if(!mes || !allData.length) return { total:{real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0}, items:new Map() };
+  if(!mes || !allData.length) return { total:newCpaVals(), items:new Map() };
   const year = Math.floor(mes/100);
   const month = mes%100;
   const janOfYear = year*100+1;
   const pmMes = month===1 ? (year-1)*100+12 : year*100+(month-1);
+  const pyJan = (year-1)*100+1;
+  const pyMes = (year-1)*100+month;
 
   const items = new Map();
-  const total = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+  const total = newCpaVals();
 
   for(const d of allData) {
     if(!filterFn(d)) continue;
     const k4 = normalizeName(d.MNG_4 || d.MNG_3 || '(outros)');
-    if(!items.has(k4)) items.set(k4, {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0});
+    if(!items.has(k4)) items.set(k4, newCpaVals());
     const item = items.get(k4);
     const v = d.Value || 0;
     if(d.MES===mes   && d.Cenario==='Realizado')                                { item.real+=v;    total.real+=v; }
     if(d.MES===mes   && d.Cenario==='Plan')                                     { item.plan+=v;    total.plan+=v; }
+    if(d.MES===mes   && d.Cenario==='Forecast')                                 { item.fcst+=v;    total.fcst+=v; item.hasFcst=true; total.hasFcst=true; }
     if(d.MES===pmMes && d.Cenario==='Realizado')                               { item.pm+=v;      total.pm+=v; }
     if(d.MES>=janOfYear&&d.MES<=mes&&d.Cenario==='Realizado')                  { item.ytdReal+=v; total.ytdReal+=v; }
     if(d.MES>=janOfYear&&d.MES<=mes&&d.Cenario==='Plan')                       { item.ytdPlan+=v; total.ytdPlan+=v; }
+    if(d.MES>=pyJan&&d.MES<=pyMes&&d.Cenario==='Realizado')                    { item.ytdPy+=v;   total.ytdPy+=v; }
   }
   return {total, items};
 }
@@ -6582,6 +7958,7 @@ const MPOS_FILTERS = {
   'PointCogs': d =>
     (d.MNG_2==='Customer Acquisition Cost' && d.MNG_3==='Point COGS') ||
     (d.MNG_2==='Customer Acquisition Cost' && d.MNG_3 && d.MNG_3.includes('MPOS Cost')) ||
+    (d.MNG_2==='Direct Variable Costs'     && d.MNG_4==='Other Variable Fintech Costs') ||
     (d.MNG_2==='Direct Variable Costs'     && d.MNG_3 && d.MNG_3.includes('Telemet')) ||
     (d.MNG_2==='Shipping Ops Fixed'        && d.MNG_3==='S&W Fixed')
 };
@@ -6597,12 +7974,13 @@ function fmtCpa(v, ud) {
 }
 
 function deltaCell(d, ud) {
+  if(d == null) return `<td class="cpa-delta-cell">—</td>`;
   const cls = d >= 0 ? 'vpos' : 'vneg';
   return `<td class="cpa-delta-cell ${cls}">${fmtCpa(d, ud)}</td>`;
 }
 
 // ── Build CPA/MPOS table header ─────────────────────────────
-function buildCpaHead(mes, ud, tableId) {
+function buildCpaHead(mes, ud, showForecast=false, viewMode='standard') {
   const mm = String(mes).slice(4,6);
   const yy = '20' + String(mes).slice(2,4);
   const mesLbl = (MN[mm]||mm) + '/' + String(mes).slice(2,4);
@@ -6615,39 +7993,94 @@ function buildCpaHead(mes, ud, tableId) {
   const pmLbl = (MN[pmMm]||pmMm) + '/' + String(pmMes).slice(2,4);
   const unitLbl = ud >= 1e6 ? 'R$ M' : ud >= 1e3 ? 'R$ mil' : 'R$';
   const ytdLbl = 'YTD ' + year;
+  const pyYtdLbl = 'YTD ' + (year - 1);
+  if(viewMode === 'ytd_no_ly') {
+    return `<tr>
+    <th class="cpa-name-hdr" style="background:#1a1a1a;color:#FFE600">P&amp;L</th>
+    <th class="cpa-hdr-ytd" style="min-width:112px">Real YTD<br><span style="font-size:11px;font-weight:400">${ytdLbl} · ${unitLbl}</span></th>
+    <th class="cpa-hdr-ytd" style="min-width:112px">Plano YTD<br><span style="font-size:11px;font-weight:400">${ytdLbl}</span></th>
+    <th class="cpa-hdr-sep" style="border:none"></th>
+    <th class="cpa-hdr-delta" style="min-width:105px">Δ Plano YTD<br><span style="font-size:10px;font-weight:400">${ytdLbl}</span></th>
+  </tr>`;
+  }
+  if(viewMode === 'ytd') {
+    return `<tr>
+    <th class="cpa-name-hdr" style="background:#1a1a1a;color:#FFE600">P&amp;L</th>
+    <th class="cpa-hdr-ytd" style="min-width:112px">Actual YTD<br><span style="font-size:11px;font-weight:400">${ytdLbl} · ${unitLbl}</span></th>
+    <th class="cpa-hdr-ytd" style="min-width:112px">Plan YTD<br><span style="font-size:11px;font-weight:400">${ytdLbl}</span></th>
+    <th class="cpa-hdr-ytd" style="min-width:112px">LY YTD<br><span style="font-size:11px;font-weight:400">${pyYtdLbl}</span></th>
+    <th class="cpa-hdr-sep" style="border:none"></th>
+    <th class="cpa-hdr-delta" style="min-width:105px">Δ Plan YTD<br><span style="font-size:10px;font-weight:400">${ytdLbl}</span></th>
+    <th class="cpa-hdr-delta" style="min-width:105px">Δ Ano Ant.<br><span style="font-size:10px;font-weight:400">${pyYtdLbl}</span></th>
+  </tr>`;
+  }
+  const forecastHead = showForecast
+    ? `<th class="cpa-hdr-monthly" style="min-width:90px">Forecast<br><span style="font-size:11px;font-weight:400">${mesLbl}</span></th>`
+    : '';
+  const deltaForecastHead = showForecast
+    ? `<th class="cpa-hdr-delta" style="min-width:85px">Δ Forecast<br><span style="font-size:10px;font-weight:400">${mesLbl}</span></th>`
+    : '';
 
   return `<tr>
     <th class="cpa-name-hdr" style="background:#1a1a1a;color:#FFE600">P&amp;L</th>
     <th class="cpa-hdr-real" style="min-width:90px">Realizado<br><span style="font-size:11px;font-weight:400">${mesLbl} · ${unitLbl}</span></th>
     <th class="cpa-hdr-monthly" style="min-width:90px">Plan<br><span style="font-size:11px;font-weight:400">${mesLbl}</span></th>
+    ${forecastHead}
     <th class="cpa-hdr-monthly" style="min-width:90px">Prior Month<br><span style="font-size:11px;font-weight:400">${pmLbl}</span></th>
     <th class="cpa-hdr-ytd" style="min-width:100px">Actual YTD<br><span style="font-size:11px;font-weight:400">${ytdLbl}</span></th>
     <th class="cpa-hdr-ytd" style="min-width:100px">Plan YTD<br><span style="font-size:11px;font-weight:400">${ytdLbl}</span></th>
     <th class="cpa-hdr-sep" style="border:none"></th>
     <th class="cpa-hdr-delta" style="min-width:85px">Δ Plan<br><span style="font-size:10px;font-weight:400">${mesLbl}</span></th>
+    ${deltaForecastHead}
     <th class="cpa-hdr-delta" style="min-width:85px">Δ Prior Month<br><span style="font-size:10px;font-weight:400">${pmLbl}</span></th>
     <th class="cpa-hdr-delta" style="min-width:95px">Δ Plan YTD<br><span style="font-size:10px;font-weight:400">${ytdLbl}</span></th>
   </tr>`;
 }
 
 // ── Build a row from aggregated data ─────────────────────
-function buildCpaRow(label, data, ud, rowClass, isNameOnly) {
+function buildCpaRow(label, data, ud, rowClass, isNameOnly, showForecast=false, viewMode='standard') {
   if(isNameOnly) {
     // Block header row (no data)
     return `<tr class="${rowClass}">
-      <td class="cpa-name-cell" colspan="10">${label}</td>
+      <td class="cpa-name-cell" colspan="${cpaColspan(showForecast, viewMode)}">${label}</td>
     </tr>`;
   }
-  const { real, plan, pm, ytdReal, ytdPlan } = data;
+  const { real=0, plan=0, fcst=0, pm=0, ytdReal=0, ytdPlan=0, ytdPy=0, hasFcst=false } = data || {};
+  if(viewMode === 'ytd_no_ly') {
+    return `<tr class="${rowClass}">
+    <td class="cpa-name-cell">${label}</td>
+    <td class="cpa-ytd-cell ${ytdReal<0?'neg':''}">${fmtCpa(ytdReal,ud)}</td>
+    <td class="cpa-ytd-cell ${ytdPlan<0?'neg':''}">${fmtCpa(ytdPlan,ud)}</td>
+    <td class="cpa-td-sep" style="background:#e8e8ee;padding:0;width:10px"></td>
+    ${deltaCell(ytdReal-ytdPlan, ud)}
+  </tr>`;
+  }
+  if(viewMode === 'ytd') {
+    return `<tr class="${rowClass}">
+    <td class="cpa-name-cell">${label}</td>
+    <td class="cpa-ytd-cell ${ytdReal<0?'neg':''}">${fmtCpa(ytdReal,ud)}</td>
+    <td class="cpa-ytd-cell ${ytdPlan<0?'neg':''}">${fmtCpa(ytdPlan,ud)}</td>
+    <td class="cpa-ytd-cell ${ytdPy<0?'neg':''}">${fmtCpa(ytdPy,ud)}</td>
+    <td class="cpa-td-sep" style="background:#e8e8ee;padding:0;width:10px"></td>
+    ${deltaCell(ytdReal-ytdPlan, ud)}
+    ${deltaCell(ytdReal-ytdPy, ud)}
+  </tr>`;
+  }
+  const forecastCell = showForecast
+    ? `<td class="${fcst<0?'neg':''}">${fmtCpa(fcst,ud)}</td>`
+    : '';
+  const deltaForecastCell = showForecast ? deltaCell(hasFcst ? real-fcst : null, ud) : '';
   return `<tr class="${rowClass}">
     <td class="cpa-name-cell">${label}</td>
     <td class="cpa-real-cell ${real<0?'neg':''}">${fmtCpa(real,ud)}</td>
     <td class="${plan<0?'neg':''}">${fmtCpa(plan,ud)}</td>
+    ${forecastCell}
     <td class="${pm<0?'neg':''}">${fmtCpa(pm,ud)}</td>
     <td class="cpa-ytd-cell ${ytdReal<0?'neg':''}">${fmtCpa(ytdReal,ud)}</td>
     <td class="cpa-ytd-cell ${ytdPlan<0?'neg':''}">${fmtCpa(ytdPlan,ud)}</td>
     <td class="cpa-td-sep" style="background:#e8e8ee;padding:0;width:10px"></td>
     ${deltaCell(real-plan, ud)}
+    ${deltaForecastCell}
     ${deltaCell(real-pm, ud)}
     ${deltaCell(ytdReal-ytdPlan, ud)}
   </tr>`;
@@ -6664,13 +8097,22 @@ const CPA_DEFAULT_ORDER = [
 ];
 const MPOS_BLOCKS_DEF = [
   { key:'Sales',    label:'Sales MPOS', defOrder:['Sales MPOS Gross','Alquiler MPOS','Bad Debt MPOS','Descuentos MPOS','Sales Tax MPOS'] },
-  { key:'PointCogs',label:'MPOS COGS',  defOrder:['Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Other MPOS Cogs','Previsión Costo MPOS','Telemetría','S&W Fixed'] },
+  { key:'PointCogs',label:'MPOS COGS',  defOrder:['CMV and Stock','Cost of Product Sold','Insumos Point','Reacondicionamiento','Shipping Costs Point','Warehousing Point','Scrapy + Abastecimento FDV','Previsión Costo MPOS','Telemetría','S&W Fixed'] },
 ];
 
 let cpaLineOrder  = [...CPA_DEFAULT_ORDER];
 let cpaLineHidden = new Set();
 let mposLineCfg   = {};
-MPOS_BLOCKS_DEF.forEach(b => { mposLineCfg[b.key] = { order:[...b.defOrder], hidden:new Set() }; });
+const MPOS_DEFAULT_HIDDEN = {
+  PointCogs: ['S&W Fixed']
+};
+const MPOS_DEFAULTS_VERSION = '2026-06-swf-hidden-default';
+MPOS_BLOCKS_DEF.forEach(b => {
+  mposLineCfg[b.key] = {
+    order:[...b.defOrder],
+    hidden:new Set(MPOS_DEFAULT_HIDDEN[b.key] || [])
+  };
+});
 
 let cpaDensity       = 0;   // 0=Normal 1=Compact 2=Dense 3=Ultra
 let mposDensity      = 0;
@@ -6682,12 +8124,27 @@ const MAX_DENSITY = 3;
 // Load persisted config
 (function loadLineCfg(){
   try {
+    let shouldPersistMposDefaults = false;
     const c = localStorage.getItem('acq_cpa_cfg');
     if(c){ const p=JSON.parse(c); if(p.order) cpaLineOrder=p.order; cpaLineHidden=new Set(p.hidden||[]); }
+    cpaLineOrder = [...new Set(cpaLineOrder.map(k => k === 'Partner Online' ? 'Venta en pagina web de terceros' : k))];
+    if(cpaLineHidden.delete('Partner Online')) cpaLineHidden.add('Venta en pagina web de terceros');
     const m = localStorage.getItem('acq_mpos_cfg');
     if(m){ const p=JSON.parse(m); for(const[k,v] of Object.entries(p)) if(mposLineCfg[k]){ mposLineCfg[k].order=v.order||mposLineCfg[k].order; mposLineCfg[k].hidden=new Set(v.hidden||[]); } }
+    if(localStorage.getItem('acq_mpos_defaults_version') !== MPOS_DEFAULTS_VERSION) {
+      for(const [blockKey, hiddenItems] of Object.entries(MPOS_DEFAULT_HIDDEN)) {
+        if(mposLineCfg[blockKey]) hiddenItems.forEach(item => mposLineCfg[blockKey].hidden.add(item));
+      }
+      shouldPersistMposDefaults = true;
+    }
     const cp = localStorage.getItem('acq_compact');
     if(cp){ const p=JSON.parse(cp); cpaDensity=Math.min(MAX_DENSITY,Math.max(0,parseInt(p.cpa)||0)); mposDensity=Math.min(MAX_DENSITY,Math.max(0,parseInt(p.mpos)||0)); }
+    if(shouldPersistMposDefaults) {
+      const obj = {};
+      for(const[k,v] of Object.entries(mposLineCfg)) obj[k] = { order:v.order, hidden:[...v.hidden] };
+      localStorage.setItem('acq_mpos_cfg', JSON.stringify(obj));
+      localStorage.setItem('acq_mpos_defaults_version', MPOS_DEFAULTS_VERSION);
+    }
   } catch(e){}
 })();
 
@@ -6793,7 +8250,7 @@ function renderCpaTab() {
     consultorItem.ytdPlan -= ADJ_CONSULTOR * mo;
   }
 
-  document.getElementById('cpaHead').innerHTML = buildCpaHead(mes, ud, 'cpaTable');
+  document.getElementById('cpaHead').innerHTML = buildCpaHead(mes, ud, cpaShowForecastCols);
 
   // Merge config order with any new lines from data, sort by |real| descending
   const dataKeys = [...data.items.keys()];
@@ -6812,18 +8269,18 @@ function renderCpaTab() {
     .sort((a, b) => Math.abs(data.items.get(b).real) - Math.abs(data.items.get(a).real));
 
   // Visible total: only sum non-hidden lines
-  const cpaVisTotal = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+  const cpaVisTotal = newCpaVals();
   for(const k of sortedCpaKeys) {
     const v = data.items.get(k);
-    if(v){ cpaVisTotal.real+=v.real; cpaVisTotal.plan+=v.plan; cpaVisTotal.pm+=v.pm; cpaVisTotal.ytdReal+=v.ytdReal; cpaVisTotal.ytdPlan+=v.ytdPlan; }
+    addCpaVals(cpaVisTotal, v);
   }
 
   let html = '';
-  html += buildCpaRow('CPA Total', cpaVisTotal, ud, 'cpa-row-total', false);
+  html += buildCpaRow('CPA Total', cpaVisTotal, ud, 'cpa-row-total', false, cpaShowForecastCols);
 
   for(const k4 of sortedCpaKeys) {
     const label = CPA_LABELS[k4] || k4;
-    html += buildCpaRow(label, data.items.get(k4), ud, 'cpa-row-item', false);
+    html += buildCpaRow(label, data.items.get(k4), ud, 'cpa-row-item', false, cpaShowForecastCols);
   }
 
   // Footnote
@@ -6831,15 +8288,16 @@ function renderCpaTab() {
     '<b>Ajustes no plano (visão CPA):</b> ' +
     '① MGM incorporado ao Cashbacks (plan only). ' +
     '② R$ 2,6M/mês realocados de Other Sales Expenses Point para Consultor Certificado e Virtual (plan only). ' +
-    'Valores do Realizado e da aba P&L não foram alterados.';
+    'A aba P&L original não foi alterada.';
 
   if(!data.items.size)
-    html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
+    html = `<tr><td colspan="${cpaColspan(cpaShowForecastCols)}" class="empty">Sem dados para o mês selecionado.</td></tr>`;
 
   document.getElementById('cpaBody').innerHTML = html;
   requestAnimationFrame(() => {
     document.querySelectorAll('#cpaTable thead tr th').forEach(th => th.style.top='0px');
     syncDensity();
+    syncCpaForecastColButtons();
   });
 }
 
@@ -6848,10 +8306,11 @@ function renderMposTab() {
   const mes = parseInt(document.getElementById('mposMesSel').value || 0);
   if(!mes || !allData.length) return;
   const ud = mposUnitDiv;
+  const viewMode = mposYtdOnlyMode ? 'ytd_no_ly' : 'standard';
 
   const macroBuFnMpos = d => !mposMacroBU || d.Macro_BU === mposMacroBU;
 
-  document.getElementById('mposHead').innerHTML = buildCpaHead(mes, ud, 'mposTable');
+  document.getElementById('mposHead').innerHTML = buildCpaHead(mes, ud, mposShowForecastCols, viewMode);
 
   // Pre-compute all block data
   const blockDataMap = {};
@@ -6859,10 +8318,11 @@ function renderMposTab() {
     const filterFn = MPOS_FILTERS[blockDef.key];
     if(!filterFn) continue;
     blockDataMap[blockDef.key] = aggregateLines(d => filterFn(d) && macroBuFnMpos(d), mes);
+    if(blockDef.key === 'PointCogs') applyMposMainDisplayAdjustments(blockDataMap[blockDef.key]);
   }
 
   // Build visible keys per block, compute visible block totals
-  const mposNet = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+  const mposNet = newCpaVals();
   const blockVisKeys = {};
   const blockVisTotals = {};
 
@@ -6874,73 +8334,117 @@ function renderMposTab() {
     const allKeys  = [...new Set([...cfg.order, ...dataKeys])];
     const visKeys = allKeys
       .filter(k => !(cfg.hidden && cfg.hidden.has(k)) && data.items.has(k))
-      .sort((a, b) => Math.abs(data.items.get(b).real) - Math.abs(data.items.get(a).real));
+      .sort((a, b) => {
+        const field = viewMode.startsWith('ytd') ? 'ytdReal' : 'real';
+        return Math.abs(data.items.get(b)[field] || 0) - Math.abs(data.items.get(a)[field] || 0);
+      });
     blockVisKeys[blockDef.key] = visKeys;
 
-    const bt = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+    const bt = newCpaVals();
     for(const k of visKeys) {
       const v = data.items.get(k);
-      if(v){ bt.real+=v.real; bt.plan+=v.plan; bt.pm+=v.pm; bt.ytdReal+=v.ytdReal; bt.ytdPlan+=v.ytdPlan; }
+      addCpaVals(bt, v);
     }
     blockVisTotals[blockDef.key] = bt;
-    mposNet.real+=bt.real; mposNet.plan+=bt.plan; mposNet.pm+=bt.pm;
-    mposNet.ytdReal+=bt.ytdReal; mposNet.ytdPlan+=bt.ytdPlan;
+    addCpaVals(mposNet, bt);
   }
 
   let html = '';
-  html += buildCpaRow('MPOS NET', mposNet, ud, 'cpa-row-total', false);
+  html += buildCpaRow('MPOS NET', mposNet, ud, 'cpa-row-total', false, mposShowForecastCols, viewMode);
 
   for(const blockDef of MPOS_BLOCKS_DEF) {
     const data = blockDataMap[blockDef.key];
     if(!data) continue;
     const visKeys = blockVisKeys[blockDef.key] || [];
 
-    html += '<tr class="cpa-gap"><td colspan="10"></td></tr>';
-    html += buildCpaRow(blockDef.label + ' Total', blockVisTotals[blockDef.key], ud, 'cpa-row-total', false);
+    html += `<tr class="cpa-gap"><td colspan="${cpaColspan(mposShowForecastCols, viewMode)}"></td></tr>`;
+    html += buildCpaRow(blockDef.label + ' Total', blockVisTotals[blockDef.key], ud, 'cpa-row-total', false, mposShowForecastCols, viewMode);
 
-    for(const k4 of visKeys) {
-      html += buildCpaRow(k4, data.items.get(k4), ud, 'cpa-row-item', false);
+    const hideBlockItems = blockDef.key === 'Sales' && mposHideSalesBreakdown;
+    if(!hideBlockItems) {
+      for(const k4 of visKeys) {
+        html += buildCpaRow(k4, data.items.get(k4), ud, 'cpa-row-item', false, mposShowForecastCols, viewMode);
+      }
     }
   }
 
-  if(!html) html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
+  if(!html) html = `<tr><td colspan="${cpaColspan(mposShowForecastCols, viewMode)}" class="empty">Sem dados para o mês selecionado.</td></tr>`;
   document.getElementById('mposBody').innerHTML = html;
+  renderMposFootnote();
   requestAnimationFrame(() => {
     document.querySelectorAll('#mposTable thead tr th').forEach(th => th.style.top='0px');
     syncDensity();
+    syncCpaForecastColButtons();
   });
 }
 
 // ── Sum specific items from aggregated items Map ──────────
 function sumItems(itemsMap, keys) {
-  const r = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+  const r = newCpaVals();
   for(const k of keys) {
     const v = itemsMap.get(k);
-    if(v){ r.real+=v.real; r.plan+=v.plan; r.pm+=v.pm; r.ytdReal+=v.ytdReal; r.ytdPlan+=v.ytdPlan; }
+    addCpaVals(r, v);
   }
   return r;
 }
 
 // ── MPOS Light Tab renderer ───────────────────────────────
+function addMposItem(items, targetKey, sourceKey) {
+  const source = items.get(sourceKey);
+  if(!source) return;
+  if(!items.has(targetKey)) items.set(targetKey, newCpaVals());
+  addCpaVals(items.get(targetKey), source);
+  items.delete(sourceKey);
+}
+
+function applyMposMainDisplayAdjustments(data) {
+  if(!data || !data.items) return data;
+  const items = data.items;
+  addMposItem(items, 'Insumos Point', 'Other Variable Fintech Costs');
+  addMposItem(items, 'Scrapy + Abastecimento FDV', 'Other MPOS Cogs');
+  if(mposMergeCmvStockMode) {
+    addMposItem(items, 'CMV and Stock', 'Cost of Product Sold');
+    addMposItem(items, 'CMV and Stock', 'Previsión Costo MPOS');
+    addMposItem(items, 'CMV and Stock', 'Scrapy + Abastecimento FDV');
+  }
+  return data;
+}
+
+function renderMposFootnote() {
+  const fn = document.getElementById('mposFootnote');
+  if(!fn) return;
+  const parts = [
+    '<b>Ajustes da visão MPOS:</b> Other MPOS Cogs renomeado para Scrapy + Abastecimento FDV.',
+    'Other Variable Fintech Costs somado em Insumos Point.',
+  ];
+  parts.push(mposMergeCmvStockMode
+    ? 'CMV and Stock = Cost of Product Sold + Previsión Costo MPOS + Scrapy + Abastecimento FDV.'
+    : 'CMV+Stock desligado: Cost of Product Sold, Previsión Costo MPOS e Scrapy + Abastecimento FDV seguem abertos.');
+  if(mposHideSalesBreakdown) parts.push('Quebras de Sales MPOS ocultas abaixo de Sales MPOS Total.');
+  parts.push('Alterações aplicadas somente nesta aba MPOS.');
+  fn.innerHTML = parts.join(' ');
+}
+
 const MPOS_LIGHT_SALES_NET_KEYS   = ['Sales MPOS Gross','Descuentos MPOS','Bad Debt MPOS','Alquiler MPOS'];
 const MPOS_LIGHT_CMV_KEYS         = ['Cost of Product Sold','Previsión Costo MPOS'];
-const MPOS_LIGHT_OTHERS_COST_KEYS = ['Telemetría','Reacondicionamiento','Other MPOS Cogs','Insumos Point','Warehousing Point','Shipping Costs Point','S&W Fixed'];
-const EMPTY_VALS = {real:0,plan:0,pm:0,ytdReal:0,ytdPlan:0};
+const MPOS_LIGHT_OTHERS_COST_KEYS = ['Telemetría','Reacondicionamiento','Other MPOS Cogs','Other Variable Fintech Costs','Insumos Point','Warehousing Point','Shipping Costs Point','S&W Fixed'];
+const EMPTY_VALS = newCpaVals();
 
 // Renders MPOS Light using the shared MPOS filter state (merged tab)
 function renderMposLightTabMerged() {
   const mes = parseInt(document.getElementById('mposMesSel').value || 0);
   if(!mes || !allData.length) return;
-  renderMposLightCore(mes, mposUnitDiv, mposMacroBU);
+  const viewMode = mposYtdOnlyMode ? 'ytd_no_ly' : 'standard';
+  renderMposLightCore(mes, mposUnitDiv, mposMacroBU, mposShowForecastCols, viewMode);
 }
 
 function renderMposLightTab() {
   const mes = parseInt(document.getElementById('mposLightMesSel').value || 0);
   if(!mes || !allData.length) return;
-  renderMposLightCore(mes, mposLightUnitDiv, mposLightMacroBU);
+  renderMposLightCore(mes, mposLightUnitDiv, mposLightMacroBU, false);
 }
 
-function renderMposLightCore(mes, ud, macroBuFilter) {
+function renderMposLightCore(mes, ud, macroBuFilter, showForecast=false, viewMode='standard') {
   const macroFn = d => !macroBuFilter || d.Macro_BU === macroBuFilter;
 
   const salesData = aggregateLines(d => MPOS_FILTERS.Sales(d)     && macroFn(d), mes);
@@ -6950,9 +8454,12 @@ function renderMposLightCore(mes, ud, macroBuFilter) {
   const mposNet = {
     real:    salesData.total.real    + cogsData.total.real,
     plan:    salesData.total.plan    + cogsData.total.plan,
+    fcst:    salesData.total.fcst    + cogsData.total.fcst,
     pm:      salesData.total.pm      + cogsData.total.pm,
     ytdReal: salesData.total.ytdReal + cogsData.total.ytdReal,
     ytdPlan: salesData.total.ytdPlan + cogsData.total.ytdPlan,
+    ytdPy:   salesData.total.ytdPy   + cogsData.total.ytdPy,
+    hasFcst: !!(salesData.total.hasFcst || cogsData.total.hasFcst),
   };
 
   // Grouped lines
@@ -6961,37 +8468,40 @@ function renderMposLightCore(mes, ud, macroBuFilter) {
   const othersCostVals = sumItems(cogsData.items,  MPOS_LIGHT_OTHERS_COST_KEYS);
 
   let html = '';
-  html += buildCpaRow('MPOS NET', mposNet, ud, 'cpa-row-total', false);
+  html += buildCpaRow('MPOS NET', mposNet, ud, 'cpa-row-total', false, showForecast, viewMode);
 
   // Sales MPOS block — fixed order
-  html += '<tr class="cpa-gap"><td colspan="10"></td></tr>';
-  html += buildCpaRow('Sales MPOS Total', salesData.total, ud, 'cpa-row-total', false);
-  html += buildCpaRow('Sales MPOS Net', salesNetVals, ud, 'cpa-row-item', false);
+  html += `<tr class="cpa-gap"><td colspan="${cpaColspan(showForecast, viewMode)}"></td></tr>`;
+  html += buildCpaRow('Sales MPOS Total', salesData.total, ud, 'cpa-row-total', false, showForecast, viewMode);
+  html += buildCpaRow('Sales MPOS Net', salesNetVals, ud, 'cpa-row-item', false, showForecast, viewMode);
   const salesTaxVals = salesData.items.get('Sales Tax MPOS') || {...EMPTY_VALS};
-  html += buildCpaRow('Sales Tax MPOS', salesTaxVals, ud, 'cpa-row-item', false);
+  html += buildCpaRow('Sales Tax MPOS', salesTaxVals, ud, 'cpa-row-item', false, showForecast, viewMode);
 
   // MPOS COGS block — sorted by |real| descending
-  html += '<tr class="cpa-gap"><td colspan="10"></td></tr>';
-  html += buildCpaRow('MPOS COGS Total', cogsData.total, ud, 'cpa-row-total', false);
+  html += `<tr class="cpa-gap"><td colspan="${cpaColspan(showForecast, viewMode)}"></td></tr>`;
+  html += buildCpaRow('MPOS COGS Total', cogsData.total, ud, 'cpa-row-total', false, showForecast, viewMode);
 
   const cogsLines = [
     { label:'CMV MPOS',          vals: cmvVals },
     { label:'Others MPOS Costs', vals: othersCostVals },
-  ].sort((a,b) => Math.abs(b.vals.real) - Math.abs(a.vals.real));
+  ].sort((a,b) => {
+    const field = viewMode.startsWith('ytd') ? 'ytdReal' : 'real';
+    return Math.abs(b.vals[field] || 0) - Math.abs(a.vals[field] || 0);
+  });
   for(const {label, vals} of cogsLines)
-    html += buildCpaRow(label, vals, ud, 'cpa-row-item', false);
+    html += buildCpaRow(label, vals, ud, 'cpa-row-item', false, showForecast, viewMode);
 
-  if(!html) html = '<tr><td colspan="10" class="empty">Sem dados para o mês selecionado.</td></tr>';
-  document.getElementById('mposLightHead').innerHTML = buildCpaHead(mes, ud, 'mposLightTable');
+  if(!html) html = `<tr><td colspan="${cpaColspan(showForecast, viewMode)}" class="empty">Sem dados para o mês selecionado.</td></tr>`;
+  document.getElementById('mposLightHead').innerHTML = buildCpaHead(mes, ud, showForecast, viewMode);
   document.getElementById('mposLightBody').innerHTML = html;
 
   const fn = document.getElementById('mposLightFootnote');
-  if(fn) fn.innerHTML =
-    '<b>Others MPOS Costs</b> = Telemetría + Shipping Costs Point + Reacondicionamiento + Other MPOS Cogs + Insumos Point + Warehousing Point';
+  if(fn) fn.innerHTML = '<b>Others MPOS Costs</b> = Telemetría + Shipping Costs Point + Reacondicionamiento + Other MPOS Cogs + Other Variable Fintech Costs + Insumos Point + Warehousing Point';
 
   requestAnimationFrame(() => {
     document.querySelectorAll('#mposLightTable thead tr th').forEach(th => th.style.top='0px');
     syncDensity();
+    syncCpaForecastColButtons();
   });
 }
 
@@ -7821,7 +9331,8 @@ const BRIDGE_DEPARA = (() => {
   // Business Contribution
   m['G&A BC']='CX, Hosting, PF e OPEX'; m['G&A Bu / Local']='CX, Hosting, PF e OPEX'; m['G&A Bu/Local']='CX, Hosting, PF e OPEX';
   m['PD BC']='CX, Hosting, PF e OPEX'; m['Product Development']='CX, Hosting, PF e OPEX'; m['S&M BC']='CX, Hosting, PF e OPEX';
-  m['Marketing Branding']='MKT and Branding';
+  m['Marketing Branding']='Demand Gen & Branding';
+  m['Demand Gen, Branding & Others']='Demand Gen & Branding';
   // Business Margin
   m['G&A BM']='CX, Hosting, PF e OPEX'; m['PD BM']='CX, Hosting, PF e OPEX'; m['S&M BM']='CX, Hosting, PF e OPEX';
   // Direct Contribution — simple
@@ -7829,7 +9340,7 @@ const BRIDGE_DEPARA = (() => {
   m['Fraud Prevention']='CX, Hosting, PF e OPEX'; m['Fraud Prevention Fixed']='CX, Hosting, PF e OPEX';
   m['Hosting Fixed']='CX, Hosting, PF e OPEX';
   m['Loyalty Content']='Other DC Costs';
-  m['Marketing Fixed']='MKT and Branding';
+  m['Marketing Fixed']='Demand Gen & Branding';
   m['Other Fixed Costs']='Other DC Costs';
   m['S&M Local DC']='S&M Local DC'; m['S&M Local Dc']='S&M Local DC';
   m['Sales Expenses']='Sales Expenses';
@@ -7898,9 +9409,9 @@ const BRIDGE_DEPARA = (() => {
 // Logical display order for consolidated bridge groups under each P&L level
 const BRIDGE_BELOW_ORDER = {
   'Variable Contribution': ['CX, Hosting, PF e OPEX','POM','Chargebacks','Other VC Costs'],
-  'Direct Contribution':   ['CPA','MPOS','Sales Expenses','S&M Local DC','MKT and Branding',
+  'Direct Contribution':   ['CPA','MPOS','Sales Expenses','S&M Local DC','Demand Gen & Branding',
                              'CX, Hosting, PF e OPEX','Other DC Costs','DC Costs'],
-  'Business Contribution': ['CX, Hosting, PF e OPEX','MKT and Branding'],
+  'Business Contribution': ['CX, Hosting, PF e OPEX','Demand Gen & Branding'],
   'Business Margin':       ['CX, Hosting, PF e OPEX'],
 };
 
@@ -8777,11 +10288,11 @@ function renderBridgePnlTable(dataA, dataB, ud) {
     {id:'sml',  label:'S&M Local DC',   k1s:['Direct Contribution'], k2s:['S&M Local DC'],           expand:true },
     {id:'se',   label:'Sales Expenses', k1s:['Direct Contribution'], k2s:['Sales Expenses'],         expand:true },
     {id:'cxhdc',label:'CX PF & Hosting',k1s:['Direct Contribution'], k2s:['CX, Hosting, PF e OPEX'],expand:true },
-    {id:'mkt',  label:'MKT',            k1s:['Direct Contribution'], k2s:['MKT and Branding'],       expand:true },
+    {id:'mkt',  label:'Demand Gen & Branding', k1s:['Direct Contribution'], k2s:['Demand Gen & Branding'], expand:true },
     {id:'odc',  label:'Other DC Costs', k1s:['Direct Contribution'], k2s:['Other DC Costs','DC Costs'], expand:true },
   ];
   const BM_LINES = [
-    {id:'brd',  label:'Branding',       k1s:['Business Contribution','Business Margin'], k2s:['MKT and Branding'],       expand:false},
+    {id:'brd',  label:'Demand Gen & Branding', k1s:['Business Contribution','Business Margin'], k2s:['Demand Gen & Branding'], expand:false},
     {id:'opex', label:'OPEX',           k1s:['Business Contribution','Business Margin'], k2s:['CX, Hosting, PF e OPEX'], expand:true },
   ];
 
@@ -10785,7 +12296,7 @@ DRE gerencial mensal/trimestral/anual/YTD-FY com cenários selecionáveis (Real,
 
 **YoY%** (NMV/TPV): linha logo abaixo, **uma célula por (mês, cenário)**. PY = sempre Real do ano anterior; CY = valor do próprio cenário com fallback Real → Fcst → Plan. Coluna Total mostra YoY agregado.
 
-**Modo Commerce-only**: suprime header METRICS + linhas GMV / TPV On / TPV Off (deixa só NMV + YoY).
+**Modo Commerce-only**: exibe métricas da base como linhas separadas; METRICS não soma NMV, TPV On, TPV Off ou GMV.
 
 ### 4.2. Bridges
 Waterfall de variação entre dois períodos (Period A vs Period B). Quebra ΔTotal em drivers:
@@ -10919,7 +12430,7 @@ Em modos onde Fcst é A ou B (\`plan_fcast\`, \`previa_fcst\`, etc.), meses sem 
 
 ### 7.1. Commerce
 - METRICS suprimido (sobra só NMV)
-- GMV / TPV On / TPV Off ocultos
+- GMV / TPV On / TPV Off aparecem separados quando existem na base
 - Take Rate row NÃO renderizada
 - pctMetric = NMV
 

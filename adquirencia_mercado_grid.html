@@ -10,6 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     :root {
@@ -132,6 +133,30 @@
     .btn.primary { background:var(--ml-blue); color:#fff; border-color:var(--ml-blue); }
     .btn.primary:hover { background:var(--ml-blue-dark); border-color:var(--ml-blue-dark); }
     .btn svg { width:16px; height:16px; stroke-width:2.2; }
+    .lang-switch {
+      display:inline-flex;
+      align-items:center;
+      gap:2px;
+      padding:3px;
+      border:1px solid rgba(17,24,39,.16);
+      border-radius:999px;
+      background:rgba(255,255,255,.74);
+    }
+    .lang-btn {
+      min-width:34px;
+      height:28px;
+      border:0;
+      border-radius:999px;
+      background:transparent;
+      color:#475569;
+      font:800 .72rem/1 "Inter",sans-serif;
+      cursor:pointer;
+    }
+    .lang-btn.active {
+      background:#111827;
+      color:#fff;
+      box-shadow:0 8px 18px rgba(15,23,42,.18);
+    }
 
     .wrap {
       width:min(1480px,calc(100% - 40px));
@@ -242,6 +267,7 @@
 
     .dot.blue { background:var(--ml-blue); }
     .dot.green { background:var(--green); }
+    .dot.purple { background:var(--purple); }
 
     .metrics-grid {
       display:grid;
@@ -363,6 +389,7 @@
       gap:20px;
       margin-bottom:20px;
     }
+    .charts-grid.cols-3 { grid-template-columns:repeat(3,1fr); }
 
     .card-title {
       display:flex;
@@ -580,7 +607,9 @@
       grid-template-columns:1fr 1fr;
       gap:20px;
       margin-bottom:20px;
+      align-items:stretch;
     }
+    .notes-grid > .card { min-width:0; overflow:hidden; }
 
     .insight-list {
       display:grid;
@@ -705,10 +734,521 @@
       to { opacity:1; transform:translateY(0); }
     }
 
+    /* Tabs nav */
+    .tabbar {
+      position:sticky;
+      top:58px;
+      z-index:25;
+      display:flex;
+      gap:6px;
+      padding:10px 26px 0;
+      background:#F5F7FA;
+      border-bottom:1px solid var(--line);
+      overflow-x:auto;
+    }
+    .tab-btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 18px;
+      border:1px solid transparent;
+      border-bottom:none;
+      border-radius:14px 14px 0 0;
+      background:transparent;
+      color:#475569;
+      font:800 .82rem/1 "Inter",sans-serif;
+      cursor:pointer;
+      white-space:nowrap;
+      transition:background .15s ease, color .15s ease;
+    }
+    .tab-btn svg { width:15px; height:15px; stroke-width:2.2; }
+    .tab-btn:hover { color:#111827; background:rgba(255,230,0,.32); }
+    .tab-btn.active {
+      background:#fff;
+      color:#111827;
+      border-color:var(--line);
+      box-shadow:0 -6px 18px rgba(15,23,42,.05);
+    }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    /* P&L tab */
+    .pnl-grid {
+      display:grid;
+      grid-template-columns:minmax(0,1fr);
+      gap:20px;
+      margin-bottom:20px;
+    }
+    .pnl-disclaimer {
+      display:grid;
+      grid-template-columns:minmax(0,1.4fr) minmax(360px,.6fr);
+      gap:20px;
+      align-items:stretch;
+      margin-bottom:20px;
+    }
+    .pnl-hero {
+      background:linear-gradient(135deg,#111827,#1F2937);
+      color:#fff;
+      border-radius:var(--radius-lg);
+      padding:30px 34px;
+      box-shadow:var(--shadow);
+    }
+    .pnl-hero .eyebrow {
+      background:rgba(255,230,0,.18);
+      border-color:rgba(255,230,0,.32);
+      color:#FFE600;
+    }
+    .pnl-hero h2 {
+      margin:18px 0 12px;
+      font-size:clamp(1.5rem,2.6vw,2.4rem);
+      line-height:1.05;
+      font-weight:800;
+      letter-spacing:-.045em;
+    }
+    .pnl-hero p {
+      margin:0;
+      color:rgba(255,255,255,.78);
+      font-size:.95rem;
+      line-height:1.6;
+      font-weight:500;
+    }
+    .conf-pill {
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:.66rem;
+      font-weight:800;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+      margin-left:6px;
+      vertical-align:middle;
+    }
+    .conf-A { background:rgba(0,166,80,.14); color:#007A3D; }
+    .conf-M { background:rgba(255,159,28,.16); color:#9A5A00; }
+    .conf-B { background:rgba(229,57,53,.13); color:#C42D29; }
+    .pnl-table-shell {
+      overflow-x:auto;
+      border-radius:var(--radius-md);
+      border:1px solid var(--line);
+      background:#fff;
+    }
+    table.pnl-table {
+      border-collapse:separate;
+      border-spacing:0;
+      width:100%;
+      min-width:1040px;
+      font-size:.82rem;
+      table-layout:fixed;
+    }
+    table.pnl-table col.pnl-col-label  { width:18%; }
+    table.pnl-table col.pnl-col-player { width:10.25%; }
+    table.pnl-table thead th {
+      background:#111827;
+      color:#fff;
+      font-size:.74rem;
+      font-weight:800;
+      text-align:right;
+      padding:12px 14px;
+      letter-spacing:.02em;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      white-space:normal;
+      line-height:1.2;
+      vertical-align:bottom;
+    }
+    table.pnl-table thead th:first-child {
+      text-align:left;
+      position:sticky;
+      left:0;
+      z-index:2;
+      background:#111827;
+    }
+    table.pnl-table tbody td {
+      padding:11px 14px;
+      border-bottom:1px solid var(--line);
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+      font-weight:600;
+      color:var(--text);
+      white-space:nowrap;
+    }
+    table.pnl-table tbody td:first-child {
+      text-align:left;
+      font-weight:800;
+      color:#111827;
+      position:sticky;
+      left:0;
+      z-index:1;
+      background:#FFFFFF;
+      box-shadow:1px 0 0 var(--line);
+    }
+    table.pnl-table tbody tr.subtotal td {
+      background:#F8FAFC;
+      font-weight:800;
+      color:#111827;
+    }
+    table.pnl-table tbody tr.subtotal td:first-child { background:#F1F5F9; }
+    table.pnl-table tbody tr.takerate td {
+      background:rgba(52,131,250,.06);
+      color:#1259C3;
+      font-weight:800;
+    }
+    table.pnl-table tbody tr.takerate td:first-child { background:rgba(52,131,250,.12); color:#1259C3; }
+    .pnl-cell { display:inline-flex; flex-direction:column; align-items:flex-end; gap:2px; line-height:1.15; }
+    .pnl-cell .src {
+      font-size:.62rem;
+      font-weight:700;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    .pnl-na { color:#94A3B8; font-weight:700; }
+    .takerate-chart-box { height:390px; min-height:390px; }
+    .pnl-legend {
+      display:flex;
+      flex-wrap:wrap;
+      gap:14px;
+      padding:14px 18px;
+      background:#F8FAFC;
+      border-top:1px solid var(--line);
+      font-size:.74rem;
+      font-weight:700;
+      color:var(--muted);
+    }
+    .pnl-legend .lg-item { display:inline-flex; align-items:center; gap:6px; }
+    .pnl-source-table {
+      width:100%;
+      min-width:0;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:.78rem;
+      table-layout:fixed;
+      word-wrap:break-word;
+      overflow-wrap:anywhere;
+    }
+    .pnl-source-table col.col-player   { width:22%; }
+    .pnl-source-table col.col-rationale{ width:58%; }
+    .pnl-source-table col.col-source   { width:20%; }
+    .pnl-source-table th,
+    .pnl-source-table td {
+      padding:10px 14px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+      font-weight:600;
+      color:var(--text);
+      vertical-align:top;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      line-height:1.5;
+    }
+    .pnl-source-table th {
+      background:#F8FAFC;
+      color:#475569;
+      font-size:.7rem;
+      font-weight:800;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+    }
+    .pnl-source-table td:first-child { font-weight:800; color:#111827; white-space:normal; }
+    .pnl-source-table td a { word-break:break-word; }
+
+    /* Column visibility toggles for Grid de players */
+    .col-toggle-bar {
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:10px 14px;
+      padding:12px 16px;
+      margin:0 0 14px;
+      border:1px dashed var(--line-strong);
+      border-radius:14px;
+      background:#F8FAFC;
+    }
+    .col-toggle-bar .ct-label {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      color:var(--muted);
+      font-size:.72rem;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .col-toggle-bar .ct-label svg { width:14px; height:14px; stroke-width:2.4; }
+    .col-toggle {
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#fff;
+      border:1px solid var(--line);
+      font-size:.78rem;
+      font-weight:700;
+      color:#1F2937;
+      cursor:pointer;
+      user-select:none;
+      transition:background .12s ease, border-color .12s ease;
+    }
+    .col-toggle:hover { border-color:var(--line-strong); }
+    .col-toggle input { accent-color:var(--ml-blue); cursor:pointer; }
+    .col-toggle.off { background:rgba(229,231,235,.55); color:var(--muted); text-decoration:line-through; }
+    /* Snapshot modal */
+    .snap-overlay {
+      position:fixed;
+      inset:0;
+      z-index:90;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(15,23,42,.55);
+      backdrop-filter:blur(2px);
+      padding:24px;
+    }
+    .snap-overlay.show { display:flex; }
+    .snap-modal {
+      width:min(880px,100%);
+      max-height:calc(100vh - 48px);
+      background:#fff;
+      border-radius:20px;
+      box-shadow:0 32px 70px rgba(15,23,42,.35);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .snap-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:18px 22px;
+      background:#111827;
+      color:#fff;
+    }
+    .snap-head h3 { margin:0; font-size:1.02rem; font-weight:800; letter-spacing:-.02em; }
+    .snap-head p { margin:4px 0 0; font-size:.78rem; color:rgba(255,255,255,.7); font-weight:600; }
+    .snap-close {
+      background:rgba(255,255,255,.12);
+      color:#fff;
+      border:none;
+      border-radius:10px;
+      width:34px;
+      height:34px;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+    }
+    .snap-close:hover { background:rgba(255,255,255,.22); }
+    .doc-overlay {
+      position:fixed;
+      inset:0;
+      z-index:95;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(15,23,42,.55);
+      backdrop-filter:blur(2px);
+      padding:24px;
+    }
+    .doc-overlay.show { display:flex; }
+    .doc-modal {
+      width:min(980px,100%);
+      max-height:calc(100vh - 48px);
+      background:#fff;
+      border-radius:20px;
+      box-shadow:0 32px 70px rgba(15,23,42,.35);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .doc-body {
+      padding:20px 22px 24px;
+      overflow-y:auto;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px;
+      background:#F8FAFC;
+    }
+    .doc-section {
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:16px;
+      min-width:0;
+    }
+    .doc-section.wide { grid-column:1 / -1; }
+    .doc-section h4 {
+      margin:0 0 8px;
+      font-size:.82rem;
+      font-weight:900;
+      color:#111827;
+      letter-spacing:-.015em;
+    }
+    .doc-section p,
+    .doc-section li {
+      color:#475569;
+      font-size:.8rem;
+      line-height:1.55;
+      font-weight:600;
+    }
+    .doc-section ul,
+    .doc-section ol { margin:8px 0 0 18px; padding:0; }
+    .doc-kpi-grid {
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .doc-kpi {
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:#F8FAFC;
+    }
+    .doc-kpi strong { display:block; font-size:.78rem; color:#111827; }
+    .doc-kpi span { display:block; margin-top:4px; font-size:.72rem; color:#64748B; font-weight:700; line-height:1.35; }
+    .snap-body {
+      padding:20px 22px;
+      overflow-y:auto;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .snap-section h4 {
+      margin:0 0 8px;
+      font-size:.74rem;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--muted);
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .snap-section h4 .snap-mini-btn {
+      margin-left:auto;
+      font-size:.7rem;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      background:none;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:4px 10px;
+      color:var(--text);
+      cursor:pointer;
+    }
+    .snap-section h4 .snap-mini-btn:hover { border-color:var(--line-strong); background:#F8FAFC; }
+    .snap-pill-grid {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .snap-pill {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 11px;
+      border-radius:999px;
+      background:#F1F5F9;
+      border:1px solid transparent;
+      font-size:.78rem;
+      font-weight:700;
+      color:#1F2937;
+      cursor:pointer;
+      user-select:none;
+    }
+    .snap-pill input { accent-color:var(--ml-blue); cursor:pointer; }
+    .snap-pill.active { background:rgba(52,131,250,.12); border-color:rgba(52,131,250,.35); color:#1259C3; }
+    .snap-actions {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      padding:14px 22px 18px;
+      border-top:1px solid var(--line);
+      background:#F8FAFC;
+    }
+    .snap-actions .btn { flex:0 0 auto; }
+    .snap-info {
+      flex:1 1 auto;
+      align-self:center;
+      font-size:.76rem;
+      font-weight:600;
+      color:var(--muted);
+    }
+    /* Hidden rendering area for image capture */
+    .snap-render {
+      position:fixed;
+      left:-99999px;
+      top:0;
+      background:#fff;
+      padding:28px 30px;
+      color:#111827;
+      font-family:"Inter","Segoe UI",sans-serif;
+    }
+    .snap-render .snap-title {
+      font-size:1.15rem;
+      font-weight:800;
+      letter-spacing:-.025em;
+      margin:0 0 4px;
+    }
+    .snap-render .snap-sub {
+      font-size:.78rem;
+      color:#6B7280;
+      font-weight:600;
+      margin:0 0 16px;
+    }
+    .snap-render table {
+      border-collapse:separate;
+      border-spacing:0;
+      width:100%;
+      font-size:.78rem;
+      color:#1F2937;
+    }
+    .snap-render thead th {
+      background:#FFE600;
+      color:#111827;
+      font-weight:800;
+      text-align:left;
+      padding:10px 12px;
+      border-bottom:2px solid #111827;
+      font-size:.74rem;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+    }
+    .snap-render tbody td {
+      padding:10px 12px;
+      border-bottom:1px solid #E5E7EB;
+      vertical-align:top;
+      font-weight:600;
+      line-height:1.45;
+    }
+    .snap-render tbody td:first-child { font-weight:800; color:#111827; }
+    .snap-render tbody tr:nth-child(even) td { background:#F8FAFC; }
+    .snap-render .snap-footer {
+      margin-top:14px;
+      font-size:.68rem;
+      color:#6B7280;
+      font-weight:600;
+    }
+
+    /* Hide columns by index when classes are applied to the table.
+       Column indexes match the order in <thead>:
+       3 = Share volume, 4 = Share usuários, 6 = Crescimento / tração recente */
+    table.hide-col-share-vol th:nth-child(3),
+    table.hide-col-share-vol td:nth-child(3) { display:none; }
+    table.hide-col-share-users th:nth-child(4),
+    table.hide-col-share-users td:nth-child(4) { display:none; }
+    table.hide-col-growth th:nth-child(6),
+    table.hide-col-growth td:nth-child(6) { display:none; }
+
     @media (max-width:1180px) {
       .summary,
       .charts-grid,
-      .notes-grid { grid-template-columns:1fr; }
+      .charts-grid.cols-3,
+      .notes-grid,
+      .pnl-disclaimer { grid-template-columns:1fr; }
       .metrics-grid { grid-template-columns:repeat(2,1fr); }
       .control-card { grid-template-columns:1fr 1fr; }
       .control-card .actions { grid-column:1 / -1; }
@@ -724,6 +1264,11 @@
       .footnotes { grid-template-columns:1fr; }
       .top-actions { width:100%; justify-content:flex-start; }
       .btn { flex:1 1 auto; }
+      .lang-switch { width:100%; justify-content:center; }
+      .lang-btn { flex:1 1 0; }
+      .doc-body,
+      .doc-kpi-grid { grid-template-columns:1fr; }
+      .doc-section.wide { grid-column:auto; }
     }
   </style>
 </head>
@@ -737,13 +1282,25 @@
       </div>
     </div>
     <div class="top-actions">
+      <div class="lang-switch" aria-label="Idioma do dashboard">
+        <button class="lang-btn active" type="button" data-lang="pt" aria-pressed="true">PT</button>
+        <button class="lang-btn" type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button class="lang-btn" type="button" data-lang="es" aria-pressed="false">ES</button>
+      </div>
+      <button class="btn" type="button" id="docsBtn"><i data-lucide="book-open"></i>Docs</button>
       <button class="btn" type="button" id="resetBtn"><i data-lucide="rotate-ccw"></i>Limpar</button>
       <button class="btn" type="button" id="copyBtn"><i data-lucide="link"></i>Copiar link</button>
       <button class="btn primary" type="button" id="exportBtn"><i data-lucide="download"></i>Exportar Excel</button>
     </div>
   </header>
 
+  <nav class="tabbar" role="tablist">
+    <button class="tab-btn active" type="button" data-tab="tab-grid" role="tab" aria-selected="true"><i data-lucide="layout-grid"></i>Grid competitivo</button>
+    <button class="tab-btn" type="button" data-tab="tab-pnl" role="tab" aria-selected="false"><i data-lucide="bar-chart-4"></i>P&amp;L &amp; take rate</button>
+  </nav>
+
   <main class="wrap">
+    <div class="tab-panel active" id="tab-grid" role="tabpanel">
     <section class="summary">
       <div class="executive">
         <span class="eyebrow"><i data-lucide="landmark" style="width:15px;height:15px"></i>Brasil - atualização mai/2026</span>
@@ -757,12 +1314,13 @@
         <div>
           <h3>Como ler este grid</h3>
           <p>
-            Market share por player vem de relatório UBS BB divulgado em mar/2026, com leitura de jan/2026. Quando a companhia não divulga TPV Brasil, o campo fica como "n.d." ou usa proxy explicitado.
+            Market share por volume (coluna "Share volume") vem da visão interna MELI · % Market Share base 2025: Rede 25,9%, Cielo 22,7%, Getnet 15,4%, Stone 11,9%, PagBank 11,2%, Mercado Pago 8,4% (OFF 5,1% + ON 3,3%), InfinitePay 2,3% e Others 2,3%. A coluna "Share usuários" segue a leitura UBS BB jan/2026. Quando a companhia não divulga TPV Brasil, o campo fica como "n.d." ou usa proxy explicitado.
           </p>
           <div class="method-list">
             <div class="method-item"><span class="dot"></span>Dado público: fonte direta ou relatório de mercado</div>
             <div class="method-item"><span class="dot blue"></span>Estimativa: inferência a partir de funding e modelo</div>
             <div class="method-item"><span class="dot green"></span>Sem dado: não forcei número onde não há base</div>
+            <div class="method-item"><span class="dot blue"></span>Segmentos: Big sellers = empresas grandes; SMB = empresas médias; Longtail = pequenas ou informais</div>
           </div>
         </div>
         <p>Todos os links de fonte ficam na última coluna do grid e na seção de fontes.</p>
@@ -785,9 +1343,9 @@
           <span class="metric-label">Top 6 por volume</span>
           <span class="metric-icon"><i data-lucide="pie-chart"></i></span>
         </div>
-        <strong class="metric-value">81%</strong>
-        <div class="delta blue">UBS BB jan/26</div>
-        <p class="metric-note">Rede, Cielo, PagBank, Stone, Mercado Pago e Getnet; demais players somam 19%.</p>
+        <strong class="metric-value">95,5%</strong>
+        <div class="delta blue">Market share MELI 2025</div>
+        <p class="metric-note">Rede (25,9%), Cielo (22,7%), Getnet (15,4%), Stone (11,9%), PagBank (11,2%) e Mercado Pago (8,4%); InfinitePay 2,3% e Others 2,3%.</p>
       </article>
 
       <article class="card">
@@ -807,7 +1365,7 @@
         </div>
         <strong class="metric-value">Fintechs</strong>
         <div class="delta warn">Longtail e SMB</div>
-        <p class="metric-note">CloudWalk, Mercado Pago, Stone/Ton e PagBank puxam aquisição digital e experiência.</p>
+      <p class="metric-note">CloudWalk, Mercado Pago, Stone/Ton e PagBank puxam aquisição digital em Longtail e SMB.</p>
       </article>
     </section>
 
@@ -849,7 +1407,7 @@
         <div class="card-title">
           <div>
             <h3>Participação por volume transacionado</h3>
-            <p>Fonte principal: UBS BB, jan/2026, reportado por Let's Money.</p>
+            <p>Fonte: visão interna MELI · % Market Share, base 2025. Mercado Pago = OFF 5,1% + ON 3,3%.</p>
           </div>
           <span class="badge blue">Top players</span>
         </div>
@@ -873,9 +1431,19 @@
         <div class="card-title">
           <div>
             <h3>Grid de players</h3>
-            <p>Use a busca e os filtros para isolar bancos, fintechs, longtail, SMB, big sellers ou modelos de maquininha.</p>
+            <p>Use a busca e os filtros para isolar bancos, fintechs e o segmento principal do seller: Big sellers, SMB ou Longtail.</p>
           </div>
-          <span class="badge gray" id="rowCount">0 players</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn primary" type="button" id="snapBtn" title="Gerar uma imagem PNG do grid para colar em slide"><i data-lucide="image-down"></i>Imagem p/ slide</button>
+            <span class="badge gray" id="rowCount">0 players</span>
+          </div>
+        </div>
+        <div class="col-toggle-bar" aria-label="Mostrar ou ocultar colunas do grid">
+          <span class="ct-label"><i data-lucide="columns"></i>Colunas visíveis</span>
+          <label class="col-toggle"><input type="checkbox" data-col="share-vol">Share volume</label>
+          <label class="col-toggle"><input type="checkbox" data-col="share-users">Share usuários</label>
+          <label class="col-toggle"><input type="checkbox" data-col="growth" checked>Crescimento / tração recente</label>
+          <button class="btn" type="button" id="colResetBtn" style="margin-left:auto"><i data-lucide="rotate-ccw"></i>Mostrar todas</button>
         </div>
         <div class="table-shell">
           <table>
@@ -885,7 +1453,7 @@
                 <th>Banco / modelo de negócio</th>
                 <th>Share volume</th>
                 <th>Share usuários</th>
-                <th>Segmento mais presente</th>
+                <th>Segmento principal</th>
                 <th>Crescimento / tração recente</th>
                 <th>Custo financeiro estimado</th>
                 <th>Canal de captação</th>
@@ -975,9 +1543,237 @@
     </section>
 
     <footer>
-      Preparado em 28/05/2026. Participações de mercado: UBS BB jan/2026 quando disponível. Custo financeiro e CAC são estimativas analíticas, não guidance das companhias. "n.d." indica dado não divulgado publicamente em base comparável.
+      Preparado em 28/05/2026, share atualizado em 02/06/2026. Participação por volume: visão interna MELI · % Market Share base 2025 (Mercado Pago = OFF 5,1% + ON 3,3%); share por usuários segue UBS BB jan/2026. Custo financeiro e CAC são estimativas analíticas, não guidance das companhias. "n.d." indica dado não divulgado publicamente em base comparável.
     </footer>
+    </div><!-- /tab-grid -->
+
+    <div class="tab-panel" id="tab-pnl" role="tabpanel">
+      <section class="pnl-disclaimer">
+        <div class="pnl-hero">
+          <span class="eyebrow"><i data-lucide="line-chart" style="width:15px;height:15px"></i>P&amp;L Acquiring Brasil · base 2025</span>
+          <h2>O dinheiro que sobra em adquirência por player, em uma única visão comparável.</h2>
+          <p>
+            Recortamos só a parte de <strong>adquirência</strong> (TPV processado, receita líquida, custos transacionais, OPEX direto e EBITDA) com os números fechados de 2025. Onde a companhia divulga abertamente, o valor aparece com a fonte oficial. Para Cielo (capital fechado), Rede (não isolada no Itaú), Getnet e Mercado Pago (sem split Brasil público), usamos <strong>BCB IFData COSIF 12/2025</strong> — DRE padronizada de todas as IFs reguladas. Em v10, o COSIF passa a informar também as linhas intermediárias: <em>Lucro Bruto Adquirência</em> (col. Resultado c/ Transações de Pagamento) e <em>OPEX</em> (Pessoal + Administrativo) com grau A para Cielo, Rede, Getnet, MP Brasil e CloudWalk. Demais células estimadas são marcadas com grau M ou B.
+          </p>
+        </div>
+        <aside class="method-card">
+          <div>
+            <h3>Como ler esta aba</h3>
+            <p>
+              Todos os valores em R$ bilhões salvo indicação. Take rate gross = Receita líquida acquiring / TPV. Take rate EBITDA = EBITDA acquiring / TPV. Para players que não publicam dados de adquirência isoladamente, a coluna mostra "n.d." e nos racionais a explicação de por quê.
+            </p>
+            <div class="method-list">
+              <div class="method-item"><span class="conf-pill conf-A">A</span>Alta confiança · earnings release / 20-F / IR oficial / BCB IFData (COSIF)</div>
+              <div class="method-item"><span class="conf-pill conf-M">M</span>Média · estimativa a partir de dado público parcial</div>
+              <div class="method-item"><span class="conf-pill conf-B">B</span>Baixa · research externo ou inferência de benchmark</div>
+            </div>
+          </div>
+          <p>Os valores não são guidance e podem divergir de divulgações futuras das companhias.</p>
+        </aside>
+      </section>
+
+      <section class="metrics-grid" aria-label="KPIs P&amp;L">
+        <article class="card">
+          <div class="metric-top">
+            <span class="metric-label">Maior TPV acquiring · 2025</span>
+            <span class="metric-icon"><i data-lucide="banknote"></i></span>
+          </div>
+          <strong class="metric-value">R$ 1,00 tri</strong>
+          <div class="delta good">Rede / Itaú · est.</div>
+          <p class="metric-note">Rede assumiu liderança isolada em 2025; 1T26 já reportou R$ 283 bi TPV (+26% a/a), implicando ~R$ 1 tri no fechamento de 2025.</p>
+        </article>
+        <article class="card">
+          <div class="metric-top">
+            <span class="metric-label">Maior receita total · 2025</span>
+            <span class="metric-icon"><i data-lucide="coins"></i></span>
+          </div>
+          <strong class="metric-value">R$ 14,2 bi</strong>
+          <div class="delta blue">StoneCo · 20-F FY25</div>
+          <p class="metric-note">Receita total continuing ops StoneCo 2025: R$ 14,15 bi (acquiring + banking). Acquiring isolado estimado em R$ ~11,0 bi.</p>
+        </article>
+        <article class="card">
+          <div class="metric-top">
+            <span class="metric-label">Maior crescimento de receita</span>
+            <span class="metric-icon"><i data-lucide="trending-up"></i></span>
+          </div>
+          <strong class="metric-value">+104%</strong>
+          <div class="delta warn">CloudWalk · 2025 a/a</div>
+          <p class="metric-note">CloudWalk fechou 2025 com R$ 5,44 bi de receita (+104% a/a em base neutra) e R$ 602 mi de lucro (+90%).</p>
+        </article>
+        <article class="card">
+          <div class="metric-top">
+            <span class="metric-label">Menor take rate gross</span>
+            <span class="metric-icon"><i data-lucide="trending-down"></i></span>
+          </div>
+          <strong class="metric-value">~1,0%</strong>
+          <div class="delta good">Rede / Getnet · est.</div>
+          <p class="metric-note">Bancões priorizam volume e cross-sell PJ; preço médio menor compensado por funding barato. PagBank e Stone rodam ~1,7-2,0%.</p>
+        </article>
+      </section>
+
+      <section class="charts-grid cols-3">
+        <article class="card">
+          <div class="card-title">
+            <div>
+              <h3>Take rate gross estimado por player · 2025</h3>
+              <p>Receita líquida acquiring / TPV. Marcadores indicam grau de confiabilidade do dado base.</p>
+            </div>
+            <span class="badge blue">2025</span>
+          </div>
+          <div class="takerate-chart-box"><canvas id="takeRateChart"></canvas></div>
+        </article>
+        <article class="card">
+          <div class="card-title">
+            <div>
+              <h3>TPV acquiring por player · 2025 (R$ bi)</h3>
+              <p>Volume processado em adquirência. Quando o número não é divulgado isoladamente, mostra estimativa derivada do share UBS BB jan/26.</p>
+            </div>
+            <span class="badge gray">Reportado vs estimado</span>
+          </div>
+          <div class="takerate-chart-box"><canvas id="tpvChart"></canvas></div>
+        </article>
+        <article class="card">
+          <div class="card-title">
+            <div>
+              <h3>Captações / depósitos por player · 12/2025 (R$ bi)</h3>
+              <p>Funding total (depósitos + captações) reportado ao Banco Central. Mede o poder de balanço e o custo de funding que sustenta antecipação de recebíveis e crédito.</p>
+            </div>
+            <span class="badge good">BCB IFData · oficial</span>
+          </div>
+          <div class="takerate-chart-box"><canvas id="fundingDepositsChart"></canvas></div>
+        </article>
+      </section>
+
+      <section class="grid-section">
+        <article class="card">
+          <div class="card-title">
+            <div>
+              <h3>P&amp;L adquirência comparativo · 2025</h3>
+              <p>Linhas em R$ bilhões salvo quando indicado. Cada célula mostra o valor seguido do grau de confiança (A/M/B).</p>
+            </div>
+            <span class="badge warn">Acquiring isolado</span>
+          </div>
+          <div class="pnl-table-shell">
+            <table class="pnl-table" id="pnlTable"></table>
+            <div class="pnl-legend">
+              <span class="lg-item"><span class="conf-pill conf-A">A</span>Reportado pela companhia</span>
+              <span class="lg-item"><span class="conf-pill conf-M">M</span>Estimativa derivada de divulgação parcial</span>
+              <span class="lg-item"><span class="conf-pill conf-B">B</span>Inferência de research / benchmark</span>
+              <span class="lg-item"><span class="pnl-na">n.d.</span>Não divulgado em base comparável</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="notes-grid">
+        <article class="card">
+          <div class="card-title">
+            <div>
+              <h3>Racional por player</h3>
+              <p>Por que cada P&amp;L acquiring foi construído desta forma, com a fonte primária e a hipótese principal.</p>
+            </div>
+            <span class="badge gray">Methodology</span>
+          </div>
+          <table class="pnl-source-table" id="pnlRationaleTable"></table>
+        </article>
+        <article class="card">
+          <div class="card-title">
+            <div>
+              <h3>Leituras executivas</h3>
+              <p>Conclusões para pricing, repasse de Selic e estrutura de custo do MELI Brasil contra os pares.</p>
+            </div>
+            <span class="badge good">Síntese</span>
+          </div>
+          <div class="insight-list">
+            <div class="insight">
+              <span class="dot"></span>
+              <div><strong>Rede assume a liderança em TPV em 2025.</strong><span>O 1T26 já reportou R$ 283 bi (+26% a/a), implicando ~R$ 1 tri no fechamento de 2025 — acima de Cielo, PagBank e Stone. COSIF confirma Rede como player de maior rentabilidade absoluta: Lucro Bruto Adquirência R$ 4,1 bi (A) e OPEX apenas R$ 1,3 bi (A), resultando em EBT R$ 2,8 bi — quase o dobro de Cielo.</span></div>
+            </div>
+            <div class="insight">
+              <span class="dot blue"></span>
+              <div><strong>COSIF detalha toda a estrutura de custo da Cielo.</strong><span>Com capital fechado, a entidade IP segue reportando ao BCB: Lucro Bruto Adquirência = R$ 2,53 bi (A) sobre gross MDR estimado ~R$ 12,5 bi — significa ~80% da receita bruta vai para repasse de interchange às emissoras. OPEX = R$ 1,90 bi (A). EBT R$ 1,3 bi inclui outros resultados COSIF (tarifas, participações) não detalhados separadamente.</span></div>
+            </div>
+            <div class="insight">
+              <span class="dot blue"></span>
+              <div><strong>Mercado Pago IP: OPEX de R$ 2,6 bi explica o break-even.</strong><span>COSIF revela a causa estrutural: Lucro Bruto Adquirência = R$ 4,74 bi (A), mas Pessoal + Admin = R$ 2,60 bi (A) — 55% do lucro bruto em OPEX. Nenhum outro grande player tem essa proporção. A projeção de analistas (lucro &gt; R$ 1 bi) subestimava o peso da estrutura. Crédito (Mercado Crédito SCFI) é entidade separada.</span></div>
+            </div>
+            <div class="insight">
+              <span class="dot green"></span>
+              <div><strong>CloudWalk: OPEX real é R$ 0,54 bi — não R$ 1,6 bi.</strong><span>COSIF corrige a estimativa anterior: Pessoal + Admin = R$ 0,54 bi (A), não os R$ 1,6 bi estimados. Isso posiciona a CloudWalk como a credenciadora mais eficiente em OPEX/receita do setor (~10%), à frente de todos os incumbentes. Receita R$ 5,44 bi (+104%) e lucro R$ 602 mi — eficiência de plataforma digital confirmada em base oficial.</span></div>
+            </div>
+            <div class="insight">
+              <span class="dot"></span>
+              <div><strong>StoneCo retorna ao lucro e paga prêmio.</strong><span>20-F FY25: receita continuing ops R$ 14,15 bi, net income R$ 2,34 bi e special payout após divestments (Software, Simplesvet). Take rate gross acq estimado em 1,96% mantém o player no topo de pricing junto a PagBank. COSIF Stone IP não é comparável ao consolidado (crédito no Banco Stone).</span></div>
+            </div>
+            <div class="insight">
+              <span class="dot purple"></span>
+              <div><strong>Nubank entra como adquirente via Nu Pagamentos.</strong><span>Com 97,7 mi de clientes no Brasil e Nu Pagamentos S.A. autorizada como credenciadora pelo BCB, o Nubank é um player estrutural. TPV acquiring estimado em ~R$ 80 bi (B) — ainda pequeno vs pares, mas a base de clientes torna o CAC de merchant quase zero. BCB IFData (COSIF) não é comparável para Nu Pagamentos pois mistura emissão e credenciamento.</span></div>
+            </div>
+            <div class="insight">
+              <span class="dot green"></span>
+              <div><strong>BCB IFData v10: Lucro Bruto e OPEX elevados para grau A em 4 players.</strong><span>O <a href="https://www3.bcb.gov.br/ifdata/" target="_blank" rel="noopener">IFData do Banco Central</a> (COSIF 12/2025) passa a informar também as linhas intermediárias do P&L: Lucro Bruto Adquirência (col. l) e OPEX Pessoal+Admin (col. o+p) com grau A em Cielo, Rede, Getnet e MP Brasil. Stone IP e PagBank IP: COSIF disponível mas consolidado (20-F/earnings) cobre todo o grupo e é a referência. CloudWalk: OPEX corrigido de estimativa para dado COSIF.</span></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="card-title">
+          <div>
+            <h3>Fontes oficiais consultadas</h3>
+            <p>Links para os documentos de IR/SEC/research usados como base. Estimativas são marcadas em cada célula da tabela.</p>
+          </div>
+        </div>
+        <ul class="footnotes" id="pnlSourceList"></ul>
+      </section>
+
+      <footer>
+        Aba P&amp;L atualizada em 10/06/2026 (v19 · seletor PT/EN/ES e documentação de governança adicionados). Fontes: StoneCo 20-F FY25, PagBank 4Q25, CloudWalk newsroom, MELI 4Q25, Santander Payments 2025 · BCB IFData COSIF 12/2025 (Lucro Bruto Adquirência col. l e OPEX col. o+p elevados para grau A em Cielo, Rede, Getnet e MP Brasil; EBT e Lucro Líquido A idem; Captações/depósitos col. Resumo, grau A). Rede: TPV extrapolado do 1T26 (+26% a/a); Captações da entidade Redecard Instituição de Pagamento S.A. (CodInst 01425787) = R$ 7,07 bi (grau A, IFData 12/2025). Nubank: dados COSIF incluem emissão + credenciamento — não comparável ao P&L adquirência. costSrv = derivado: -(netRev – grossProf COSIF). Estimativas "M" ou "B" são derivadas analiticamente e não substituem disclosure das companhias.
+      </footer>
+    </div><!-- /tab-pnl -->
   </main>
+
+  <div class="doc-overlay" id="docOverlay" role="dialog" aria-modal="true" aria-labelledby="docTitle">
+    <div class="doc-modal">
+      <div class="snap-head">
+        <div>
+          <h3 id="docTitle">Documentação do dashboard</h3>
+          <p id="docSubtitle">Como usar, manter e auditar a visão competitiva de adquirência.</p>
+        </div>
+        <button type="button" class="snap-close" id="docCloseBtn" aria-label="Fechar"><i data-lucide="x"></i></button>
+      </div>
+      <div class="doc-body" id="docBody"></div>
+    </div>
+  </div>
+
+  <div class="snap-overlay" id="snapOverlay" role="dialog" aria-modal="true" aria-labelledby="snapTitle">
+    <div class="snap-modal">
+      <div class="snap-head">
+        <div>
+          <h3 id="snapTitle">Imagem do grid para slide</h3>
+          <p>Escolha players e colunas. O PNG sai com a identidade MELI e fundo branco.</p>
+        </div>
+        <button type="button" class="snap-close" id="snapCloseBtn" aria-label="Fechar"><i data-lucide="x"></i></button>
+      </div>
+      <div class="snap-body">
+        <div class="snap-section" id="snapPlayersSection">
+          <h4>Players<button type="button" class="snap-mini-btn" data-bulk="players-all">Todos</button><button type="button" class="snap-mini-btn" data-bulk="players-none">Nenhum</button></h4>
+          <div class="snap-pill-grid" id="snapPlayers"></div>
+        </div>
+        <div class="snap-section" id="snapColsSection">
+          <h4>Colunas<button type="button" class="snap-mini-btn" data-bulk="cols-default">Padrão</button><button type="button" class="snap-mini-btn" data-bulk="cols-all">Todas</button></h4>
+          <div class="snap-pill-grid" id="snapCols"></div>
+        </div>
+      </div>
+      <div class="snap-actions">
+        <span class="snap-info" id="snapInfo">Pronto para gerar a imagem.</span>
+        <button type="button" class="btn" id="snapCopyBtn"><i data-lucide="clipboard-copy"></i>Copiar PNG</button>
+        <button type="button" class="btn primary" id="snapDownloadBtn"><i data-lucide="download"></i>Baixar PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="snap-render" id="snapRender" aria-hidden="true"></div>
 
   <div class="toast" id="toast">Pronto</div>
 
@@ -999,8 +1795,8 @@
       stone2025: { label:"Stone 2025", title:"StoneCo 20-F 2025: TPV R$ 560,9 bi e 4,8 mi clientes ativos", url:"https://www.stocktitan.net/sec-filings/STNE/20-f-stone-co-ltd-files-annual-report-foreign-issuer-325fa28485e7.html" },
       stoneFunding: { label:"Stone funding", title:"StoneCo 4Q24: depósitos de varejo R$ 8,7 bi", url:"https://www.sec.gov/Archives/edgar/data/1745431/000129281425000956/ex99-1.htm" },
       stoneMoodys: { label:"Moody's Stone", title:"Moody's Local: captações totais Stone SCFI e indicadores 2022-9M25", url:"https://moodyslocal.com.br/wp-content/uploads/2026/01/RelatorioDeCredito_Stone_Jan26_MLBR.pdf" },
-      meliBrasil: { label:"Meli Brasil", title:"NeoFeed/Itaú BBA: Mercado Pago Brasil TPV R$ 320 bi e 7,7% share em 2024", url:"https://neofeed.com.br/negocios/mercado-pago-avanca-e-ja-supera-lucro-de-stone-e-pagbank-em-adquirencia-diz-itau-bba/" },
-      meli2025: { label:"MELI 2025", title:"Mercado Libre 2025: acquiring TPV US$ 55,7 bi, +33%", url:"https://www.nasdaq.com/press-release/mercado-libre-caps-stellar-2025-performance-45-yoy-revenue-growth-q4-strategic" },
+      meliBrasil: { label:"Meli Brasil", title:"NeoFeed: relatório de analistas do Itaú BBA estima Mercado Pago Brasil em R$ 320 bi de TPV e 7,7% share em 2024", url:"https://neofeed.com.br/negocios/mercado-pago-avanca-e-ja-supera-lucro-de-stone-e-pagbank-em-adquirencia-diz-itau-bba/" },
+      meli2025: { label:"MELI 2025", title:"Mercado Libre 2025: acquiring TPV LatAm US$ 188 bi no ano e US$ 55,7 bi no 4T25", url:"https://www.nasdaq.com/press-release/mercado-libre-caps-stellar-2025-performance-45-yoy-revenue-growth-q4-strategic" },
       meliDevice: { label:"MP device", title:"Mercado Pago: maquininha sem aluguel, compra única; tabela também traz aluguel Point Smart", url:"https://empreendedores.mercadopago.com.br/maquininha-sem-aluguel" },
       getnet2025: { label:"Getnet 2025", title:"Santander Payments 2025: Getnet TPV EUR 238 bi, +14%", url:"https://www.santander.com/content/dam/santander-com/es/documentos/resultados-trimestrales/2025/4t/rt-4t-2025-payments-es.pdf" },
       getnetInst: { label:"Getnet BR", title:"Getnet institucional: histórico Brasil, 700 mil clientes e 3o maior adquirente LatAm", url:"https://site.getnet.com.br/institucional/" },
@@ -1014,7 +1810,9 @@
       fiserv: { label:"Fiserv", title:"Fiserv Brasil: Bin, azulzinha CAIXA, Sicredi e soluções de adquirência", url:"https://www.fiserv.com.br/pt-br/adquirencia/" },
       fiservPix: { label:"Fiserv Pix", title:"Fiserv: 7% de transações Pix P2B passam por sua plataforma em 2024", url:"https://investors.fiserv.com/news-releases/news-release-details/fiserv-enhances-its-pix-hub-technology-offer-brazilian-retailers" },
       vero2024: { label:"Vero 2024", title:"Vero/Banrisul: R$ 51,1 bi em transações em 2024", url:"https://www.redevero.com.br/bod/link/quem-somos.html" },
-      vero2023: { label:"Vero 2023", title:"Jornal do Comércio: Vero R$ 46,5 bi em 2023, +8,2%", url:"https://www.jornaldocomercio.com/economia/2024/02/1142317-banrisul-encerra-2023-com-lucro-liquido-de-rs-8711-milhoes.html" }
+      vero2023: { label:"Vero 2023", title:"Jornal do Comércio: Vero R$ 46,5 bi em 2023, +8,2%", url:"https://www.jornaldocomercio.com/economia/2024/02/1142317-banrisul-encerra-2023-com-lucro-liquido-de-rs-8711-milhoes.html" },
+      nubank2025: { label:"Nu 4T25", title:"Nu Holdings 4Q25/FY2025 earnings: 125 mi clientes globais, receita e net income; dados de Nu Pagamentos S.A. no BCB IFData (credenciadora autorizada)", url:"https://ir.nu/financials/quarterly-results" },
+      bcbIfData: { label:"BCB IFData", title:"Banco Central do Brasil — IFData: demonstrações financeiras padronizadas (COSIF) de todas as IFs e credenciadoras autorizadas no Brasil, incluindo Nu Pagamentos, Cielo, Banco Stone, Banco PagSeguro e Getnet", url:"https://www3.bcb.gov.br/ifdata/" }
     };
 
     const players = [
@@ -1023,13 +1821,13 @@
         initials:"RD",
         modelGroup:"Banco incumbente",
         bankModel:"Itaú / Redecard. Modelo integrado a conta PJ, crédito, cash management e relacionamento bancário.",
-        shareVolume:18,
+        shareVolume:25.9,
         shareUsers:25,
-        shareLabel:"18%",
+        shareLabel:"25,9%",
         usersLabel:"25%",
-        segment:"SMB + big sellers bancarizados",
-        segmentKey:"SMB / Big sellers",
-        growth:"R$ 917,9 bi processados em 2024, +6,9% vs 2023; Itaú reportou liderança em adquirência com 22,3% de share em crédito/débito em 2024. UBS BB mostrou 18% de volume em jan/26.",
+        segment:"Big sellers",
+        segmentKey:"Big sellers",
+        growth:"R$ 917,9 bi processados em 2024, +6,9% vs 2023; Itaú reportou liderança em adquirência com 22,3% de share em crédito/débito em 2024. Market share MELI 2025: 25,9% por volume — maior do mercado.",
         funding:"90%-97% CDI",
         fundingMid:93.5,
         confidence:"Alta",
@@ -1045,13 +1843,13 @@
         initials:"CI",
         modelGroup:"Banco incumbente",
         bankModel:"Controlada por Banco do Brasil e Bradesco após fechamento de capital; adquirente historicamente líder.",
-        shareVolume:17,
+        shareVolume:22.7,
         shareUsers:28,
-        shareLabel:"17%",
+        shareLabel:"22,7%",
         usersLabel:"28%",
-        segment:"Big sellers + SMB bancarizado",
-        segmentKey:"SMB / Big sellers",
-        growth:"Volume financeiro de R$ 837,5 bi em 2024, +2,6% vs 2023. UBS BB indicou 17% de volume e 28% de usuários em jan/26.",
+        segment:"Big sellers",
+        segmentKey:"Big sellers",
+        growth:"Volume financeiro de R$ 837,5 bi em 2024, +2,6% vs 2023. Market share MELI 2025: 22,7% por volume — segundo maior do mercado, logo atrás da Rede.",
         funding:"92%-100% CDI",
         fundingMid:96,
         confidence:"Média-alta",
@@ -1067,13 +1865,13 @@
         initials:"PB",
         modelGroup:"Fintech com banco digital",
         bankModel:"Banco digital e adquirência independente do UOL/PagSeguro; monetiza pagamentos, conta, crédito e serviços financeiros.",
-        shareVolume:17,
+        shareVolume:11.2,
         shareUsers:26,
-        shareLabel:"17%",
+        shareLabel:"11,2%",
         usersLabel:"26%",
-        segment:"Longtail + SMB + online",
-        segmentKey:"Longtail / SMB",
-        growth:"TPV R$ 395,1 bi em 2023, R$ 518,4 bi em 2024 (+31,2%) e R$ 531 bi em 2025. Em 3T25, TPV caiu -4,7% a/a por repricing e ambiente macro.",
+        segment:"Longtail",
+        segmentKey:"Longtail",
+        growth:"TPV R$ 395,1 bi em 2023, R$ 518,4 bi em 2024 (+31,2%) e R$ 531 bi em 2025. Em 3T25, TPV caiu -4,7% a/a por repricing e ambiente macro. Market share MELI 2025: 11,2% por volume.",
         funding:"95%-108% CDI",
         fundingMid:101.5,
         confidence:"Média",
@@ -1089,13 +1887,13 @@
         initials:"ST",
         modelGroup:"Fintech com banco digital",
         bankModel:"StoneCo independente; Stone foca SMB, Ton foca longtail e Pagar.me foca online/plataformas.",
-        shareVolume:15,
+        shareVolume:11.9,
         shareUsers:22,
-        shareLabel:"15%",
+        shareLabel:"11,9%",
         usersLabel:"22%",
-        segment:"SMB + longtail + online",
-        segmentKey:"Longtail / SMB",
-        growth:"TPV R$ 438,3 bi em 2023, R$ 516,2 bi em 2024 (+17,8%) e R$ 560,9 bi em 2025. Clientes ativos de pagamentos chegaram a 4,8 mi em 2025.",
+        segment:"SMB",
+        segmentKey:"SMB",
+        growth:"TPV R$ 438,3 bi em 2023, R$ 516,2 bi em 2024 (+17,8%) e R$ 560,9 bi em 2025. Clientes ativos de pagamentos chegaram a 4,8 mi em 2025. Market share MELI 2025: 11,9% por volume.",
         funding:"100%-112% CDI",
         fundingMid:106,
         confidence:"Média",
@@ -1111,13 +1909,13 @@
         initials:"MP",
         modelGroup:"Ecossistema / fintech",
         bankModel:"Fintech do Mercado Livre; adquirência, wallet, conta, crédito, marketplace e serviços para sellers.",
-        shareVolume:9,
+        shareVolume:8.4,
         shareUsers:14,
-        shareLabel:"9%",
+        shareLabel:"8,4%",
         usersLabel:"14%",
-        segment:"Longtail, sellers do marketplace e online",
-        segmentKey:"Longtail / Online",
-        growth:"Itaú BBA estimou TPV Brasil de R$ 320 bi em 2024 (+31%) e share de 7,7%. Mercado Libre reportou acquiring TPV LatAm de US$ 55,7 bi em 2025, +33% em USD.",
+        segment:"Longtail",
+        segmentKey:"Longtail",
+        growth:"Market share MELI 2025: 8,4% por volume, somando OFF (OP + Point + QR + SP + P2P) = 5,1% e ON (ML) = 3,3%. Segundo NeoFeed, relatório de analistas do Itaú BBA estimou o Mercado Pago Brasil em R$ 320 bi de TPV em 2024 (+31%). Mercado Libre reportou acquiring TPV LatAm de US$ 188 bi em 2025 (+32%) e US$ 55,7 bi no 4T25 (+33%).",
         funding:"95%-110% CDI",
         fundingMid:102.5,
         confidence:"Média-baixa",
@@ -1133,13 +1931,13 @@
         initials:"GN",
         modelGroup:"Banco incumbente",
         bankModel:"Santander / PagoNxt. Adquirência global do grupo, com Brasil como mercado relevante.",
-        shareVolume:5,
+        shareVolume:15.4,
         shareUsers:9,
-        shareLabel:"5%",
+        shareLabel:"15,4%",
         usersLabel:"9%",
-        segment:"SMB bancarizado + grandes contas Santander",
-        segmentKey:"SMB / Big sellers",
-        growth:"UBS BB mostrou 5% de volume em jan/26. Santander reportou Getnet global com EUR 222 bi de TPV em 2024 e EUR 238 bi em 2025 (+14%); Brasil não foi isolado nesse relatório.",
+        segment:"SMB",
+        segmentKey:"SMB",
+        growth:"Market share MELI 2025: 15,4% por volume — terceiro maior do mercado, bem acima da leitura UBS BB anterior. Santander reportou Getnet global com EUR 222 bi de TPV em 2024 e EUR 238 bi em 2025 (+14%); Brasil não foi isolado nesse relatório.",
         funding:"93%-101% CDI",
         fundingMid:97,
         confidence:"Média",
@@ -1159,8 +1957,8 @@
         shareUsers:null,
         shareLabel:"n.d.",
         usersLabel:"n.d.",
-        segment:"SMB/PJ com relação bancária",
-        segmentKey:"SMB / Big sellers",
+        segment:"SMB",
+        segmentKey:"SMB",
         growth:"Sem TPV público recente em base comparável. Entra no bloco de 'demais players' no consolidado UBS BB.",
         funding:"95%-105% CDI",
         fundingMid:100,
@@ -1177,13 +1975,13 @@
         initials:"IP",
         modelGroup:"Fintech FIDC-heavy",
         bankModel:"Fintech independente; CloudWalk opera InfinitePay e usa FIDCs para financiar antecipação de recebíveis.",
-        shareVolume:null,
+        shareVolume:2.3,
         shareUsers:null,
-        shareLabel:"n.d.",
+        shareLabel:"2,3%",
         usersLabel:"n.d.",
-        segment:"Longtail + SMB digital",
-        segmentKey:"Longtail / SMB",
-        growth:"Receita R$ 2,7 bi em 2024 (+67%) e R$ 5,44 bi em 2025 (+104% em base neutra de câmbio). Empreendedores ativos no Brasil saltaram de 3 mi para 6,3 mi em 2025.",
+        segment:"Longtail",
+        segmentKey:"Longtail",
+        growth:"Market share MELI 2025: 2,3% por volume. Receita R$ 2,7 bi em 2024 (+67%) e R$ 5,44 bi em 2025 (+104% em base neutra de câmbio). Empreendedores ativos no Brasil saltaram de 3 mi para 6,3 mi em 2025.",
         funding:"105%-125% CDI",
         fundingMid:115,
         confidence:"Média",
@@ -1203,7 +2001,7 @@
         shareUsers:null,
         shareLabel:"n.d.",
         usersLabel:"n.d.",
-        segment:"MEI, autônomos e micro sellers",
+        segment:"Longtail",
         segmentKey:"Longtail",
         growth:"Sem TPV Brasil público em base comparável. Relevância concentrada em longtail e micro sellers.",
         funding:"110%-130% CDI",
@@ -1225,8 +2023,8 @@
         shareUsers:null,
         shareLabel:"n.d.",
         usersLabel:"n.d.",
-        segment:"Big sellers e enterprise digital",
-        segmentKey:"Big sellers / Online",
+        segment:"Big sellers",
+        segmentKey:"Big sellers",
         growth:"Não divulga TPV Brasil isolado. Crescimento deve ser lido por expansão global e wins enterprise no Brasil, não por share público de maquininha.",
         funding:"n.a.",
         fundingMid:null,
@@ -1247,8 +2045,8 @@
         shareUsers:null,
         shareLabel:"n.d.",
         usersLabel:"n.d.",
-        segment:"SMB, franquias, parceiros e varejo físico",
-        segmentKey:"SMB / Big sellers",
+        segment:"SMB",
+        segmentKey:"SMB",
         growth:"Sem TPV Brasil público comparável. Fiserv informou que 7% das transações Pix P2B no Brasil passavam por sua plataforma em 2024.",
         funding:"100%-115% CDI",
         fundingMid:107.5,
@@ -1269,8 +2067,8 @@
         shareUsers:null,
         shareLabel:"n.d.",
         usersLabel:"n.d.",
-        segment:"SMB regional e clientes Banrisul",
-        segmentKey:"SMB regional",
+        segment:"SMB",
+        segmentKey:"SMB",
         growth:"R$ 46,5 bi transacionados em 2023 (+8,2%) e R$ 51,1 bi em 2024 (+9,9%). Vero declara liderança relevante no RS.",
         funding:"98%-110% CDI",
         fundingMid:104,
@@ -1281,6 +2079,28 @@
         strengths:["Força regional e banco por trás","Conhecimento do mercado gaúcho","Base Banrisul/Banricompras"],
         weaknesses:["Escala nacional limitada","Baixa comparabilidade com líderes nacionais"],
         sourceIds:["vero2024","vero2023","abecs2024"]
+      },
+      {
+        name:"Nubank",
+        initials:"NU",
+        modelGroup:"Ecossistema / fintech",
+        bankModel:"Maior banco digital do mundo por clientes; opera adquirência via Nu Pagamentos S.A. (credenciadora autorizada BCB), com NuPay (e-commerce), Conta PJ merchant e Tap to Pay.",
+        shareVolume:null,
+        shareUsers:null,
+        shareLabel:"n.d.",
+        usersLabel:"n.d.",
+        segment:"Longtail",
+        segmentKey:"Longtail",
+        growth:"97,7 mi clientes no Brasil e 125 mi globais em 4T25. Receita Nu Holdings FY2025 > US$ 10 bi (+~45% a/a). NuPay e Conta PJ merchant em expansão acelerada, mas TPV acquiring separado do emissor não é divulgado.",
+        funding:"88%-105% CDI",
+        fundingMid:96.5,
+        confidence:"Baixa",
+        channel:"App Nubank (digital puro); merchant onboarding via Conta PJ, NuPay e Tap to Pay no smartphone.",
+        cac:"Estruturalmente muito baixo: funil de ~97 mi clientes BR reduz CAC de merchant. Valor por merchant não divulgado.",
+        device:"Tap to Pay (smartphone como terminal POS); sem maquininha física relevante — foco em digital e QR Code.",
+        strengths:["Maior base de usuários do Brasil (97 mi)","CAC merchant próximo de zero via base de clientes","Alta eficiência operacional e tecnologia IA"],
+        weaknesses:["Escala de adquirência ainda pequena vs pares tradicionais","Sem presença em TEF e varejo organizado","TPV acquiring não divulgado — opacidade comparativa"],
+        sourceIds:["nubank2025","bcbIfData"]
       }
     ];
 
@@ -1297,6 +2117,138 @@
     let sortDesc = true;
     let shareChart;
     let fundingChart;
+    const langStoreKey = "acqDashboardLang";
+    function getInitialLang() {
+      try {
+        const saved = localStorage.getItem(langStoreKey);
+        return ["pt","en","es"].includes(saved) ? saved : "pt";
+      } catch {
+        return "pt";
+      }
+    }
+    let currentLang = getInitialLang();
+
+    const uiCopy = {
+      pt:{
+        htmlLang:"pt-BR",
+        buttons:{ docs:"Docs", reset:"Limpar", copy:"Copiar link", export:"Exportar Excel", sort:"Ordenar share", snapshot:"Imagem p/ slide", colReset:"Mostrar todas", snapCopy:"Copiar PNG", snapDownload:"Baixar PNG" },
+        tabs:{ grid:"Grid competitivo", pnl:"P&L & take rate" },
+        brand:{ title:"Grid competitivo de adquirência no Brasil", subtitle:"Players, segmentos, canais, funding estimado, devices e fontes" },
+        grid:{
+          eyebrow:"Brasil - atualização mai/2026",
+          heroTitle:"O jogo voltou a premiar funding barato, canal proprietário e base transacional engajada.",
+          heroText:"O setor de cartões movimentou R$ 4,5 tri em 2025, alta de 10,1% a/a, e segue grande o suficiente para acomodar bancões, fintechs e adquirentes globais. A leitura competitiva abaixo combina participação pública de mercado, TPV reportado, dados de relacionamento bancário e uma estimativa coerente de custo financeiro para antecipação de recebíveis.",
+          methodTitle:"Como ler este grid",
+          methodText:"Market share por volume vem da visão interna MELI · % Market Share base 2025. A coluna Share usuários segue a leitura UBS BB jan/2026. Quando a companhia não divulga TPV Brasil, o campo fica como n.d. ou usa proxy explicitado.",
+          methodItems:["Dado público: fonte direta ou relatório de mercado","Estimativa: inferência a partir de funding e modelo","Sem dado: não forcei número onde não há base","Segmentos: Big sellers = empresas grandes; SMB = empresas médias; Longtail = pequenas ou informais"],
+          methodFoot:"Todos os links de fonte ficam na última coluna do grid e na seção de fontes.",
+          filterSearch:"Buscar player, banco, canal ou ponto forte",
+          searchPlaceholder:"Ex.: Stone, Itaú, longtail, FIDC, aluguel",
+          filterSegment:"Segmento",
+          filterModel:"Modelo",
+          filterConfidence:"Confiança funding",
+          all:"Todos",
+          confidenceOptions:["Todas","Alta","Média-alta","Média","Média-baixa","Baixa"],
+          metricLabels:["Mercado de cartões","Top 6 por volume","Funding mais defensivo","Maior aceleração"],
+          metricDeltas:["+10,1% em 2025","Market share MELI 2025","CDI estimado","Longtail e SMB"],
+          metricNotes:["Volume total com cartões no Brasil, segundo ABECS/Panorama ABECS.","Rede (25,9%), Cielo (22,7%), Getnet (15,4%), Stone (11,9%), PagBank (11,2%) e Mercado Pago (8,4%); InfinitePay 2,3% e Others 2,3%.","Bancões tendem a ter vantagem estrutural via depósitos, conta PJ e tesouraria.","CloudWalk, Mercado Pago, Stone/Ton e PagBank puxam aquisição digital em Longtail e SMB."],
+          shareTitle:"Participação por volume transacionado",
+          shareDesc:"Fonte: visão interna MELI · % Market Share, base 2025. Mercado Pago = OFF 5,1% + ON 3,3%.",
+          shareBadge:"Top players",
+          fundingTitle:"Custo financeiro estimado",
+          fundingDesc:"Ponto médio da faixa estimada como % do CDI; menor é melhor para antecipação.",
+          fundingBadge:"Estimativa",
+          gridTitle:"Grid de players",
+          gridDesc:"Use a busca e os filtros para isolar bancos, fintechs e o segmento principal do seller: Big sellers, SMB ou Longtail.",
+          columnsVisible:"Colunas visíveis",
+          gridHeaders:["Player","Banco / modelo de negócio","Share volume","Share usuários","Segmento principal","Crescimento / tração recente","Custo financeiro estimado","Canal de captação","CAC","Device","Pontos fortes","Pontos fracos","Fontes"],
+          fundingAssumptions:"Hipóteses de funding",
+          fundingAssumptionsDesc:"A faixa em CDI não é divulgada pelas empresas; é uma estimativa ancorada no tipo de captação e no balanço.",
+          assumptionBadge:"Modelo analítico",
+          assumptionHeaders:["Tipo de player","Racional da estimativa"],
+          execTitle:"Leituras executivas",
+          execDesc:"Principais conclusões para estratégia comercial, pricing e aquisição de sellers.",
+          synthesis:"Síntese",
+          sourcesTitle:"Fontes principais",
+          sourcesDesc:"Links usados para os dados exibidos no grid. Quando o dado é estimado, a coluna de fontes mostra a base factual da inferência.",
+          footer:"Preparado em 28/05/2026, share atualizado em 02/06/2026. Participação por volume: visão interna MELI · % Market Share base 2025 (Mercado Pago = OFF 5,1% + ON 3,3%); share por usuários segue UBS BB jan/2026. Custo financeiro e CAC são estimativas analíticas, não guidance das companhias. \"n.d.\" indica dado não divulgado publicamente em base comparável.",
+          playersLabel:"players",
+          others:"Others"
+        },
+        pnl:{
+          eyebrow:"P&L Acquiring Brasil · base 2025",
+          heroTitle:"O dinheiro que sobra em adquirência por player, em uma única visão comparável.",
+          heroText:"Recortamos só a parte de <strong>adquirência</strong> com números fechados de 2025. Onde a companhia divulga abertamente, o valor aparece com fonte oficial. Para players sem disclosure isolado, usamos <strong>BCB IFData COSIF 12/2025</strong>. Demais células estimadas são marcadas com grau M ou B.",
+          methodTitle:"Como ler esta aba",
+          methodText:"Todos os valores em R$ bilhões salvo indicação. Take rate gross = Receita líquida acquiring / TPV. Take rate EBITDA = EBITDA acquiring / TPV. Para players que não publicam dados isolados, a coluna mostra n.d. e o racional explica o motivo.",
+          methodFoot:"Os valores não são guidance e podem divergir de divulgações futuras das companhias.",
+          kpiLabels:["Maior TPV acquiring · 2025","Maior receita total · 2025","Maior crescimento de receita","Menor take rate gross"],
+          chartTakeTitle:"Take rate gross estimado por player · 2025",
+          chartTakeDesc:"Receita líquida acquiring / TPV. Marcadores indicam grau de confiabilidade do dado base.",
+          chartTpvTitle:"TPV acquiring por player · 2025 (R$ bi)",
+          chartTpvDesc:"Volume processado em adquirência. Quando o número não é divulgado isoladamente, mostra estimativa derivada do share UBS BB jan/26.",
+          chartFundingTitle:"Captações / depósitos por player · 12/2025 (R$ bi)",
+          chartFundingDesc:"Funding total reportado ao Banco Central. Mede o poder de balanço e o custo de funding que sustenta antecipação de recebíveis e crédito.",
+          pnlTitle:"P&L adquirência comparativo · 2025",
+          pnlDesc:"Linhas em R$ bilhões salvo quando indicado. Cada célula mostra o valor seguido do grau de confiança (A/M/B).",
+          pnlBadge:"Acquiring isolado",
+          legendA:"Reportado pela companhia / BCB",
+          legendM:"Estimativa derivada de divulgação parcial",
+          legendB:"Inferência de research / benchmark",
+          legendNd:"Não divulgado em base comparável",
+          rationaleTitle:"Racional por player",
+          rationaleDesc:"Por que cada P&L acquiring foi construído desta forma, com a fonte primária e a hipótese principal.",
+          execTitle:"Leituras executivas",
+          execDesc:"Conclusões para pricing, repasse de Selic e estrutura de custo do MELI Brasil contra os pares.",
+          sourcesTitle:"Fontes oficiais consultadas",
+          sourcesDesc:"Links para documentos de IR/SEC/research usados como base. Estimativas são marcadas em cada célula da tabela.",
+          footer:"Aba P&L atualizada em 10/06/2026 (v19 · seletor PT/EN/ES e documentação de governança adicionados). Fontes: StoneCo 20-F FY25, PagBank 4Q25, CloudWalk newsroom, MELI 4Q25, Santander Payments 2025 · BCB IFData COSIF 12/2025. Rede: TPV extrapolado do 1T26 (+26% a/a); Captações da entidade Redecard Instituição de Pagamento S.A. = R$ 7,07 bi (grau A). Estimativas M/B são derivadas analiticamente e não substituem disclosure das companhias."
+        },
+        charts:{ take:"Take rate gross (%)", tpv:"TPV adquirência (R$ bi)", deposits:"Captações / depósitos (R$ bi)", reported:"Reportado", estimated:"Estimativa", inferred:"Inferência", bcb:"Reportado ao BCB", notIsolated:"n.d. · não isolado no consolidado" },
+        pnlRows:{ tpv:"TPV processado (R$ bi)", netRev:"Receita líquida adquirência", costSrv:"(–) Custos transacionais", grossProf:"= Lucro bruto adquirência", opex:"(–) OPEX direto (S&M, G&A)", outrosRes:"(±) Outros result. COSIF", ebitda:"= EBT / EBITDA adquirência", netIncome:"Lucro líquido (companhia)", takeGross:"Take rate gross", takeEbitda:"Take rate EBITDA" },
+        pnlTableHead:"P&L · 2025 · R$ bi",
+        rationaleHead:["Player","Como o P&L foi construído","Fonte principal"],
+        snapshot:{ title:"Imagem do grid para slide", subtitle:"Escolha players e colunas. O PNG sai com a identidade MELI e fundo branco.", players:"Players", cols:"Colunas", all:"Todos", none:"Nenhum", default:"Padrão", ready:"Pronto para gerar a imagem.", generating:"Gerando imagem...", needSelection:"Selecione ao menos um player e uma coluna.", unavailable:"html2canvas indisponível neste ambiente", downloaded:"PNG baixado. Cole no slide e redimensione como imagem.", copied:"Imagem copiada. Cole (Ctrl+V) no slide.", blocked:"Cópia bloqueada. Use Baixar PNG.", pngDownloaded:"PNG baixado", pngCopied:"Imagem copiada", titleRender:"Grid competitivo de adquirência · Brasil", generated:"Gerado em", colsWord:"colunas", footer:"MELI Acquiring · Dados públicos e estimativas analíticas. Fontes na coluna Fontes quando incluída." },
+        snapCols:{ player:"Player", bankModel:"Banco / modelo", shareVolume:"Share volume", shareUsers:"Share usuários", segment:"Segmento", growth:"Crescimento / tração", funding:"Custo financeiro est.", channel:"Canal de captação", cac:"CAC", device:"Device", strengths:"Pontos fortes", weaknesses:"Pontos fracos", sources:"Fontes" },
+        docsTitle:"Documentação do dashboard",
+        docsSubtitle:"Como usar, manter e auditar a visão competitiva de adquirência.",
+        docsHtml:`<section class="doc-section wide"><h4>Objetivo e escopo</h4><p>Este dashboard consolida a leitura competitiva de adquirência no Brasil, com duas visões: grid operacional de players e P&L/take rate. O escopo cobre adquirência, funding, captações, market share, canais, dispositivos, CAC qualitativo e fontes. Ele não substitui disclosure oficial das companhias; ele organiza a melhor visão comparável disponível.</p><div class="doc-kpi-grid"><div class="doc-kpi"><strong>Owner</strong><span>FP&A / Acquiring Strategy</span></div><div class="doc-kpi"><strong>Cadência</strong><span>Revisão semanal + fechamento trimestral</span></div><div class="doc-kpi"><strong>Fonte crítica</strong><span>BCB IFData COSIF + IR/SEC</span></div><div class="doc-kpi"><strong>Versão</strong><span>v19 · 10/06/2026</span></div></div></section><section class="doc-section"><h4>Como usar</h4><ol><li>Comece pelo grid competitivo para posicionamento, canal, funding e forças/fricções.</li><li>Use filtros por segmento, modelo e confiança para montar recortes de reunião.</li><li>Use Imagem p/ slide para exportar uma tabela selecionada em PNG.</li><li>Na aba P&L, leia sempre valor + grau A/M/B antes de comparar players.</li></ol></section><section class="doc-section"><h4>Metodologia A/M/B</h4><ul><li><strong>A</strong>: fonte oficial da companhia, SEC/IR ou BCB IFData COSIF.</li><li><strong>M</strong>: estimativa derivada de dado público parcial.</li><li><strong>B</strong>: inferência de benchmark ou research, com premissa explícita.</li></ul></section><section class="doc-section"><h4>Fontes e governança</h4><p>BCB IFData é a fonte oficial para DREs COSIF e captações de IFs reguladas. IR/20-F/earnings prevalecem quando o grupo consolidado é mais comparável que a entidade IP isolada. A coluna de fontes e a seção de fontes preservam o caminho de auditoria.</p></section><section class="doc-section"><h4>Fórmulas principais</h4><ul><li>Take rate gross = receita líquida acquiring / TPV.</li><li>Take rate EBITDA = EBT ou EBITDA acquiring / TPV.</li><li>costSrv = -(netRev - grossProf COSIF), quando gross MDR é estimado.</li><li>Outros result. COSIF fecha a ponte entre lucro bruto, OPEX e EBT.</li></ul></section><section class="doc-section"><h4>RACI sugerido</h4><ul><li><strong>R</strong>: Analista responsável pelo update semanal.</li><li><strong>A</strong>: Liderança FP&A/Acquiring.</li><li><strong>C</strong>: Pricing, Crédito, Comercial e BI.</li><li><strong>I</strong>: Stakeholders de estratégia e liderança regional.</li></ul></section><section class="doc-section"><h4>Riscos e premissas</h4><p>Os principais riscos são mudança de escopo das entidades COSIF, ausência de TPV Brasil isolado e diferenças entre IP individual e grupo consolidado. Toda inferência deve manter premissa, fonte e grau de confiança visíveis.</p></section><section class="doc-section"><h4>Checklist de mudança</h4><ol><li>Confirmar última competência disponível no BCB IFData.</li><li>Atualizar dados oficiais, depois estimativas derivadas.</li><li>Validar que P&L fecha matematicamente.</li><li>Checar gráficos, rótulos e exportação PNG.</li><li>Registrar versão, data, fonte e premissa no rodapé.</li></ol></section>`
+      },
+      en:{
+        htmlLang:"en",
+        buttons:{ docs:"Docs", reset:"Clear", copy:"Copy link", export:"Export Excel", sort:"Sort share", snapshot:"Slide image", colReset:"Show all", snapCopy:"Copy PNG", snapDownload:"Download PNG" },
+        tabs:{ grid:"Competitive grid", pnl:"P&L & take rate" },
+        brand:{ title:"Brazil acquiring competitive grid", subtitle:"Players, segments, channels, estimated funding, devices and sources" },
+        grid:{ eyebrow:"Brazil - May/2026 update", heroTitle:"The market is rewarding cheap funding, proprietary channels and engaged transaction bases again.", heroText:"Brazil card volume reached R$ 4.5tn in 2025, +10.1% YoY. The view below combines market share, reported TPV, banking relationship data and a coherent estimate of financial cost for receivables prepayment.", methodTitle:"How to read this grid", methodText:"Volume share comes from the internal MELI 2025 market-share view. User share follows UBS BB Jan/2026. When Brazil TPV is not disclosed, the field is n.d. or uses an explicit proxy.", methodItems:["Public data: direct source or market report","Estimate: inference from funding and business model","No data: no forced number without basis","Segments: Big sellers, SMB and Longtail"], methodFoot:"Source links are in the last grid column and in the source section.", filterSearch:"Search player, bank, channel or strength", searchPlaceholder:"E.g.: Stone, Itau, longtail, FIDC, rental", filterSegment:"Segment", filterModel:"Model", filterConfidence:"Funding confidence", all:"All", confidenceOptions:["All","High","Medium-high","Medium","Medium-low","Low"], metricLabels:["Card market","Top 6 by volume","Most defensive funding","Fastest acceleration"], metricDeltas:["+10.1% in 2025","MELI 2025 market share","Estimated CDI","Longtail and SMB"], metricNotes:["Total card volume in Brazil, per ABECS/Panorama ABECS.","Rede, Cielo, Getnet, Stone, PagBank and Mercado Pago concentrate most volume; InfinitePay and Others complete the view.","Large banks tend to have structural advantages through deposits, PJ accounts and treasury.","CloudWalk, Mercado Pago, Stone/Ton and PagBank drive digital acquisition in Longtail and SMB."], shareTitle:"Share by transaction volume", shareDesc:"Source: internal MELI view · % Market Share, 2025 base. Mercado Pago = OFF 5.1% + ON 3.3%.", shareBadge:"Top players", fundingTitle:"Estimated financial cost", fundingDesc:"Midpoint of estimated range as % of CDI; lower is better for prepayment.", fundingBadge:"Estimate", gridTitle:"Player grid", gridDesc:"Use search and filters to isolate banks, fintechs and seller segments: Big sellers, SMB or Longtail.", columnsVisible:"Visible columns", gridHeaders:["Player","Bank / business model","Volume share","User share","Main segment","Recent growth / traction","Estimated financial cost","Funding channel","CAC","Device","Strengths","Weaknesses","Sources"], fundingAssumptions:"Funding assumptions", fundingAssumptionsDesc:"CDI ranges are not disclosed by companies; they are estimates anchored on funding type and balance sheet.", assumptionBadge:"Analytical model", assumptionHeaders:["Player type","Estimate rationale"], execTitle:"Executive reads", execDesc:"Main conclusions for commercial strategy, pricing and seller acquisition.", synthesis:"Synthesis", sourcesTitle:"Main sources", sourcesDesc:"Links used for the grid data. Estimated fields show the factual basis for the inference.", footer:"Prepared on 28/05/2026, share updated on 02/06/2026. Volume share: internal MELI 2025 market-share view; user share follows UBS BB Jan/2026. Financial cost and CAC are analytical estimates, not company guidance. n.d. means no comparable public disclosure.", playersLabel:"players", others:"Others" },
+        pnl:{ eyebrow:"Brazil Acquiring P&L · 2025 base", heroTitle:"What remains in acquiring economics by player, in one comparable view.", heroText:"We isolate <strong>acquiring</strong> economics using 2025 closed numbers. Official disclosures are marked with source links. For players without isolated disclosure, we use <strong>BCB IFData COSIF 12/2025</strong>. Estimated cells are tagged M or B.", methodTitle:"How to read this tab", methodText:"All values are R$ billions unless noted. Gross take rate = acquiring net revenue / TPV. EBITDA take rate = acquiring EBITDA or EBT / TPV. If a player does not publish isolated data, the rationale explains the gap.", methodFoot:"Values are not guidance and may differ from future company disclosures.", kpiLabels:["Largest acquiring TPV · 2025","Largest total revenue · 2025","Highest revenue growth","Lowest gross take rate"], chartTakeTitle:"Estimated gross take rate by player · 2025", chartTakeDesc:"Acquiring net revenue / TPV. Markers indicate confidence in the base data.", chartTpvTitle:"Acquiring TPV by player · 2025 (R$ bn)", chartTpvDesc:"Processed acquiring volume. When not disclosed separately, the chart shows an estimate derived from public/proxy data.", chartFundingTitle:"Funding / deposits by player · 12/2025 (R$ bn)", chartFundingDesc:"Total funding reported to the Central Bank. Indicates balance-sheet power and funding cost supporting receivables prepayment and credit.", pnlTitle:"Comparable acquiring P&L · 2025", pnlDesc:"Rows in R$ billions unless noted. Each cell shows value plus confidence grade (A/M/B).", pnlBadge:"Acquiring only", legendA:"Reported by company / BCB", legendM:"Estimate from partial disclosure", legendB:"Research / benchmark inference", legendNd:"Not disclosed on comparable basis", rationaleTitle:"Rationale by player", rationaleDesc:"Why each acquiring P&L was built this way, with primary source and main assumption.", execTitle:"Executive reads", execDesc:"Implications for pricing, Selic pass-through and MELI Brazil cost structure versus peers.", sourcesTitle:"Official sources reviewed", sourcesDesc:"Links to IR/SEC/research documents used as the base. Estimates are marked in each table cell.", footer:"P&L tab updated on 10/06/2026 (v19 · PT/EN/ES switch and governance documentation added). Sources: StoneCo 20-F FY25, PagBank 4Q25, CloudWalk newsroom, MELI 4Q25, Santander Payments 2025 · BCB IFData COSIF 12/2025. M/B estimates are analytical derivations and do not replace company disclosure." },
+        charts:{ take:"Gross take rate (%)", tpv:"Acquiring TPV (R$ bn)", deposits:"Funding / deposits (R$ bn)", reported:"Reported", estimated:"Estimate", inferred:"Inference", bcb:"Reported to BCB", notIsolated:"n.d. · not isolated in consolidated view" },
+        pnlRows:{ tpv:"Processed TPV (R$ bn)", netRev:"Acquiring net revenue", costSrv:"(-) Transaction costs", grossProf:"= Acquiring gross profit", opex:"(-) Direct OPEX (S&M, G&A)", outrosRes:"(±) Other COSIF results", ebitda:"= Acquiring EBT / EBITDA", netIncome:"Net income (company)", takeGross:"Gross take rate", takeEbitda:"EBITDA take rate" },
+        pnlTableHead:"P&L · 2025 · R$ bn",
+        rationaleHead:["Player","How the P&L was built","Primary source"],
+        snapshot:{ title:"Grid image for slides", subtitle:"Choose players and columns. The PNG uses MELI identity and white background.", players:"Players", cols:"Columns", all:"All", none:"None", default:"Default", ready:"Ready to generate image.", generating:"Generating image...", needSelection:"Select at least one player and one column.", unavailable:"html2canvas unavailable in this environment", downloaded:"PNG downloaded. Paste it into the slide and resize as an image.", copied:"Image copied. Paste (Ctrl+V) into the slide.", blocked:"Copy blocked. Use Download PNG.", pngDownloaded:"PNG downloaded", pngCopied:"Image copied", titleRender:"Brazil acquiring competitive grid", generated:"Generated on", colsWord:"columns", footer:"MELI Acquiring · Public data and analytical estimates. Sources included when the Sources column is selected." },
+        snapCols:{ player:"Player", bankModel:"Bank / model", shareVolume:"Volume share", shareUsers:"User share", segment:"Segment", growth:"Growth / traction", funding:"Estimated financial cost", channel:"Funding channel", cac:"CAC", device:"Device", strengths:"Strengths", weaknesses:"Weaknesses", sources:"Sources" },
+        docsTitle:"Dashboard documentation",
+        docsSubtitle:"How to use, maintain and audit the acquiring competitive view.",
+        docsHtml:`<section class="doc-section wide"><h4>Objective and scope</h4><p>This dashboard consolidates Brazil acquiring competitive intelligence across two views: an operating player grid and a P&L/take-rate view. It covers acquiring, funding, deposits, market share, channels, devices, qualitative CAC and sources. It does not replace official company disclosure; it organizes the best comparable view available.</p><div class="doc-kpi-grid"><div class="doc-kpi"><strong>Owner</strong><span>FP&A / Acquiring Strategy</span></div><div class="doc-kpi"><strong>Cadence</strong><span>Weekly review + quarterly close</span></div><div class="doc-kpi"><strong>Critical source</strong><span>BCB IFData COSIF + IR/SEC</span></div><div class="doc-kpi"><strong>Version</strong><span>v19 · 10/06/2026</span></div></div></section><section class="doc-section"><h4>How to use</h4><ol><li>Start with the competitive grid for positioning, channel, funding and strengths/frictions.</li><li>Filter by segment, model and confidence to build meeting cuts.</li><li>Use Slide image to export selected rows and columns as PNG.</li><li>In P&L, always compare value plus A/M/B confidence grade.</li></ol></section><section class="doc-section"><h4>A/M/B methodology</h4><ul><li><strong>A</strong>: official company, SEC/IR or BCB IFData COSIF source.</li><li><strong>M</strong>: estimate derived from partial public disclosure.</li><li><strong>B</strong>: benchmark or research inference with explicit assumption.</li></ul></section><section class="doc-section"><h4>Data governance</h4><p>BCB IFData is the official source for COSIF income statements and funding balances of regulated entities. IR/20-F/earnings prevail when the consolidated group is more comparable than the isolated IP entity. Source links preserve the audit trail.</p></section><section class="doc-section"><h4>Main formulas</h4><ul><li>Gross take rate = acquiring net revenue / TPV.</li><li>EBITDA take rate = acquiring EBT or EBITDA / TPV.</li><li>costSrv = -(netRev - COSIF gross profit), when gross MDR is estimated.</li><li>Other COSIF results close the bridge between gross profit, OPEX and EBT.</li></ul></section><section class="doc-section"><h4>Suggested RACI</h4><ul><li><strong>R</strong>: analyst responsible for weekly update.</li><li><strong>A</strong>: FP&A/Acquiring leadership.</li><li><strong>C</strong>: Pricing, Credit, Commercial and BI.</li><li><strong>I</strong>: strategy and regional leadership stakeholders.</li></ul></section><section class="doc-section"><h4>Risks and assumptions</h4><p>Main risks are COSIF entity-scope changes, lack of isolated Brazil TPV and differences between individual IP and consolidated group. Every inference must keep assumption, source and confidence visible.</p></section><section class="doc-section"><h4>Change checklist</h4><ol><li>Confirm the latest available BCB IFData period.</li><li>Update official data first, then derived estimates.</li><li>Validate P&L math closure.</li><li>Check charts, labels and PNG export.</li><li>Register version, date, source and assumption in the footer.</li></ol></section>`
+      },
+      es:{
+        htmlLang:"es",
+        buttons:{ docs:"Docs", reset:"Limpiar", copy:"Copiar link", export:"Exportar Excel", sort:"Ordenar share", snapshot:"Imagen p/ slide", colReset:"Mostrar todas", snapCopy:"Copiar PNG", snapDownload:"Descargar PNG" },
+        tabs:{ grid:"Grid competitivo", pnl:"P&L & take rate" },
+        brand:{ title:"Grid competitivo de adquirencia en Brasil", subtitle:"Players, segmentos, canales, funding estimado, devices y fuentes" },
+        grid:{ eyebrow:"Brasil - actualizacion may/2026", heroTitle:"El mercado vuelve a premiar funding barato, canales propietarios y bases transaccionales activas.", heroText:"El volumen de tarjetas en Brasil alcanzo R$ 4,5 tri en 2025, +10,1% a/a. La lectura combina share de mercado, TPV reportado, datos de relacion bancaria y una estimacion coherente del costo financiero para anticipacion de receivables.", methodTitle:"Como leer este grid", methodText:"El share por volumen viene de la vision interna MELI 2025. Share usuarios sigue UBS BB ene/2026. Cuando la compania no divulga TPV Brasil, el campo queda como n.d. o usa un proxy explicito.", methodItems:["Dato publico: fuente directa o reporte de mercado","Estimacion: inferencia a partir de funding y modelo","Sin dato: no se fuerza numero sin base","Segmentos: Big sellers, SMB y Longtail"], methodFoot:"Los links de fuente estan en la ultima columna y en la seccion de fuentes.", filterSearch:"Buscar player, banco, canal o fortaleza", searchPlaceholder:"Ej.: Stone, Itau, longtail, FIDC, alquiler", filterSegment:"Segmento", filterModel:"Modelo", filterConfidence:"Confianza funding", all:"Todos", confidenceOptions:["Todas","Alta","Media-alta","Media","Media-baja","Baja"], metricLabels:["Mercado de tarjetas","Top 6 por volumen","Funding mas defensivo","Mayor aceleracion"], metricDeltas:["+10,1% en 2025","Market share MELI 2025","CDI estimado","Longtail y SMB"], metricNotes:["Volumen total de tarjetas en Brasil, segun ABECS/Panorama ABECS.","Rede, Cielo, Getnet, Stone, PagBank y Mercado Pago concentran la mayor parte del volumen; InfinitePay y Others completan la vista.","Los grandes bancos tienden a tener ventaja estructural via depositos, cuenta PJ y tesoreria.","CloudWalk, Mercado Pago, Stone/Ton y PagBank impulsan adquisicion digital en Longtail y SMB."], shareTitle:"Participacion por volumen transaccionado", shareDesc:"Fuente: vision interna MELI · % Market Share, base 2025. Mercado Pago = OFF 5,1% + ON 3,3%.", shareBadge:"Top players", fundingTitle:"Costo financiero estimado", fundingDesc:"Punto medio del rango estimado como % del CDI; menor es mejor para anticipacion.", fundingBadge:"Estimacion", gridTitle:"Grid de players", gridDesc:"Use busqueda y filtros para aislar bancos, fintechs y segmentos: Big sellers, SMB o Longtail.", columnsVisible:"Columnas visibles", gridHeaders:["Player","Banco / modelo de negocio","Share volumen","Share usuarios","Segmento principal","Crecimiento / traccion reciente","Costo financiero estimado","Canal de funding","CAC","Device","Fortalezas","Debilidades","Fuentes"], fundingAssumptions:"Hipotesis de funding", fundingAssumptionsDesc:"Los rangos en CDI no son divulgados por las empresas; son estimaciones ancladas en tipo de funding y balance.", assumptionBadge:"Modelo analitico", assumptionHeaders:["Tipo de player","Racional de la estimacion"], execTitle:"Lecturas ejecutivas", execDesc:"Conclusiones principales para estrategia comercial, pricing y adquisicion de sellers.", synthesis:"Sintesis", sourcesTitle:"Fuentes principales", sourcesDesc:"Links usados para los datos del grid. Cuando el dato es estimado, la columna de fuentes muestra la base factual de la inferencia.", footer:"Preparado el 28/05/2026, share actualizado el 02/06/2026. Participacion por volumen: vision interna MELI 2025; share por usuarios sigue UBS BB ene/2026. Costo financiero y CAC son estimaciones analiticas, no guidance de las companias. n.d. indica dato no divulgado en base comparable.", playersLabel:"players", others:"Others" },
+        pnl:{ eyebrow:"P&L Acquiring Brasil · base 2025", heroTitle:"Lo que queda en la economia de adquirencia por player, en una vista comparable.", heroText:"Aislamos la parte de <strong>adquirencia</strong> con numeros cerrados de 2025. Donde hay disclosure oficial, el valor aparece con fuente. Para players sin disclosure aislado, usamos <strong>BCB IFData COSIF 12/2025</strong>. Las celdas estimadas se marcan con grado M o B.", methodTitle:"Como leer esta aba", methodText:"Todos los valores en R$ billones salvo indicacion. Take rate gross = ingreso neto acquiring / TPV. Take rate EBITDA = EBITDA o EBT acquiring / TPV. Si un player no publica datos aislados, el racional explica la brecha.", methodFoot:"Los valores no son guidance y pueden diferir de futuros disclosures.", kpiLabels:["Mayor TPV acquiring · 2025","Mayor ingreso total · 2025","Mayor crecimiento de ingreso","Menor take rate gross"], chartTakeTitle:"Take rate gross estimado por player · 2025", chartTakeDesc:"Ingreso neto acquiring / TPV. Los marcadores indican grado de confianza del dato base.", chartTpvTitle:"TPV acquiring por player · 2025 (R$ bi)", chartTpvDesc:"Volumen procesado en adquirencia. Cuando no se divulga de forma aislada, muestra una estimacion derivada.", chartFundingTitle:"Funding / depositos por player · 12/2025 (R$ bi)", chartFundingDesc:"Funding total reportado al Banco Central. Mide poder de balance y costo de funding para anticipacion de receivables y credito.", pnlTitle:"P&L acquiring comparativo · 2025", pnlDesc:"Lineas en R$ billones salvo indicacion. Cada celda muestra valor y grado de confianza (A/M/B).", pnlBadge:"Solo acquiring", legendA:"Reportado por compania / BCB", legendM:"Estimacion derivada de disclosure parcial", legendB:"Inferencia de research / benchmark", legendNd:"No divulgado en base comparable", rationaleTitle:"Racional por player", rationaleDesc:"Por que cada P&L acquiring fue construido de esta forma, con fuente primaria e hipotesis principal.", execTitle:"Lecturas ejecutivas", execDesc:"Conclusiones para pricing, pass-through de Selic y estructura de costos de MELI Brasil vs pares.", sourcesTitle:"Fuentes oficiales consultadas", sourcesDesc:"Links para documentos IR/SEC/research usados como base. Las estimaciones estan marcadas en cada celda.", footer:"Aba P&L actualizada el 10/06/2026 (v19 · selector PT/EN/ES y documentacion de gobernanza agregados). Fuentes: StoneCo 20-F FY25, PagBank 4Q25, CloudWalk newsroom, MELI 4Q25, Santander Payments 2025 · BCB IFData COSIF 12/2025. Estimaciones M/B son derivaciones analiticas y no sustituyen disclosure de las companias." },
+        charts:{ take:"Take rate gross (%)", tpv:"TPV adquirencia (R$ bi)", deposits:"Funding / depositos (R$ bi)", reported:"Reportado", estimated:"Estimacion", inferred:"Inferencia", bcb:"Reportado al BCB", notIsolated:"n.d. · no aislado en consolidado" },
+        pnlRows:{ tpv:"TPV procesado (R$ bi)", netRev:"Ingreso neto adquirencia", costSrv:"(-) Costos transaccionales", grossProf:"= Lucro bruto adquirencia", opex:"(-) OPEX directo (S&M, G&A)", outrosRes:"(±) Otros result. COSIF", ebitda:"= EBT / EBITDA adquirencia", netIncome:"Lucro neto (compania)", takeGross:"Take rate gross", takeEbitda:"Take rate EBITDA" },
+        pnlTableHead:"P&L · 2025 · R$ bi",
+        rationaleHead:["Player","Como se construyo el P&L","Fuente principal"],
+        snapshot:{ title:"Imagen del grid para slide", subtitle:"Elija players y columnas. El PNG sale con identidad MELI y fondo blanco.", players:"Players", cols:"Columnas", all:"Todos", none:"Ninguno", default:"Default", ready:"Listo para generar imagen.", generating:"Generando imagen...", needSelection:"Seleccione al menos un player y una columna.", unavailable:"html2canvas no disponible en este ambiente", downloaded:"PNG descargado. Pegue en el slide y ajuste como imagen.", copied:"Imagen copiada. Pegue (Ctrl+V) en el slide.", blocked:"Copia bloqueada. Use Descargar PNG.", pngDownloaded:"PNG descargado", pngCopied:"Imagen copiada", titleRender:"Grid competitivo de adquirencia · Brasil", generated:"Generado el", colsWord:"columnas", footer:"MELI Acquiring · Datos publicos y estimaciones analiticas. Fuentes incluidas cuando se selecciona la columna Fuentes." },
+        snapCols:{ player:"Player", bankModel:"Banco / modelo", shareVolume:"Share volumen", shareUsers:"Share usuarios", segment:"Segmento", growth:"Crecimiento / traccion", funding:"Costo financiero est.", channel:"Canal de funding", cac:"CAC", device:"Device", strengths:"Fortalezas", weaknesses:"Debilidades", sources:"Fuentes" },
+        docsTitle:"Documentacion del dashboard",
+        docsSubtitle:"Como usar, mantener y auditar la vision competitiva de adquirencia.",
+        docsHtml:`<section class="doc-section wide"><h4>Objetivo y alcance</h4><p>Este dashboard consolida inteligencia competitiva de adquirencia en Brasil en dos vistas: grid operativo de players y P&L/take-rate. Cubre adquirencia, funding, depositos, market share, canales, devices, CAC cualitativo y fuentes. No sustituye disclosure oficial; organiza la mejor vision comparable disponible.</p><div class="doc-kpi-grid"><div class="doc-kpi"><strong>Owner</strong><span>FP&A / Acquiring Strategy</span></div><div class="doc-kpi"><strong>Cadencia</strong><span>Revision semanal + cierre trimestral</span></div><div class="doc-kpi"><strong>Fuente critica</strong><span>BCB IFData COSIF + IR/SEC</span></div><div class="doc-kpi"><strong>Version</strong><span>v19 · 10/06/2026</span></div></div></section><section class="doc-section"><h4>Como usar</h4><ol><li>Empiece por el grid competitivo para posicionamiento, canal, funding y fricciones.</li><li>Filtre por segmento, modelo y confianza para cortes de reunion.</li><li>Use Imagen p/ slide para exportar filas y columnas seleccionadas en PNG.</li><li>En P&L, compare siempre valor mas grado A/M/B.</li></ol></section><section class="doc-section"><h4>Metodologia A/M/B</h4><ul><li><strong>A</strong>: fuente oficial de compania, SEC/IR o BCB IFData COSIF.</li><li><strong>M</strong>: estimacion derivada de disclosure publico parcial.</li><li><strong>B</strong>: inferencia de benchmark o research con premisa explicita.</li></ul></section><section class="doc-section"><h4>Gobernanza de datos</h4><p>BCB IFData es la fuente oficial para DRE COSIF y captações de IFs reguladas. IR/20-F/earnings prevalecen cuando el grupo consolidado es mas comparable que la entidad IP aislada. Los links preservan el camino de auditoria.</p></section><section class="doc-section"><h4>Formulas principales</h4><ul><li>Take rate gross = ingreso neto acquiring / TPV.</li><li>Take rate EBITDA = EBT o EBITDA acquiring / TPV.</li><li>costSrv = -(netRev - lucro bruto COSIF), cuando gross MDR es estimado.</li><li>Otros result. COSIF cierra el puente entre lucro bruto, OPEX y EBT.</li></ul></section><section class="doc-section"><h4>RACI sugerido</h4><ul><li><strong>R</strong>: analista responsable por update semanal.</li><li><strong>A</strong>: liderazgo FP&A/Acquiring.</li><li><strong>C</strong>: Pricing, Credito, Comercial y BI.</li><li><strong>I</strong>: stakeholders de estrategia y liderazgo regional.</li></ul></section><section class="doc-section"><h4>Riesgos y premisas</h4><p>Los principales riesgos son cambio de alcance en entidades COSIF, falta de TPV Brasil aislado y diferencias entre IP individual y grupo consolidado. Toda inferencia debe mantener premisa, fuente y confianza visibles.</p></section><section class="doc-section"><h4>Checklist de cambio</h4><ol><li>Confirmar la ultima competencia disponible en BCB IFData.</li><li>Actualizar datos oficiales primero, despues estimaciones derivadas.</li><li>Validar cierre matematico del P&L.</li><li>Revisar graficos, rotulos y exportacion PNG.</li><li>Registrar version, fecha, fuente y premisa en el footer.</li></ol></section>`
+      }
+    };
 
     function fmtShare(value, label) {
       if (value == null) return `<span class="badge gray">${label}</span>`;
@@ -1385,12 +2337,13 @@
     function renderTable() {
       const filtered = getFilteredPlayers();
       els.body.innerHTML = filtered.map(rowTemplate).join("");
-      els.rowCount.textContent = `${filtered.length} players`;
+      els.rowCount.textContent = `${filtered.length} ${t().grid.playersLabel}`;
       renderCharts(filtered);
     }
 
     function populateFilters() {
-      [...new Set(players.map(p => p.segmentKey))].sort().forEach(value => {
+      const segmentOrder = ["Big sellers", "SMB", "Longtail"];
+      segmentOrder.filter(value => players.some(p => p.segmentKey === value)).forEach(value => {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = value;
@@ -1413,6 +2366,10 @@
     }
 
     function renderCharts(currentPlayers) {
+      if (!window.Chart) {
+        return;
+      }
+
       const sharePlayers = currentPlayers.filter(p => p.shareVolume != null);
       const fundingPlayers = currentPlayers.filter(p => p.fundingMid != null);
 
@@ -1435,9 +2392,9 @@
       shareChart = new Chart(document.getElementById("shareChart"), {
         type:"doughnut",
         data:{
-          labels:[...sharePlayers.map(p => p.name), "Demais players"],
+          labels:[...sharePlayers.map(p => p.name), t().grid.others],
           datasets:[{
-            data:[...sharePlayers.map(p => p.shareVolume), 19],
+            data:[...sharePlayers.map(p => p.shareVolume), 2.3],
             backgroundColor:[...colors.slice(0, sharePlayers.length), "#CBD5E1"],
             borderColor:"#fff",
             borderWidth:5,
@@ -1454,7 +2411,7 @@
             datalabels:{
               color:"#fff",
               font:{ size:11, weight:"800" },
-              formatter:(v) => v >= 8 ? `${v}%` : ""
+              formatter:(v) => v >= 5 ? `${v.toFixed(1).replace(".",",")}%` : ""
             }
           }
         }
@@ -1465,7 +2422,7 @@
         data:{
           labels:fundingPlayers.map(p => p.name),
           datasets:[{
-            label:"Ponto médio estimado (% CDI)",
+            label:currentLang === "pt" ? "Ponto médio estimado (% CDI)" : currentLang === "en" ? "Estimated midpoint (% CDI)" : "Punto medio estimado (% CDI)",
             data:fundingPlayers.map(p => p.fundingMid),
             backgroundColor:fundingPlayers.map(p => p.fundingMid <= 100 ? "rgba(0,166,80,.82)" : p.fundingMid <= 108 ? "rgba(52,131,250,.82)" : "rgba(255,159,28,.85)"),
             borderRadius:12,
@@ -1497,6 +2454,11 @@
     }
 
     function exportExcel() {
+      if (typeof XLSX === "undefined") {
+        showToast("Exportacao indisponivel neste ambiente");
+        return;
+      }
+
       const rows = getFilteredPlayers().map(player => ({
         Player:player.name,
         "Banco/modelo":player.bankModel,
@@ -1524,7 +2486,7 @@
       const url = window.location.href;
       try {
         await navigator.clipboard.writeText(url);
-        showToast("Link copiado");
+        showToast(currentLang === "pt" ? "Link copiado" : currentLang === "en" ? "Link copied" : "Link copiado");
       } catch {
         showToast(url);
       }
@@ -1534,6 +2496,230 @@
       els.toast.textContent = text;
       els.toast.classList.add("show");
       setTimeout(() => els.toast.classList.remove("show"), 2200);
+    }
+
+    function t() {
+      return uiCopy[currentLang] || uiCopy.pt;
+    }
+
+    function setText(selector, value) {
+      const el = document.querySelector(selector);
+      if (el && value != null) el.textContent = value;
+    }
+
+    function setHtml(selector, value) {
+      const el = document.querySelector(selector);
+      if (el && value != null) el.innerHTML = value;
+    }
+
+    function setIconButtonLabel(target, label) {
+      const el = typeof target === "string" ? document.querySelector(target) : target;
+      if (!el || !label) return;
+      const icon = el.querySelector("svg,i");
+      el.textContent = "";
+      if (icon) el.appendChild(icon);
+      el.append(document.createTextNode(label));
+    }
+
+    function setOptionText(selectId, value, label) {
+      const option = document.querySelector(`#${selectId} option[value="${value}"]`);
+      if (option && label) option.textContent = label;
+    }
+
+    function setHeaderLabels(selector, labels) {
+      document.querySelectorAll(selector).forEach((th, i) => {
+        if (labels[i]) th.textContent = labels[i];
+      });
+    }
+
+    function setMethodItems(containerSelector, items) {
+      const nodes = document.querySelectorAll(`${containerSelector} .method-item`);
+      nodes.forEach((node, i) => {
+        const marker = node.querySelector(".dot,.conf-pill");
+        node.textContent = "";
+        if (marker) node.appendChild(marker);
+        node.append(document.createTextNode(items[i] || ""));
+      });
+    }
+
+    function updateSnapshotLabels() {
+      const copy = t();
+      snapCols.forEach(col => {
+        col.label = copy.snapCols[col.key] || col.label;
+      });
+      setText("#snapTitle", copy.snapshot.title);
+      setText("#snapTitle + p", copy.snapshot.subtitle);
+      setIconButtonLabel("#snapCopyBtn", copy.buttons.snapCopy);
+      setIconButtonLabel("#snapDownloadBtn", copy.buttons.snapDownload);
+      setText("#snapInfo", copy.snapshot.ready);
+      const sectionTitles = document.querySelectorAll(".snap-section h4");
+      if (sectionTitles[0]) {
+        const buttons = [...sectionTitles[0].querySelectorAll("button")];
+        sectionTitles[0].textContent = copy.snapshot.players;
+        buttons.forEach(btn => sectionTitles[0].appendChild(btn));
+      }
+      if (sectionTitles[1]) {
+        const buttons = [...sectionTitles[1].querySelectorAll("button")];
+        sectionTitles[1].textContent = copy.snapshot.cols;
+        buttons.forEach(btn => sectionTitles[1].appendChild(btn));
+      }
+      document.querySelectorAll('[data-bulk="players-all"]').forEach(btn => btn.textContent = copy.snapshot.all);
+      document.querySelectorAll('[data-bulk="players-none"]').forEach(btn => btn.textContent = copy.snapshot.none);
+      document.querySelectorAll('[data-bulk="cols-default"]').forEach(btn => btn.textContent = copy.snapshot.default);
+      document.querySelectorAll('[data-bulk="cols-all"]').forEach(btn => btn.textContent = copy.snapshot.all);
+    }
+
+    function renderDocs() {
+      const copy = t();
+      setText("#docTitle", copy.docsTitle);
+      setText("#docSubtitle", copy.docsSubtitle);
+      setHtml("#docBody", copy.docsHtml);
+    }
+
+    function openDocsModal() {
+      renderDocs();
+      const overlay = document.getElementById("docOverlay");
+      if (overlay) overlay.classList.add("show");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeDocsModal() {
+      const overlay = document.getElementById("docOverlay");
+      if (overlay) overlay.classList.remove("show");
+    }
+
+    function updateStaticCopy() {
+      const copy = t();
+      document.documentElement.lang = copy.htmlLang;
+      setText(".brand h1", copy.brand.title);
+      setText(".brand span", copy.brand.subtitle);
+      setIconButtonLabel("#docsBtn", copy.buttons.docs);
+      setIconButtonLabel("#resetBtn", copy.buttons.reset);
+      setIconButtonLabel("#copyBtn", copy.buttons.copy);
+      setIconButtonLabel("#exportBtn", copy.buttons.export);
+      setIconButtonLabel("#sortBtn", copy.buttons.sort);
+      setIconButtonLabel("#snapBtn", copy.buttons.snapshot);
+      setIconButtonLabel("#colResetBtn", copy.buttons.colReset);
+      setIconButtonLabel('.tab-btn[data-tab="tab-grid"]', copy.tabs.grid);
+      setIconButtonLabel('.tab-btn[data-tab="tab-pnl"]', copy.tabs.pnl);
+
+      setHtml("#tab-grid .executive .eyebrow", `<i data-lucide="landmark" style="width:15px;height:15px"></i>${copy.grid.eyebrow}`);
+      setText("#tab-grid .executive h2", copy.grid.heroTitle);
+      setText("#tab-grid .executive p", copy.grid.heroText);
+      setText("#tab-grid .method-card h3", copy.grid.methodTitle);
+      setText("#tab-grid .method-card p", copy.grid.methodText);
+      setMethodItems("#tab-grid .method-card", copy.grid.methodItems);
+      const gridMethodFoot = document.querySelector("#tab-grid .method-card > p:last-child");
+      if (gridMethodFoot) gridMethodFoot.textContent = copy.grid.methodFoot;
+
+      setText('label[for="searchInput"]', copy.grid.filterSearch);
+      const search = document.getElementById("searchInput");
+      if (search) search.placeholder = copy.grid.searchPlaceholder;
+      setText('label[for="segmentFilter"]', copy.grid.filterSegment);
+      setText('label[for="modelFilter"]', copy.grid.filterModel);
+      setText('label[for="confidenceFilter"]', copy.grid.filterConfidence);
+      setOptionText("segmentFilter", "all", copy.grid.all);
+      setOptionText("modelFilter", "all", copy.grid.all);
+      setOptionText("confidenceFilter", "all", copy.grid.confidenceOptions[0]);
+      ["Alta","Média-alta","Média","Média-baixa","Baixa"].forEach((value, i) => setOptionText("confidenceFilter", value, copy.grid.confidenceOptions[i + 1]));
+
+      document.querySelectorAll("#tab-grid .metrics-grid .metric-label").forEach((el, i) => el.textContent = copy.grid.metricLabels[i] || el.textContent);
+      document.querySelectorAll("#tab-grid .metrics-grid .delta").forEach((el, i) => el.textContent = copy.grid.metricDeltas[i] || el.textContent);
+      document.querySelectorAll("#tab-grid .metrics-grid .metric-note").forEach((el, i) => el.textContent = copy.grid.metricNotes[i] || el.textContent);
+
+      setText("#tab-grid .charts-grid article:nth-child(1) h3", copy.grid.shareTitle);
+      setText("#tab-grid .charts-grid article:nth-child(1) p", copy.grid.shareDesc);
+      setText("#tab-grid .charts-grid article:nth-child(1) .badge", copy.grid.shareBadge);
+      setText("#tab-grid .charts-grid article:nth-child(2) h3", copy.grid.fundingTitle);
+      setText("#tab-grid .charts-grid article:nth-child(2) p", copy.grid.fundingDesc);
+      setText("#tab-grid .charts-grid article:nth-child(2) .badge", copy.grid.fundingBadge);
+      setText("#tab-grid .grid-section h3", copy.grid.gridTitle);
+      setText("#tab-grid .grid-section .card-title p", copy.grid.gridDesc);
+      setHtml(".col-toggle-bar .ct-label", `<i data-lucide="columns"></i>${copy.grid.columnsVisible}`);
+      document.querySelectorAll(".col-toggle").forEach((label, i) => {
+        const input = label.querySelector("input");
+        const texts = [copy.grid.gridHeaders[2], copy.grid.gridHeaders[3], copy.grid.gridHeaders[5]];
+        label.textContent = "";
+        if (input) label.appendChild(input);
+        label.append(document.createTextNode(texts[i] || ""));
+      });
+      setHeaderLabels("#tab-grid .table-shell table thead th", copy.grid.gridHeaders);
+
+      setText("#tab-grid .notes-grid article:nth-child(1) h3", copy.grid.fundingAssumptions);
+      setText("#tab-grid .notes-grid article:nth-child(1) .card-title p", copy.grid.fundingAssumptionsDesc);
+      setText("#tab-grid .notes-grid article:nth-child(1) .badge", copy.grid.assumptionBadge);
+      setHeaderLabels("#tab-grid .assumption-table thead th", copy.grid.assumptionHeaders);
+      setText("#tab-grid .notes-grid article:nth-child(2) h3", copy.grid.execTitle);
+      setText("#tab-grid .notes-grid article:nth-child(2) .card-title p", copy.grid.execDesc);
+      setText("#tab-grid .notes-grid article:nth-child(2) .badge", copy.grid.synthesis);
+      setText("#tab-grid section.card:last-of-type h3", copy.grid.sourcesTitle);
+      setText("#tab-grid section.card:last-of-type .card-title p", copy.grid.sourcesDesc);
+      setText("#tab-grid footer", copy.grid.footer);
+
+      setHtml("#tab-pnl .pnl-hero .eyebrow", `<i data-lucide="line-chart" style="width:15px;height:15px"></i>${copy.pnl.eyebrow}`);
+      setText("#tab-pnl .pnl-hero h2", copy.pnl.heroTitle);
+      setHtml("#tab-pnl .pnl-hero p", copy.pnl.heroText);
+      setText("#tab-pnl .method-card h3", copy.pnl.methodTitle);
+      setText("#tab-pnl .method-card p", copy.pnl.methodText);
+      const pnlConfText = currentLang === "en"
+        ? ["High confidence · official earnings / 20-F / IR / BCB IFData (COSIF)","Medium · estimate from partial public data","Low · external research or benchmark inference"]
+        : currentLang === "es"
+          ? ["Alta confianza · earnings / 20-F / IR oficial / BCB IFData (COSIF)","Media · estimacion a partir de dato publico parcial","Baja · research externo o inferencia de benchmark"]
+          : ["Alta confiança · earnings release / 20-F / IR oficial / BCB IFData (COSIF)","Média · estimativa a partir de dado público parcial","Baixa · research externo ou inferência de benchmark"];
+      document.querySelectorAll("#tab-pnl .method-card .method-item").forEach((node, i) => {
+        const marker = node.querySelector(".conf-pill");
+        node.textContent = "";
+        if (marker) node.appendChild(marker);
+        node.append(document.createTextNode(pnlConfText[i] || ""));
+      });
+      const pnlMethodFoot = document.querySelector("#tab-pnl .method-card > p:last-child");
+      if (pnlMethodFoot) pnlMethodFoot.textContent = copy.pnl.methodFoot;
+      document.querySelectorAll("#tab-pnl .metrics-grid .metric-label").forEach((el, i) => el.textContent = copy.pnl.kpiLabels[i] || el.textContent);
+      setText("#tab-pnl .charts-grid article:nth-child(1) h3", copy.pnl.chartTakeTitle);
+      setText("#tab-pnl .charts-grid article:nth-child(1) p", copy.pnl.chartTakeDesc);
+      setText("#tab-pnl .charts-grid article:nth-child(2) h3", copy.pnl.chartTpvTitle);
+      setText("#tab-pnl .charts-grid article:nth-child(2) p", copy.pnl.chartTpvDesc);
+      setText("#tab-pnl .charts-grid article:nth-child(3) h3", copy.pnl.chartFundingTitle);
+      setText("#tab-pnl .charts-grid article:nth-child(3) p", copy.pnl.chartFundingDesc);
+      setText("#tab-pnl .grid-section h3", copy.pnl.pnlTitle);
+      setText("#tab-pnl .grid-section .card-title p", copy.pnl.pnlDesc);
+      setText("#tab-pnl .grid-section .badge", copy.pnl.pnlBadge);
+      const legend = document.querySelectorAll("#tab-pnl .pnl-legend .lg-item");
+      if (legend[0]) legend[0].lastChild.textContent = copy.pnl.legendA;
+      if (legend[1]) legend[1].lastChild.textContent = copy.pnl.legendM;
+      if (legend[2]) legend[2].lastChild.textContent = copy.pnl.legendB;
+      if (legend[3]) legend[3].lastChild.textContent = copy.pnl.legendNd;
+      setText("#tab-pnl .notes-grid article:nth-child(1) h3", copy.pnl.rationaleTitle);
+      setText("#tab-pnl .notes-grid article:nth-child(1) .card-title p", copy.pnl.rationaleDesc);
+      setText("#tab-pnl .notes-grid article:nth-child(2) h3", copy.pnl.execTitle);
+      setText("#tab-pnl .notes-grid article:nth-child(2) .card-title p", copy.pnl.execDesc);
+      setText("#tab-pnl section.card:last-of-type h3", copy.pnl.sourcesTitle);
+      setText("#tab-pnl section.card:last-of-type .card-title p", copy.pnl.sourcesDesc);
+      setText("#tab-pnl footer", copy.pnl.footer);
+
+      updateSnapshotLabels();
+      renderDocs();
+    }
+
+    function applyLanguage(lang, opts = {}) {
+      currentLang = ["pt","en","es"].includes(lang) ? lang : "pt";
+      try { localStorage.setItem(langStoreKey, currentLang); } catch {}
+      document.querySelectorAll(".lang-btn").forEach(btn => {
+        const active = btn.dataset.lang === currentLang;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      pnlRows.forEach(row => {
+        row.label = t().pnlRows[row.key] || row.label;
+      });
+      updateStaticCopy();
+      renderTable();
+      renderPnlTable();
+      renderPnlRationale();
+      renderPnlSources();
+      if (document.getElementById("tab-pnl")?.classList.contains("active")) renderPnlCharts();
+      if (window.lucide) lucide.createIcons();
+      if (!opts.silent) showToast(currentLang === "pt" ? "Idioma atualizado" : currentLang === "en" ? "Language updated" : "Idioma actualizado");
     }
 
     function resetFilters() {
@@ -1555,21 +2741,705 @@
       document.getElementById("exportBtn").addEventListener("click", exportExcel);
       document.getElementById("copyBtn").addEventListener("click", copyLink);
       document.getElementById("resetBtn").addEventListener("click", resetFilters);
+      document.getElementById("docsBtn").addEventListener("click", openDocsModal);
+      document.querySelectorAll(".lang-btn").forEach(btn => {
+        btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
+      });
+      const docClose = document.getElementById("docCloseBtn");
+      if (docClose) docClose.addEventListener("click", closeDocsModal);
+      const docOverlay = document.getElementById("docOverlay");
+      if (docOverlay) docOverlay.addEventListener("click", (e) => { if (e.target === docOverlay) closeDocsModal(); });
       document.getElementById("sortBtn").addEventListener("click", () => {
         sortDesc = !sortDesc;
         renderTable();
       });
+      bindColumnToggles();
+    }
+
+    function getPlayersTable() {
+      const body = document.getElementById("playersBody");
+      return body ? body.closest("table") : null;
+    }
+
+    function applyColumnToggle(col, visible) {
+      const table = getPlayersTable();
+      if (!table) return;
+      table.classList.toggle(`hide-col-${col}`, !visible);
+      const input = document.querySelector(`.col-toggle input[data-col="${col}"]`);
+      if (input) {
+        input.checked = visible;
+        input.closest(".col-toggle").classList.toggle("off", !visible);
+      }
+    }
+
+    function bindColumnToggles() {
+      applyColumnToggle("share-vol", false);
+      applyColumnToggle("share-users", false);
+      document.querySelectorAll(".col-toggle input[data-col]").forEach(input => {
+        input.addEventListener("change", () => {
+          applyColumnToggle(input.dataset.col, input.checked);
+        });
+      });
+      const resetBtn = document.getElementById("colResetBtn");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          ["share-vol","share-users","growth"].forEach(col => applyColumnToggle(col, true));
+        });
+      }
+    }
+
+    /* ========== Image snapshot for slides ========== */
+    const snapCols = [
+      {key:"player",      label:"Player",                    def:true,  width:160, render:p => `${p.name}<div style="color:#6B7280;font-size:.78em;font-weight:600;margin-top:2px">${p.modelGroup}</div>`},
+      {key:"bankModel",   label:"Banco / modelo",            def:true,  width:240, render:p => p.bankModel},
+      {key:"shareVolume", label:"Share volume",              def:true,  width:90,  render:p => p.shareLabel},
+      {key:"shareUsers",  label:"Share usuários",            def:false, width:90,  render:p => p.usersLabel},
+      {key:"segment",     label:"Segmento",                  def:true,  width:90,  render:p => p.segment},
+      {key:"growth",      label:"Crescimento / tração",      def:false, width:260, render:p => p.growth},
+      {key:"funding",     label:"Custo financeiro est.",     def:true,  width:140, render:p => `${p.funding}<div style="font-size:.72em;color:#6B7280;font-weight:700;margin-top:2px">Confiança: ${p.confidence}</div>`},
+      {key:"channel",     label:"Canal de captação",         def:true,  width:200, render:p => p.channel},
+      {key:"cac",         label:"CAC",                       def:false, width:180, render:p => p.cac},
+      {key:"device",      label:"Device",                    def:false, width:200, render:p => p.device},
+      {key:"strengths",   label:"Pontos fortes",             def:true,  width:200, render:p => p.strengths.map(s => `• ${s}`).join("<br>")},
+      {key:"weaknesses",  label:"Pontos fracos",             def:false, width:200, render:p => p.weaknesses.map(s => `• ${s}`).join("<br>")},
+      {key:"sources",     label:"Fontes",                    def:false, width:200, render:p => p.sourceIds.map(id => sources[id]?.label).filter(Boolean).join(", ")}
+    ];
+
+    function buildSnapPills(containerId, items, isPlayer) {
+      const c = document.getElementById(containerId);
+      if (!c) return;
+      c.innerHTML = items.map((it, i) => {
+        const id = `snap-${isPlayer ? "p" : "c"}-${i}`;
+        const checked = isPlayer ? true : it.def;
+        const label = isPlayer ? it.name : it.label;
+        const val = isPlayer ? i : it.key;
+        return `<label class="snap-pill${checked ? " active" : ""}"><input type="checkbox" data-snap-${isPlayer ? "player" : "col"}="${val}" ${checked ? "checked" : ""}>${label}</label>`;
+      }).join("");
+      c.querySelectorAll("input").forEach(input => {
+        input.addEventListener("change", () => {
+          input.closest(".snap-pill").classList.toggle("active", input.checked);
+        });
+      });
+    }
+
+    function getSelectedSnapPlayers() {
+      const idxs = [...document.querySelectorAll('#snapPlayers input:checked')].map(i => parseInt(i.dataset.snapPlayer, 10));
+      return idxs.map(i => players[i]).filter(Boolean);
+    }
+    function getSelectedSnapCols() {
+      const keys = [...document.querySelectorAll('#snapCols input:checked')].map(i => i.dataset.snapCol);
+      return snapCols.filter(c => keys.includes(c.key));
+    }
+
+    function buildSnapTable() {
+      const ps = getSelectedSnapPlayers();
+      const cs = getSelectedSnapCols();
+      if (!ps.length || !cs.length) return null;
+      const head = `<tr>${cs.map(c => `<th style="min-width:${c.width}px;max-width:${c.width + 60}px">${c.label}</th>`).join("")}</tr>`;
+      const body = ps.map(p => `<tr>${cs.map(c => `<td style="min-width:${c.width}px;max-width:${c.width + 60}px">${c.render(p)}</td>`).join("")}</tr>`).join("");
+      const locale = currentLang === "en" ? "en-US" : currentLang === "es" ? "es-ES" : "pt-BR";
+      const date = new Date().toLocaleDateString(locale);
+      const copy = t().snapshot;
+      return `
+        <div class="snap-title">${copy.titleRender}</div>
+        <div class="snap-sub">${ps.length} player${ps.length>1?"s":""} · ${cs.length} ${copy.colsWord} · ${copy.generated} ${date}</div>
+        <table><thead>${head}</thead><tbody>${body}</tbody></table>
+        <div class="snap-footer">${copy.footer}</div>
+      `;
+    }
+
+    async function generateSnapshot() {
+      const ps = getSelectedSnapPlayers();
+      const cs = getSelectedSnapCols();
+      if (!ps.length || !cs.length) {
+        showToast(t().snapshot.needSelection);
+        return null;
+      }
+      if (typeof html2canvas === "undefined") {
+        showToast(t().snapshot.unavailable);
+        return null;
+      }
+      const render = document.getElementById("snapRender");
+      render.innerHTML = buildSnapTable();
+      // Adapta a largura ao conteúdo (sem cap), antes do capture
+      render.style.width = "auto";
+      const canvas = await html2canvas(render, {
+        backgroundColor:"#FFFFFF",
+        scale:2,
+        useCORS:true,
+        logging:false
+      });
+      return canvas;
+    }
+
+    async function snapDownload() {
+      const info = document.getElementById("snapInfo");
+      info.textContent = t().snapshot.generating;
+      const canvas = await generateSnapshot();
+      if (!canvas) { info.textContent = t().snapshot.needSelection; return; }
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      const ts = new Date().toISOString().slice(0,10);
+      link.download = `grid_adquirencia_${ts}.png`;
+      link.click();
+      info.textContent = t().snapshot.downloaded;
+      showToast(t().snapshot.pngDownloaded);
+    }
+
+    async function snapCopy() {
+      const info = document.getElementById("snapInfo");
+      info.textContent = t().snapshot.generating;
+      const canvas = await generateSnapshot();
+      if (!canvas) { info.textContent = t().snapshot.needSelection; return; }
+      try {
+        const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        info.textContent = t().snapshot.copied;
+        showToast(t().snapshot.pngCopied);
+      } catch (err) {
+        info.textContent = t().snapshot.blocked;
+        showToast(t().snapshot.blocked);
+      }
+    }
+
+    function openSnapModal() {
+      const overlay = document.getElementById("snapOverlay");
+      if (!overlay) return;
+      // Players: usa os filtrados atualmente (mais útil para o usuário)
+      const visiblePlayerNames = new Set(getFilteredPlayers().map(p => p.name));
+      buildSnapPills("snapPlayers", players, true);
+      // Marca apenas os visíveis no estado atual da grade
+      document.querySelectorAll('#snapPlayers input').forEach(input => {
+        const p = players[parseInt(input.dataset.snapPlayer, 10)];
+        const on = visiblePlayerNames.has(p.name);
+        input.checked = on;
+        input.closest(".snap-pill").classList.toggle("active", on);
+      });
+      // Colunas: respeita os toggles globais (esconde quem está oculto)
+      const hiddenCols = new Set();
+      const table = getPlayersTable();
+      if (table) {
+        if (table.classList.contains("hide-col-share-vol")) hiddenCols.add("shareVolume");
+        if (table.classList.contains("hide-col-share-users")) hiddenCols.add("shareUsers");
+        if (table.classList.contains("hide-col-growth")) hiddenCols.add("growth");
+      }
+      buildSnapPills("snapCols", snapCols, false);
+      document.querySelectorAll('#snapCols input').forEach(input => {
+        const col = snapCols.find(c => c.key === input.dataset.snapCol);
+        const on = col.def && !hiddenCols.has(col.key);
+        input.checked = on;
+        input.closest(".snap-pill").classList.toggle("active", on);
+      });
+      overlay.classList.add("show");
+      document.getElementById("snapInfo").textContent = t().snapshot.ready;
+      if (window.lucide) lucide.createIcons();
+    }
+    function closeSnapModal() {
+      const overlay = document.getElementById("snapOverlay");
+      if (overlay) overlay.classList.remove("show");
+    }
+
+    function bindSnapshot() {
+      const btn = document.getElementById("snapBtn");
+      if (btn) btn.addEventListener("click", openSnapModal);
+      const close = document.getElementById("snapCloseBtn");
+      if (close) close.addEventListener("click", closeSnapModal);
+      const overlay = document.getElementById("snapOverlay");
+      if (overlay) overlay.addEventListener("click", (e) => { if (e.target === overlay) closeSnapModal(); });
+      const dl = document.getElementById("snapDownloadBtn");
+      if (dl) dl.addEventListener("click", snapDownload);
+      const cp = document.getElementById("snapCopyBtn");
+      if (cp) cp.addEventListener("click", snapCopy);
+      document.querySelectorAll("[data-bulk]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const kind = btn.dataset.bulk;
+          if (kind === "players-all" || kind === "players-none") {
+            const on = kind === "players-all";
+            document.querySelectorAll("#snapPlayers input").forEach(i => { i.checked = on; i.closest(".snap-pill").classList.toggle("active", on); });
+          } else if (kind === "cols-all") {
+            document.querySelectorAll("#snapCols input").forEach(i => { i.checked = true; i.closest(".snap-pill").classList.add("active"); });
+          } else if (kind === "cols-default") {
+            document.querySelectorAll("#snapCols input").forEach(i => {
+              const col = snapCols.find(c => c.key === i.dataset.snapCol);
+              i.checked = !!col.def;
+              i.closest(".snap-pill").classList.toggle("active", !!col.def);
+            });
+          }
+        });
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeSnapModal();
+          closeDocsModal();
+        }
+      });
+    }
+
+    /* ========== P&L Acquiring tab — FY2025 ==========
+       Confiabilidade: A = reportado pela companhia, M = estimativa de dado parcial, B = inferência de research / benchmark.
+       Todos os valores em R$ bilhões salvo indicação. Take rate em %. */
+    const pnlPlayers = [
+      {
+        key:"cielo",
+        name:"Cielo",
+        year:"2025",
+        currency:"R$ bi",
+        primarySource:"bcbIfData",
+        sourceIds:["bcbIfData","cieloOwnership"],
+        rationale:"Cielo encerrou o capital aberto em 2025; não há release trimestral público disponível. BCB IFData (COSIF), entidade 'CIELO S.A. - INSTITUIÇÃO DE PAGAMENTO', 12/2025: Resultado c/ Transações de Pagamento (col. l = net de interchange) = R$ 2,53 bi → usado como Lucro Bruto Adquirência (A); Despesas de Pessoal + Administrativas (o+p) = R$ 1,90 bi → OPEX direto (A); EBT = R$ 1,33 bi; Lucro Líquido = R$ 1,22 bi. Receita Líquida no dashboard = gross MDR estimado R$ 12,5 bi (M); Custos Transacionais derivados = -(12,5 - 2,53) = -R$ 9,97 bi (M) — representa principalmente repasse de interchange às emissoras. Nota: ebitda (EBT) ≠ grossProf – opex pois COSIF inclui outras receitas/despesas (Tarifas Bancárias, Tributárias, Participações etc.) não detalhadas separadamente no dashboard.",
+        values:{
+          tpv:        {v:880.0,  c:"M"},
+          netRev:     {v:12.5,   c:"M"},
+          costSrv:    {v:-9.97,  c:"M"},
+          grossProf:  {v:2.53,   c:"A"},
+          opex:       {v:-1.90,  c:"A"},
+          outrosRes:  {v:0.70,   c:"A"},
+          ebitda:     {v:1.33,   c:"A"},
+          netIncome:  {v:1.22,   c:"A"},
+          takeGross:  {v:1.42,   c:"M"},
+          takeEbitda: {v:0.15,   c:"M"}
+        }
+      },
+      {
+        key:"rede",
+        name:"Rede / Itaú",
+        year:"2025",
+        currency:"R$ bi",
+        primarySource:"ubs",
+        sourceIds:["ubs","itau2024","itauFunding","redeDevice","bcbIfData"],
+        rationale:"Itaú não isola P&L da Rede no consolidado. BCB IFData (COSIF), entidade 'REDECARD INSTITUIÇÃO DE PAGAMENTO S.A.', 12/2025: Resultado c/ Transações de Pagamento (col. l) = R$ 4,08 bi → Lucro Bruto Adquirência (A); Despesas Pessoal + Admin (o+p) = R$ 1,34 bi → OPEX direto (A); EBT = R$ 2,81 bi; Lucro Líquido = R$ 1,89 bi. Receita Líquida no dashboard = gross MDR estimado R$ 10,5 bi (M); Custos Transacionais derivados = -(10,5 - 4,08) = -R$ 6,42 bi (M) — inclui interchange e outros custos variáveis. TPV: 1T26 reportou R$ 283 bi (+26% a/a), implica ~R$ 1 tri anualizado. COSIF confirma Rede como a credenciadora mais rentável em termos absolutos: EBT R$ 2,8 bi vs Cielo R$ 1,3 bi.",
+        values:{
+          tpv:        {v:1000.0, c:"M"},
+          netRev:     {v:10.5,   c:"M"},
+          costSrv:    {v:-6.42,  c:"M"},
+          grossProf:  {v:4.08,   c:"A"},
+          opex:       {v:-1.34,  c:"A"},
+          outrosRes:  {v:0.07,   c:"A"},
+          ebitda:     {v:2.81,   c:"A"},
+          netIncome:  {v:1.89,   c:"A"},
+          takeGross:  {v:1.05,   c:"B"},
+          takeEbitda: {v:0.28,   c:"M"}
+        }
+      },
+      {
+        key:"pagbank",
+        name:"PagBank",
+        year:"2025",
+        currency:"R$ bi",
+        primarySource:"pags2025",
+        sourceIds:["pags2025","pags2024","pagsDevice","bcbIfData"],
+        rationale:"PagBank fechou 2025 com TPV R$ 531 bi (Corporate Presentation 4Q25), receita líquida total ~R$ 15,2 bi (acquiring + banking), 34 mi clientes e lucro líquido recorrente ~R$ 2,4 bi. Acquiring isolado estimado em ~60% da receita (R$ 9,1 bi). BCB IFData ('PAGSEGURO INTERNET INSTITUIÇÃO DE PAGAMENTO S.A.', 12/2025): Lucro Líquido IP = R$ 0,4 bi — delta vs R$ 2,4 bi consolidado reflete PagBank Financeira/bancário. Net income consolidado (earnings release) segue como referência principal.",
+        values:{
+          tpv:        {v:531.0,  c:"A"},
+          netRev:     {v:9.1,    c:"M"},
+          costSrv:    {v:-4.7,   c:"M"},
+          grossProf:  {v:4.4,    c:"M"},
+          opex:       {v:-2.8,   c:"M"},
+          outrosRes:  {v:null,   c:null},
+          ebitda:     {v:1.9,    c:"M"},
+          netIncome:  {v:2.4,    c:"A"},
+          takeGross:  {v:1.72,   c:"M"},
+          takeEbitda: {v:0.36,   c:"M"}
+        }
+      },
+      {
+        key:"stone",
+        name:"Stone (StoneCo)",
+        year:"2025",
+        currency:"R$ bi",
+        primarySource:"stone2025",
+        sourceIds:["stone2025","stone2024","stoneFunding","bcbIfData"],
+        rationale:"StoneCo 20-F FY2025: TPV R$ 560,9 bi (+8,7% a/a), receita total continuing ops R$ 14,15 bi, net income R$ 2,34 bi e adj. net income R$ 2,48 bi (special payout). Acquiring ~78% da receita após divestments. BCB IFData ('STONE INSTITUIÇÃO DE PAGAMENTO S.A.', 12/2025): Lucro Líquido IP = R$ 0,2 bi — o delta vs R$ 2,3 bi consolidado reflete Banco Stone (crédito) e demais subsidiárias. Net income 20-F segue como referência de companhia.",
+        values:{
+          tpv:        {v:560.9,  c:"A"},
+          netRev:     {v:11.0,   c:"M"},
+          costSrv:    {v:-4.4,   c:"M"},
+          grossProf:  {v:6.6,    c:"M"},
+          opex:       {v:-3.5,   c:"M"},
+          outrosRes:  {v:null,   c:null},
+          ebitda:     {v:3.1,    c:"M"},
+          netIncome:  {v:2.3,    c:"A"},
+          takeGross:  {v:1.96,   c:"M"},
+          takeEbitda: {v:0.55,   c:"M"}
+        }
+      },
+      {
+        key:"meli",
+        name:"Mercado Pago (Brasil)",
+        year:"2025",
+        currency:"R$ bi",
+        primarySource:"bcbIfData",
+        sourceIds:["meli2025","meliBrasil","bcbIfData"],
+        rationale:"MELI reportou TPV LatAm de US$ 188 bi em 2025 (+32%); Brasil estimado em ~R$ 510 bi. BCB IFData ('MERCADO PAGO INSTITUIÇÃO DE PAGAMENTO LTDA.', 12/2025): Resultado c/ Transações de Pagamento (col. l) = R$ 4,74 bi → Lucro Bruto Adquirência (A); Despesas Pessoal + Admin (o+p) = R$ 2,60 bi → OPEX direto (A); EBT = –R$ 0,20 bi; Lucro Líquido = R$ 0,01 bi. Receita Líquida = gross MDR estimado R$ 8,7 bi (B); Custos Transacionais derivados = -(8,7 - 4,74) = -R$ 3,96 bi (M). O crédito fica no Mercado Crédito (SCFI separada). COSIF revela a causa do break-even: OPEX de R$ 2,60 bi consome 55% do lucro bruto de R$ 4,74 bi, refletindo investimento pesado em pessoal de tecnologia e expansão de rede. Analistas projetavam lucro IP > R$ 1 bi, mas o dado COSIF desfaz essa estimativa.",
+        values:{
+          tpv:        {v:510.0,  c:"B"},
+          netRev:     {v:8.7,    c:"B"},
+          costSrv:    {v:-3.96,  c:"M"},
+          grossProf:  {v:4.74,   c:"A"},
+          opex:       {v:-2.60,  c:"A"},
+          outrosRes:  {v:-2.34,  c:"A"},
+          ebitda:     {v:-0.20,  c:"A"},
+          netIncome:  {v:0.01,   c:"A"},
+          takeGross:  {v:1.70,   c:"B"},
+          takeEbitda: {v:-0.04,  c:"M"}
+        }
+      },
+      {
+        key:"getnet",
+        name:"Getnet (Brasil)",
+        year:"2025",
+        currency:"R$ bi",
+        primarySource:"bcbIfData",
+        sourceIds:["getnet2025","getnetInst","ubs","bcbIfData"],
+        rationale:"Santander Payments 2025 não isola Getnet Brasil. BCB IFData ('GETNET ADQUIRÊNCIA E SERVIÇOS PARA MEIOS DE PAGAMENTO S.A. INSTITUIÇÃO DE PAGAMENTO', 12/2025): Resultado c/ Transações de Pagamento (col. l) = R$ 0,62 bi → Lucro Bruto Adquirência (A); Despesas Pessoal + Admin (o+p) = R$ 0,82 bi → OPEX direto (A); EBT = R$ 0,53 bi; Lucro Líquido = R$ 0,39 bi. Receita Líquida = gross MDR estimado R$ 2,6 bi (B); Custos Transacionais derivados = -(2,6 - 0,62) = -R$ 1,98 bi (M). TPV estimado R$ 240 bi (5% share UBS BB jan/26). Detalhe: opex (R$ 0,82 bi) > grossProf (R$ 0,62 bi) no nível IP, mas outros resultados (+R$ 0,73 bi) permitem chegar ao EBT positivo de R$ 0,53 bi — reflete subsídios de estrutura Santander.",
+        values:{
+          tpv:        {v:240.0,  c:"B"},
+          netRev:     {v:2.6,    c:"B"},
+          costSrv:    {v:-1.98,  c:"M"},
+          grossProf:  {v:0.62,   c:"A"},
+          opex:       {v:-0.82,  c:"A"},
+          outrosRes:  {v:0.73,   c:"A"},
+          ebitda:     {v:0.53,   c:"A"},
+          netIncome:  {v:0.39,   c:"A"},
+          takeGross:  {v:1.08,   c:"B"},
+          takeEbitda: {v:0.22,   c:"M"}
+        }
+      },
+      {
+        key:"infinitepay",
+        name:"InfinitePay / CloudWalk",
+        year:"2025",
+        currency:"R$ bi",
+        primarySource:"cloud2025",
+        sourceIds:["cloud2025","cloud2024","cloudFidc","bcbIfData"],
+        rationale:"CloudWalk fechou 2025 com receita anual R$ 5,44 bi (+104% em base neutra de câmbio), receita anualizada dez/25 de R$ 7,16 bi e lucro líquido R$ 602 mi (+90%). BCB IFData ('CLOUDWALK INSTITUIÇÃO DE PAGAMENTO E SERVICOS LTDA', 12/2025): Resultado c/ Transações de Pagamento (col. l) = R$ 1,30 bi → Lucro Bruto Adquirência (A); Despesas Pessoal + Admin (o+p) = R$ 0,54 bi → OPEX direto (A); EBT = R$ 0,63 bi; Lucro Líquido IP = R$ 0,4 bi. Custos Transacionais = -(5,40 - 1,30) = -R$ 4,10 bi (A — derivado de dois dados A: gross MDR reportado e COSIF l); interchange passthrough = 76% do gross MDR, padrão de mercado. Outros Resultados = 0,63 - (1,30 - 0,54) = -R$ 0,13 bi (A). Toda a DRE adquirência de CloudWalk é grau A exceto TPV e take rates. CloudWalk é a mais eficiente em OPEX/receita do setor (10%), à frente de todos os incumbentes. TPV não publicado; back-calculado em ~R$ 540 bi com take rate 1,0%.",
+        values:{
+          tpv:        {v:540.0,  c:"B"},
+          netRev:     {v:5.4,    c:"A"},
+          costSrv:    {v:-4.10,  c:"A"},
+          grossProf:  {v:1.30,   c:"A"},
+          opex:       {v:-0.54,  c:"A"},
+          outrosRes:  {v:-0.13,  c:"A"},
+          ebitda:     {v:0.63,   c:"A"},
+          netIncome:  {v:0.6,    c:"A"},
+          takeGross:  {v:1.01,   c:"M"},
+          takeEbitda: {v:0.12,   c:"M"}
+        }
+      },
+      {
+        key:"nubank",
+        name:"Nubank (acq. BR)",
+        year:"2025",
+        currency:"R$ bi",
+        primarySource:"nubank2025",
+        sourceIds:["nubank2025","bcbIfData"],
+        rationale:"Nu Pagamentos S.A. é credenciadora e emissora autorizada pelo BCB — opera dos dois lados do pagamento. BCB IFData (COSIF) 12/2025: Nu Pagamentos IP — Resultado c/ Transações de Pagamento = R$ 4,9 bi (inclui interchange recebido como emissor dos cartões Nubank), EBT = R$ 7,0 bi, Lucro Líquido = R$ 6,8 bi; Nu Financeira S.A. (crédito) — Lucro Líquido = R$ 5,8 bi. Os valores COSIF não são comparáveis ao P&L de adquirência dos demais players — Nu Pagamentos mistura emissão e credenciamento e a escala de emissor é muito maior que a de adquirente. TPV como adquirente estimado em ~R$ 80 bi (B); take rate gross ~1,9% (B).",
+        values:{
+          tpv:        {v:80.0,   c:"B"},
+          netRev:     {v:1.5,    c:"B"},
+          costSrv:    {v:-0.8,   c:"B"},
+          grossProf:  {v:0.7,    c:"B"},
+          opex:       {v:-0.3,   c:"B"},
+          outrosRes:  {v:null,   c:null},
+          ebitda:     {v:0.4,    c:"B"},
+          netIncome:  {v:null,   c:null},
+          takeGross:  {v:1.88,   c:"B"},
+          takeEbitda: {v:0.50,   c:"B"}
+        }
+      }
+    ];
+
+    const pnlRows = [
+      {key:"tpv",        label:"TPV processado (R$ bi)",          type:"value", unit:"R$ bi"},
+      {key:"netRev",     label:"Receita líquida adquirência",     type:"value", unit:"R$ bi"},
+      {key:"costSrv",    label:"(–) Custos transacionais",        type:"value", unit:"R$ bi", neg:true},
+      {key:"grossProf",  label:"= Lucro bruto adquirência",       type:"value", unit:"R$ bi", subtotal:true},
+      {key:"opex",       label:"(–) OPEX direto (S&M, G&A)",      type:"value", unit:"R$ bi", neg:true},
+      {key:"outrosRes",  label:"(±) Outros result. COSIF",        type:"value", unit:"R$ bi"},
+      {key:"ebitda",     label:"= EBT / EBITDA adquirência",      type:"value", unit:"R$ bi", subtotal:true},
+      {key:"netIncome",  label:"Lucro líquido (companhia)",       type:"value", unit:"R$ bi"},
+      {key:"takeGross",  label:"Take rate gross",                  type:"pct",   unit:"%",     takerate:true},
+      {key:"takeEbitda", label:"Take rate EBITDA",                 type:"pct",   unit:"%",     takerate:true}
+    ];
+
+    function fmtPnlValue(cell, row) {
+      if (!cell || cell.v == null) return `<span class="pnl-na">n.d.</span>`;
+      const v = cell.v;
+      let txt;
+      if (row.type === "pct") {
+        txt = `${v.toFixed(2)}%`;
+      } else {
+        const abs = Math.abs(v);
+        txt = (v < 0 ? "(" : "") + abs.toFixed(abs >= 100 ? 1 : 2) + (v < 0 ? ")" : "");
+      }
+      const confClass = cell.c ? `conf-${cell.c}` : "";
+      const confLabel = cell.c || "";
+      return `<span class="pnl-cell"><strong>${txt}</strong>${confLabel ? `<span class="conf-pill ${confClass}">${confLabel}</span>` : ""}</span>`;
+    }
+
+    const pnlHeaderNames = {
+      cielo:"Cielo", rede:"Rede / Itaú", pagbank:"PagBank", stone:"Stone",
+      meli:"Mercado Pago", getnet:"Getnet", infinitepay:"InfinitePay", nubank:"Nubank"
+    };
+
+    function renderPnlTable() {
+      const table = document.getElementById("pnlTable");
+      if (!table) return;
+      const cols = `<colgroup><col class="pnl-col-label">${pnlPlayers.map(() => `<col class="pnl-col-player">`).join("")}</colgroup>`;
+      pnlRows.forEach(row => { row.label = t().pnlRows[row.key] || row.label; });
+      const head = `<thead><tr><th>${t().pnlTableHead}</th>${pnlPlayers.map(p => `<th>${pnlHeaderNames[p.key] || p.name}</th>`).join("")}</tr></thead>`;
+      const body = `<tbody>${pnlRows.map(row => {
+        const trClass = row.subtotal ? "subtotal" : row.takerate ? "takerate" : "";
+        return `<tr class="${trClass}"><td>${row.label}</td>${pnlPlayers.map(p => `<td>${fmtPnlValue(p.values[row.key], row)}</td>`).join("")}</tr>`;
+      }).join("")}</tbody>`;
+      table.innerHTML = cols + head + body;
+    }
+
+    function renderPnlRationale() {
+      const table = document.getElementById("pnlRationaleTable");
+      if (!table) return;
+      const cols = `<colgroup><col class="col-player"><col class="col-rationale"><col class="col-source"></colgroup>`;
+      const heads = t().rationaleHead;
+      const head = `<thead><tr><th>${heads[0]}</th><th>${heads[1]}</th><th>${heads[2]}</th></tr></thead>`;
+      const body = `<tbody>${pnlPlayers.map(p => {
+        const src = sources[p.primarySource];
+        const srcLink = src ? `<a href="${src.url}" target="_blank" rel="noopener">${src.label}</a>` : "n.d.";
+        return `<tr><td>${p.name}</td><td>${p.rationale}</td><td>${srcLink}</td></tr>`;
+      }).join("")}</tbody>`;
+      table.innerHTML = cols + head + body;
+    }
+
+    function renderPnlSources() {
+      const list = document.getElementById("pnlSourceList");
+      if (!list) return;
+      const ids = new Set();
+      pnlPlayers.forEach(p => p.sourceIds.forEach(id => ids.add(id)));
+      list.innerHTML = [...ids].map(id => {
+        const s = sources[id];
+        if (!s) return "";
+        return `<li><strong>${s.label}</strong><a href="${s.url}" target="_blank" rel="noopener">${s.title}</a></li>`;
+      }).join("");
+    }
+
+    let takeRateChart;
+    let tpvChart;
+    let fundingDepositsChart;
+
+    // Captações / depósitos por player — BCB IFData (COSIF), AnoMes=202512. Grau A (reportado ao BCB).
+    // Rede / Itaú: Captações da entidade REDECARD INSTITUIÇÃO DE PAGAMENTO S.A. (CodInst 01425787) = R$ 7,07 bi (grau A).
+    const fundingDeposits = [
+      { name:"Nubank",       v:215.2, c:"A" },
+      { name:"Mercado Pago", v:50.3,  c:"A" },
+      { name:"PagBank",      v:46.4,  c:"A" },
+      { name:"Stone",        v:26.1,  c:"A" },
+      { name:"Cielo",        v:10.3,  c:"A" },
+      { name:"Rede / Itaú",  v:7.1,   c:"A" },
+      { name:"InfinitePay",  v:1.6,   c:"A" },
+      { name:"Getnet",       v:0.7,   c:"A" }
+    ];
+
+    function renderPnlCharts() {
+      if (!window.Chart) return;
+      const tooltipDefaults = {
+        backgroundColor:"#111827",
+        titleColor:"#F9FAFB",
+        bodyColor:"#D1D5DB",
+        padding:14,
+        cornerRadius:14,
+        titleFont:{ size:13, weight:"800" },
+        bodyFont:{ size:12 },
+        displayColors:true,
+        boxPadding:4
+      };
+      const sorted = [...pnlPlayers].sort((a,b) => (b.values.takeGross.v ?? 0) - (a.values.takeGross.v ?? 0));
+      const confColors = { A:"#00A650", M:"#FF9F1C", B:"#94A3B8" };
+
+      if (takeRateChart) takeRateChart.destroy();
+      takeRateChart = new Chart(document.getElementById("takeRateChart"), {
+        type:"bar",
+        data:{
+          labels:sorted.map(p => p.name),
+          datasets:[{
+            label:t().charts.take,
+            data:sorted.map(p => p.values.takeGross.v),
+            backgroundColor:sorted.map(p => confColors[p.values.takeGross.c] || "#94A3B8"),
+            borderRadius:12,
+            borderSkipped:false
+          }]
+        },
+        options:{
+          indexAxis:"y",
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{
+            legend:{ display:false },
+            tooltip:{
+              ...tooltipDefaults,
+              callbacks:{
+                label:(ctx) => {
+                  const p = sorted[ctx.dataIndex];
+                  const conf = p.values.takeGross.c === "A" ? t().charts.reported : p.values.takeGross.c === "M" ? t().charts.estimated : t().charts.inferred;
+                  return `${ctx.parsed.x.toFixed(2)}% · ${conf}`;
+                }
+              }
+            },
+            datalabels:{
+              anchor:"end",
+              align:"right",
+              offset:5,
+              color:"#111827",
+              font:{ size:11, weight:"800" },
+              formatter:(v) => `${v.toFixed(2)}%`
+            }
+          },
+          scales:{
+            x:{ display:false, min:0, max:2.4 },
+            y:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ weight:"700" } } }
+          }
+        }
+      });
+
+      const sortedTpv = [...pnlPlayers].sort((a,b) => (b.values.tpv.v ?? 0) - (a.values.tpv.v ?? 0));
+      if (tpvChart) tpvChart.destroy();
+      tpvChart = new Chart(document.getElementById("tpvChart"), {
+        type:"bar",
+        data:{
+          labels:sortedTpv.map(p => p.name),
+          datasets:[{
+            label:t().charts.tpv,
+            data:sortedTpv.map(p => p.values.tpv.v),
+            backgroundColor:sortedTpv.map(p => p.values.tpv.c === "A" ? "#3483FA" : p.values.tpv.c === "M" ? "#FF9F1C" : "#94A3B8"),
+            borderRadius:12,
+            borderSkipped:false
+          }]
+        },
+        options:{
+          indexAxis:"y",
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{
+            legend:{ display:false },
+            tooltip:{
+              ...tooltipDefaults,
+              callbacks:{
+                label:(ctx) => {
+                  const p = sortedTpv[ctx.dataIndex];
+                  const conf = p.values.tpv.c === "A" ? t().charts.reported : p.values.tpv.c === "M" ? t().charts.estimated : t().charts.inferred;
+                  return `R$ ${ctx.parsed.x.toFixed(1)} bi · ${conf}`;
+                }
+              }
+            },
+            datalabels:{
+              anchor:"end",
+              align:"right",
+              offset:5,
+              color:"#111827",
+              font:{ size:11, weight:"800" },
+              formatter:(v) => `R$ ${v.toFixed(0)} bi`
+            }
+          },
+          layout:{ padding:{ right:56 } },
+          scales:{
+            x:{ display:false, min:0, max:1260 },
+            y:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ weight:"700" } } }
+          }
+        }
+      });
+
+      const sortedFunding = [...fundingDeposits].sort((a,b) => (b.v ?? -1) - (a.v ?? -1));
+      const fundingMax = Math.max(...sortedFunding.map(p => p.v ?? 0)) * 1.28;
+      if (fundingDepositsChart) fundingDepositsChart.destroy();
+      fundingDepositsChart = new Chart(document.getElementById("fundingDepositsChart"), {
+        type:"bar",
+        data:{
+          labels:sortedFunding.map(p => p.name),
+          datasets:[{
+            label:t().charts.deposits,
+            data:sortedFunding.map(p => p.v ?? 0),
+            backgroundColor:sortedFunding.map(p => p.v == null ? "#E5E7EB" : (p.name === "Mercado Pago" ? "#3483FA" : "#00A650")),
+            borderRadius:12,
+            borderSkipped:false
+          }]
+        },
+        options:{
+          indexAxis:"y",
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{
+            legend:{ display:false },
+            tooltip:{
+              ...tooltipDefaults,
+              callbacks:{
+                label:(ctx) => {
+                  const p = sortedFunding[ctx.dataIndex];
+                  if (p.v == null) return t().charts.notIsolated;
+                  return `R$ ${p.v.toFixed(1).replace(".",",")} bi · ${t().charts.bcb}`;
+                }
+              }
+            },
+            datalabels:{
+              anchor:"end",
+              align:"right",
+              offset:5,
+              color:"#111827",
+              font:{ size:11, weight:"800" },
+              formatter:(v, ctx) => {
+                const p = sortedFunding[ctx.dataIndex];
+                return p.v == null ? "n.d." : `R$ ${p.v.toFixed(1).replace(".",",")} bi`;
+              }
+            }
+          },
+          layout:{ padding:{ right:56 } },
+          scales:{
+            x:{ display:false, min:0, max:fundingMax },
+            y:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ weight:"700" } } }
+          }
+        }
+      });
+    }
+
+    function bindTabs() {
+      const buttons = document.querySelectorAll(".tab-btn");
+      const panels = document.querySelectorAll(".tab-panel");
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-tab");
+          buttons.forEach(b => {
+            const active = b === btn;
+            b.classList.toggle("active", active);
+            b.setAttribute("aria-selected", active ? "true" : "false");
+          });
+          panels.forEach(p => p.classList.toggle("active", p.id === id));
+          if (id === "tab-pnl") {
+            renderPnlTable();
+            renderPnlRationale();
+            renderPnlSources();
+            renderPnlCharts();
+          } else {
+            renderTable();
+          }
+          if (window.lucide) lucide.createIcons();
+        });
+      });
     }
 
     function init() {
-      if (window.ChartDataLabels) {
+      if (window.Chart && window.ChartDataLabels) {
         Chart.register(ChartDataLabels);
       }
-      Chart.defaults.font.family = "'Inter', sans-serif";
+      if (window.Chart) {
+        Chart.defaults.font.family = "'Inter', sans-serif";
+      }
       populateFilters();
       renderSources();
       bindEvents();
       renderTable();
+      renderPnlTable();
+      renderPnlRationale();
+      renderPnlSources();
+      bindTabs();
+      bindSnapshot();
+      applyLanguage(currentLang, { silent:true });
       if (window.lucide) lucide.createIcons();
     }
 

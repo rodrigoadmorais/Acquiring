@@ -127,7 +127,13 @@
       "Bash(ls -la /c/Users/rdmorais/Desktop/Teste/dashboards/*.json)",
       "mcp__scheduled-tasks__list_scheduled_tasks",
       "Bash(python3 -c ' *)",
-      "mcp__scheduled-tasks__create_scheduled_task"
+      "mcp__scheduled-tasks__create_scheduled_task",
+      "Bash(python -c ' *)",
+      "Bash(python generate_forecast_5_7.py)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(python -c \"from datetime import date; hoje = date.today\\(\\); feriados = [\\(1,1\\),\\(20,4\\),\\(21,4\\),\\(1,5\\),\\(4,6\\),\\(5,6\\),\\(7,9\\),\\(12,10\\),\\(2,11\\),\\(16,11\\),\\(20,11\\),\\(25,12\\)]; print\\('FERIADO' if \\(hoje.day, hoje.month\\) in feriados else 'DIA_UTIL'\\); print\\('DATA:', hoje\\)\")",
+      "Bash(curl -s -X POST https://grid.melioffice.com/api/v1/engine/run -F 'config={\"skill_version\":\"3.6.3\",\"doc_id\":\"01KWFMPWBY4BD6P09JFG4F5W59\",\"file_new_version\":true}' -F file=@C:/Users/rdmorais/Desktop/Teste/carta_oposicao_sindiesp.html)",
+      "mcp__plugin_bigquery-meli_bigquery-insight__get_table_metadata"
     ]
   }
 }

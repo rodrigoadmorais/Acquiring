@@ -8,17 +8,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --ml-yellow:#FFE600; --ml-blue:#3483FA; --ml-blue-dark:#1259C3;
-      --ml-navy:#2D3277; --green:#00A650; --red:#E53935; --orange:#FF9F1C;
-      --bg:#F5F7FA; --bg-soft:#EEF2F7; --card:#FFFFFF;
-      --text:#1F2937; --muted:#6B7280; --border:#E5E7EB;
+    :root{
+      --ml-yellow:#FFE600;--ml-blue:#3483FA;--ml-blue-dark:#1259C3;
+      --ml-navy:#2D3277;--green:#00A650;--red:#E53935;--orange:#FF9F1C;
+      --bg:#F5F7FA;--bg-soft:#EEF2F7;--card:#FFFFFF;
+      --text:#1F2937;--muted:#6B7280;--border:#E5E7EB;
       --shadow:0 18px 45px rgba(15,23,42,0.07);
-      --radius-xl:28px; --radius-lg:22px; --radius-md:16px;
+      --radius-xl:28px;--radius-lg:22px;--radius-md:16px;
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
     body{
-      min-height:100vh; font-family:"Inter",system-ui,sans-serif; color:var(--text);
+      min-height:100vh;font-family:"Inter",system-ui,sans-serif;color:var(--text);
       background:
         radial-gradient(circle at top left,rgba(255,230,0,0.22),transparent 34%),
         radial-gradient(circle at top right,rgba(52,131,250,0.14),transparent 30%),
@@ -26,9 +26,8 @@
     }
     h1,h2,h3{letter-spacing:-0.06em;font-weight:800}
 
-    /* HEADER */
     .hdr{background:var(--ml-yellow);padding:14px 32px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(255,200,0,0.28)}
-    .hdr-inner{max-width:1520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .hdr-inner{max-width:1600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
     .hdr-brand{display:flex;align-items:center;gap:12px}
     .hdr-badge{background:var(--ml-navy);border-radius:12px;padding:8px 10px}
     .hdr-title{color:var(--ml-navy);font-size:1.2rem;font-weight:800;letter-spacing:-0.05em;line-height:1.1}
@@ -38,78 +37,69 @@
       background:transparent;color:var(--ml-navy);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s}
     .mode-btn.active{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 
-    /* LAYOUT */
-    .wrapper{width:min(1520px,calc(100% - 40px));margin:0 auto;padding:24px 0 48px}
+    .wrapper{width:min(1600px,calc(100% - 32px));margin:0 auto;padding:20px 0 48px}
 
-    /* CARD */
     .card{background:rgba(255,255,255,.88);border:1px solid rgba(229,231,235,.9);
       border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:24px 28px;
       transition:transform .2s,box-shadow .2s}
     .card:hover{transform:translateY(-2px);box-shadow:0 28px 60px rgba(15,23,42,.11)}
 
-    /* FILTERS */
-    .filters-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;border-radius:var(--radius-md);padding:14px 20px}
+    .filters-bar{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:16px;padding:14px 20px}
     .q-btns{display:flex;gap:6px;align-items:center}
     .q-btn{padding:5px 14px;border-radius:999px;border:none;background:var(--bg-soft);color:var(--muted);
       font-family:inherit;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
     .q-btn.active{background:var(--ml-navy);color:#fff}
-    .ver-selectors{display:flex;align-items:center;gap:14px}
-    .ver-selectors.hidden{display:none}
     .ver-group{display:flex;align-items:center;gap:8px}
     .ver-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
     .ver-select{appearance:none;padding:6px 24px 6px 10px;background:var(--bg-soft);border:1px solid var(--border);
       border-radius:10px;font-family:inherit;font-size:.78rem;font-weight:600;color:var(--ml-navy);cursor:pointer;outline:none}
-    .ver-sep{color:var(--border);font-size:1.2rem}
+    .evol-selectors{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .comp-selectors{display:none}
 
-    /* KPI */
-    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:20px}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
     .kpi-card{padding:18px 22px}
     .kpi-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
-    .kpi-val{font-size:1.7rem;font-weight:800;letter-spacing:-0.07em;color:var(--ml-navy);display:block}
+    .kpi-val{font-size:1.65rem;font-weight:800;letter-spacing:-0.07em;color:var(--ml-navy);display:block}
     .kpi-delta{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;font-weight:700;
       padding:3px 9px;border-radius:999px;margin-top:6px}
     .kpi-delta.pos{background:rgba(0,166,80,.1);color:var(--green)}
     .kpi-delta.neg{background:rgba(229,57,53,.1);color:var(--red)}
     .kpi-sub{font-size:.7rem;color:var(--muted);margin-top:3px}
 
-    /* TABLE */
-    .tbl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .tbl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
     .tbl-title{font-size:.95rem;font-weight:800;letter-spacing:-0.04em}
-    .view-badge{display:flex;align-items:center;gap:5px;background:var(--bg-soft);border:1px solid var(--border);
-      border-radius:8px;padding:4px 10px;font-size:.7rem;color:var(--muted);font-weight:600}
     .tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.03)}
     .tbl-wrap::-webkit-scrollbar{height:5px;width:5px}
     .tbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
     table{width:100%;border-collapse:collapse;font-size:.75rem}
     thead th{
-      background:#F8FAFC;text-align:right;font-size:.68rem;font-weight:700;
+      background:#F8FAFC;text-align:right;font-size:.67rem;font-weight:700;
       text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
       padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:5
     }
-    thead th:first-child{text-align:left;min-width:220px;padding-left:14px}
+    thead th:first-child{text-align:left;min-width:230px;padding-left:14px}
     tbody td{padding:7px 10px;border-bottom:1px solid rgba(229,231,235,.45);white-space:nowrap;text-align:right}
     tbody td:first-child{text-align:left;padding-left:14px}
     tbody tr:hover{background:rgba(255,230,0,.06)}
-    tbody tr.hl{background:rgba(255,230,0,.11);font-weight:700}
-    tbody tr.hl td{color:var(--ml-navy)}
-    tbody tr.hl:hover{background:rgba(255,230,0,.18)}
-    .col-fy{background:rgba(52,131,250,.05)!important;border-left:1px solid rgba(52,131,250,.18)!important;font-weight:700!important}
-    .bm-row td{border-top:2px solid var(--ml-navy)!important;background:rgba(45,50,119,.06)!important;font-weight:800!important;color:var(--ml-navy)!important}
-    .bm-row:hover td{background:rgba(45,50,119,.1)!important}
+    tbody tr.grp-hdr td{
+      background:var(--ml-navy)!important;color:#fff!important;
+      font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+      padding:6px 14px!important;border-bottom:none!important;
+    }
+    tbody tr.grp-hdr:hover td{background:rgba(45,50,119,.9)!important}
+    tbody tr.hl td{background:rgba(255,230,0,.13);font-weight:700;color:var(--ml-navy)}
+    tbody tr.hl:hover td{background:rgba(255,230,0,.2)}
+    tbody tr.sub td:first-child{padding-left:26px;color:var(--muted)}
+    tbody tr.bm-row td{border-top:2px solid var(--ml-navy)!important;background:rgba(45,50,119,.08)!important;font-weight:800!important;color:var(--ml-navy)!important;font-size:.8rem}
+    tbody tr.bm-row:hover td{background:rgba(45,50,119,.13)!important}
+    .col-fy{background:rgba(52,131,250,.05)!important;border-left:2px solid rgba(52,131,250,.25)!important;font-weight:700!important}
 
-    /* value colors */
-    .vn{color:var(--red)} .vp{color:var(--green)} .vz{color:var(--muted)} .v-{color:var(--border);font-style:italic;font-size:.68rem}
-    .pp{color:var(--green);font-weight:700} .pn{color:var(--red);font-weight:700}
+    .vn{color:var(--red)}.vp{color:var(--green)}.vz{color:var(--muted)}.v-{color:#C4C9D4;font-style:italic;font-size:.67rem}
+    .dp{color:var(--green);font-weight:700}.dn{color:var(--red);font-weight:700}
 
-    /* expand btn */
-    .xbtn{background:none;border:none;cursor:pointer;padding:1px 4px;border-radius:4px;
-      color:var(--ml-blue);display:inline-flex;align-items:center;vertical-align:middle;margin-right:3px;transition:background .12s}
-    .xbtn:hover{background:rgba(52,131,250,.1)}
-
-    /* responsive */
     @media(max-width:1180px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:768px){.wrapper{width:calc(100% - 24px)}.kpi-grid{grid-template-columns:1fr}.hdr{padding:12px 16px}}
+    @media(max-width:768px){.wrapper{width:calc(100% - 20px)}.kpi-grid{grid-template-columns:1fr}.hdr{padding:12px 16px}}
   </style>
 </head>
 <body>
@@ -129,308 +119,382 @@
       </div>
     </div>
     <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-evol" onclick="setMode('evolution')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>Evolução
+      </button>
       <button class="mode-btn" id="btn-comp" onclick="setMode('comparison')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12H3M3 6h18M3 18h18"/></svg>Comparativo
-      </button>
-      <button class="mode-btn active" id="btn-evol" onclick="setMode('evolution')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Evolução
       </button>
     </div>
   </div>
 </header>
 
 <div class="wrapper">
-
-  <!-- FILTERS -->
   <div class="card filters-bar">
     <div class="q-btns" id="qf"></div>
-    <div class="ver-selectors hidden" id="vs">
+    <div class="evol-selectors" id="evol-sel">
       <div class="ver-group">
-        <span class="ver-label">Principal</span>
+        <span class="ver-label">Cenário</span>
         <select class="ver-select" id="sel-p" onchange="setPrimary(this.value)"></select>
       </div>
-      <span class="ver-sep">|</span>
       <div class="ver-group">
-        <span class="ver-label">Comparar vs</span>
+        <span class="ver-label">vs</span>
         <select class="ver-select" id="sel-c" onchange="setCompare(this.value)"></select>
       </div>
     </div>
   </div>
 
-  <!-- KPI -->
-  <div class="kpi-grid hidden" id="kpi"></div>
+  <div class="kpi-grid" id="kpi"></div>
 
-  <!-- TABLE -->
   <div class="card" style="padding:20px 24px">
     <div class="tbl-hdr">
-      <h3 class="tbl-title" id="tbl-title">Detalhamento Financeiro · P&amp;L MPOS</h3>
-      <div class="view-badge">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <span id="vlbl">FY</span>
-      </div>
+      <h3 class="tbl-title" id="tbl-title">Detalhamento · P&amp;L MPOS</h3>
+      <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="tbl-sub"></span>
     </div>
     <div class="tbl-wrap">
       <table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table>
     </div>
   </div>
 
-  <div style="text-align:center;margin-top:20px;font-size:.68rem;color:var(--muted)">
-    Fonte: Google Sheets MNG · Valores em R$ Milhões · Vol em unidades · Atualizado <span id="upd"></span>
-    <br><span style="opacity:.6">Actual 2025 = Realizado | Other Costs inclui Telemetria + Scrap | Linhas de volume pendentes (aba Volume / Vol Despachos)</span>
+  <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
+    Fonte: Google Sheets MPOS MNG · Valores em R$ Milhões · Atualizado Jul/2026
+    <br><span style="opacity:.6">Forecast 2026 = Actual Sin Distribuir (Jan–Jul) + Forecast (Ago–Dez) · Volume (aba Volume) pendente</span>
   </div>
 </div>
 
 <script>
-const VERS = ['Actual 2025','Plano 2025','Plano 2026'];
-const MOS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const QS = {FY:[0,1,2,3,4,5,6,7,8,9,10,11],Q1:[0,1,2],Q2:[3,4,5],Q3:[6,7,8],Q4:[9,10,11]};
+const N=null;
+const VERS=['Realizado 2024','Realizado 2025','Forecast 2026','Plano 2025','Plano 2026'];
+const VER_MOS={
+  'Realizado 2024':['Jan/24','Fev/24','Mar/24','Abr/24','Mai/24','Jun/24','Jul/24','Ago/24','Set/24','Out/24','Nov/24','Dez/24'],
+  'Realizado 2025':['Jan/25','Fev/25','Mar/25','Abr/25','Mai/25','Jun/25','Jul/25','Ago/25','Set/25','Out/25','Nov/25','Dez/25'],
+  'Forecast 2026': ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'],
+  'Plano 2025':    ['Jan/25','Fev/25','Mar/25','Abr/25','Mai/25','Jun/25','Jul/25','Ago/25','Set/25','Out/25','Nov/25','Dez/25'],
+  'Plano 2026':    ['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'],
+};
+const QS={FY:[0,1,2,3,4,5,6,7,8,9,10,11],Q1:[0,1,2],Q2:[3,4,5],Q3:[6,7,8],Q4:[9,10,11]};
 
-const ROWS = [
-  {id:'vol',          lbl:'Vol (Devices)',            t:'vol',   hl:true },
-  {id:'net_sales',    lbl:'Sales Net',                t:'cur',   hl:true, x:'salesX'},
-  {id:'sales',        lbl:'&nbsp;&nbsp;Sales Bruto',  t:'cur',   hl:false,sub:true},
-  {id:'taxes',        lbl:'&nbsp;&nbsp;Taxes',        t:'cur',   hl:false,sub:true},
-  {id:'cmv',          lbl:'CMV',                      t:'cur',   hl:true },
-  {id:'provision',    lbl:'Provisão Estoque (VNR)',   t:'cur',   hl:true },
-  {id:'hedge',        lbl:'Hedge FX',                 t:'cur',   hl:true },
-  {id:'supplies',     lbl:'Insumos',                  t:'cur',   hl:false,x:'supplX'},
-  {id:'supplies_qty', lbl:'&nbsp;&nbsp;Qtd Bobinas',  t:'vol',   hl:false,sub:true},
-  {id:'shipping',     lbl:'Shipping',                 t:'cur',   hl:false,x:'shipX'},
-  {id:'ship_tot',     lbl:'&nbsp;&nbsp;Total Despachos',t:'vol', hl:false,sub:true,x:'shipDX'},
-  {id:'ship_dev',     lbl:'&nbsp;&nbsp;&nbsp;&nbsp;Devices',t:'vol',hl:false,sub:true,sub2:true},
-  {id:'ship_ref',     lbl:'&nbsp;&nbsp;&nbsp;&nbsp;Recond.',t:'vol',hl:false,sub:true,sub2:true},
-  {id:'ship_sup',     lbl:'&nbsp;&nbsp;&nbsp;&nbsp;Bobinas',t:'vol',hl:false,sub:true,sub2:true},
-  {id:'ship_uc',      lbl:'&nbsp;&nbsp;Valor/Despacho', t:'uc', hl:false,sub:true},
-  {id:'warehousing',  lbl:'Warehousing',              t:'cur',   hl:false},
-  {id:'refurb',       lbl:'Recondicionamento',        t:'cur',   hl:false,x:'refurX'},
-  {id:'refurb_qty',   lbl:'&nbsp;&nbsp;Qtd Devices',  t:'vol',   hl:false,sub:true},
-  {id:'other_costs',  lbl:'Other Costs',              t:'cur',   hl:true },
-  {id:'bm',           lbl:'BM',                       t:'cur',   hl:true, bm:true},
+// All P&L lines — data in R$ Millions
+const D={
+
+'Realizado 2024':{
+  vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales_gross: [27.31,29.67,29.67,21.71,28.61,27.84,28.80,31.50,34.25,58.79,41.71,33.02],
+  descuentos:  [-19.01,-21.49,-21.49,-14.56,-6.81,-19.29,-15.71,-15.71,-22.38,-22.51,-27.97,-24.94],
+  icms:        [-3.72,-5.36,-4.30,-5.83,-5.20,-4.01,-6.86,-10.57,-7.81,-7.19,-10.52,-6.47],
+  pis_cofins:  [-2.07,-1.97,-0.65,-6.74,-4.03,-2.62,-6.74,-3.51,-2.79,-4.10,-2.15,-2.82],
+  cmv:         [-47.65,-44.68,-41.53,-28.15,-42.86,-35.77,-38.25,-31.02,-44.37,-46.31,-46.67,-43.91],
+  insumos:     [0.07,0.00,-0.12,0.00,-0.18,-0.14,-0.17,0.04,-0.13,0.00,-0.03,-0.17],
+  scrap:       [N,N,N,N,N,N,N,N,-26.09,-0.31,-4.14,-0.38],
+  refurb:      [-1.36,-0.90,-4.03,-1.80,-5.92,-3.54,-2.03,-6.36,-4.49,-1.68,-2.97,-7.57],
+  provision:   [N,N,N,N,N,N,N,N,61.91,-43.31,-3.42,24.63],
+  prev_costo:  [18.93,0.78,-7.19,-20.03,-9.28,-17.19,-13.54,-2.38,-49.89,N,N,N],
+  hedge:       [-1.95,-2.40,-1.06,-1.45,-0.13,0.89,3.18,7.97,7.09,7.67,2.27,2.24],
+  shipping:    [-8.97,-8.10,8.70,-8.51,-0.09,-1.60,-6.42,-3.06,-3.01,-2.74,-7.76,-8.58],
+  interco_dist:[N,N,N,N,N,N,N,N,N,N,N,N],
+  interco_wh:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  interco_egr: [N,N,N,N,N,N,N,N,N,N,N,N],
+  warehousing: [0.05,-0.78,-0.91,-0.83,-0.99,-0.24,-1.15,-1.15,-0.44,-0.78,-0.65,-0.60],
+  alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  bad_debt:    [0.43,0.70,N,2.02,0.27,N,N,N,N,N,N,0.58],
+  telemetria:  [-7.65,-6.09,-9.52,-9.33,-8.73,-6.81,-10.49,-7.48,-8.62,-7.25,-8.30,-9.88],
+},
+
+'Realizado 2025':{
+  vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales_gross: [34.51,45.90,40.98,42.69,38.50,40.97,42.23,42.60,39.13,40.48,45.84,37.35],
+  descuentos:  [-24.14,-30.20,-28.68,-29.21,-25.02,-26.73,-27.41,-28.31,-24.42,-25.42,-30.89,-24.62],
+  icms:        [-1.45,-7.71,0.28,-5.57,-3.18,-4.83,-1.63,-5.64,-4.83,-4.95,-7.71,-6.23],
+  pis_cofins:  [-1.36,-3.98,-2.44,-3.17,-0.53,-5.06,-5.54,-1.71,-5.39,-1.48,-5.14,-2.68],
+  cmv:         [-45.68,-45.29,-46.92,-61.82,-49.18,-45.48,-52.74,-58.11,-56.09,-61.23,-63.75,-55.99],
+  insumos:     [0.00,-3.14,-2.13,-1.15,-0.96,-0.38,-0.13,-0.27,-0.21,-0.33,-0.13,-0.01],
+  scrap:       [3.37,-6.80,-15.52,-2.17,-3.24,-2.25,-0.11,-2.49,-2.15,-2.61,-1.07,-0.65],
+  refurb:      [-8.83,-4.80,-3.50,-4.21,-5.69,-3.90,-3.08,-3.36,-2.56,-3.34,-2.63,-2.44],
+  provision:   [-0.91,15.99,16.10,22.69,-13.29,6.39,-3.13,9.06,-4.22,-14.39,19.07,25.21],
+  prev_costo:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  hedge:       [2.15,2.96,4.23,1.17,-0.18,-1.32,-2.65,-5.26,-3.74,-5.51,-6.73,-5.61],
+  shipping:    [-2.47,-3.07,-2.63,-14.73,-3.87,-3.47,-2.06,-3.62,-2.52,-3.69,-3.65,-1.46],
+  interco_dist:[N,N,N,N,N,N,N,N,N,N,N,3.33],
+  interco_wh:  [N,N,N,N,N,N,N,N,N,N,-0.26,-0.98],
+  interco_egr: [N,N,N,N,N,N,N,N,N,N,N,N],
+  warehousing: [-0.97,-1.05,-1.35,-0.92,-1.42,-0.85,0.44,-0.81,-0.19,-0.15,-0.16,-0.14],
+  alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  telemetria:  [-9.41,-10.59,-9.62,-10.74,-8.08,-9.40,-11.12,-8.19,-8.32,-10.61,-13.08,-19.30],
+},
+
+'Forecast 2026':{
+  vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales_gross: [N,N,N,N,N,15.15,15.79,16.08,16.29,16.56,16.76,15.22],
+  descuentos:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  icms:        [N,N,N,N,N,N,N,N,N,N,N,N],
+  pis_cofins:  [N,N,N,N,N,-7.66,-7.99,-8.13,-8.24,-8.37,-8.48,-7.70],
+  cmv:         [-59.04,-41.46,-33.20,-39.37,-51.72,-45.95,-54.74,-62.38,-63.21,-63.65,-66.64,-60.67],
+  insumos:     [0.06,-0.10,-0.29,-0.01,-0.52,-0.27,0.44,-1.35,-1.32,-1.39,-1.41,-1.54],
+  scrap:       [-1.60,-0.74,-0.32,-4.30,-0.90,-1.79,3.02,N,N,N,N,N],
+  refurb:      [-3.17,1.30,-2.54,-2.23,-5.08,-2.80,4.18,-5.66,-5.62,-5.52,-5.56,-5.61],
+  provision:   [-10.00,-11.91,-16.03,-17.08,9.12,3.91,1.44,-0.94,1.44,7.57,7.04,2.83],
+  prev_costo:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  hedge:       [-4.00,-4.31,-5.11,-5.55,-7.70,-9.07,N,N,N,N,N,N],
+  shipping:    [-2.58,-2.63,-14.98,-4.41,-5.45,-1.41,1.98,-7.23,-7.24,-7.37,-7.40,-7.64],
+  interco_dist:[-3.77,-3.74,-3.36,-3.29,-3.99,-2.92,-1.14,N,N,N,N,N],
+  interco_wh:  [-0.83,-0.93,-0.81,-1.01,-1.27,-1.03,N,N,N,N,N,N],
+  interco_egr: [-0.37,-0.37,-0.81,-0.81,-2.24,-1.55,N,N,N,N,N,N],
+  warehousing: [-0.07,-0.13,0.07,0.00,-0.05,0.00,0.10,-1.44,-1.45,-1.44,-1.47,-1.44],
+  alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  bad_debt:    [N,N,N,N,N,-2.70,-2.70,-2.70,-2.70,-2.70,-2.70,-2.70],
+  telemetria:  [35.31,N,N,N,N,N,N,N,N,N,N,N],
+},
+
+'Plano 2025':{
+  vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales_gross: [16.42,16.27,17.19,17.60,18.03,19.41,19.90,21.19,21.87,21.93,19.81,20.95],
+  descuentos:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  icms:        [-9.11,-9.03,-9.54,-9.77,-10.01,-10.77,-11.04,-11.76,-12.14,-12.17,-10.99,-11.63],
+  pis_cofins:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  cmv:         [-54.64,-52.74,-55.42,-57.88,-61.24,-61.41,-67.52,-66.01,-69.02,-72.66,-68.53,-64.57],
+  insumos:     [-0.54,-0.53,-0.56,-0.55,-0.58,-0.59,-0.60,-0.62,-0.64,-0.66,-0.67,-0.73],
+  scrap:       [N,N,N,N,N,N,N,N,N,N,N,N],
+  refurb:      [-4.24,-4.31,-4.37,-4.10,-4.13,-4.11,-3.92,-3.97,-3.98,-3.80,-3.80,-3.77],
+  provision:   [25.83,7.34,-0.58,-2.35,1.07,-1.97,1.91,0.48,-1.52,3.71,4.58,9.07],
+  prev_costo:  [N,N,-5.83,-11.89,0.31,-3.80,-5.78,2.64,5.34,-1.45,21.03,5.42],
+  hedge:       [N,N,N,N,N,N,N,N,N,N,N,N],
+  shipping:    [-4.08,-4.08,-4.28,-4.32,-4.51,-4.47,-4.64,-4.60,-4.74,-4.85,-4.81,-4.60],
+  interco_dist:[N,N,N,N,N,N,N,N,N,N,N,N],
+  interco_wh:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  interco_egr: [N,N,N,N,N,N,N,N,N,N,N,N],
+  warehousing: [-1.01,-0.98,-1.52,-1.54,-1.08,-1.08,-1.13,-1.12,-1.16,-1.19,-1.16,-1.12],
+  alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  telemetria:  [N,N,-8.30,-8.20,-8.50,-8.59,-8.92,-9.12,-9.26,-9.15,-9.32,-9.27],
+},
+
+'Plano 2026':{
+  vol:         [N,N,N,N,N,N,N,N,N,N,N,N],
+  sales_gross: [65.60,65.18,70.52,69.80,71.66,69.57,73.60,75.53,77.41,76.69,76.25,73.41],
+  descuentos:  [-52.30,-52.16,-56.13,-56.26,-57.74,-55.34,-58.56,-60.12,-62.01,-62.47,-62.19,-58.53],
+  icms:        [N,N,N,N,N,N,N,N,N,N,N,N],
+  pis_cofins:  [-7.44,-7.29,-8.06,-7.59,-7.79,-7.97,-8.42,-8.63,-8.62,-7.97,-7.88,-8.33],
+  cmv:         [-49.03,-48.59,-52.22,-51.44,-52.52,-51.01,-53.44,-54.54,-55.51,-54.97,-54.40,-52.38],
+  insumos:     [-1.11,-1.10,-1.23,-1.20,-1.28,-1.26,-1.31,-1.35,-1.32,-1.39,-1.41,-1.54],
+  scrap:       [N,N,N,N,N,N,N,N,N,N,N,N],
+  refurb:      [-5.36,-5.46,-5.67,-5.60,-5.76,-5.71,-5.32,-5.66,-5.62,-5.52,-5.56,-5.61],
+  provision:   [-0.26,2.00,2.07,-0.38,1.18,0.80,-0.13,0.79,-0.42,-1.61,-0.43,2.26],
+  prev_costo:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  hedge:       [N,N,N,N,N,N,N,N,N,N,N,N],
+  shipping:    [-5.64,-5.72,-6.16,-6.47,-6.72,-6.71,-6.90,-7.23,-7.24,-7.37,-7.40,-7.64],
+  interco_dist:[N,N,N,N,N,N,N,N,N,N,N,N],
+  interco_wh:  [N,N,N,N,N,N,N,N,N,N,N,N],
+  interco_egr: [N,N,N,N,N,N,N,N,N,N,N,N],
+  warehousing: [-1.48,-1.52,-1.53,-1.40,-1.41,-1.40,-1.41,-1.44,-1.45,-1.44,-1.47,-1.44],
+  alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
+  telemetria:  [N,N,N,N,N,N,N,N,N,N,N,N],
+},
+
+};
+
+// All P&L line IDs that feed into BM
+const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','insumos','scrap','refurb','provision','prev_costo','hedge','shipping','interco_dist','interco_wh','interco_egr','warehousing','alquiler','bad_debt','telemetria'];
+
+// Get single-month value (handles computed rows)
+function getM(ver,rowId,mi){
+  const d=D[ver];
+  const r=(id)=>d[id]?d[id][mi]:N;
+  const add=(a,b)=>(a===N&&b===N)?N:(a??0)+(b??0);
+  switch(rowId){
+    case 'net_sales':  return add(r('sales_gross'),r('descuentos'));
+    case 'total_taxes':return add(r('icms'),r('pis_cofins'));
+    case 'receita_liq':return add(add(r('sales_gross'),r('descuentos')),add(r('icms'),r('pis_cofins')));
+    case 'bm':{
+      let s=N;
+      BM_KEYS.forEach(k=>{const v=r(k);if(v!==N)s=(s??0)+v;});
+      return s;
+    }
+    default:return r(rowId);
+  }
+}
+
+// Aggregate months for a version+row
+function getA(ver,rowId,idxList){
+  const vals=idxList.map(i=>getM(ver,rowId,i));
+  if(vals.every(v=>v===N))return N;
+  return vals.reduce((s,v)=>s+(v??0),0);
+}
+
+const ROWS=[
+  {id:'vol',         lbl:'Volume (Devices)',              t:'vol', hl:true},
+  // Receita
+  {id:'_rec',        lbl:'RECEITA',                       t:'hdr', grp:true},
+  {id:'sales_gross', lbl:'Sales MPOS Bruto',              t:'cur', sub:true},
+  {id:'descuentos',  lbl:'Descuentos MPOS',               t:'cur', sub:true},
+  {id:'net_sales',   lbl:'Sales MPOS Líquido',            t:'cur', comp:true, hl:true},
+  // Impostos
+  {id:'_imp',        lbl:'IMPOSTOS',                      t:'hdr', grp:true},
+  {id:'icms',        lbl:'ICMS',                          t:'cur', sub:true},
+  {id:'pis_cofins',  lbl:'PIS/COFINS',                    t:'cur', sub:true},
+  {id:'total_taxes', lbl:'Total Impostos',                t:'cur', comp:true, hl:true},
+  // Receita Líquida
+  {id:'receita_liq', lbl:'RECEITA LÍQUIDA',               t:'cur', comp:true, hl:true},
+  // COGS
+  {id:'_cogs',       lbl:'COGS & PROVISÕES',              t:'hdr', grp:true},
+  {id:'cmv',         lbl:'CMV – Cost of Products Sold',   t:'cur', sub:true},
+  {id:'insumos',     lbl:'Insumos Point',                 t:'cur', sub:true},
+  {id:'scrap',       lbl:'Scrap MPOS',                    t:'cur', sub:true},
+  {id:'refurb',      lbl:'Reacondicionamentos Point',     t:'cur', sub:true},
+  {id:'provision',   lbl:'MPOS Ajuste VNR',               t:'cur', sub:true},
+  {id:'hedge',       lbl:'Hedge FX (Prev. MPOS)',         t:'cur', sub:true},
+  {id:'prev_costo',  lbl:'Prev. Custo MPOS (Legacy)',     t:'cur', sub:true},
+  // Logística
+  {id:'_log',        lbl:'LOGÍSTICA',                     t:'hdr', grp:true},
+  {id:'shipping',    lbl:'Distribución Point',            t:'cur', sub:true},
+  {id:'interco_dist',lbl:'Interco Distribucion COGS',     t:'cur', sub:true},
+  {id:'interco_wh',  lbl:'Interco Warehousing COGS',      t:'cur', sub:true},
+  {id:'interco_egr', lbl:'Interco Alocações COGS',        t:'cur', sub:true},
+  {id:'warehousing', lbl:'Warehousing Point',             t:'cur', sub:true},
+  // Outros
+  {id:'_out',        lbl:'OUTROS CUSTOS',                 t:'hdr', grp:true},
+  {id:'alquiler',    lbl:'Aluguel MPOS',                  t:'cur', sub:true},
+  {id:'bad_debt',    lbl:'Incobrables / Bad Debt',        t:'cur', sub:true},
+  {id:'telemetria',  lbl:'Telemetria Point',              t:'cur', sub:true},
+  // BM
+  {id:'bm',          lbl:'BM (Gross Profit)',             t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const N=null;
-const D={
-'Actual 2025':{
-  vol:          [N,N,N,N,N,N,N,N,N,N,N,N],
-  sales:        [14.82,14.29,14.71,15.07,14.95,12.73,15.11,13.76,14.76,13.95,13.68,13.37],
-  taxes:        [-7.17,-7.35,-10.22,-6.43,-12.85,-8.91,-4.40,-6.08,-15.63,-1.60,-10.18,-3.43],
-  net_sales:    [7.65,6.94,4.49,8.64,2.10,3.83,10.71,7.67,-0.86,12.35,3.50,9.94],
-  cmv:          [-45.68,-45.29,-46.92,-61.82,-49.18,-45.48,-52.74,-58.11,-56.09,-61.23,-63.76,-55.99],
-  provision:    [-0.91,15.99,16.11,22.69,-13.29,6.39,-3.13,9.06,-4.22,-14.39,19.07,25.21],
-  hedge:        [2.15,2.96,4.23,1.17,-0.18,-1.32,-2.65,-5.26,-3.74,-5.52,-6.73,-5.61],
-  supplies:     [0.00,-3.14,-2.13,-1.15,-0.96,-0.38,-0.13,-0.27,-0.22,-0.33,-0.13,-0.01],
-  supplies_qty: [N,N,N,N,N,N,N,N,N,N,N,N],
-  shipping:     [-2.47,-3.07,-2.63,-14.73,-3.87,-3.47,-2.06,-3.62,-2.52,-3.69,-0.32,-4.98],
-  ship_tot:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_dev:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_ref:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_sup:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_uc:      [N,N,N,N,N,N,N,N,N,N,N,N],
-  warehousing:  [-0.97,-1.05,-1.35,-0.92,-1.42,-0.85,0.44,-0.81,-0.19,-0.41,-1.14,-0.66],
-  refurb:       [-8.83,-4.80,-3.50,-4.21,-5.69,-3.90,-3.08,-3.36,-2.56,-3.34,-2.63,-2.44],
-  refurb_qty:   [N,N,N,N,N,N,N,N,N,N,N,N],
-  other_costs:  [-6.04,-17.39,-25.15,-12.91,-11.32,-11.65,-11.23,-10.69,-10.47,-13.22,-14.15,-13.24],
-  bm:           [-55.11,-48.85,-56.85,-63.24,-83.81,-56.83,-63.87,-65.39,-80.87,-89.77,-66.28,-47.77]
-},
-'Plano 2025':{
-  vol:          [N,N,N,N,N,N,N,N,N,N,N,N],
-  sales:        [16.42,16.27,17.19,17.60,18.03,19.41,19.90,21.19,21.87,21.93,19.81,20.95],
-  taxes:        [-9.11,-9.03,-9.54,-9.77,-10.01,-10.77,-11.04,-11.76,-12.14,-12.17,-10.99,-11.63],
-  net_sales:    [7.31,7.24,7.65,7.83,8.02,8.64,8.85,9.43,9.73,9.76,8.82,9.32],
-  cmv:          [-54.64,-52.74,-55.42,-57.88,-61.24,-61.41,-67.52,-66.01,-69.02,-72.66,-68.53,-64.57],
-  provision:    [25.83,7.34,-0.58,-2.35,1.07,-1.97,1.91,0.48,-1.52,3.71,4.58,9.07],
-  hedge:        [0,0,0,0,0,0,0,0,0,0,0,0],
-  supplies:     [-0.54,-0.53,-0.56,-0.55,-0.58,-0.59,-0.60,-0.62,-0.64,-0.66,-0.67,-0.73],
-  supplies_qty: [N,N,N,N,N,N,N,N,N,N,N,N],
-  shipping:     [-4.08,-4.08,-4.28,-4.32,-4.51,-4.47,-4.64,-4.60,-4.74,-4.85,-4.81,-4.60],
-  ship_tot:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_dev:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_ref:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_sup:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_uc:      [N,N,N,N,N,N,N,N,N,N,N,N],
-  warehousing:  [-1.01,-0.98,-1.52,-1.54,-1.08,-1.08,-1.13,-1.12,-1.16,-1.19,-1.16,-1.12],
-  refurb:       [-4.24,-4.31,-4.37,-4.10,-4.13,-4.11,-3.92,-3.97,-3.98,-3.80,-3.80,-3.77],
-  refurb_qty:   [N,N,N,N,N,N,N,N,N,N,N,N],
-  other_costs:  [N,N,N,N,N,N,N,N,N,N,N,N],
-  bm:           [-31.37,-48.07,-59.08,-62.91,-62.45,-65.00,-67.04,-66.41,-71.33,-69.69,-65.58,-56.39]
-},
-'Plano 2026':{
-  vol:          [N,N,N,N,N,N,N,N,N,N,N,N],
-  sales:        [13.30,13.02,14.39,13.55,13.91,14.23,15.05,15.42,15.40,14.23,14.07,14.89],
-  taxes:        [-7.45,-7.29,-8.06,-7.59,-7.79,-7.97,-8.42,-8.63,-8.62,-7.97,-7.88,-8.33],
-  net_sales:    [5.85,5.73,6.34,5.96,6.12,6.26,6.62,6.79,6.78,6.26,6.19,6.55],
-  cmv:          [-49.03,-48.59,-52.22,-51.44,-52.52,-51.01,-53.44,-54.54,-55.51,-54.97,-54.40,-52.38],
-  provision:    [-0.26,2.00,2.07,-0.38,1.18,0.80,-0.13,0.79,-0.42,-1.61,-0.43,2.26],
-  hedge:        [0,0,0,0,0,0,0,0,0,0,0,0],
-  supplies:     [-1.11,-1.10,-1.23,-1.20,-1.28,-1.26,-1.31,-1.35,-1.32,-1.39,-1.41,-1.54],
-  supplies_qty: [N,N,N,N,N,N,N,N,N,N,N,N],
-  shipping:     [-5.64,-5.72,-6.16,-6.47,-6.72,-6.71,-6.90,-7.23,-7.24,-7.37,-7.40,-7.64],
-  ship_tot:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_dev:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_ref:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_sup:     [N,N,N,N,N,N,N,N,N,N,N,N],
-  ship_uc:      [N,N,N,N,N,N,N,N,N,N,N,N],
-  warehousing:  [-1.48,-1.52,-1.53,-1.40,-1.41,-1.40,-1.41,-1.44,-1.45,-1.44,-1.47,-1.44],
-  refurb:       [-5.36,-5.46,-5.67,-5.60,-5.76,-5.71,-5.32,-5.66,-5.62,-5.52,-5.56,-5.61],
-  refurb_qty:   [N,N,N,N,N,N,N,N,N,N,N,N],
-  other_costs:  [N,N,N,N,N,N,N,N,N,N,N,N],
-  bm:           [-57.04,-54.66,-58.41,-60.51,-60.40,-59.03,-61.89,-62.63,-64.79,-66.04,-64.47,-59.81]
-}};
+const ST={mode:'evolution',q:'FY',prim:'Realizado 2025',comp:'Plano 2025'};
 
-const ST={mode:'evolution',q:'FY',prim:'Actual 2025',comp:'Plano 2025',
-  salesX:false,supplX:false,shipX:false,shipDX:false,refurX:false};
-
-function agg(){
-  const idx=QS[ST.q], r={};
-  VERS.forEach(v=>{
-    const t={};
-    ROWS.forEach(row=>{
-      const a=D[v][row.id];
-      if(!a){t[row.id]=null;return}
-      const vals=idx.map(i=>a[i]);
-      t[row.id]=vals.every(x=>x===null)?null:vals.reduce((s,x)=>s+(x??0),0);
-    });
-    r[v]=t;
-  });
-  return r;
-}
-
-function fc(v){
-  if(v===null||v===undefined) return '<span class="v-">—</span>';
-  const s=v.toFixed(1)+'M';
+function fc(v,t){
+  if(v===N||v===undefined)return'<span class="v-">—</span>';
+  if(t==='vol'){
+    const abs=Math.abs(v);
+    if(abs>=1e6)return(v/1e6).toFixed(1)+'M';
+    if(abs>=1e3)return(v/1e3).toFixed(1)+'k';
+    return v.toFixed(0);
+  }
+  const s=v.toFixed(2)+'M';
   return v<0?`<span class="vn">${s}</span>`:v>0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
 }
-function fv(v){
-  if(v===null||v===undefined) return '<span class="v-">—</span>';
-  const abs=Math.abs(v);
-  if(abs>=1e6) return (v/1e6).toFixed(1)+'M';
-  if(abs>=1e3) return (v/1e3).toFixed(1)+'k';
-  return v.toFixed(0);
-}
-function fu(v){
-  if(v===null||v===undefined) return '<span class="v-">—</span>';
-  return 'R$'+v.toFixed(2);
-}
-function fmtV(v,t){return t==='vol'?fv(v):t==='uc'?fu(v):fc(v)}
 
-function visible(id){
-  if(id==='sales'||id==='taxes') return ST.salesX;
-  if(id==='supplies_qty') return ST.supplX;
-  if(id==='ship_tot'||id==='ship_uc') return ST.shipX;
-  if(id==='ship_dev'||id==='ship_ref'||id==='ship_sup') return ST.shipDX&&ST.shipX;
-  if(id==='refurb_qty') return ST.refurX;
-  return true;
-}
-
-function chevron(open){
-  return open
-    ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>'
-    : '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>';
+function fd(v,ref,hi){
+  if(v===N||ref===N||ref===0)return'';
+  const d=(v-ref)/Math.abs(ref)*100;
+  const good=hi?d>=0:d<=0;
+  const cls=good?'dp':'dn';
+  const ar=d>=0?'▲':'▼';
+  return`<br><span class="${cls}" style="font-size:.67rem">${ar}${Math.abs(d).toFixed(1)}%</span>`;
 }
 
 function renderQ(){
   document.getElementById('qf').innerHTML=Object.keys(QS).map(q=>
     `<button class="q-btn${ST.q===q?' active':''}" onclick="setQ('${q}')">${q}</button>`).join('');
 }
-function renderV(){
-  const o=VERS.map(v=>`<option value="${v}">${v}</option>`).join('');
-  ['sel-p','sel-c'].forEach(id=>document.getElementById(id).innerHTML=o);
+
+function renderVer(){
+  const ops=VERS.map(v=>`<option value="${v}">${v}</option>`).join('');
+  ['sel-p','sel-c'].forEach(id=>document.getElementById(id).innerHTML=ops);
   document.getElementById('sel-p').value=ST.prim;
   document.getElementById('sel-c').value=ST.comp;
-  document.getElementById('vs').classList.toggle('hidden',ST.mode!=='evolution');
+  document.getElementById('evol-sel').style.display=ST.mode==='evolution'?'flex':'none';
 }
-function renderKPI(){
-  const c=document.getElementById('kpi');
-  if(ST.mode==='comparison'){c.classList.add('hidden');return}
-  c.classList.remove('hidden');
-  const g=agg(), p=g[ST.prim], cm=g[ST.comp];
-  const ks=[
-    {l:'Sales Net',v:p.net_sales,pv:cm.net_sales,icon:'💰',hi:true},
-    {l:'BM',v:p.bm,pv:cm.bm,icon:'📊',hi:true},
-    {l:'CMV',v:p.cmv,pv:cm.cmv,icon:'🏭',hi:false},
-    {l:'Shipping',v:p.shipping,pv:cm.shipping,icon:'🚚',hi:false}
-  ];
-  c.innerHTML=ks.map(k=>{
-    const d=(k.pv&&k.pv!==0&&k.v!==null)?((k.v-k.pv)/Math.abs(k.pv)*100):null;
-    const ip=d!==null?(k.hi?d>=0:d<=0):null;
-    const dh=d!==null?`<div class="kpi-delta ${ip?'pos':'neg'}">${ip?'▲':'▼'} ${Math.abs(d).toFixed(1)}%</div>`:'';
-    const vh=k.v!==null?`<span class="kpi-val">${k.v.toFixed(1)}M</span>`:`<span class="kpi-val" style="color:var(--muted)">—</span>`;
-    return `<article class="card kpi-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-        <span class="kpi-lbl">${k.l}</span><span style="font-size:1rem">${k.icon}</span>
-      </div>${vh}${dh}
-      <div class="kpi-sub">R$ vs ${ST.comp}</div>
-    </article>`;
-  }).join('');
-}
-function renderTable(){
-  const g=agg(), idx=QS[ST.q];
-  document.getElementById('tbl-title').textContent=ST.mode==='comparison'?'Comparativo Multi-Versão · P&L MPOS':'Detalhamento Financeiro · P&L MPOS';
-  document.getElementById('vlbl').textContent=`Visualização: ${ST.q}`;
 
+function renderKPI(){
+  const idx=QS[ST.q];
+  const kpiEl=document.getElementById('kpi');
+  if(ST.mode==='comparison'){kpiEl.innerHTML='';return;}
+  const sg=getA(ST.prim,'sales_gross',idx);
+  const bm=getA(ST.prim,'bm',idx);
+  const rl=getA(ST.prim,'receita_liq',idx);
+  const cmv=getA(ST.prim,'cmv',idx);
+  const sg_c=getA(ST.comp,'sales_gross',idx);
+  const bm_c=getA(ST.comp,'bm',idx);
+  const rl_c=getA(ST.comp,'receita_liq',idx);
+  const cmv_c=getA(ST.comp,'cmv',idx);
+  function kd(v,pv,hi){
+    if(v===N||pv===N||pv===0)return'';
+    const d=(v-pv)/Math.abs(pv)*100;
+    const g=hi?d>=0:d<=0;
+    return`<div class="kpi-delta ${g?'pos':'neg'}">${d>=0?'▲':'▼'} ${Math.abs(d).toFixed(1)}%</div>`;
+  }
+  const bmPct=(bm!==N&&sg!==N&&sg!==0)?(bm/sg*100):N;
+  kpiEl.innerHTML=[
+    {l:'Sales Bruto',v:sg,pv:sg_c,hi:true,icon:'💰'},
+    {l:'Receita Líquida',v:rl,pv:rl_c,hi:true,icon:'💵'},
+    {l:'CMV Hardware',v:cmv,pv:cmv_c,hi:false,icon:'🏭'},
+    {l:'BM',v:bm,pv:bm_c,hi:true,icon:'📊'},
+  ].map(k=>`<article class="card kpi-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <span class="kpi-lbl">${k.l}</span><span style="font-size:1rem">${k.icon}</span>
+    </div>
+    <span class="kpi-val">${k.v!==N?k.v.toFixed(1)+'M':'—'}</span>
+    ${kd(k.v,k.pv,k.hi)}
+    <div class="kpi-sub">vs ${ST.comp} · R$ M</div>
+  </article>`).join('');
+}
+
+function renderTable(){
+  const idx=QS[ST.q];
+  const mos=VER_MOS[ST.prim]||[];
+  const isComp=ST.mode==='comparison';
+  document.getElementById('tbl-title').textContent=isComp?'Comparativo Multi-Cenário · P&L MPOS':'Evolução Mensal · P&L MPOS';
+  document.getElementById('tbl-sub').textContent=isComp?`FY / ${ST.q} · Todos os cenários`:`${ST.prim} · ${ST.q}`;
+
+  // Header
   let th='<th>P&L Line</th>';
-  if(ST.mode==='comparison'){
-    th+='<th>Plano 2025</th><th>Var% (Act/P25)</th><th>Actual 2025</th><th>Var% (P26/Act)</th><th>Plano 2026</th>';
+  if(isComp){
+    VERS.forEach(v=>th+=`<th>${v}</th>`);
   } else {
-    idx.forEach(i=>th+=`<th>${MOS[i]}</th>`);
-    th+='<th class="col-fy">FY</th>';
+    idx.forEach(i=>th+=`<th>${mos[i]||''}</th>`);
+    th+='<th class="col-fy">FY/QT</th>';
+    if(ST.comp!==ST.prim) th+=`<th>vs ${ST.comp}</th>`;
   }
   document.getElementById('th').innerHTML=th;
 
+  // Body
   let tb='';
   ROWS.forEach(row=>{
-    if(!visible(row.id)) return;
-    const rc=(row.bm?'bm-row':row.hl?'hl':'');
-
-    // build label
-    let lbl=row.lbl;
-    const xmap={net_sales:'salesX',supplies:'supplX',shipping:'shipX',ship_tot:'shipDX',refurb:'refurX'};
-    const xfn={net_sales:'txS',supplies:'txSu',shipping:'txSh',ship_tot:'txShD',refurb:'txR'};
-    if(xmap[row.id]){
-      const open=ST[xmap[row.id]];
-      lbl=`<button class="xbtn" onclick="${xfn[row.id]}(event)">${chevron(open)}</button>${row.lbl}`;
+    if(row.grp){
+      // Section header
+      const nc=isComp?(1+VERS.length):(2+idx.length+(ST.comp!==ST.prim?1:0));
+      tb+=`<tr class="grp-hdr"><td colspan="${nc}">${row.lbl}</td></tr>`;
+      return;
     }
 
-    tb+=`<tr class="${rc}"><td>${lbl}</td>`;
+    const rc=row.bm?'bm-row':row.hl?'hl':'';
+    const sub=row.sub?'sub':'';
+    let lblH=row.lbl;
 
-    if(ST.mode==='comparison'){
-      const a=g['Actual 2025'][row.id], p25=g['Plano 2025'][row.id], p26=g['Plano 2026'][row.id];
-      const d1=(p25&&a!==null)?((a-p25)/Math.abs(p25)*100):null;
-      const d2=(a&&a!==0&&p26!==null)?((p26-a)/Math.abs(a)*100):null;
-      const c1=d1!==null?(d1>=0?'pp':'pn'):'';
-      const c2=d2!==null?(d2>=0?'pp':'pn'):'';
-      tb+=`<td>${fmtV(p25,row.t)}</td>
-           <td class="${c1}">${d1!==null?d1.toFixed(1)+'%':'—'}</td>
-           <td>${fmtV(a,row.t)}</td>
-           <td class="${c2}">${d2!==null?d2.toFixed(1)+'%':'—'}</td>
-           <td>${fmtV(p26,row.t)}</td>`;
+    tb+=`<tr class="${rc} ${sub}"><td>${lblH}</td>`;
+
+    if(isComp){
+      VERS.forEach(v=>{
+        const av=getA(v,row.id,idx);
+        tb+=`<td>${fc(av,row.t)}</td>`;
+      });
     } else {
-      const src=D[ST.prim];
-      idx.forEach(i=>{const v=src[row.id]?src[row.id][i]:null; tb+=`<td>${fmtV(v,row.t)}</td>`;});
-      tb+=`<td class="col-fy">${fmtV(g[ST.prim][row.id],row.t)}</td>`;
+      idx.forEach(i=>{
+        const mv=getM(ST.prim,row.id,i);
+        tb+=`<td>${fc(mv,row.t)}</td>`;
+      });
+      const fy=getA(ST.prim,row.id,idx);
+      tb+=`<td class="col-fy">${fc(fy,row.t)}</td>`;
+      if(ST.comp!==ST.prim){
+        const fyc=getA(ST.comp,row.id,idx);
+        const isBenefitPos=(row.id==='sales_gross'||row.id==='net_sales'||row.id==='receita_liq'||row.id==='bm');
+        tb+=`<td>${fd(fy,fyc,isBenefitPos)}</td>`;
+      }
     }
     tb+='</tr>';
   });
   document.getElementById('tb').innerHTML=tb;
 }
 
-function ui(){
-  ['comp','evol'].forEach(x=>document.getElementById('btn-'+x).className='mode-btn'+(ST.mode===(x==='comp'?'comparison':'evolution')?' active':''));
-  renderQ(); renderV(); renderKPI(); renderTable();
-  document.getElementById('upd').textContent=new Date().toLocaleDateString('pt-BR');
-}
+function render(){renderQ();renderVer();renderKPI();renderTable();}
+function setMode(m){ST.mode=m;document.getElementById('btn-evol').classList.toggle('active',m==='evolution');document.getElementById('btn-comp').classList.toggle('active',m==='comparison');render();}
+function setQ(q){ST.q=q;render();}
+function setPrimary(v){ST.prim=v;render();}
+function setCompare(v){ST.comp=v;render();}
 
-window.setMode=m=>{ST.mode=m;ui()};
-window.setQ=q=>{ST.q=q;ui()};
-window.setPrimary=v=>{ST.prim=v;ui()};
-window.setCompare=v=>{ST.comp=v;ui()};
-window.txS=e=>{e.stopPropagation();ST.salesX=!ST.salesX;ui()};
-window.txSu=e=>{e.stopPropagation();ST.supplX=!ST.supplX;ui()};
-window.txSh=e=>{e.stopPropagation();ST.shipX=!ST.shipX;if(!ST.shipX)ST.shipDX=false;ui()};
-window.txShD=e=>{e.stopPropagation();ST.shipDX=!ST.shipDX;ui()};
-window.txR=e=>{e.stopPropagation();ST.refurX=!ST.refurX;ui()};
-
-document.addEventListener('DOMContentLoaded',ui);
+window.addEventListener('DOMContentLoaded',render);
 </script>
 </body>
 </html>

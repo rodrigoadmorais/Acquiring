@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -6,6 +6,8 @@
 <title>P&L UE Brasil — Acquiring</title>
 <!-- Grid-hosted libraries only (no external CDN — CSP/mobile-safe) -->
 <script src="/d/_libs/chart.min.js"></script>
+<script src="/d/_libs/plotly.min.js"></script>
+<script src="/d/_libs/html2canvas.min.js"></script>
 <script src="/d/_assets/grid-sdk.js"></script>
 <style>
 :root{
@@ -25,8 +27,11 @@
   --r-sm:6px; --r-md:10px; --r-lg:12px; --r-xl:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+/* Form controls herdam a fonte do body (Proxima Nova) — alguns browsers
+   forçam system font em <input>, <select>, <button>, <textarea>. */
+button, input, select, textarea, optgroup{font-family:inherit}
 html,body{height:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+body{font-family:'Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
      background:var(--bg);color:var(--text);font-size:13px;
      height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
@@ -43,14 +48,65 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .upd.flash{background:#1a1a1a;color:#FFE600}
 .upd .dot{display:inline-block;width:6px;height:6px;border-radius:50%;
           background:var(--green);margin-right:6px;vertical-align:middle}
+.doc-btn{border:1.5px solid rgba(0,0,0,.22);background:rgba(255,255,255,.42);
+         color:var(--ink);border-radius:20px;padding:5px 12px;font-weight:800;
+         font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+         transition:.15s}
+.doc-btn:hover{background:#fff;border-color:var(--ink)}
+.doc-overlay{position:fixed;inset:0;background:rgba(17,24,39,.46);
+             z-index:8000;display:none;align-items:center;justify-content:center;
+             padding:24px}
+.doc-overlay.on{display:flex}
+.doc-modal{width:min(1120px,calc(100vw - 48px));max-height:calc(100vh - 48px);
+           background:var(--card);border:1px solid var(--border);border-radius:16px;
+           box-shadow:var(--sh-lg);display:flex;flex-direction:column;overflow:hidden}
+.doc-head{background:var(--yellow);border-bottom:2px solid var(--yellow-dark);
+          padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.doc-head h2{font-size:15px;font-weight:900;color:var(--ink);letter-spacing:-.2px}
+.doc-head p{margin-top:3px;font-size:11px;font-weight:600;color:rgba(0,0,0,.62)}
+.doc-close{border:1.5px solid rgba(0,0,0,.24);background:rgba(255,255,255,.55);
+           border-radius:18px;padding:6px 12px;font-size:11px;font-weight:800;
+           color:var(--ink);cursor:pointer}
+.doc-close:hover{background:#fff;border-color:var(--ink)}
+.doc-body{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:0;overflow:hidden}
+.doc-nav{background:var(--card-2);border-right:1px solid var(--border);padding:14px;
+         overflow:auto}
+.doc-nav a{display:block;text-decoration:none;color:var(--ink-2);font-size:11px;
+           font-weight:700;padding:8px 10px;border-radius:8px;margin-bottom:4px}
+.doc-nav a:hover{background:var(--yellow-dim);color:var(--ink)}
+.doc-content{padding:18px 22px 24px;overflow:auto;line-height:1.5}
+.doc-content section{margin-bottom:22px}
+.doc-content h3{font-size:13px;font-weight:900;color:var(--ink);margin-bottom:8px;
+                text-transform:uppercase;letter-spacing:.5px}
+.doc-content h4{font-size:12px;font-weight:800;color:var(--ink);margin:10px 0 5px}
+.doc-content p,.doc-content li{font-size:12px;color:var(--text-2)}
+.doc-content ul{padding-left:18px;margin:6px 0 0}
+.doc-content .doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.doc-card{border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px}
+.doc-card strong{display:block;font-size:11px;color:var(--ink);font-weight:900;
+                 margin-bottom:4px;text-transform:uppercase;letter-spacing:.45px}
+.doc-kv{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--border);
+        border-radius:10px;overflow:hidden;margin-top:8px}
+.doc-kv th,.doc-kv td{font-size:11.5px;padding:8px 10px;border-bottom:1px solid var(--border);
+                      vertical-align:top;text-align:left}
+.doc-kv th{width:210px;background:var(--yellow-dim);font-weight:900;color:var(--ink)}
+.doc-kv tr:last-child th,.doc-kv tr:last-child td{border-bottom:none}
+.doc-note{border-left:4px solid var(--yellow-dark);background:#FFFBE6;border-radius:8px;
+          padding:10px 12px;margin:10px 0;color:var(--ink-2);font-size:12px}
+@media (max-width: 860px){
+  .doc-body{grid-template-columns:1fr}
+  .doc-nav{display:none}
+  .doc-modal{width:calc(100vw - 24px);max-height:calc(100vh - 24px)}
+}
 
 .tab-nav{background:var(--card);border-bottom:1px solid var(--border);
          padding:0 24px;display:flex;gap:0;position:sticky;top:52px;z-index:300;
+         overflow-x:auto;overflow-y:hidden;
          box-shadow:var(--sh-xs)}
 .tab-btn{padding:0 22px;border:none;border-bottom:2px solid transparent;
-         background:transparent;font-weight:600;font-size:12.5px;color:var(--muted);
-         cursor:pointer;height:42px;letter-spacing:.2px;transition:.15s;
-         display:inline-flex;align-items:center;gap:7px}
+          background:transparent;font-weight:600;font-size:12.5px;color:var(--muted);
+          cursor:pointer;height:42px;letter-spacing:.2px;transition:.15s;
+          display:inline-flex;align-items:center;gap:7px;flex:0 0 auto}
 .tab-btn:hover{color:var(--ink);background:var(--yellow-dim)}
 .tab-btn.on{color:var(--ink);border-bottom-color:var(--yellow);
             font-weight:700;background:var(--yellow-dim)}
@@ -89,12 +145,30 @@ select:focus{outline:none;border-color:var(--ink)}
         letter-spacing:.2px;display:flex;align-items:center;justify-content:space-between}
 .card-h .sub{font-weight:500;font-size:11px;color:var(--muted);letter-spacing:0}
 
-.evo-wrap, .sum-wrap{overflow:auto;max-height:calc(100vh - 200px);border-radius:var(--r-md)}
+.evo-wrap, .sum-wrap, .sim-wrap{overflow:auto;max-height:calc(100vh - 200px);border-radius:var(--r-md)}
 .evo-tbl, .sum-tbl{border-collapse:separate;border-spacing:0;font-size:11.5px;
-                   white-space:nowrap;font-variant-numeric:tabular-nums}
-.evo-tbl{width:100%}
-.evo-tbl th, .sum-tbl th{background:var(--yellow);color:var(--ink);padding:8px 10px;
-                         text-align:right;font-weight:700;font-size:11px;
+                   white-space:nowrap;font-variant-numeric:tabular-nums;
+                   font-family:'Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+/* width:auto faz a tabela se ajustar ao conteúdo (não estica até o container).
+   margin:0 auto centra horizontalmente quando o conteúdo é menor que o wrap.
+   O wrap externo cuida do scroll caso o conteúdo seja mais largo que a área visível. */
+.evo-tbl{width:auto;table-layout:auto;margin:0 auto}
+.evo-tbl th, .evo-tbl td{white-space:nowrap}
+/* Resumo também centralizado quando couber inteiro na largura disponível */
+.sum-tbl{margin:0 auto;border-radius:12px;overflow:hidden}
+/* Cantos arredondados nas células das pontas — efeito "pílula" no header amarelo
+   e no rodapé branco. Funciona porque border-collapse:separate está ativo. */
+.sum-tbl thead tr:first-child th:first-child{border-top-left-radius:12px}
+.sum-tbl thead tr:first-child th:last-child{border-top-right-radius:12px}
+.sum-tbl tbody tr:last-child td:first-child{border-bottom-left-radius:12px}
+.sum-tbl tbody tr:last-child td:last-child{border-bottom-right-radius:12px}
+.evo-tbl thead tr:first-child th:first-child{border-top-left-radius:12px}
+.evo-tbl thead tr:first-child th:last-child{border-top-right-radius:12px}
+.evo-tbl tbody tr:last-child td:first-child{border-bottom-left-radius:12px}
+.evo-tbl tbody tr:last-child td:last-child{border-bottom-right-radius:12px}
+.evo-tbl th, .sum-tbl th{background:var(--yellow);color:var(--ink);padding:10px 12px;
+                         text-align:right;font-weight:800;font-size:11px;
+                         text-transform:uppercase;letter-spacing:.5px;
                          position:sticky;top:0;z-index:5;border-bottom:2px solid var(--yellow-dark)}
 /* Two-row sticky header in Resumo: BU row pinned at top, segments row right below */
 .sum-tbl thead tr:nth-child(1) th{position:sticky;top:0;z-index:7}
@@ -107,14 +181,25 @@ select:focus{outline:none;border-color:var(--ink)}
                                          background:var(--card);font-weight:600;color:var(--ink-2);
                                          border-right:1px solid var(--border);min-width:260px}
 .evo-tbl td.first{display:flex;align-items:center;gap:6px}
-/* ── L1: group section subtotal — bold dark bar (closes the section) ── */
-.evo-tbl tr.l1 td, .sum-tbl tr.l1 td{background:#fff;font-weight:800;color:var(--ink);
-  font-size:12px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
-.evo-tbl tr.l1 td.first, .sum-tbl tr.l1 td.line-cell{background:#fff}
-/* L2 (legacy alias, kept for any unstyled subtotal — same look as L1) */
-.evo-tbl tr.l2 td, .sum-tbl tr.l2 td{background:#fff;font-weight:800;color:var(--ink);
-  font-size:12px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
-.evo-tbl tr.l2 td.first, .sum-tbl tr.l2 td.line-cell{background:#fff}
+/* ── L1: group section subtotal — bar bold com fundo amarelinho sutil ── */
+.evo-tbl tr.l1 td, .sum-tbl tr.l1 td{background:#FFF9E0;font-weight:800;color:var(--ink);
+  font-size:12px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a;
+  padding-top:9px;padding-bottom:9px;letter-spacing:.1px}
+.evo-tbl tr.l1 td.first, .sum-tbl tr.l1 td.line-cell{background:#FFF9E0}
+.evo-tbl tr.l2 td, .sum-tbl tr.l2 td{background:#FFF9E0;font-weight:800;color:var(--ink);
+  font-size:12px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a;
+  padding-top:9px;padding-bottom:9px;letter-spacing:.1px}
+.evo-tbl tr.l2 td.first, .sum-tbl tr.l2 td.line-cell{background:#FFF9E0}
+/* Zebra striping nas linhas de item — sutil pra dar ritmo sem distrair */
+.evo-tbl tbody tr:nth-child(even) td{background:#FCFCFA}
+.evo-tbl tbody tr:nth-child(even) td.first{background:#FCFCFA}
+.sum-tbl tbody tr:nth-child(even) td{background:#FCFCFA}
+.sum-tbl tbody tr:nth-child(even) td.line-cell{background:#FCFCFA}
+/* Subtotal/header rows precisam manter o fundo próprio mesmo no zebra */
+.evo-tbl tbody tr.l1:nth-child(even) td, .evo-tbl tbody tr.l2:nth-child(even) td,
+.sum-tbl tbody tr.l1:nth-child(even) td, .sum-tbl tbody tr.l2:nth-child(even) td{background:#FFF9E0}
+.evo-tbl tbody tr.l1:nth-child(even) td.first, .evo-tbl tbody tr.l2:nth-child(even) td.first,
+.sum-tbl tbody tr.l1:nth-child(even) td.line-cell, .sum-tbl tbody tr.l2:nth-child(even) td.line-cell{background:#FFF9E0}
 /* Sub-group header (expanded MPOS) — small uppercase strip */
 .evo-tbl tr.sg-h td, .sum-tbl tr.sg-h td{background:#F8FAFC;font-weight:700;
   font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-2);
@@ -137,14 +222,42 @@ select:focus{outline:none;border-color:var(--ink)}
       width:10px;text-align:center;flex-shrink:0}
 .chev.tog{color:var(--ink);font-size:9px}
 .evo-tbl .ind3{padding-left:26px}
-.evo-tbl tbody tr:hover td{background:#F8FAFC}
-.evo-tbl tbody tr.l1:hover td, .evo-tbl tbody tr.l2:hover td{background:#fff}
+.evo-tbl tbody tr:hover td{background:#FFF5C8!important}
+.evo-tbl tbody tr:hover td.first{background:#FFF5C8!important;color:var(--ink)}
+.evo-tbl tbody tr.l1:hover td, .evo-tbl tbody tr.l2:hover td{background:#FFF3A3!important}
+.sum-tbl tbody tr:hover td{background:#FFF5C8}
+.sum-tbl tbody tr:hover td.line-cell{background:#FFF5C8;color:var(--ink)}
+.sum-tbl tbody tr.l1:hover td, .sum-tbl tbody tr.l2:hover td{background:#FFF3A3!important}
+.evo-tbl td.neg, .sum-tbl td.neg{color:#C62828;font-weight:600}
+.evo-tbl tr.l1 td.neg, .sum-tbl tr.l1 td.neg,
+.evo-tbl tr.l2 td.neg, .sum-tbl tr.l2 td.neg{color:#B71C1C;font-weight:800}
 .evo-tbl td.neg, .sum-tbl td.neg{color:var(--red)}
 .evo-tbl td.pos, .sum-tbl td.pos{color:var(--green)}
+.sum-tbl.sum-regular tbody td,
+.sum-tbl.sum-regular tbody td.line-cell,
+.sum-tbl.sum-regular tbody tr.l1 td,
+.sum-tbl.sum-regular tbody tr.l2 td,
+.sum-tbl.sum-regular tbody tr.sg-h td,
+.sum-tbl.sum-regular tbody tr.sg-sub td,
+.sum-tbl.sum-regular tbody tr.sg-col td,
+.sum-tbl.sum-regular tbody td.neg{font-weight:500!important}
 .evo-tbl .ind{padding-left:18px}
-.sum-tbl th.bu-hdr{font-size:12px;border-left:3px solid var(--ink)}
+.sum-tbl th.bu-hdr{font-size:12px;text-align:center;border-left:3px solid var(--ink)}
 .sum-tbl th.sub-hdr{font-size:10.5px;background:var(--yellow-dim);color:var(--ink-2)}
 .sum-tbl td.bu-first{border-left:3px solid var(--ink)}
+/* Destacar Acquiring (toggle) — borda direita preta espessa após o Total do Acquiring */
+.sum-tbl .acq-sep{border-right:6px solid #1a1a1a!important}
+
+.sim-toolbar{padding:10px 16px;border-bottom:1px solid var(--border);
+             display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card)}
+.sim-toolbar label{font-size:10px;font-weight:800;color:var(--muted);
+                   text-transform:uppercase;letter-spacing:.6px}
+.sim-body{padding:14px;background:var(--card)}
+.sim-wrap{max-height:calc(100vh - 300px);border:1px solid var(--border);
+          border-radius:12px;background:var(--card)}
+.sim-tbl{width:auto;min-width:760px}
+.sim-tbl th.scenario-hdr{text-align:center;border-left:3px solid var(--ink)}
+.sim-tbl td.scenario-first{border-left:3px solid var(--ink)}
 
 .gg-top{display:grid;grid-template-columns:300px 1fr;gap:16px;margin-bottom:16px}
 .gg-list{background:var(--card);border:1px solid var(--border);
@@ -191,14 +304,163 @@ select:focus{outline:none;border-color:var(--ink)}
   <h1>
     <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true">
       <circle cx="50" cy="50" r="48" fill="#1a1a1a"/>
-      <text x="50" y="62" text-anchor="middle" font-family="-apple-system,Segoe UI" font-weight="900" font-size="32" fill="#FFE600">M</text>
+      <text x="50" y="62" text-anchor="middle" font-family="'Proxima Nova',-apple-system,Segoe UI" font-weight="900" font-size="32" fill="#FFE600">M</text>
     </svg>
     P&L UE Brasil <span style="opacity:.55;font-weight:600">· Acquiring</span>
   </h1>
   <div class="hdr-r">
+    <button class="doc-btn" id="excel-export" type="button">Exportar Excel</button>
+    <button class="doc-btn" id="doc-open" type="button">Documentação</button>
     <span class="upd" id="updated"><span class="dot"></span>conectando…</span>
   </div>
 </header>
+
+<div class="doc-overlay" id="doc-modal" aria-hidden="true">
+  <article class="doc-modal" role="dialog" aria-modal="true" aria-labelledby="doc-title">
+    <div class="doc-head">
+      <div>
+        <h2 id="doc-title">Documentação do Dashboard P&L UE Brasil</h2>
+        <p>Guia operacional, regras de cálculo, governança e boas práticas de uso. Atualizado em 28/05/2026.</p>
+      </div>
+      <button class="doc-close" id="doc-close" type="button">Fechar</button>
+    </div>
+    <div class="doc-body">
+      <nav class="doc-nav" aria-label="Navegação da documentação">
+        <a href="#doc-objetivo">1. Objetivo e escopo</a>
+        <a href="#doc-dados">2. Fonte e atualização</a>
+        <a href="#doc-filtros">3. Filtros e granularidade</a>
+        <a href="#doc-metricas">4. Métricas e unidades</a>
+        <a href="#doc-pyl">5. Regras de P&L</a>
+        <a href="#doc-abas">6. Abas do dashboard</a>
+        <a href="#doc-captura">7. Capturas para slides</a>
+        <a href="#doc-governanca">8. Governança e operação</a>
+        <a href="#doc-qa">9. QA e troubleshooting</a>
+      </nav>
+      <div class="doc-content">
+        <section id="doc-objetivo">
+          <h3>1. Objetivo e Escopo</h3>
+          <p>Este dashboard acompanha o P&L de User Economics de Acquiring no Brasil, com foco em leitura executiva de receita, custos, take rate, variable contribution e evolução de margem por BU, segmento, produto e período.</p>
+          <div class="doc-grid">
+            <div class="doc-card"><strong>Usuários-alvo</strong><p>FP&A, liderança de Acquiring, times de negócio e stakeholders que acompanham margem, monetização e eficiência operacional.</p></div>
+            <div class="doc-card"><strong>Decisões suportadas</strong><p>Identificar perdas de margem, comparar períodos, priorizar custos relevantes, revisar performance por BU/segmento/produto e preparar materiais executivos.</p></div>
+            <div class="doc-card"><strong>Escopo incluído</strong><p>Acquiring consolidado, Point, Online Payments, QR, segmentos Big Sellers, SMB e Longtail, além de aberturas de produto disponíveis na base.</p></div>
+            <div class="doc-card"><strong>Fora de escopo</strong><p>Projeções, budget/forecast, conciliações contábeis externas e ajustes manuais fora da aba fonte.</p></div>
+          </div>
+        </section>
+
+        <section id="doc-dados">
+          <h3>2. Fonte de Dados e Atualização</h3>
+          <table class="doc-kv">
+            <tr><th>Fonte oficial</th><td>Google Sheets: planilha de P&L UE Brasil, abas <strong>Point</strong>, <strong>OP</strong> e <strong>QR</strong>.</td></tr>
+            <tr><th>Conexão</th><td>O dashboard lê as três abas via Grid SDK, junta tudo em uma base única em memória e atualiza automaticamente no próximo ciclo de leitura.</td></tr>
+            <tr><th>Meses fechados</th><td>O dashboard desconsidera meses ainda não fechados. Exemplo: em maio, mostra dados até abril.</td></tr>
+            <tr><th>Periodicidade</th><td>A tela faz polling periódico e atualiza o badge superior quando detecta mudança na base.</td></tr>
+            <tr><th>Pré-requisito</th><td>O owner do Grid precisa ter acesso à planilha e OAuth Google ativo no ambiente Grid.</td></tr>
+          </table>
+          <p class="doc-note">Boa prática: toda alteração estrutural nas abas Point, OP e QR deve preservar nomes de colunas, linhas de P&L e formato mensal para evitar quebra de leitura.</p>
+        </section>
+
+        <section id="doc-filtros">
+          <h3>3. Filtros e Granularidade</h3>
+          <ul>
+            <li><strong>BU:</strong> Total, Online Payments, Point e QR. Em Point é possível filtrar Device/TTP; em OP é possível abrir Checkout, Link e Others.</li>
+            <li><strong>Segmento:</strong> permite múltipla seleção. Sem seleção específica, considera todos os segmentos.</li>
+            <li><strong>Produto e método de pagamento:</strong> restringem o recorte quando as dimensões existem na base.</li>
+            <li><strong>Visão:</strong> alterna entre Econômico e Contábil.</li>
+            <li><strong>Métrica:</strong> alterna entre Absoluto, por TPN e % TPV.</li>
+            <li><strong>Unidade:</strong> controla valores absolutos em R$, R$ mil ou R$ M.</li>
+            <li><strong>Período:</strong> permite 2024, 2025, 2026, janelas móveis e intervalo customizado de meses fechados.</li>
+          </ul>
+        </section>
+
+        <section id="doc-metricas">
+          <h3>4. Métricas, Formatação e Unidades</h3>
+          <table class="doc-kv">
+            <tr><th>Absoluto</th><td>Mostra valores monetários conforme a unidade selecionada. Default: R$ M.</td></tr>
+            <tr><th>por TPN</th><td>Divide a linha de P&L pelo TPN do mesmo recorte e período. Default: duas casas decimais.</td></tr>
+            <tr><th>% TPV</th><td>Divide a linha de P&L pelo TPV do mesmo recorte e período. Default: duas casas decimais.</td></tr>
+            <tr><th>Casas decimais</th><td>Quando a métrica ativa é % TPV ou por TPN, o controle global de casas decimais ajusta tabelas, gráficos e tooltips.</td></tr>
+            <tr><th>TPV e TPN</th><td>São métricas base e aparecem em milhões quando aplicável.</td></tr>
+            <tr><th>Sinal</th><td>Receitas positivas e custos negativos seguem a estrutura da base; gráficos podem inverter eixo visualmente para facilitar leitura de custos.</td></tr>
+          </table>
+        </section>
+
+        <section id="doc-pyl">
+          <h3>5. Regras de P&L e Cálculo</h3>
+          <h4>Estrutura acumulada</h4>
+          <ul>
+            <li><strong>Product Monetization:</strong> soma Processing Fees e demais itens do bloco.</li>
+            <li><strong>Net Monetization:</strong> parte de Product Monetization e adiciona Fin Revenues, Fin Cost, Sales Taxes e ajustes aplicáveis.</li>
+            <li><strong>Take Rate resumido:</strong> considera Processing Fees, Fin Revenues, Fin Cost, Sales Taxes e Collection Fees.</li>
+            <li><strong>Variable Contribution:</strong> parte do resultado anterior e adiciona custos variáveis até VC.</li>
+          </ul>
+          <h4>Econômico vs Contábil</h4>
+          <ul>
+            <li><strong>Econômico:</strong> usa Sales Taxes Econ e exclui linhas Adj dos cálculos e da visualização.</li>
+            <li><strong>Contábil:</strong> usa Sales Taxes Contable e inclui linhas Adj nos subtotais/finais, mesmo quando elas ficam agrupadas ou ocultas visualmente.</li>
+            <li><strong>Fin Cost:</strong> consolida Fin Cost FTP + HII FTP nas abas Resumo, Margem, Árvore de Valor e Waterfall.</li>
+            <li><strong>Aliases executivos:</strong> Chargebacks Contábil aparece como CBK; Financing Revenues aparece como Fin Revenues.</li>
+          </ul>
+          <p class="doc-note">Regra de qualidade: subtotais devem bater com a soma acumulada das linhas que compõem cada bloco, respeitando a visão Econômico/Contábil selecionada.</p>
+        </section>
+
+        <section id="doc-abas">
+          <h3>6. Abas do Dashboard</h3>
+          <div class="doc-grid">
+            <div class="doc-card"><strong>P&L Evolutivo</strong><p>Tabela temporal do P&L, com visão mensal ou trimestral, usando os filtros globais e métricas selecionadas.</p></div>
+            <div class="doc-card"><strong>Resumo</strong><p>Comparação lado a lado de Acquiring, Point, Online Payments e QR por segmento. Inclui versão resumida, opção de esconder QR, destaque Acquiring, mapa de calor e controle de negrito.</p></div>
+            <div class="doc-card"><strong>Simulador BS</strong><p>Mostra P&L acumulado de Big Sellers com cenários automáticos de TPV e ticket médio. Default: Point, com toggle para OP; LM1, LM2 e LC têm tickets R$50/R$100 e Bad Debt normalizado em R$0,008 por TPN.</p></div>
+            <div class="doc-card"><strong>Gráficos</strong><p>Gráficos por Total, BU, produto e segmento. A linha de P&L escolhida atualiza todos os gráficos.</p></div>
+            <div class="doc-card"><strong>Margem por BU/Segmento</strong><p>Gráfico grande para entender quais linhas consomem mais margem entre Processing e VC, com quadro de maiores variações no recorte e no consolidado.</p></div>
+            <div class="doc-card"><strong>Árvore de Valor</strong><p>Mostra como as receitas se distribuem em custos e margem final, em absoluto, % TPV ou por TPN.</p></div>
+            <div class="doc-card"><strong>Waterfall</strong><p>Compara dois períodos e mostra os efeitos que explicam a variação de VC, com tabela lateral de cenário A, cenário B e delta.</p></div>
+          </div>
+        </section>
+
+        <section id="doc-captura">
+          <h3>7. Capturas para Slides</h3>
+          <ul>
+            <li>Botões <strong>Capturar</strong> copiam uma imagem PNG para a área de transferência.</li>
+            <li>Nas abas de tabela, a captura mira diretamente a tabela para facilitar colar em slides.</li>
+            <li>Em gráficos, a captura copia o card/gráfico renderizado.</li>
+            <li>O botão <strong>Exportar Excel</strong> no topo exporta a aba ativa como arquivo Excel compatível.</li>
+            <li>Se o navegador bloquear clipboard, habilite permissão de área de transferência no Grid e tente novamente.</li>
+          </ul>
+        </section>
+
+        <section id="doc-governanca">
+          <h3>8. Governança, Papéis e Rotina Operacional</h3>
+          <table class="doc-kv">
+            <tr><th>Owner de negócio</th><td>Define a regra de P&L, valida agrupamentos, nomenclaturas e leitura executiva.</td></tr>
+            <tr><th>Owner de dados</th><td>Garante consistência das abas Point, OP e QR, atualização dos meses fechados e integridade das dimensões.</td></tr>
+            <tr><th>Owner técnico</th><td>Mantém o HTML no Grid, versiona mudanças relevantes e valida regressões após alterações.</td></tr>
+            <tr><th>Ritual sugerido</th><td>Revisão mensal após fechamento, validação de totais, captura de outputs e registro de mudanças de regra.</td></tr>
+            <tr><th>Change management</th><td>Alterações de conceito devem ter descrição, responsável, data, impacto esperado e validação antes de uso executivo.</td></tr>
+          </table>
+        </section>
+
+        <section id="doc-qa">
+          <h3>9. QA, Controles e Troubleshooting</h3>
+          <h4>Checklist antes de usar em material executivo</h4>
+          <ul>
+            <li>Confirmar se o badge superior indica atualização recente.</li>
+            <li>Validar se o período selecionado contém apenas meses fechados.</li>
+            <li>Conferir se a visão Econômico/Contábil está correta para o objetivo da análise.</li>
+            <li>Checar se a unidade e a métrica estão coerentes: Absoluto, por TPN ou % TPV.</li>
+            <li>Comparar Take Rate e Variable Contribution com a base quando houver mudança de regra.</li>
+          </ul>
+          <h4>Problemas comuns</h4>
+          <ul>
+            <li><strong>Dashboard não carrega:</strong> verificar VPN, permissão do Google Sheets e OAuth do Grid.</li>
+            <li><strong>Número não bate:</strong> revisar visão Econômico/Contábil, filtros cruzados, unidade e regra de Adj.</li>
+            <li><strong>Mês ausente:</strong> o dash oculta meses ainda não fechados por desenho.</li>
+            <li><strong>Captura não cola:</strong> verificar permissão de clipboard no navegador.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </article>
+</div>
 
 <nav class="tab-nav">
   <button class="tab-btn on" data-tab="evo">
@@ -209,6 +471,10 @@ select:focus{outline:none;border-color:var(--ink)}
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     Resumo
   </button>
+  <button class="tab-btn" data-tab="sim">
+    <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16l3-5 3 3 5-8"/></svg>
+    Simulador BS
+  </button>
   <button class="tab-btn" data-tab="gg">
     <svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
     Gráficos
@@ -217,10 +483,18 @@ select:focus{outline:none;border-color:var(--ink)}
     <svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><line x1="3" y1="21" x2="21" y2="21"/></svg>
     Margem por BU/Segmento
   </button>
+  <button class="tab-btn" data-tab="tree">
+    <svg viewBox="0 0 24 24"><path d="M3 12h6m6 0h6M9 6h12M9 18h12M3 6v12"/></svg>
+    Árvore de Valor
+  </button>
+  <button class="tab-btn" data-tab="wf">
+    <svg viewBox="0 0 24 24"><rect x="3" y="6" width="3" height="14"/><rect x="9" y="3" width="3" height="17"/><rect x="15" y="10" width="3" height="10"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+    Waterfall
+  </button>
 </nav>
 
 <section class="filters">
-  <div class="fg">
+  <div class="fg" id="bu-wrap">
     <label>BU</label>
     <div class="pills" id="bu-pills">
       <span class="pill on" data-bu="ALL">Total</span>
@@ -246,17 +520,21 @@ select:focus{outline:none;border-color:var(--ink)}
       <span class="pill" data-opprod="OTHERS">Others</span>
     </div>
   </div>
-  <div class="fg">
+  <div class="fg" id="segment-wrap">
     <label>Segmento</label>
     <div class="pills" id="segment-pills">
       <span class="pill on" data-seg="ALL">Todos</span>
     </div>
   </div>
-  <div class="fg">
+  <div class="fg" id="product-wrap">
     <label>Produto</label>
     <select id="f-product"><option value="ALL">Todos</option></select>
   </div>
-  <div class="fg">
+  <div class="fg" id="payment-method-wrap">
+    <label>Método pagamento</label>
+    <select id="f-payment-method"><option value="ALL">Todos</option></select>
+  </div>
+  <div class="fg" id="invert-y-wrap">
     <label>Visão</label>
     <div class="pills" id="variant-pills">
       <span class="pill on" data-variant="econ">Econômico</span>
@@ -271,12 +549,26 @@ select:focus{outline:none;border-color:var(--ink)}
       <span class="pill" data-metric="ptpv">% TPV</span>
     </div>
   </div>
+  <div class="fg" id="decimal-wrap" style="display:none">
+    <label>Casas decimais</label>
+    <div class="pills" id="decimal-pills">
+      <span class="pill" data-dec="dec">−</span>
+      <span class="pill on" data-dec="value">2 casas</span>
+      <span class="pill" data-dec="inc">+</span>
+    </div>
+  </div>
   <div class="fg">
     <label>Unidade</label>
     <div class="pills" id="unit-pills">
       <span class="pill" data-unit="1">R$</span>
       <span class="pill" data-unit="1000">R$ mil</span>
       <span class="pill on" data-unit="1000000">R$ M</span>
+    </div>
+  </div>
+  <div class="fg">
+    <label>Eixo Y</label>
+    <div class="pills" id="invert-y-pills">
+      <span class="pill" data-toggle="invert">Inverter (custos pra cima)</span>
     </div>
   </div>
   <div class="fg">
@@ -288,7 +580,16 @@ select:focus{outline:none;border-color:var(--ink)}
       <option value="L12">Últimos 12m</option>
       <option value="L6">Últimos 6m</option>
       <option value="ALL">Todos</option>
+      <option value="CUSTOM">Personalizado…</option>
     </select>
+  </div>
+  <div class="fg" id="period-custom-wrap" style="display:none">
+    <label>De → Até</label>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select id="f-period-from"></select>
+      <span style="color:var(--muted);font-size:11px">→</span>
+      <select id="f-period-to"></select>
+    </div>
   </div>
 </section>
 
@@ -296,8 +597,17 @@ select:focus{outline:none;border-color:var(--ink)}
   <section class="panel on" id="panel-evo">
     <div class="card">
       <div class="card-h">
-        <span>P&L · Evolutivo Mensal</span>
-        <span class="sub" id="evo-sub">—</span>
+        <span>P&L · Evolutivo</span>
+        <span style="display:flex;align-items:center;gap:10px">
+          <span class="sub" id="evo-sub">—</span>
+          <span class="pills">
+            <span class="pill" data-capture="#evo-tbl" data-file="pnl-evolutivo">Capturar</span>
+          </span>
+          <span class="pills" id="evo-gran-pills">
+            <span class="pill on" data-gran="M">Mensal</span>
+            <span class="pill" data-gran="Q">Trimestral</span>
+          </span>
+        </span>
       </div>
       <div class="evo-wrap">
         <table class="evo-tbl" id="evo-tbl"></table>
@@ -307,9 +617,29 @@ select:focus{outline:none;border-color:var(--ink)}
 
   <section class="panel" id="panel-sum">
     <div class="card">
-      <div class="card-h">
-        <span>Resumo · Point / OP / QR por Segmento</span>
-        <span class="sub" id="sum-sub">—</span>
+      <div class="card-h" style="flex-wrap:wrap;gap:8px">
+        <span>Resumo · Acquiring / Point / OP / QR por Segmento</span>
+        <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="sub" id="sum-sub">—</span>
+          <span class="pills" id="sum-resumed-pills">
+            <span class="pill" data-toggle="resumed">Versão resumida</span>
+          </span>
+          <span class="pills" id="sum-hideqr-pills">
+            <span class="pill" data-toggle="hideqr">Ocultar QR</span>
+          </span>
+          <span class="pills" id="sum-heatmap-pills">
+            <span class="pill" data-toggle="heatmap">Mapa de calor</span>
+          </span>
+          <span class="pills" id="sum-bold-pills">
+            <span class="pill on" data-toggle="bold">Negrito</span>
+          </span>
+          <span class="pills" id="sum-acqdiv-pills">
+            <span class="pill" data-toggle="acqdiv">Destacar Acquiring</span>
+          </span>
+          <span class="pills">
+            <span class="pill" data-capture="#sum-tbl" data-file="resumo-pnl">Capturar</span>
+          </span>
+        </span>
       </div>
       <div class="sum-wrap">
         <table class="sum-tbl" id="sum-tbl"></table>
@@ -317,20 +647,193 @@ select:focus{outline:none;border-color:var(--ink)}
     </div>
   </section>
 
+  <section class="panel" id="panel-sim">
+    <div class="card">
+      <div class="card-h" style="flex-wrap:wrap;gap:8px">
+        <span>Simulador BS · Ticket médio</span>
+        <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="sub" id="sim-sub">—</span>
+          <span class="pills">
+            <span class="pill" data-capture="#sim-tbl" data-file="simulador-bs">Capturar</span>
+          </span>
+        </span>
+      </div>
+      <div class="sim-toolbar">
+        <label>Cenário base</label>
+        <div class="pills" id="sim-bu-pills">
+          <span class="pill on" data-sim-bu="ALL">Total Big Sellers</span>
+          <span class="pill" data-sim-bu="POINT">Point</span>
+          <span class="pill" data-sim-bu="OP">OP</span>
+        </div>
+        <div style="width:1px;height:22px;background:var(--border)"></div>
+        <label>Simulação</label>
+        <div class="pills" id="sim-scenario-bu-pills">
+          <span class="pill on" data-sim-scenario-bu="POINT">Point</span>
+          <span class="pill" data-sim-scenario-bu="OP">OP</span>
+        </div>
+        <div style="margin-left:auto"></div>
+        <div class="pills">
+          <span class="pill" id="sim-reset">Resetar cenários</span>
+        </div>
+      </div>
+      <div class="sim-body">
+        <div class="sim-wrap">
+          <table class="sum-tbl sim-tbl" id="sim-tbl"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="panel" id="panel-gg">
+    <div style="padding:10px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Granularidade</label>
+      <div class="pills" id="gg-gran-pills">
+        <span class="pill on" data-gran="M">Mensal</span>
+        <span class="pill" data-gran="Q">Quarters</span>
+      </div>
+      <div class="pills">
+        <span class="pill" data-capture="#gg-grid" data-file="graficos-pnl">Capturar</span>
+      </div>
+    </div>
     <div class="gg-top">
       <div class="gg-list" id="gg-list"></div>
       <div class="gg-grid" id="gg-grid"></div>
     </div>
   </section>
 
+  <section class="panel" id="panel-wf">
+    <div class="card">
+      <div class="card-h" style="flex-wrap:wrap;gap:8px">
+        <span>Waterfall · Bridge Cenário A → Cenário B</span>
+        <span class="sub" id="wf-sub">—</span>
+      </div>
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Métrica</label>
+        <div class="pills" id="wf-metric-pills">
+          <span class="pill" data-metric="abs">Absoluto</span>
+          <span class="pill on" data-metric="ptpv">% TPV</span>
+        </div>
+        <div style="width:1px;height:22px;background:var(--border)"></div>
+        <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Tipo</label>
+        <div class="pills" id="wf-type-pills">
+          <span class="pill on" data-type="Q">Trimestre</span>
+          <span class="pill" data-type="M">Mês</span>
+        </div>
+        <div style="width:1px;height:22px;background:var(--border)"></div>
+        <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Cenário A</label>
+        <select id="wf-a"></select>
+        <span style="color:var(--muted);font-size:11px">→</span>
+        <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Cenário B</label>
+        <select id="wf-b"></select>
+        <div style="margin-left:auto"></div>
+        <div class="pills">
+          <span class="pill" data-capture="#panel-wf .card" data-file="waterfall-bridge">Capturar</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:320px minmax(0,1fr);gap:0;height:calc(100vh - 280px);min-height:480px">
+        <div id="wf-table" style="border-right:1px solid var(--border);padding:14px;overflow:auto;background:var(--card-2);font:500 11px 'Proxima Nova',-apple-system,sans-serif"></div>
+        <div id="wf-host"  style="padding:16px;position:relative;min-width:0"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-tree">
+    <div class="card">
+      <div class="card-h">
+        <span>Árvore de Valor</span>
+        <span class="sub" id="tree-sub">—</span>
+      </div>
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="pills" id="tree-biglabels-pills">
+          <span class="pill" data-toggle="biglabels">Rótulos ampliados</span>
+        </div>
+        <div class="pills" id="tree-values-pills">
+          <span class="pill on" data-toggle="values">Valores nos rótulos</span>
+        </div>
+        <div style="width:1px;height:22px;background:var(--border)"></div>
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Gráfico</span>
+        <div class="pills" id="tree-chart-size-pills">
+          <span class="pill" data-act="chart-dec">−</span>
+          <span class="pill" data-act="chart-inc">+</span>
+        </div>
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Fonte</span>
+        <div class="pills" id="tree-font-size-pills">
+          <span class="pill" data-act="font-dec">−</span>
+          <span class="pill" data-act="font-inc">+</span>
+        </div>
+        <div style="margin-left:auto"></div>
+        <div class="pills">
+          <span class="pill" data-capture="#panel-tree .card" data-file="arvore-valor">Capturar</span>
+        </div>
+      </div>
+      <div id="tree-host" style="padding:16px;min-height:560px;position:relative"></div>
+    </div>
+  </section>
+
   <section class="panel" id="panel-margin">
     <div class="card">
       <div class="card-h">
-        <span>Margem · Onde estamos perdendo</span>
-        <span class="sub" id="margin-sub">Cada gráfico mostra o walk PM → NM → VC. Quando as linhas se afastam, a margem está sendo consumida.</span>
+        <span>Margem · Walk completo até VC</span>
+        <span class="sub" id="margin-sub">—</span>
       </div>
-      <div class="gg-grid" id="margin-grid"></div>
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">BU</label>
+        <div class="pills" id="margin-cut-bu-pills">
+          <span class="pill on" data-cut="ALL">Total</span>
+          <span class="pill" data-cut="POINT">Point</span>
+          <span class="pill" data-cut="OP">Online Payments</span>
+          <span class="pill" data-cut="QR">QR</span>
+        </div>
+        <div style="width:1px;height:22px;background:var(--border)"></div>
+        <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Segmento</label>
+        <div class="pills" id="margin-cut-seg-pills">
+          <span class="pill on" data-cut="ALL">Total</span>
+          <span class="pill" data-cut="BIG SELLERS">Big Sellers</span>
+          <span class="pill" data-cut="SMB">SMB</span>
+          <span class="pill" data-cut="LONGTAIL">Longtail</span>
+        </div>
+        <div style="width:1px;height:22px;background:var(--border)"></div>
+        <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Granularidade</label>
+        <div class="pills" id="margin-gran-pills">
+          <span class="pill on" data-gran="M">Mensal</span>
+          <span class="pill" data-gran="Q">Trimestral</span>
+        </div>
+        <div id="margin-q-range" style="display:none;align-items:center;gap:6px">
+          <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">De</label>
+          <select id="margin-q-from"></select>
+          <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Até</label>
+          <select id="margin-q-to"></select>
+        </div>
+        <div style="margin-left:auto"></div>
+        <div class="pills" id="margin-ftp-pills">
+          <span class="pill" data-toggle="ftp">Incluir FTP</span>
+        </div>
+        <div class="pills" id="margin-labels-pills">
+          <span class="pill" data-toggle="labels">Rótulos de dados</span>
+        </div>
+        <div class="pills" id="margin-biglegend-pills">
+          <span class="pill" data-toggle="biglegend">Legenda ampliada</span>
+        </div>
+        <div style="width:1px;height:22px;background:var(--border)"></div>
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Gráfico</span>
+        <div class="pills" id="margin-chart-size-pills">
+          <span class="pill" data-act="chart-dec">−</span>
+          <span class="pill" data-act="chart-inc">+</span>
+        </div>
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Fonte</span>
+        <div class="pills" id="margin-font-size-pills">
+          <span class="pill" data-act="font-dec">−</span>
+          <span class="pill" data-act="font-inc">+</span>
+        </div>
+        <div class="pills">
+          <span class="pill" data-capture="#panel-margin .card" data-file="margem-walk">Capturar</span>
+        </div>
+      </div>
+      <div id="margin-grid-container" style="display:grid;grid-template-columns:minmax(0,1fr) 260px 260px;gap:0;height:calc((100vh - 280px) * var(--margin-scale, 1));min-height:420px">
+        <div id="margin-host" style="padding:16px;position:relative;min-width:0"></div>
+        <div id="margin-summary"      style="border-left:1px solid var(--border);padding:14px 14px 18px;overflow:auto;background:var(--card-2)"></div>
+        <div id="margin-summary-cons" style="border-left:1px solid var(--border);padding:14px 14px 18px;overflow:auto;background:#FAFAEF"></div>
+      </div>
     </div>
   </section>
 </main>
@@ -339,14 +842,14 @@ select:focus{outline:none;border-color:var(--ink)}
   <div class="boot-card">
     <div class="spinner"></div>
     <h2>Conectando à planilha…</h2>
-    <p id="boot-msg">Lendo a aba <strong>Base UE</strong> ao vivo via <code>Grid.sheets</code>. Requer que o owner deste doc tenha o Google OAuth conectado em <code>/google/oauth/start</code>.</p>
+    <p id="boot-msg">Lendo as abas <strong>Point</strong>, <strong>OP</strong> e <strong>QR</strong> ao vivo via <code>Grid.sheets</code>. Requer que o owner deste doc tenha o Google OAuth conectado em <code>/google/oauth/start</code>.</p>
   </div>
 </div>
 
 <script>
 /* ──────────────────────────────────────────────────────────
    P&L UE — dashboard Grid-native
-   Data source: Grid.sheets.get(SHEET_ID, "Base UE!A1:CZ20000")
+   Data source: Grid.sheets.get(SHEET_ID, "Point!A1:ZZ20000", "OP!A1:ZZ20000", "QR!A1:ZZ20000")
    Auto-refresh: a cada POLL_MS (60s), só re-renderiza se mudou.
    Segurança: rótulos vindos da planilha são renderizados via
    textContent (nunca innerHTML) — defesa contra XSS.
@@ -354,8 +857,61 @@ select:focus{outline:none;border-color:var(--ink)}
 (() => {
 'use strict';
 
+// Chart.js global font — match the dashboard body font (Proxima Nova preferred).
+if (window.Chart && Chart.defaults && Chart.defaults.font){
+  Chart.defaults.font.family = "'Proxima Nova', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+}
+
+// Inline Chart.js plugin — desenha rótulos coloridos em cada ponto visível dos
+// datasets marcados com _bucket === 'atencao' | 'otim'. Ativado por state.marginShowLabels.
+if (window.Chart){
+  Chart.register({
+    id: 'marginEdgeLabels',
+    afterDatasetsDraw(chart){
+      // Só aplica no chart da aba Margem, e só quando o usuário ativou o toggle.
+      if (!state || !state.marginShowLabels) return;
+      if (chart !== state.charts['margin']) return;
+      const ctx = chart.ctx;
+      const skipUnit = state.metric !== 'abs';
+      const div = skipUnit ? 1 : state.unit;
+      chart.data.datasets.forEach((ds, i) => {
+        if (!chart.isDatasetVisible(i)) return;
+        if (ds._bucket !== 'atencao' && ds._bucket !== 'otim') return;
+        const meta = chart.getDatasetMeta(i);
+        meta.data.forEach((pt, j) => {
+          const v = ds.data[j];
+          if (v == null || pt == null) return;
+          const raw = v * div;
+          const txt = fmt(raw, state.metric, { item: { src: ds._srcKey } });
+          ctx.save();
+          ctx.font = '700 9px "Proxima Nova", -apple-system, sans-serif';
+          const w = ctx.measureText(txt).width;
+          const padX = 3, h = 12;
+          const x = pt.x - w/2 - padX, y = pt.y - h - 2;
+          // pílula colorida pra contraste
+          ctx.fillStyle = ds.borderColor;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(x, y, w + padX*2, h, 3);
+          else ctx.rect(x, y, w + padX*2, h);
+          ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.textBaseline = 'middle';
+          ctx.textAlign = 'center';
+          ctx.fillText(txt, pt.x, y + h/2);
+          ctx.restore();
+        });
+      });
+    }
+  });
+}
+
 const SHEET_ID = '1b7LdGhlhANlsJBkr77c0I2roI1ijBlTrGW26bvUdjtA';
-const SHEET_RANGE = "Base UE!A1:CZ20000";
+const SHEET_TABS = [
+  { name: 'Point', bu: 'POINT' },
+  { name: 'OP',    bu: 'OP' },
+  { name: 'QR',    bu: 'QR' }
+];
+const SHEET_RANGE_A1 = 'A1:ZZ20000';
 const POLL_MS = 60_000;
 
 // ── State ───────────────────────────────────────────────
@@ -364,13 +920,45 @@ const state = {
   bu: 'ALL',
   segments: [],            // [] = all; otherwise list of selected segment names (multi-select)
   product: 'ALL',
+  paymentMethod: 'ALL',
   tap: 'ALL',              // Device / TTP — only relevant when bu === 'POINT'
   opProduct: 'ALL',        // Checkout / Link / Others — only relevant when bu === 'OP'
+  marginCutBU:  'ALL',     // Recorte BU: ALL/OP/POINT/QR
+  marginCutSeg: 'ALL',     // Recorte Segmento: ALL/BIG SELLERS/SMB/LONGTAIL
+  marginGran: 'M',         // 'M' = mensal, 'Q' = trimestral
+  evoGran: 'M',            // granularidade da aba P&L Evolutivo
+  marginQFrom: null,       // ex.: '2024-Q1'
+  marginQTo:   null,       // ex.: '2026-Q2'
+  marginShowFTP: false,    // toggle: incluir Fin Cost FTP + HII FTP no chart (default off)
+  marginShowLabels: false, // toggle: rótulos de dados nas linhas de atenção/otimizados
+  marginBigLegend: false,  // toggle: amplia a legenda (e encolhe o gráfico) p/ encaixar nomes longos
+  treeBigLabels: false,    // Árvore: aumenta os rótulos dos nós (e encolhe o Sankey)
+  treeShowValues: true,    // Árvore: anexa valor inline em cada nó (sem precisar de hover)
+  sumResumed: false,       // Resumo: versão executiva (Adj exclui no Econômico; inclui no Contábil)
+  sumHideQR: false,        // Resumo resumido: esconde o bloco QR quando ativo
+  sumHeatmap: false,       // Resumo: heatmap por linha (toggle visual)
+  sumBold: true,           // Resumo: mantém/retira negrito do corpo da tabela
+  sumAcqDivider: false,    // Resumo: separador visual entre Acquiring e Point/OP/QR
+  marginChartScale: 1,     // Margem: escala do tamanho do gráfico (0.5–2.0)
+  marginFontScale:  1,     // Margem: escala da fonte da legenda/eixos (0.7–2.0)
+  treeChartScale:   1,     // Árvore: escala do tamanho do diagrama
+  treeFontScale:    1,     // Árvore: escala da fonte dos rótulos
+  waterfallMetric:  'ptpv',// Waterfall: 'abs' ou 'ptpv' (default % TPV)
+  waterfallType:    'Q',   // Waterfall: tipo do período ('Q' trimestre / 'M' mês)
+  waterfallA:       null,  // Waterfall: cenário A (período-chave)
+  waterfallB:       null,  // Waterfall: cenário B
+  ggGran: 'M',             // Gráficos: granularidade Mensal/Trimestral (Quarter)
+  simBU: 'ALL',            // Simulador BS: ALL/POINT/OP, sempre segmento Big Sellers
+  simScenarioBU: 'POINT',  // Simulador BS: cenários exibidos (POINT/OP), default Point
+  invertY: false,          // global: inverte o eixo Y dos charts (custos para cima)
   metric: 'abs',           // active metric (mirror of metricByTab[tab])
-  metricByTab: { evo: 'abs', sum: 'abs', gg: 'ptpv', margin: 'ptpv' }, // per-tab default
+  metricByTab: { evo: 'abs', sum: 'abs', sim: 'ptpv', gg: 'ptpv', margin: 'ptpv', tree: 'ptpv' }, // per-tab default
+  metricDecimals: 2,       // casas decimais para % TPV e por TPN
   unit: 1_000_000,         // 1 | 1_000 | 1_000_000  (default R$ MM)
   variant: 'econ',         // 'econ' | 'contabil'
   period: 'Y2026',         // default → calendário 2026
+  periodFrom: null,        // 'YYYY-MM' quando period === 'CUSTOM'
+  periodTo:   null,        // 'YYYY-MM' quando period === 'CUSTOM'
   tab: 'evo',
   ggLine: null,
   charts: {},
@@ -418,7 +1006,7 @@ const PNL_TAXONOMY = [
   {
     group: 'Net Monetization',
     items: [
-      { src: 'Financing_Revenues',   label: 'Financing Revenues' },
+      { src: 'Financing_Revenues',   label: 'Fin Revenues' },
       { src: 'Fin_Cost_FTP',         label: 'Fin Cost FTP' },
       { src: 'HII_FTP',              label: 'HII FTP' },
       { src: 'Sales_Taxes_Econ',     label: 'Sales Taxes Econ',     variant: 'econ' },
@@ -434,8 +1022,8 @@ const PNL_TAXONOMY = [
     group: 'Variable Contribution',
     items: [
       { src: 'Collection_Fees',             label: 'Collection Fees' },
-      { src: 'CHARGEBACKS_Contable',        label: 'CHARGEBACKS Contable' },
-      { src: 'Bad_Debt_Incobrables',        label: 'Bad Debt Incobrables' },
+      { src: 'CHARGEBACKS_Contable',        label: 'CBK' },
+      { src: 'Bad_Debt_Incobrables',        label: 'Bad Debt' },
       { src: 'BPP',                         label: 'BPP' },
       { src: 'Consultor_Certificado',       label: 'Consultor Certificado' },
       { src: 'Plataforma',                  label: 'Plataforma' },
@@ -444,7 +1032,7 @@ const PNL_TAXONOMY = [
       { src: 'FP_Variable',                 label: 'FP Variable' },
       { src: 'Telemetria',                  label: 'Telemetria' },
       { src: 'Cashbacks_Sellers',           label: 'Cashbacks Sellers' },
-      { src: 'COUPONS',                     label: 'COUPONS' },
+      { src: 'COUPONS',                     label: 'Coupons' },
       { src: 'Other_Direct_Variable_Costs', label: 'Other Direct Variable Costs' },
       { src: 'VC_Adj',                      label: 'VC Adj' }
     ],
@@ -457,19 +1045,19 @@ const PNL_TAXONOMY = [
     group: 'Direct Contribution',
     items: [
       { kind: 'subgroup', key: 'MPOS', label: 'MPOS', items: [
-        { src: 'Descuentos_MPOS',      label: 'Descuentos MPOS' },
+        { src: 'Descuentos_MPOS',      label: 'Descontos MPOS' },
         { src: 'Sales_MPOS_Gross',     label: 'Sales MPOS Gross' },
         { src: 'Sales_Tax_MPOS',       label: 'Sales Tax MPOS' },
-        { src: 'Alquiler_MPOS',        label: 'Alquiler MPOS' },
+        { src: 'Alquiler_MPOS',        label: 'Aluguel MPOS' },
         { src: 'Cost_Of_Product_Sold', label: 'Cost Of Product Sold' },
         { src: 'Insumos_Point',        label: 'Insumos Point' },
         { src: 'Shipping_Costs_Point', label: 'Shipping Costs Point' },
         { src: 'Warehousing_Point',    label: 'Warehousing Point' },
-        { src: 'Reacondicionamento',   label: 'Reacondicionamento' },
+        { src: 'Reacondicionamento',   label: 'Recondicionamento' },
         { src: 'Other_MPOS_Cogs',      label: 'Other MPOS Cogs' }
       ]},
-      { src: 'Fuerza_de_Ventas',        label: 'Fuerza de Ventas' },
-      { src: 'Fuerza_de_Ventas_Propia', label: 'Fuerza de Ventas Propia' },
+      { src: 'Fuerza_de_Ventas',        label: 'Força de Vendas' },
+      { src: 'Fuerza_de_Ventas_Propia', label: 'Força de Vendas Própria' },
       { src: 'Other_Sales_Expenses',    label: 'Other Sales Expenses' },
       { src: 'Special_Dates',           label: 'Special Dates' },
       { src: 'Strategic_Initiatives',   label: 'Strategic Initiatives' },
@@ -480,7 +1068,7 @@ const PNL_TAXONOMY = [
       { src: 'Fraud_Prevention',        label: 'Fraud Prevention' },
       { src: 'CX_Fixed',                label: 'CX Fixed' },
       { src: 'Hosting_Fixed',           label: 'Hosting Fixed' },
-      { src: 'OTHER_FIXED_COSTS',       label: 'OTHER FIXED COSTS' },
+      { src: 'OTHER_FIXED_COSTS',       label: 'Other Fixed Costs' },
       { src: 'Com_Resselers',           label: 'Com Resselers' },
       { src: 'Paid_On_Media',           label: 'Paid On Media' },
       { src: 'DC_Adj',                  label: 'DC Adj' }
@@ -493,14 +1081,14 @@ const PNL_TAXONOMY = [
   {
     group: 'Business Contribution',
     items: [
-      { src: 'Marketing_Branding',           label: 'Marketing Branding' },
-      { src: 'PRODUCT_DEVELOPMENT_DIRECT',   label: 'PRODUCT DEVELOPMENT DIRECT' },
-      { src: 'PRODUCT_DEVELOPMENT_INDIRECT', label: 'PRODUCT DEVELOPMENT INDIRECT' },
-      { src: 'GA_LOCAL',                     label: 'GA LOCAL' },
-      { src: 'GA_SUBBU_CORP',                label: 'GA SUBBU CORP' },
-      { src: 'GA_BU_CORP',                   label: 'GA BU CORP' },
-      { src: 'SM_SUBBU_CORP',                label: 'SM SUBBU CORP' },
-      { src: 'SM_BU_CORP',                   label: 'SM BU CORP' },
+      { src: 'Marketing_Branding',           label: 'Demand Gen & Branding' },
+      { src: 'PRODUCT_DEVELOPMENT_DIRECT',   label: 'Product Development Direct' },
+      { src: 'PRODUCT_DEVELOPMENT_INDIRECT', label: 'Product Development Indirect' },
+      { src: 'GA_LOCAL',                     label: 'GA Local' },
+      { src: 'GA_SUBBU_CORP',                label: 'GA SubBU Corp' },
+      { src: 'GA_BU_CORP',                   label: 'GA BU Corp' },
+      { src: 'SM_SUBBU_CORP',                label: 'SM SubBU Corp' },
+      { src: 'SM_BU_CORP',                   label: 'SM BU Corp' },
       { src: 'BC_Adj',                       label: 'BC Adj' }
     ],
     subtotal: {
@@ -511,8 +1099,8 @@ const PNL_TAXONOMY = [
   {
     group: 'Business Margin',
     items: [
-      { src: 'GA_CORPORATE', label: 'GA CORPORATE' },
-      { src: 'SM_CORPORATE', label: 'SM CORPORATE' },
+      { src: 'GA_CORPORATE', label: 'GA Corporate' },
+      { src: 'SM_CORPORATE', label: 'SM Corporate' },
       { src: 'PD_BM',        label: 'PD BM' },
       { src: 'BM_Adj',       label: 'BM Adj' }
     ],
@@ -536,6 +1124,15 @@ function* iterLeafItems(group){
     }
   }
 }
+
+function isAdjLine(lineOrItem){
+  const src = typeof lineOrItem === 'string' ? lineOrItem : (lineOrItem && lineOrItem.src);
+  const label = typeof lineOrItem === 'string' ? '' : (lineOrItem && lineOrItem.label);
+  return /(^|[_\s-])Adj($|[_\s-])/i.test(String(src || '')) ||
+         /(^|[_\s-])Adj($|[_\s-])/i.test(String(label || ''));
+}
+function includeAdjInCalc(){ return state.variant === 'contabil'; }
+function useLineInSubtotal(item){ return includeAdjInCalc() || !isAdjLine(item); }
 
 // Lookup index — src line → { item, group, isSubtotal }
 const PNL_INDEX = (() => {
@@ -564,6 +1161,7 @@ function buildOutline(present, hasValue){
         const subItems = it.items.filter(s =>
           present.has(s.src)
           && (!s.variant || s.variant === state.variant)
+          && (includeAdjInCalc() || !isAdjLine(s))
           && keep(s.src)
         );
         if (!subItems.length) continue;
@@ -576,6 +1174,7 @@ function buildOutline(present, hasValue){
       } else {
         if (!present.has(it.src)) continue;
         if (it.variant && it.variant !== state.variant) continue;
+        if (!includeAdjInCalc() && isAdjLine(it)) continue;
         if (!keep(it.src)) continue;
         blocks.push({ kind: 'item', item: it });
       }
@@ -609,14 +1208,17 @@ function buildOutline(present, hasValue){
 }
 
 // ── Helpers ─────────────────────────────────────────────
-// Default: 1 decimal place. % TPV uses 2 decimals to preserve take-rate precision.
+// Default: 1 decimal place. % TPV and por TPN use a configurable decimal count.
 const fmtNum = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const fmtPct = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmtPct(v){
+  const d = Math.max(0, Math.min(6, state.metricDecimals || 2));
+  return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+}
 
 function fmt(v, mode, opts){
   if (v === null || v === undefined || !isFinite(v)) return '—';
-  if (mode === 'ptpv') return fmtPct.format(v) + '%';
-  if (mode === 'ptpn') return fmtNum.format(v);
+  if (mode === 'ptpv') return fmtPct(v) + '%';
+  if (mode === 'ptpn') return fmtPct(v);
   // 'abs' mode → apply unit divisor unless the line is a count or a ratio
   const it = opts && opts.item;
   const skipUnit = it && (it.isCount || it.isRatio);
@@ -630,11 +1232,313 @@ function labelVariant(){
   return state.variant === 'econ' ? 'Econômico' : 'Contábil';
 }
 function setText(el, txt){ el.textContent = txt == null ? '' : String(txt); }
+function escapeHtml(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
 function mkEl(tag, cls, txt){
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (txt != null) e.textContent = String(txt);
   return e;
+}
+function canvasToPngBlob(canvas){
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+async function copyBlobToClipboard(blob, filename){
+  if (!blob) throw new Error('Imagem vazia.');
+  if (!navigator.clipboard || !window.ClipboardItem){
+    alert('Não consegui copiar a imagem para a área de transferência neste navegador. Abra o dashboard no Grid via HTTPS e tente novamente.');
+    return false;
+  }
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+  return true;
+}
+async function copyCanvasToClipboard(canvas, filename){
+  return copyBlobToClipboard(await canvasToPngBlob(canvas), filename);
+}
+async function copyDataUrlToClipboard(dataUrl, filename){
+  const blob = await (await fetch(dataUrl)).blob();
+  return copyBlobToClipboard(blob, filename);
+}
+async function captureTableAsPng(table, filename){
+  const rows = [...table.rows];
+  if (!rows.length) return false;
+  const placements = [];
+  const rowHeights = [];
+  const colWidths = [];
+  const occupied = [];
+  function mark(r, c, rs, cs){
+    for (let rr = 0; rr < rs; rr++){
+      occupied[r + rr] = occupied[r + rr] || [];
+      for (let cc = 0; cc < cs; cc++) occupied[r + rr][c + cc] = true;
+    }
+  }
+  rows.forEach((row, r) => {
+    let c = 0;
+    occupied[r] = occupied[r] || [];
+    for (const cell of [...row.cells]){
+      while (occupied[r][c]) c++;
+      const colspan = Math.max(1, cell.colSpan || 1);
+      const rowspan = Math.max(1, cell.rowSpan || 1);
+      const rect = cell.getBoundingClientRect();
+      const cellW = Math.max(24, Math.ceil(rect.width || cell.offsetWidth || 80));
+      const cellH = Math.max(20, Math.ceil(rect.height || cell.offsetHeight || 28));
+      const eachW = cellW / colspan;
+      const eachH = cellH / rowspan;
+      for (let i = 0; i < colspan; i++) colWidths[c + i] = Math.max(colWidths[c + i] || 0, eachW);
+      for (let i = 0; i < rowspan; i++) rowHeights[r + i] = Math.max(rowHeights[r + i] || 0, eachH);
+      placements.push({ cell, row:r, col:c, colspan, rowspan });
+      mark(r, c, rowspan, colspan);
+      c += colspan;
+    }
+  });
+  for (let i = 0; i < colWidths.length; i++) colWidths[i] = Math.ceil(colWidths[i] || 80);
+  for (let i = 0; i < rowHeights.length; i++) rowHeights[i] = Math.ceil(rowHeights[i] || 28);
+  const xPos = [0];
+  for (const w of colWidths) xPos.push(xPos[xPos.length - 1] + w);
+  const yPos = [0];
+  for (const h of rowHeights) yPos.push(yPos[yPos.length - 1] + h);
+  const dpr = 2;
+  const width = Math.max(1, Math.ceil(xPos[xPos.length - 1]));
+  const height = Math.max(1, Math.ceil(yPos[yPos.length - 1]));
+  const canvas = document.createElement('canvas');
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  for (const p of placements){
+    const cell = p.cell;
+    const cs = getComputedStyle(cell);
+    const x = xPos[p.col];
+    const y = yPos[p.row];
+    const w = xPos[p.col + p.colspan] - x;
+    const h = yPos[p.row + p.rowspan] - y;
+    ctx.fillStyle = cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' ? cs.backgroundColor : '#fff';
+    ctx.fillRect(x, y, w, h);
+    const bwB = Math.max(1, parseFloat(cs.borderBottomWidth || '1') || 1);
+    const bwR = parseFloat(cs.borderRightWidth || '0') || 0;
+    ctx.strokeStyle = cs.borderBottomColor || '#E5E7EB';
+    ctx.lineWidth = bwB;
+    ctx.beginPath(); ctx.moveTo(x, y + h - bwB / 2); ctx.lineTo(x + w, y + h - bwB / 2); ctx.stroke();
+    if (bwR > 0){
+      ctx.strokeStyle = cs.borderRightColor || '#E5E7EB';
+      ctx.lineWidth = bwR;
+      ctx.beginPath(); ctx.moveTo(x + w - bwR / 2, y); ctx.lineTo(x + w - bwR / 2, y + h); ctx.stroke();
+    }
+    const txt = (cell.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!txt) continue;
+    const weight = cs.fontWeight || '500';
+    const size = parseFloat(cs.fontSize || '11') || 11;
+    ctx.font = `${weight} ${size}px "Proxima Nova", -apple-system, sans-serif`;
+    ctx.fillStyle = cs.color || '#1a1a1a';
+    ctx.textBaseline = 'middle';
+    const padL = Math.max(6, parseFloat(cs.paddingLeft || '8') || 8);
+    const padR = Math.max(6, parseFloat(cs.paddingRight || '8') || 8);
+    const align = cs.textAlign || 'right';
+    let tx = x + w - padR;
+    ctx.textAlign = 'right';
+    if (align === 'left' || cell.classList.contains('first') || cell.classList.contains('line-cell')){
+      tx = x + padL;
+      ctx.textAlign = 'left';
+    } else if (align === 'center'){
+      tx = x + w / 2;
+      ctx.textAlign = 'center';
+    }
+    let out = txt;
+    const maxW = Math.max(20, w - padL - padR);
+    while (ctx.measureText(out).width > maxW && out.length > 4) out = out.slice(0, -2) + '…';
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 2, y + 1, Math.max(1, w - 4), Math.max(1, h - 2));
+    ctx.clip();
+    ctx.fillText(out, tx, y + h / 2);
+    ctx.restore();
+  }
+  await copyCanvasToClipboard(canvas, filename);
+  return true;
+}
+async function captureElement(el, filename){
+  if (!el) return false;
+  try {
+  const table = el.tagName === 'TABLE' ? el : null;
+  if (table && await captureTableAsPng(table, filename)) return true;
+  if (window.html2canvas){
+    const canvas2 = await html2canvas(el, { backgroundColor:'#fff', scale:2, useCORS:true, logging:false });
+    await copyCanvasToClipboard(canvas2, filename);
+    return true;
+  }
+  const plot = el.classList.contains('js-plotly-plot') ? el : el.querySelector('.js-plotly-plot');
+  if (plot && window.Plotly && Plotly.toImage){
+    const url = await Plotly.toImage(plot, { format:'png', width:Math.max(1100, plot.clientWidth || 1100), height:Math.max(520, plot.clientHeight || 520), scale:2 });
+    await copyDataUrlToClipboard(url, filename);
+    return true;
+  }
+  const canvas = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
+  if (canvas && canvas.toDataURL){
+    await copyCanvasToClipboard(canvas, filename);
+    return true;
+  }
+  const svg = el.tagName && el.tagName.toUpperCase() === 'SVG' ? el : el.querySelector('svg');
+  if (svg){
+    const raw = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([raw], { type:'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.decoding = 'sync';
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = url;
+    });
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const w = Math.max(1, Math.round((vb && vb.width) || svg.clientWidth || 1200));
+    const h = Math.max(1, Math.round((vb && vb.height) || svg.clientHeight || 700));
+    const out = document.createElement('canvas');
+    out.width = w * 2;
+    out.height = h * 2;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.scale(2, 2);
+    ctx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    await copyCanvasToClipboard(out, filename);
+    return true;
+  }
+  alert('Captura indisponível neste navegador.');
+  return false;
+  } catch (err){
+    console.error(err);
+    alert('Não consegui copiar a captura para a área de transferência. Verifique a permissão de clipboard do navegador e tente novamente.');
+    return false;
+  }
+}
+async function captureTarget(selector, filename){
+  return captureElement(document.querySelector(selector), filename);
+}
+function safeFileName(v){
+  return String(v || 'dashboard')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 90) || 'dashboard';
+}
+function exportTableHtml(table){
+  if (!table || !table.rows || !table.rows.length) return '';
+  const clone = table.cloneNode(true);
+  clone.querySelectorAll('script,button,.pill,.chev').forEach(el => el.remove());
+  clone.querySelectorAll('[style]').forEach(el => {
+    // Excel understands simple table styles better than complex sticky/flex UI rules.
+    el.removeAttribute('style');
+  });
+  return clone.outerHTML;
+}
+function exportChartTablesHtml(){
+  const charts = Object.entries(state.charts || {})
+    .filter(([, chart]) => chart && chart.data && Array.isArray(chart.data.labels));
+  if (!charts.length) return '';
+  return charts.map(([id, chart]) => {
+    const labels = chart.data.labels || [];
+    const datasets = chart.data.datasets || [];
+    const head = `<tr><th>Período</th>${datasets.map(ds => `<th>${escapeHtml(ds.label || '')}</th>`).join('')}</tr>`;
+    const rows = labels.map((label, idx) => {
+      const vals = datasets.map(ds => {
+        const v = ds.data ? ds.data[idx] : '';
+        return `<td>${v == null ? '' : escapeHtml(String(v))}</td>`;
+      }).join('');
+      return `<tr><td>${escapeHtml(String(label))}</td>${vals}</tr>`;
+    }).join('');
+    return `<h3>${escapeHtml(id)}</h3><table>${head}${rows}</table>`;
+  }).join('');
+}
+function exportTreeTableHtml(){
+  const gd = document.getElementById('tree-host');
+  const traces = (gd && (gd.data || gd._fullData)) || [];
+  const trace = Array.from(traces).find(t => t && t.type === 'sankey');
+  if (!trace || !trace.node || !trace.link) return '';
+  const labels = trace.node.label || [];
+  const src = trace.link.source || [];
+  const tgt = trace.link.target || [];
+  const val = trace.link.value || [];
+  const rows = src.map((s, i) =>
+    `<tr><td>${escapeHtml(labels[s] || s)}</td><td>${escapeHtml(labels[tgt[i]] || tgt[i])}</td><td>${escapeHtml(String(val[i] ?? ''))}</td></tr>`
+  ).join('');
+  return `<table><tr><th>Origem</th><th>Destino</th><th>Valor</th></tr>${rows}</table>`;
+}
+function activeExcelHtml(){
+  const map = {
+    evo: { title:'P&L Evolutivo', selector:'#evo-tbl' },
+    sum: { title:'Resumo P&L', selector:'#sum-tbl' },
+    sim: { title:'Simulador BS', selector:'#sim-tbl' },
+    wf:  { title:'Waterfall', selector:'#wf-table table' }
+  };
+  const item = map[state.tab];
+  if (item){
+    const html = exportTableHtml(document.querySelector(item.selector));
+    return html ? { title:item.title, html } : null;
+  }
+  if (state.tab === 'gg'){
+    const html = exportChartTablesHtml();
+    return html ? { title:'Gráficos P&L', html } : null;
+  }
+  if (state.tab === 'margin'){
+    const html = exportChartTablesHtml();
+    return html ? { title:'Margem por BU Segmento', html } : null;
+  }
+  if (state.tab === 'tree'){
+    const html = exportTreeTableHtml();
+    return html ? { title:'Árvore de Valor', html } : null;
+  }
+  return null;
+}
+function exportCurrentExcel(){
+  const payload = activeExcelHtml();
+  if (!payload){
+    alert('Não há tabela ou dados tabulares renderizados para exportar nesta aba.');
+    return false;
+  }
+  const filters = [
+    `BU: ${labelBU(state.bu)}`,
+    `Segmento: ${state.segments.length ? state.segments.join(', ') : 'Todos'}`,
+    `Produto: ${state.product === 'ALL' ? 'Todos' : state.product}`,
+    `Método pagamento: ${state.paymentMethod === 'ALL' ? 'Todos' : state.paymentMethod}`,
+    `Visão: ${labelVariant()}`,
+    `Métrica: ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`,
+    `Período: ${document.getElementById('f-period')?.selectedOptions?.[0]?.textContent || state.period}`
+  ];
+  const workbook = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <style>
+      body{font-family:'Proxima Nova',Arial,sans-serif;color:#1a1a1a}
+      h2{font-size:16px;margin:0 0 8px}
+      h3{font-size:13px;margin:18px 0 6px}
+      .meta{font-size:11px;color:#555;margin-bottom:12px}
+      table{border-collapse:collapse;font-size:11px;mso-number-format:"\\@";margin-bottom:16px}
+      th{background:#FFE600;color:#1a1a1a;font-weight:800}
+      th,td{border:1px solid #D9DEE7;padding:5px 7px;white-space:nowrap}
+    </style></head><body>
+    <h2>${escapeHtml(payload.title)}</h2>
+    <div class="meta">${escapeHtml(filters.join(' · '))}</div>
+    ${payload.html}
+  </body></html>`;
+  const blob = new Blob(['\ufeff', workbook], { type:'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${safeFileName('pnl-ue-' + payload.title + '-' + new Date().toISOString().slice(0,10))}.xls`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
 }
 function prettyLine(s){ return String(s).replace(/_/g,' '); }
 function fmtMonth(iso){
@@ -649,16 +1553,40 @@ function labelBU(b){
 function labelMetric(m){
   return ({ abs:'Absoluto', ptpn:'por TPN', ptpv:'% TPV' })[m] || m;
 }
+function resetSimInputs(){}
+function normOPProduct(v){
+  const s = String(v || '').trim().toUpperCase();
+  if (!s) return '';
+  if (s.includes('CHECKOUT') || s.includes('CHECK OUT')) return 'CHECKOUT';
+  if (s.includes('LINK')) return 'LINK';
+  if (s.includes('OTHER') || s.includes('OUTRO')) return 'OTHERS';
+  return 'OTHERS';
+}
+
+// Mês corrente "YYYY-MM" — usado pra cortar meses não-fechados.
+function currentYM(){
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+}
+// Um mês é considerado fechado se for estritamente anterior ao mês corrente.
+// Ex.: em 2026-05, só 2026-04 e meses anteriores são "fechados".
+function isClosedMonth(iso){ return iso < currentYM(); }
 
 // ── Parse sheet matrix into { months, rows } ────────────
-function parseSheet(values){
+function parseSheet(values, fallbackBU){
   if (!Array.isArray(values) || !values.length) return { months: [], rows: [] };
-  // Find header row: the first row whose first non-empty cell is "SUBBU"
+  const fallbackNormBU = normBU(fallbackBU);
+  // Find header row. Historically the first cell was SUBBU; with BU-specific
+  // tabs, SUBBU may be omitted, so PNL + any core dimension is enough.
   let hdrRow = -1;
   for (let i = 0; i < values.length && i < 10; i++){
     const r = values[i] || [];
-    const first = String(r[0] || '').trim().toUpperCase();
-    if (first === 'SUBBU'){ hdrRow = i; break; }
+    const upper = r.map(c => String(c || '').trim().toUpperCase());
+    const first = upper.find(Boolean) || '';
+    if (first === 'SUBBU' || (upper.includes('PNL') && (upper.includes('SUBBU') || upper.includes('SEGMENT_DESC') || fallbackNormBU))){
+      hdrRow = i;
+      break;
+    }
   }
   if (hdrRow < 0) return { months: [], rows: [] };
   const headers = values[hdrRow].map(h => String(h || '').trim());
@@ -667,6 +1595,7 @@ function parseSheet(values){
   const idx = {
     bu:      headers.indexOf('SUBBU'),
     product: headers.indexOf('OPERATION_PRODUCT_DESC'),
+    paymentMethod: headers.indexOf('PAYMENT_METHOD_DESC'),
     tap:     headers.indexOf('DEVICE_TAP_TYPE'),
     segment: headers.indexOf('SEGMENT_DESC'),
     line:    headers.indexOf('PNL')
@@ -717,9 +1646,11 @@ function parseSheet(values){
   for (let r = hdrRow + 1; r < values.length; r++){
     const row = values[r] || [];
     if (!row.length) continue;
-    const bu = normBU(row[idx.bu]);
+    const bu = normBU(idx.bu >= 0 ? row[idx.bu] : '') || fallbackNormBU;
     const segment = String(row[idx.segment] || '').trim();
     const product = String(row[idx.product] || '').trim();
+    const opProduct = normOPProduct(product);
+    const paymentMethod = idx.paymentMethod >= 0 ? String(row[idx.paymentMethod] || '').trim() : '';
     const tap     = idx.tap >= 0 ? String(row[idx.tap] || '').trim() : '';
     const line = String(row[idx.line] || '').trim();
     if (!bu || !line) continue;
@@ -731,8 +1662,25 @@ function parseSheet(values){
       vals[p.key] = n;
     }
     if (!any && line !== 'TPV' && line !== 'TPN') continue;
-    rows.push({ bu, segment, product, tap, line, values: vals });
+    rows.push({ bu, segment, product, opProduct, paymentMethod, tap, line, values: vals });
   }
+  // Filtra meses não-fechados em TODO o dataset (lista + cada linha).
+  // Garante que nenhuma agregação ou render acidentalmente exponha valores
+  // do mês corrente (que ainda não fechou contabilmente).
+  const closedMonths = months.filter(isClosedMonth);
+  if (closedMonths.length !== months.length){
+    for (const r of rows){
+      const filtered = {};
+      for (const m of closedMonths){ if (m in r.values) filtered[m] = r.values[m]; }
+      r.values = filtered;
+    }
+  }
+  return { months: closedMonths, rows };
+}
+
+function mergeSheetParts(parts){
+  const months = [...new Set(parts.flatMap(p => p.months || []))].sort();
+  const rows = parts.flatMap(p => p.rows || []);
   return { months, rows };
 }
 
@@ -749,6 +1697,14 @@ function activeMonths(){
   if (state.period === 'ALL') return all;
   if (state.period === 'L12') return all.slice(-12);
   if (state.period === 'L6')  return all.slice(-6);
+  if (state.period === 'CUSTOM'){
+    let from = state.periodFrom, to = state.periodTo;
+    if (!from || !all.includes(from)) from = all[0];
+    if (!to   || !all.includes(to))   to   = all[all.length-1];
+    const lo = from < to ? from : to;
+    const hi = from < to ? to : from;
+    return all.filter(m => m >= lo && m <= hi);
+  }
   // Year selection: Y2024 / Y2025 / Y2026 / ... → all months of that year.
   if (/^Y\d{4}$/.test(state.period)){
     const y = state.period.slice(1);
@@ -761,6 +1717,27 @@ function activeMonths(){
     return all.filter(m => m.startsWith(y));
   }
   return all;
+}
+
+function populatePeriodCustomSelects(){
+  const fromSel = document.getElementById('f-period-from');
+  const toSel   = document.getElementById('f-period-to');
+  if (!fromSel || !toSel || !state.data) return;
+  fromSel.replaceChildren();
+  toSel.replaceChildren();
+  for (const m of state.data.months){
+    const o1 = document.createElement('option');
+    o1.value = m; o1.textContent = fmtMonth(m);
+    fromSel.append(o1);
+    const o2 = document.createElement('option');
+    o2.value = m; o2.textContent = fmtMonth(m);
+    toSel.append(o2);
+  }
+  const all = state.data.months;
+  if (!state.periodFrom || !all.includes(state.periodFrom)) state.periodFrom = all[0];
+  if (!state.periodTo   || !all.includes(state.periodTo))   state.periodTo   = all[all.length-1];
+  fromSel.value = state.periodFrom;
+  toSel.value   = state.periodTo;
 }
 
 function aggregate(filter){
@@ -778,13 +1755,35 @@ function aggregate(filter){
     if (filter.bu      && filter.bu      !== 'ALL' && r.bu      !== filter.bu)      continue;
     if (segSet && !segSet.has(r.segment)) continue;
     if (filter.product && filter.product !== 'ALL' && r.product !== filter.product) continue;
+    if (filter.paymentMethod && filter.paymentMethod !== 'ALL' && r.paymentMethod !== filter.paymentMethod) continue;
     if (tapNarrowsPoint && r.bu === 'POINT' && r.tap !== filter.tap) continue;
-    if (opNarrowsOP    && r.bu === 'OP'    && r.product !== filter.opProduct) continue;
+    if (opNarrowsOP    && r.bu === 'OP'    && (r.opProduct || normOPProduct(r.product)) !== filter.opProduct) continue;
     let line = out.get(r.line);
     if (!line){ line = new Map(); out.set(r.line, line); }
     for (const [m,v] of Object.entries(r.values)) line.set(m, (line.get(m)||0) + v);
   }
+  function sumSources(sources){
+    const sum = new Map();
+    for (const src of sources){
+      const m = out.get(src);
+      if (!m) continue;
+      for (const mo of state.data.months){
+        sum.set(mo, (sum.get(mo) || 0) + (m.get(mo) || 0));
+      }
+    }
+    return sum;
+  }
+  out.set('__VC_ADJ_TOTAL__',  sumSources(['PM_Adj','NM_Adj','VC_Adj']));
   applyRunningSubtotals(out);
+  // Synthetic line "Fin Cost" = Fin_Cost_FTP + HII_FTP — usada como linha
+  // única "Fin Cost" nas abas Resumo (resumido), Margem, Árvore e Waterfall.
+  const fcA = out.get('Fin_Cost_FTP') || new Map();
+  const fcB = out.get('HII_FTP')      || new Map();
+  const fc  = new Map();
+  for (const mo of state.data.months){
+    fc.set(mo, (fcA.get(mo) || 0) + (fcB.get(mo) || 0));
+  }
+  out.set('__FIN_COST__', fc);
   return out;
 }
 
@@ -810,6 +1809,7 @@ function applyRunningSubtotals(agg){
         const sgSum = new Map();
         for (const s of it.items){
           if (s.variant && s.variant !== state.variant) continue;
+          if (!useLineInSubtotal(s)) continue;
           const m = agg.get(s.src);
           if (!m) continue;
           for (const [k, v] of m){
@@ -820,6 +1820,7 @@ function applyRunningSubtotals(agg){
         agg.set(subgroupKey(g.group, it.key || it.label), sgSum);
       } else {
         if (it.variant && it.variant !== state.variant) continue;
+        if (!useLineInSubtotal(it)) continue;
         const itemMap = agg.get(it.src);
         if (!itemMap) continue;
         for (const [m, v] of itemMap){
@@ -848,31 +1849,81 @@ function renderEvo(){
   const tbl = document.getElementById('evo-tbl');
   tbl.replaceChildren();
   const months = activeMonths();
-  const agg = aggregate({ bu: state.bu, segments: state.segments, product: state.product, tap: state.tap, opProduct: state.opProduct });
+
+  // Periods: meses ou trimestres conforme state.evoGran.
+  // Em Trimestral, somamos todos os meses do período ativo que caem em cada Q.
+  const isQ = state.evoGran === 'Q';
+  const periods = isQ
+    ? [...new Set(months.map(quarterOfMonth))].sort()
+    : months;
+
+  const agg = aggregate({ bu: state.bu, segments: state.segments, product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct });
   const tpvMap = agg.get('TPV'); const tpnMap = agg.get('TPN');
+
+  // Em Q, soma só os meses que estão na lista 'months' (respeita o filtro de período)
+  const monthSet = new Set(months);
+  function periodValue(map, p){
+    if (!map) return null;
+    if (!isQ) return map.has(p) ? map.get(p) : null;
+    const ms = monthsInQuarter(p).filter(m => monthSet.has(m));
+    let total = 0, any = false;
+    for (const m of ms){ if (map.has(m)){ total += map.get(m); any = true; } }
+    return any ? total : null;
+  }
+
+  // hasValue agora opera sobre periods (filtra linhas zeradas em todo o intervalo)
   const hasValue = (src) => {
     const m = agg.get(src);
     if (!m) return false;
-    for (const month of months){
-      const v = m.get(month) || 0;
-      if (v !== 0) return true;
+    for (const p of periods){
+      const v = periodValue(m, p);
+      if (v != null && v !== 0) return true;
     }
     return false;
   };
   const outline = buildOutline(new Set(agg.keys()), hasValue);
+  const granLabel = isQ ? `${periods.length} trimestres` : `${periods.length} meses`;
+  const evoSubText = `${granLabel} · BU: ${labelBU(state.bu)} · Segmento: ${state.segments.length ? state.segments.join(', ') : 'Todos'} · ${labelVariant()} · ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`;
+
+  // Transformação métrica por período (aplica TPV/TPN do mesmo bucket)
+  function transformed(lineSrc){
+    const lineMap = agg.get(lineSrc);
+    return periods.map(p => {
+      const v = periodValue(lineMap, p);
+      if (v == null) return null;
+      if (state.metric === 'abs') return v;
+      const denomMap = state.metric === 'ptpv' ? tpvMap : tpnMap;
+      const d = periodValue(denomMap, p);
+      if (!d) return null;
+      return state.metric === 'ptpv' ? (v / d) * 100 : (v / d);
+    });
+  }
 
   const thead = mkEl('thead');
   const trh = mkEl('tr');
   trh.append(mkEl('th','first','Linha de P&L'));
-  for (const m of months) trh.append(mkEl('th', null, fmtMonth(m)));
+  for (const p of periods) trh.append(mkEl('th', null, isQ ? fmtPeriod(p, 'Q') : fmtMonth(p)));
   thead.append(trh); tbl.append(thead);
 
   const tbody = mkEl('tbody');
+  if (!outline.length){
+    const tr = mkEl('tr');
+    const td = mkEl('td','first','Sem dados para este filtro.');
+    td.colSpan = periods.length + 1;
+    td.style.textAlign = 'center';
+    td.style.padding = '18px';
+    td.style.color = 'var(--muted)';
+    tr.append(td);
+    tbody.append(tr);
+    tbl.append(tbody);
+    setText(document.getElementById('evo-sub'), evoSubText);
+    return;
+  }
   for (const row of outline){
     if (row.kind === 'header'){
       const trg = mkEl('tr','l1');
       trg.append(mkEl('td','first', row.label));
-      for (let i=0;i<months.length;i++) trg.append(mkEl('td',null,''));
+      for (let i=0;i<periods.length;i++) trg.append(mkEl('td',null,''));
       tbody.append(trg);
       continue;
     }
@@ -882,7 +1933,7 @@ function renderEvo(){
       td0.append(mkEl('span','chev tog','▼'));
       td0.append(document.createTextNode(row.label));
       trg.append(td0);
-      for (let i=0;i<months.length;i++) trg.append(mkEl('td',null,''));
+      for (let i=0;i<periods.length;i++) trg.append(mkEl('td',null,''));
       trg.addEventListener('click', () => toggleSubgroup(row.subKey));
       tbody.append(trg);
       continue;
@@ -897,8 +1948,6 @@ function renderEvo(){
                   : isCollapsed ? 'sg-col' : '';
     const tr = mkEl('tr', trClass);
     const td0 = mkEl('td','first');
-    // Chevron: ▶ on collapsed (toggle) and on every leaf item (decorative).
-    // None on subtotal/subsubtotal — those are bars, not nodes.
     if (isCollapsed)          td0.append(mkEl('span','chev tog','▶'));
     else if (isItem)          td0.append(mkEl('span','chev','▸'));
     else if (isSubitem)       td0.append(mkEl('span','chev','▸'));
@@ -906,9 +1955,9 @@ function renderEvo(){
     td0.append(mkEl('span', indCls, row.item.label));
     tr.append(td0);
     if (isCollapsed){ tr.addEventListener('click', () => toggleSubgroup(row.subKey)); }
-    const t = applyMetric(agg.get(row.item.src) || new Map(), state.metric, tpvMap, tpnMap);
-    for (const m of months){
-      const v = t.has(m) ? t.get(m) : null;
+    const arr = transformed(row.item.src);
+    for (let i = 0; i < periods.length; i++){
+      const v = arr[i];
       const td = mkEl('td', null, fmt(v, state.metric, { item: row.item }));
       if (v != null && v < 0) td.classList.add('neg');
       tr.append(td);
@@ -917,50 +1966,176 @@ function renderEvo(){
   }
   tbl.append(tbody);
 
-  setText(document.getElementById('evo-sub'),
-    `${months.length} meses · BU: ${labelBU(state.bu)} · Segmento: ${state.segments.length ? state.segments.join(', ') : 'Todos'} · ${labelVariant()} · ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`);
+  setText(document.getElementById('evo-sub'), evoSubText);
 }
 
 // ── Render: Resumo ──────────────────────────────────────
 function renderSum(){
   const tbl = document.getElementById('sum-tbl');
   tbl.replaceChildren();
+  tbl.classList.toggle('sum-regular', !state.sumBold);
   const months = activeMonths();
-  const last = months[months.length-1];
-  if (!last) return;
-  const BUS = [{key:'POINT',label:'Point'},{key:'OP',label:'Online Payments'},{key:'QR',label:'QR'}];
+  if (!months.length) return;
+  const firstMonth = months[0];
+  const lastMonth = months[months.length-1];
+  const periodLabel = firstMonth === lastMonth ? fmtMonth(lastMonth) : `${fmtMonth(firstMonth)} → ${fmtMonth(lastMonth)}`;
+  function sumMap(map){
+    if (!map) return null;
+    let total = 0, any = false;
+    for (const m of months){
+      if (map.has(m)){
+        total += map.get(m) || 0;
+        any = true;
+      }
+    }
+    return any ? total : null;
+  }
+  function periodMetric(block, src){
+    const raw = sumMap(block.get(src));
+    if (raw == null) return null;
+    if (state.metric === 'abs') return raw;
+    const denom = sumMap(block.get(state.metric === 'ptpv' ? 'TPV' : 'TPN'));
+    if (!denom) return null;
+    return state.metric === 'ptpv' ? (raw / denom) * 100 : (raw / denom);
+  }
+  // Acquiring (ALL) primeiro = soma dos 3 BUs; depois cada BU individual.
+  const BUS = [
+    {key:'ALL',   label:'Acquiring',       isTotal:true},
+    {key:'POINT', label:'Point'},
+    {key:'OP',    label:'Online Payments'},
+    {key:'QR',    label:'QR'}
+  ].filter(b => !(state.sumResumed && state.sumHideQR && b.key === 'QR'));
   const segs = ['BIG SELLERS','SMB','LONGTAIL']
     .filter(s => !state.segments.length || state.segments.includes(s));
 
   const blocks = {};
   for (const bu of BUS){
     blocks[bu.key] = {};
-    for (const s of segs) blocks[bu.key][s] = aggregate({ bu: bu.key, segment: s, product: state.product, tap: state.tap, opProduct: state.opProduct });
-    blocks[bu.key]['_TOTAL'] = aggregate({ bu: bu.key, segment: 'ALL', product: state.product, tap: state.tap, opProduct: state.opProduct });
+    for (const s of segs) blocks[bu.key][s] = aggregate({ bu: bu.key, segment: s, product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct });
+    blocks[bu.key]['_TOTAL'] = aggregate({ bu: bu.key, segment: 'ALL', product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct });
   }
   const present = new Set();
   for (const bu of BUS) for (const s of segs.concat('_TOTAL'))
     for (const k of blocks[bu.key][s].keys()) present.add(k);
-  // Hide lines that are zero across every cell shown in this view (last month × every BU × segs + Total).
+  // Hide lines that are zero across every cell shown in this view (active accumulated period × every BU × segs + Total).
   const sumHasValue = (src) => {
     for (const bu of BUS){
       const tot = blocks[bu.key]['_TOTAL'].get(src);
-      if (tot && (tot.get(last) || 0) !== 0) return true;
+      const tv = sumMap(tot);
+      if (tv != null && tv !== 0) return true;
       for (const s of segs){
         const m = blocks[bu.key][s].get(src);
-        if (m && (m.get(last) || 0) !== 0) return true;
+        const v = sumMap(m);
+        if (v != null && v !== 0) return true;
       }
     }
     return false;
   };
-  const outline = buildOutline(present, sumHasValue);
+  let outline = buildOutline(present, sumHasValue);
+  // ── Versão resumida (visão executiva) ──
+  // Estrutura curada (não usa a outline padrão):
+  //   • TPV  (linha simples)
+  //   • Bloco Take Rate:
+  //       Processing Fees, Fin Revenues, Fin Cost, Sales Taxes (econ/cont), Collection Fees
+  //       Subtotal "Take Rate" = NET_MONETIZATION + Collection Fees
+  //   • Bloco Variable Contribution:
+  //       Chargebacks, Bad Debt, BPP, Consultor Certificado, Plataforma,
+  //       CX/Hosting/FP Variable, Telemetria, Cashbacks Sellers, Coupons, Other Direct Var Costs
+  //       Subtotal "Variable Contribution" = VC subtotal
+  // Regra de visão: Econômico exclui linhas Adj; Contábil inclui Adj nos subtotais,
+  // mesmo quando elas não aparecem como linhas visíveis nesta versão executiva.
+  // Regra dinâmica: oculta qualquer linha cujo |valor acumulado| / TPV acumulado
+  // em Total Acquiring ficar menor que 0,01% (1bp). Se em outro período a linha cruzar
+  // o threshold, ela reaparece.
+  if (state.sumResumed){
+    const vs            = state.variant === 'econ' ? 'ECONOMICO' : 'CONTABLE';
+    const salesTaxesKey = state.variant === 'econ' ? 'Sales_Taxes_Econ' : 'Sales_Taxes_Contable';
+    const salesTaxesLbl = state.variant === 'econ' ? 'Sales Taxes Econ' : 'Sales Taxes Contábil';
+
+    // Injeta subtotais sintéticos em cada bloco (BU × segmento + Total).
+    // O include/exclude de Adj já vem de aggregate()/applyRunningSubtotals().
+    function injectClean(block){
+      const nm  = block.get('NET_MONETIZATION_' + vs)      || new Map();
+      const vc  = block.get('VARIABLE_CONTRIBUTION_' + vs) || new Map();
+      const cf  = block.get('Collection_Fees') || new Map();
+      const tr  = new Map();
+      const vcC = new Map();
+      for (const m of state.data.months){
+        const nmV = nm.get(m) || 0,  vcV = vc.get(m) || 0;
+        const cfV = cf.get(m) || 0;
+        tr.set(m,  nmV + cfV);
+        vcC.set(m, vcV);
+      }
+      block.set('__TAKE_RATE__', tr);
+      block.set('__VC_CLEAN__',  vcC);
+    }
+    for (const bu of BUS){
+      for (const s of segs) injectClean(blocks[bu.key][s]);
+      injectClean(blocks[bu.key]['_TOTAL']);
+    }
+
+    // Hide rule: < 0,01% do TPV acumulado em Total Acquiring (bu=ALL, segs=ALL).
+    const acqBlock = blocks['ALL']['_TOTAL'];
+    const tpvAcq   = sumMap(acqBlock.get('TPV')) || 0;
+    function significant(src){
+      if (!tpvAcq) return true; // sem TPV → não temos como comparar, mantém a linha
+      const m = acqBlock.get(src);
+      if (!m) return false;
+      const v = sumMap(m) || 0;
+      return Math.abs(v) / Math.abs(tpvAcq) >= 0.0001;  // 1bp
+    }
+
+    const takeRateCandidates = [
+      { src: 'Processing_Fees',                 label: 'Processing Fees' },
+      { src: 'Financing_Revenues',              label: 'Fin Revenues' },
+      { src: '__FIN_COST__',                    label: 'Fin Cost' },
+      { src: salesTaxesKey,                     label: salesTaxesLbl },
+      { src: 'Collection_Fees',                 label: 'Collection Fees' }
+    ];
+    const vcCandidates = [
+      { src: 'CHARGEBACKS_Contable',            label: 'CBK' },
+      { src: 'Bad_Debt_Incobrables',            label: 'Bad Debt' },
+      { src: 'BPP',                             label: 'BPP' },
+      { src: 'Consultor_Certificado',           label: 'Consultor Certificado' },
+      { src: 'Plataforma',                      label: 'Plataforma' },
+      { src: 'CX_Variable',                     label: 'CX Variable' },
+      { src: 'Hosting_Variable',                label: 'Hosting Variable' },
+      { src: 'FP_Variable',                     label: 'FP Variable' },
+      { src: 'Telemetria',                      label: 'Telemetria' },
+      { src: 'Cashbacks_Sellers',               label: 'Cashbacks Sellers' },
+      { src: 'COUPONS',                         label: 'Coupons' },
+      { src: 'Other_Direct_Variable_Costs',     label: 'Other Direct Var Costs' }
+    ];
+
+    const trLines = takeRateCandidates.filter(it => significant(it.src));
+    const vcLines = vcCandidates.filter(it => significant(it.src));
+
+    outline = [];
+    // TPV (sempre presente — é a base de comparação)
+    outline.push({ kind: 'item', item: { src: 'TPV', label: 'TPV' }, group: 'Metrics' });
+    // Take Rate block
+    for (const it of trLines){
+      outline.push({ kind: 'item', item: it, group: 'Take Rate' });
+    }
+    outline.push({ kind: 'subtotal',
+                   item: { src: '__TAKE_RATE__', label: 'Take Rate', isSubtotalLabel: true },
+                   group: 'Take Rate' });
+    // Variable Contribution block
+    for (const it of vcLines){
+      outline.push({ kind: 'item', item: it, group: 'Variable Contribution' });
+    }
+    outline.push({ kind: 'subtotal',
+                   item: { src: '__VC_CLEAN__', label: 'Variable Contribution', isSubtotalLabel: true },
+                   group: 'Variable Contribution' });
+  }
   const colsPerBU = segs.length + 1;
 
   const thead = mkEl('thead');
   const tr1 = mkEl('tr');
-  tr1.append(mkEl('th','line-hdr', `Linha · ${fmtMonth(last)}`));
+  tr1.append(mkEl('th','line-hdr',''));
   for (const bu of BUS){
     const th = mkEl('th','bu-hdr', bu.label); th.colSpan = colsPerBU;
+    if (state.sumAcqDivider && bu.isTotal) th.classList.add('acq-sep');
     tr1.append(th);
   }
   thead.append(tr1);
@@ -968,16 +2143,31 @@ function renderSum(){
   tr2.append(mkEl('th','sub-hdr',''));
   for (const bu of BUS){
     for (const s of segs) tr2.append(mkEl('th','sub-hdr', s));
-    tr2.append(mkEl('th','sub-hdr','Total'));
+    const thTot = mkEl('th','sub-hdr','Total');
+    if (state.sumAcqDivider && bu.isTotal) thTot.classList.add('acq-sep');
+    tr2.append(thTot);
   }
   thead.append(tr2); tbl.append(thead);
 
   const tbody = mkEl('tbody');
   for (const row of outline){
+    // helper: linhas spacer (header/subheader) — aplica .acq-sep na última coluna
+    // do Acquiring se o toggle Destacar Acquiring estiver ativo.
+    function pushSpacers(trg){
+      const acqLastIdx = state.sumAcqDivider ? colsPerBU - 1 : -1;
+      let buIdx = 0, colInBU = 0;
+      for (let i = 0; i < BUS.length * colsPerBU; i++){
+        const td = mkEl('td', null, '');
+        if (BUS[buIdx] && BUS[buIdx].isTotal && colInBU === acqLastIdx) td.classList.add('acq-sep');
+        trg.append(td);
+        colInBU++;
+        if (colInBU >= colsPerBU){ colInBU = 0; buIdx++; }
+      }
+    }
     if (row.kind === 'header'){
       const trg = mkEl('tr','l1');
       trg.append(mkEl('td','line-cell', row.label));
-      for (let i=0;i<BUS.length*colsPerBU;i++) trg.append(mkEl('td',null,''));
+      pushSpacers(trg);
       tbody.append(trg);
       continue;
     }
@@ -987,7 +2177,7 @@ function renderSum(){
       tdl.append(mkEl('span','chev tog','▼'));
       tdl.append(document.createTextNode(row.label));
       trg.append(tdl);
-      for (let i=0;i<BUS.length*colsPerBU;i++) trg.append(mkEl('td',null,''));
+      pushSpacers(trg);
       trg.addEventListener('click', () => toggleSubgroup(row.subKey));
       tbody.append(trg);
       continue;
@@ -1008,38 +2198,301 @@ function renderSum(){
     lc.append(document.createTextNode(row.item.label));
     tr.append(lc);
     if (isCollapsed) tr.addEventListener('click', () => toggleSubgroup(row.subKey));
+    // Heatmap por linha: compara células de SEGMENTO (sem incluir o Total da BU
+    // pra não dominar a escala). Usa valor ABSOLUTO — assim funciona consistente
+    // pra linhas de receita (positivas) e custo (negativas) sem misturar entre si.
+    // Acquiring (bu.isTotal) é excluído do heatmap (ele já é a soma agregada).
+    const segCells = [];
+    const heatmapElegivel = state.sumHeatmap && (isItem || isSubitem || isSubsubtotal || isCollapsed);
     for (const bu of BUS){
       const tot = blocks[bu.key]['_TOTAL'];
-      const tpvT = tot.get('TPV'); const tpnT = tot.get('TPN');
       let first = true;
       for (const s of segs){
         const agg = blocks[bu.key][s];
-        const t = applyMetric(agg.get(row.item.src) || new Map(), state.metric, agg.get('TPV'), agg.get('TPN'));
-        const v = t.has(last) ? t.get(last) : null;
+        const v = periodMetric(agg, row.item.src);
         const td = mkEl('td', first ? 'bu-first' : null, fmt(v, state.metric, { item: row.item }));
         if (v != null && v < 0) td.classList.add('neg');
         tr.append(td); first = false;
+        if (heatmapElegivel && !bu.isTotal && v != null) segCells.push({ td, v });
       }
-      const tT = applyMetric(tot.get(row.item.src) || new Map(), state.metric, tpvT, tpnT);
-      const vT = tT.has(last) ? tT.get(last) : null;
+      const vT = periodMetric(tot, row.item.src);
       const td = mkEl('td', null, fmt(vT, state.metric, { item: row.item }));
       td.style.fontWeight = '700';
       if (vT != null && vT < 0) td.classList.add('neg');
+      if (state.sumAcqDivider && bu.isTotal) td.classList.add('acq-sep');
       tr.append(td);
+    }
+    if (heatmapElegivel && segCells.length >= 2){
+      const absVals = segCells.map(c => Math.abs(c.v));
+      const max = Math.max(...absVals);
+      const min = Math.min(...absVals);
+      const range = max - min;
+      if (range > 0){
+        for (const {td, v} of segCells){
+          const ratio = (Math.abs(v) - min) / range; // 0..1
+          // Amber tint — quanto maior o valor absoluto, mais saturado.
+          // Opacidade até 0.55 pra não competir com o número e manter legibilidade.
+          td.style.background = `rgba(255, 199, 25, ${(ratio * 0.55).toFixed(3)})`;
+        }
+      }
     }
     tbody.append(tr);
   }
   tbl.append(tbody);
 
   setText(document.getElementById('sum-sub'),
-    `Mês de referência: ${fmtMonth(last)} · ${labelVariant()} · ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`);
+    `Período acumulado: ${periodLabel} · ${labelVariant()} · ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`);
+}
+
+// ── Render: Simulador BS ─────────────────────────────────
+function renderSim(){
+  const tbl = document.getElementById('sim-tbl');
+  tbl.replaceChildren();
+
+  const months = activeMonths();
+  if (!months.length){
+    tbl.append(mkEl('tbody', null, ''));
+    setText(document.getElementById('sim-sub'), 'Sem período selecionado');
+    return;
+  }
+
+  const metric = state.metric === 'abs' ? 'abs' : 'ptpv';
+  const vs = state.variant === 'econ' ? 'ECONOMICO' : 'CONTABLE';
+  const salesTaxesKey = state.variant === 'econ' ? 'Sales_Taxes_Econ' : 'Sales_Taxes_Contable';
+  const salesTaxesLbl = state.variant === 'econ' ? 'Sales Taxes Econ' : 'Sales Taxes Contábil';
+  // Telemetria entra como custo ABSOLUTO fixo (não escala com TPN). Mesmo
+  // valor em todos os cenários simulados → quando visto em % TPV, dilui
+  // conforme o TPV cresce nos cenários maiores.
+  const lockedLineList = [
+    { src:'Bad_Debt_Incobrables', label:'Bad Debt' },
+    { src:'CX_Variable',          label:'CX Variable' },
+    { src:'Hosting_Variable',     label:'Hosting Variable' },
+    { src:'Telemetria',           label:'Telemetria', isAbsolute: true }
+  ];
+  const lockedLines = new Set(lockedLineList.map(x => x.src));
+  function simBUShortLabel(b){ return b === 'OP' ? 'OP' : labelBU(b); }
+  const rangeDefs = [
+    { key:'LM1', label:'LM1', defaultTPV: 1_150_000 },  // midpoint: 300k–2M
+    { key:'LM2', label:'LM2', defaultTPV: 8_500_000 },  // midpoint: 2M–15M
+    { key:'LC',  label:'LC',  defaultTPV:15_000_000 }   // open range >15M: conservative floor
+  ];
+  const simDefs = [];
+  for (const bu of [
+    { key:'POINT', label:'Point' },
+    { key:'OP',    label:'OP' }
+  ].filter(b => b.key === state.simScenarioBU)){
+    for (const rg of rangeDefs){
+      for (const ticket of [50, 100]){
+        simDefs.push({
+          key: `${bu.key}_${rg.key}_${ticket}`,
+          label: `${bu.label} · ${rg.label} · R$${ticket}`,
+          bu: bu.key,
+          buLabel: bu.label,
+          range: rg.label,
+          defaultTPV: rg.defaultTPV,
+          defaultTicket: ticket
+        });
+      }
+    }
+  }
+
+  const contextCache = new Map();
+  function contextFor(bu){
+    if (contextCache.has(bu)) return contextCache.get(bu);
+    const agg = aggregate({ bu, segment: 'BIG SELLERS', paymentMethod: state.paymentMethod });
+    function sumLine(src){
+      const m = agg.get(src);
+      if (!m) return 0;
+      let total = 0;
+      for (const mo of months) total += m.get(mo) || 0;
+      return total;
+    }
+    function hasLine(src){
+      const m = agg.get(src);
+      if (!m) return false;
+      return months.some(mo => (m.get(mo) || 0) !== 0);
+    }
+    const baseTPV = sumLine('TPV');
+    const baseTPN = sumLine('TPN');
+    const baseTR  = sumLine('NET_MONETIZATION_' + vs) + sumLine('Collection_Fees');
+    const baseVC  = sumLine('VARIABLE_CONTRIBUTION_' + vs);
+    const defaultUnitCosts = {};
+    for (const it of lockedLineList){
+      // Telemetria — default ABSOLUTO fixo de R$ 310,7 (valor em UNIDADE de R$,
+      // não em R$ M). Em modo Unidade aparece "-310,7"; em R$ mil "-0,3"; em R$ M
+      // "-0,000311". Demais isAbsolute: default = |sumLine|. Per-TPN: |sumLine/TPN|.
+      if (it.src === 'Telemetria'){
+        defaultUnitCosts[it.src] = 310.7;
+      } else if (it.isAbsolute){
+        defaultUnitCosts[it.src] = Math.abs(sumLine(it.src));
+      } else {
+        defaultUnitCosts[it.src] = baseTPN ? Math.abs(sumLine(it.src) / baseTPN) : 0;
+      }
+    }
+    const baseConstantVC = lockedLineList.reduce((acc, it) => acc + sumLine(it.src), 0);
+    const baseOtherVC = baseVC - baseTR - baseConstantVC;
+    const ctx = { bu, agg, sumLine, hasLine, baseTPV, baseTPN, baseTR, baseVC, defaultUnitCosts, baseOtherVC };
+    contextCache.set(bu, ctx);
+    return ctx;
+  }
+  const baseCtx = contextFor(state.simBU);
+
+  function scenarioBase(){
+    return {
+      key:'base',
+      label: state.simBU === 'ALL' ? 'Base · Total BS' : `Base · ${simBUShortLabel(state.simBU)}`,
+      isBase:true,
+      ctx: baseCtx,
+      tpv: baseCtx.baseTPV,
+      tpn: baseCtx.baseTPN,
+      ratio: 1,
+      unitCosts: baseCtx.defaultUnitCosts
+    };
+  }
+  function scenarioCustom(def){
+    const ctx = contextFor(def.bu);
+    const tpv = def.defaultTPV;
+    const defaultTPN = def.defaultTicket ? def.defaultTPV / def.defaultTicket : ctx.baseTPN;
+    const tpn = defaultTPN;
+    const unitCosts = {};
+    for (const it of lockedLineList){
+      const defaultCost = it.src === 'Bad_Debt_Incobrables' ? 0.008 : ctx.defaultUnitCosts[it.src];
+      unitCosts[it.src] = defaultCost;
+    }
+    return {
+      key:def.key,
+      label:def.label,
+      bu:def.bu,
+      range:def.range,
+      defaultTicket:def.defaultTicket,
+      isBase:false,
+      ctx,
+      tpv,
+      tpn,
+      ratio: ctx.baseTPV ? tpv / ctx.baseTPV : 0,
+      unitCosts
+    };
+  }
+  const scenarios = [scenarioBase(), ...simDefs.map(scenarioCustom)];
+
+  function simAbs(src, sc){
+    const ctx = sc.ctx;
+    if (src === 'TPV') return sc.tpv;
+    if (sc.isBase){
+      if (src === '__TAKE_RATE__') return ctx.baseTR;
+      if (src === '__VC_CLEAN__') return ctx.baseVC;
+      return ctx.sumLine(src);
+    }
+    if (src === '__TAKE_RATE__') return ctx.baseTR * sc.ratio;
+    // Telemetria — custo absoluto, mas escala com TPV (não com TPN):
+    //   • LM1: valor absoluto input do usuário (default = base abs ~ -310,7M)
+    //   • LM2/LC: LM1.Telemetria × (sc.tpv / LM1.tpv) — mesma BU, mesmo ticket
+    function telAbsFor(s){
+      if (s.isBase) return ctx.sumLine('Telemetria');
+      if (s.range === 'LM1') return -Math.abs(s.unitCosts.Telemetria || 0);
+      const lm1 = scenarios.find(z => !z.isBase && z.bu === s.bu
+                                       && z.range === 'LM1'
+                                       && z.defaultTicket === s.defaultTicket);
+      if (!lm1 || !lm1.tpv) return -Math.abs(s.unitCosts.Telemetria || 0);
+      return -Math.abs(lm1.unitCosts.Telemetria || 0) * (s.tpv / lm1.tpv);
+    }
+    // Locked: per-TPN escala com tpn; isAbsolute fica fixo OU usa telAbsFor (Telemetria).
+    const lockedAbs = () => lockedLineList.reduce((acc, it) => {
+      if (it.src === 'Telemetria') return acc + telAbsFor(sc);
+      const v = sc.unitCosts[it.src] || 0;
+      const contrib = it.isAbsolute ? v : v * sc.tpn;
+      return acc - Math.abs(contrib);
+    }, 0);
+    if (src === '__VC_CLEAN__') return (ctx.baseTR * sc.ratio) + (ctx.baseOtherVC * sc.ratio) + lockedAbs();
+    if (lockedLines.has(src)){
+      const it = lockedLineList.find(x => x.src === src);
+      if (src === 'Telemetria') return telAbsFor(sc);
+      const v = sc.unitCosts[src] || 0;
+      return it && it.isAbsolute ? -Math.abs(v) : -Math.abs(v) * sc.tpn;
+    }
+    return ctx.sumLine(src) * sc.ratio;
+  }
+  function simValue(src, sc){
+    const v = simAbs(src, sc);
+    if (metric === 'abs') return v;
+    return sc.tpv ? (v / sc.tpv) * 100 : null;
+  }
+  function significant(src){
+    if (src === 'TPV') return true;
+    if (lockedLines.has(src)) return true;
+    for (const ctx of [baseCtx, contextFor('POINT'), contextFor('OP')]){
+      if (!ctx.hasLine(src)) continue;
+      if (!ctx.baseTPV) return true;
+      if (Math.abs(ctx.sumLine(src)) / Math.abs(ctx.baseTPV) >= 0.0001) return true;
+    }
+    return false;
+  }
+
+  const takeRateCandidates = [
+    { src: 'Processing_Fees',             label: 'Processing Fees' },
+    { src: 'Financing_Revenues',          label: 'Fin Revenues' },
+    { src: '__FIN_COST__',                label: 'Fin Cost' },
+    { src: salesTaxesKey,                 label: salesTaxesLbl },
+    { src: 'Collection_Fees',             label: 'Collection Fees' }
+  ];
+  const vcCandidates = [
+    { src: 'CHARGEBACKS_Contable',        label: 'CBK' },
+    { src: 'Bad_Debt_Incobrables',        label: 'Bad Debt' },
+    { src: 'BPP',                         label: 'BPP' },
+    { src: 'Consultor_Certificado',       label: 'Consultor Certificado' },
+    { src: 'Plataforma',                  label: 'Plataforma' },
+    { src: 'CX_Variable',                 label: 'CX Variable' },
+    { src: 'Hosting_Variable',            label: 'Hosting Variable' },
+    { src: 'FP_Variable',                 label: 'FP Variable' },
+    { src: 'Telemetria',                  label: 'Telemetria' },
+    { src: 'Cashbacks_Sellers',           label: 'Cashbacks Sellers' },
+    { src: 'COUPONS',                     label: 'Coupons' },
+    { src: 'Other_Direct_Variable_Costs', label: 'Other Direct Var Costs' }
+  ];
+
+  const rows = [
+    { kind:'item', item:{ src:'TPV', label:'TPV' } },
+    ...takeRateCandidates.filter(it => significant(it.src)).map(item => ({ kind:'item', item })),
+    { kind:'subtotal', item:{ src:'__TAKE_RATE__', label:'Take Rate', isSubtotalLabel:true } },
+    ...vcCandidates.filter(it => significant(it.src)).map(item => ({ kind:'item', item })),
+    { kind:'subtotal', item:{ src:'__VC_CLEAN__', label:'Variable Contribution', isSubtotalLabel:true } }
+  ];
+
+  const thead = mkEl('thead');
+  const trh = mkEl('tr');
+  trh.append(mkEl('th','line-hdr',''));
+  for (const sc of scenarios) trh.append(mkEl('th','scenario-hdr', sc.label));
+  thead.append(trh);
+  tbl.append(thead);
+
+  const tbody = mkEl('tbody');
+  for (const row of rows){
+    const tr = mkEl('tr', row.kind === 'subtotal' ? 'l1' : '');
+    const lc = mkEl('td','line-cell');
+    if (row.kind !== 'subtotal') lc.append(mkEl('span','chev','▸'));
+    lc.append(document.createTextNode(row.item.label));
+    tr.append(lc);
+    scenarios.forEach((sc, idx) => {
+      const v = simValue(row.item.src, sc);
+      const td = mkEl('td', idx === 0 ? 'scenario-first' : null, fmt(v, metric, { item: row.item }));
+      if (v != null && v < 0) td.classList.add('neg');
+      tr.append(td);
+    });
+    tbody.append(tr);
+  }
+  tbl.append(tbody);
+
+  const first = months[0], last = months[months.length - 1];
+  const periodLabel = first === last ? fmtMonth(last) : `${fmtMonth(first)} → ${fmtMonth(last)}`;
+  setText(document.getElementById('sim-sub'),
+    `Acumulado: ${periodLabel} · Big Sellers · ${simBUShortLabel(state.simBU)} · Simulação: ${simBUShortLabel(state.simScenarioBU)} · ${labelVariant()} · ${metric === 'abs' ? labelUnit() : labelMetric(metric)}`);
 }
 
 // ── Render: Graphic Generator ───────────────────────────
 function renderGG(){
   const list = document.getElementById('gg-list');
   list.replaceChildren();
-  const agg = aggregate({ bu:'ALL', segments: state.segments, product: state.product, tap: state.tap, opProduct: state.opProduct });
+  const agg = aggregate({ bu:'ALL', segments: state.segments, product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct });
   const present = new Set(agg.keys());
   const months = activeMonths();
   const ggHasValue = (src) => {
@@ -1138,11 +2591,13 @@ function renderGGCharts(){
   grid.append(buildChartCard('total',
     `${lineLabel} · por BU`,
     months, [
+      // Cores hex explícitas — Chart.js não resolve var(--…). Paleta com alto contraste:
+      // preto (Total) · vermelho vivo (OP) · laranja queimado (Point) · roxo profundo (QR).
       { key:'ALL',   label:'Total',           color:'#1a1a1a' },
-      { key:'OP',    label:'Online Payments', color:'var(--bu-op)' },
-      { key:'POINT', label:'Point',           color:'var(--bu-point)' },
-      { key:'QR',    label:'QR',              color:'var(--bu-qr)' }
-    ], (key) => aggregate({ bu: key, segments: state.segments, product: state.product, tap: state.tap, opProduct: state.opProduct })
+      { key:'OP',    label:'Online Payments', color:'#E53935' },
+      { key:'POINT', label:'Point',           color:'#FB8C00' },
+      { key:'QR',    label:'QR',              color:'#6A1B9A' }
+    ], (key) => aggregate({ bu: key, segments: state.segments, product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct })
   ));
 
   for (const bu of ['OP','POINT','QR']){
@@ -1152,120 +2607,1220 @@ function renderGGCharts(){
       `${labelBU(bu)} · por Segmento`,
       months,
       segs.map((s,i) => ({ key:s, label:s, color:colors[i] })),
-      (key) => aggregate({ bu, segment: key, product: state.product, tap: state.tap, opProduct: state.opProduct })
+      (key) => aggregate({ bu, segment: key, product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct })
     ));
   }
 
 }
 
-// ── Render: Margem por BU/Segmento ──────────────────────
-// Cada chart mostra o "walk" de margem (Product Monetization → Net Monetization →
-// Variable Contribution) para um corte específico (uma BU ou um segmento).
-// Quando as linhas PM/NM/VC se afastam ao longo do tempo, é onde a margem está
-// sendo consumida — fica visível em qual BU/segmento o leak está acontecendo.
+// ── Margem helpers — quarterly aggregation ──────────────
+function quarterOfMonth(iso){
+  // '2025-03' → '2025-Q1'
+  const [y, m] = iso.split('-');
+  const q = Math.ceil(parseInt(m,10) / 3);
+  return `${y}-Q${q}`;
+}
+function monthsInQuarter(qKey){
+  const [y, qPart] = qKey.split('-Q');
+  const q = parseInt(qPart, 10);
+  const start = (q-1)*3 + 1;
+  return [start, start+1, start+2].map(m => `${y}-${String(m).padStart(2,'0')}`);
+}
+function quarterSum(map, qKey){
+  if (!map) return null;
+  const ms = monthsInQuarter(qKey);
+  let total = 0, any = false;
+  for (const m of ms){
+    if (map.has(m)){ total += map.get(m); any = true; }
+  }
+  return any ? total : null;
+}
+function availableQuarters(){
+  if (!state.data) return [];
+  const s = new Set();
+  for (const m of state.data.months) s.add(quarterOfMonth(m));
+  return [...s].sort();
+}
+function fmtPeriod(p, type){
+  if (type === 'M') return fmtMonth(p);
+  // '2025-Q1' → '1T/25'
+  const [y, qPart] = p.split('-Q');
+  return `${qPart}T/${y.slice(2)}`;
+}
+function populateQuarterSelects(){
+  const qs = availableQuarters();
+  if (!qs.length) return;
+  const fromSel = document.getElementById('margin-q-from');
+  const toSel   = document.getElementById('margin-q-to');
+  if (!fromSel || !toSel) return;
+  fromSel.replaceChildren();
+  toSel.replaceChildren();
+  for (const q of qs){
+    const o1 = document.createElement('option');
+    o1.value = q; o1.textContent = fmtPeriod(q, 'Q');
+    fromSel.append(o1);
+    const o2 = document.createElement('option');
+    o2.value = q; o2.textContent = fmtPeriod(q, 'Q');
+    toSel.append(o2);
+  }
+  // Defaults — primeiro trimestre do ano corrente (2026 se houver), até o último Q disponível
+  if (!state.marginQFrom){
+    const lastY = qs[qs.length-1].slice(0,4);
+    state.marginQFrom = qs.find(q => q.startsWith(lastY)) || qs[0];
+  }
+  if (!state.marginQTo) state.marginQTo = qs[qs.length-1];
+  if (!qs.includes(state.marginQFrom)) state.marginQFrom = qs[0];
+  if (!qs.includes(state.marginQTo))   state.marginQTo = qs[qs.length-1];
+  fromSel.value = state.marginQFrom;
+  toSel.value   = state.marginQTo;
+}
+
+// ── Render: Margem (single big chart + summary panel) ──
 function renderMargin(){
-  const grid = document.getElementById('margin-grid');
+  const host = document.getElementById('margin-host');
   for (const k in state.charts){ state.charts[k].destroy(); delete state.charts[k]; }
-  grid.replaceChildren();
-  const months = activeMonths();
-  if (!state.data){ grid.append(mkEl('div','empty','Sem dados.')); return; }
+  host.replaceChildren();
+  if (!state.data) return;
+  // Aplica a escala de gráfico (altera o container via CSS variable)
+  const cont = document.getElementById('margin-grid-container');
+  if (cont) cont.style.setProperty('--margin-scale', state.marginChartScale);
+  // Two independent recortes — BU and Segmento — that combine (Point × Big Sellers, etc.).
+  // Both default to 'ALL' which means "Total" for that dimension.
+  const cutBU  = state.marginCutBU  || 'ALL';
+  const cutSeg = state.marginCutSeg || 'ALL';
 
-  // 3 charts por BU — usa o filtro de segmento atual (state.segments) e de produto
-  for (const bu of ['OP','POINT','QR']){
-    grid.append(buildMarginChart(
-      `margin-bu-${bu}`,
-      `${labelBU(bu)} · margin walk`,
-      months,
-      aggregate({ bu, segments: state.segments, product: state.product, tap: state.tap, opProduct: state.opProduct })
-    ));
-  }
+  // Decide periods (months OR quarters in the chosen range)
+  const periodInfo = (() => {
+    if (state.marginGran === 'Q'){
+      const allQ = availableQuarters();
+      const from = state.marginQFrom || allQ[0];
+      const to   = state.marginQTo   || allQ[allQ.length-1];
+      const lo = from < to ? from : to;
+      const hi = from < to ? to : from;
+      return { type: 'Q', periods: allQ.filter(q => q >= lo && q <= hi) };
+    }
+    return { type: 'M', periods: activeMonths() };
+  })();
+  const periods = periodInfo.periods;
 
-  // 3 charts por segmento — usa o filtro de BU atual (state.bu) e de produto
-  for (const seg of ['BIG SELLERS','SMB','LONGTAIL']){
-    grid.append(buildMarginChart(
-      `margin-seg-${seg.replace(/\s+/g,'_')}`,
-      `${seg} · margin walk`,
-      months,
-      aggregate({ bu: state.bu, segment: seg, product: state.product, tap: state.tap, opProduct: state.opProduct })
-    ));
-  }
-}
+  // Cut overrides the global BU/segment filter on this tab. BU and segment
+  // combine — e.g. POINT × BIG SELLERS, or ALL × SMB ("Total SMB"), etc.
+  const aggArgs = {
+    bu: cutBU,
+    segments: cutSeg === 'ALL' ? [] : [cutSeg],
+    product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct
+  };
+  const agg = aggregate(aggArgs);
+  // Consolidated baseline — used by the second summary panel for comparison.
+  // Truly unfiltered: no BU, no segment, no product/tap/opProduct narrowing.
+  const aggCons = aggregate({
+    bu: 'ALL', segments: [], product: 'ALL', paymentMethod: state.paymentMethod, tap: 'ALL', opProduct: 'ALL'
+  });
 
-// Helper: chart com as 3 linhas-chave do P&L até VC (PM, NM, VC).
-// Variant-aware: troca as keys de econ ↔ contábil conforme state.variant.
-function buildMarginChart(id, title, months, agg){
-  const variantSuffix = state.variant === 'econ' ? 'ECONOMICO' : 'CONTABLE';
-  const lines = [
-    { src: `PRODUCT_MONETIZATION_${variantSuffix}`,  label: 'Product Monetization',  color: '#1E88E5' },
-    { src: `NET_MONETIZATION_${variantSuffix}`,      label: 'Net Monetization',      color: '#FF9F1C' },
-    { src: `VARIABLE_CONTRIBUTION_${variantSuffix}`, label: 'Variable Contribution', color: '#00A650' }
+  const vs = state.variant === 'econ' ? 'ECONOMICO' : 'CONTABLE';
+
+  // P&L lines in walk order. High-contrast hand-picked palette — adjacent lines
+  // jump in hue/value (red↔blue↔green↔purple↔orange…) so they don't blur together.
+  const linesSpec = [
+    { src: 'Processing_Fees',                 label: 'Processing Fees',         color:'#1E88E5' }, // azul
+    { src: 'Financing_Revenues',              label: 'Fin Revenues',           color:'#E53935' }, // vermelho
+    { src: '__FIN_COST__',                    label: 'Fin Cost',                color:'#F4511E', hiddenByDefault:true },
+    { src: state.variant === 'econ' ? 'Sales_Taxes_Econ' : 'Sales_Taxes_Contable',
+      label: state.variant === 'econ' ? 'Sales Taxes Econ' : 'Sales Taxes Contable', color:'#00ACC1' }, // ciano
+    { src: 'Collection_Fees',                 label: 'Collection Fees',         color:'#2E7D32' }, // verde escuro
+    { src: 'CHARGEBACKS_Contable',            label: 'CBK',                    color:'#C62828' }, // bordô
+    { src: 'Bad_Debt_Incobrables',            label: 'Bad Debt',                color:'#5E35B1' }, // roxo profundo
+    { src: 'BPP',                             label: 'BPP',                     color:'#FB8C00' }, // laranja vivo
+    { src: 'Consultor_Certificado',           label: 'Consultor Certificado',   color:'#00897B' }, // teal escuro
+    { src: 'Plataforma',                      label: 'Plataforma',              color:'#D81B60' }, // magenta
+    { src: 'CX_Variable',                     label: 'CX Variable',             color:'#3949AB' }, // índigo
+    { src: 'Hosting_Variable',                label: 'Hosting Variable',        color:'#FDD835' }, // amarelo
+    { src: 'FP_Variable',                     label: 'FP Variable',             color:'#7CB342' }, // verde lima
+    { src: 'Telemetria',                      label: 'Telemetria',              color:'#6D4C41' }, // marrom
+    { src: 'Cashbacks_Sellers',               label: 'Cashbacks Sellers',       color:'#546E7A' }, // azul ardósia
+    { src: 'COUPONS',                         label: 'Coupons',                 color:'#AB47BC' }, // lilás
+    { src: 'Other_Direct_Variable_Costs',     label: 'Other Direct Var Costs',  color:'#1a1a1a' }  // preto
   ];
 
-  const card = mkEl('div', 'chart-box tall');
-  const head = mkEl('div','ttl');
-  head.append(mkEl('span', null, title)); // textContent → XSS-safe
-  const badgeTxt = state.metric === 'abs' ? labelUnit() : labelMetric(state.metric);
-  head.append(mkEl('span','badge', badgeTxt));
-  card.append(head);
-  const host = mkEl('div','chart-host');
-  const cv = document.createElement('canvas');
-  host.append(cv); card.append(host);
+  // Pull line value at a given period (month OR quarter sum).
+  function periodValue(map, p){
+    if (periodInfo.type === 'M') return map && map.has(p) ? map.get(p) : null;
+    return quarterSum(map, p);
+  }
+
+  // Hide lines that are zero across every active period.
+  const filtered = linesSpec.filter(ln => {
+    const m = agg.get(ln.src);
+    if (!m) return false;
+    for (const p of periods){
+      const v = periodValue(m, p);
+      if (v != null && v !== 0) return true;
+    }
+    return false;
+  });
 
   const tpvMap = agg.get('TPV');
   const tpnMap = agg.get('TPN');
-
-  // Unit divisor only applies to absolute values; ratios are already normalized.
   const skipUnit = state.metric !== 'abs';
   const div = skipUnit ? 1 : state.unit;
 
-  const datasets = lines.map(ln => {
+  // Compute display values per line per period (post-metric, pre-unit).
+  // display: 'abs' → raw; 'ptpv' → %; 'ptpn' → per-TPN ratio.
+  function displayFor(srcMap){
+    return periods.map(p => {
+      const v = periodValue(srcMap, p);
+      if (v == null) return null;
+      if (state.metric === 'abs') return v;
+      const denomMap = state.metric === 'ptpv' ? tpvMap : tpnMap;
+      const d = periodValue(denomMap, p);
+      if (!d) return null;
+      return state.metric === 'ptpv' ? (v / d) * 100 : (v / d);
+    });
+  }
+
+  // Helper: bucket a (first,last) pair using the same logic as o painel lateral.
+  const bucketPrecision = (state.metric === 'ptpv' || state.metric === 'ptpn') ? 100 : 10;
+  function bucketOf(first, last){
+    if (first == null || last == null) return null;
+    const dRounded = Math.round((last - first) * bucketPrecision) / bucketPrecision;
+    if (dRounded === 0) return 'const';
+    return dRounded < 0 ? 'atencao' : 'otim';
+  }
+
+  const datasets = filtered.map(ln => {
     const raw = agg.get(ln.src) || new Map();
-    const t = applyMetric(raw, state.metric, tpvMap, tpnMap);
+    const display = displayFor(raw);
+    const chartData = display.map(v => v == null ? null
+                                       : (state.metric === 'abs' ? v / div : v));
+    // first/last non-null + bucket — usado pelo plugin de rótulos.
+    let first = null, last = null;
+    for (const v of display){ if (v != null){ first = v; break; } }
+    for (let j = display.length - 1; j >= 0; j--){ if (display[j] != null){ last = display[j]; break; } }
     return {
       label: ln.label,
-      data: months.map(m => {
-        if (!t.has(m)) return null;
-        const v = t.get(m);
-        return v == null ? null : v / div;
-      }),
+      data: chartData,
       borderColor: ln.color, backgroundColor: ln.color,
-      borderWidth: 2.5, tension: .25, pointRadius: 2.5, pointHoverRadius: 5, spanGaps: true,
-      _srcKey: ln.src
+      borderWidth: ln.subtotal ? 3 : 1.9,
+      tension: .25,
+      pointRadius: ln.subtotal ? 3 : 1.8,
+      pointHoverRadius: 5.5,
+      spanGaps: true,
+      hidden: !!ln.hiddenByDefault && !state.marginShowFTP,
+      _srcKey: ln.src,
+      _display: display,
+      _bucket: bucketOf(first, last)
     };
   });
 
-  state.charts[id] = new Chart(cv.getContext('2d'), {
+  const cv = document.createElement('canvas');
+  host.append(cv);
+
+  state.charts['margin'] = new Chart(cv.getContext('2d'), {
     type: 'line',
-    data: { labels: months.map(fmtMonth), datasets },
+    data: { labels: periods.map(p => fmtPeriod(p, periodInfo.type)), datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
       plugins: {
-        legend: { position:'bottom',
-          labels: { font:{ size:10, weight:'600' }, boxWidth:10, boxHeight:10, padding:8 } },
+        legend: {
+          position:'bottom',
+          // Tamanho composto: base (10) × toggle "Legenda ampliada" (×1.3 se on)
+          // × marginFontScale (controle ± do usuário).
+          labels: (function(){
+            const fScale = (state.marginBigLegend ? 1.3 : 1) * state.marginFontScale;
+            return {
+              font: { size: Math.round(10 * fScale), weight: fScale >= 1.25 ? '700' : '600' },
+              boxWidth:  Math.round(10 * fScale),
+              boxHeight: Math.round(10 * fScale),
+              padding:   Math.round(5 * fScale)
+            };
+          })(),
+          // Sync both side panels (filtered + consolidated) with legend toggles
+          onClick: (e, legendItem, legend) => {
+            const ch = legend.chart;
+            const i = legendItem.datasetIndex;
+            ch.setDatasetVisibility(i, !ch.isDatasetVisible(i));
+            ch.update();
+            renderMarginSummary('margin-summary', datasets, periodInfo, ch, 'No recorte selecionado');
+            const consDS = buildConsolidatedDatasets(aggCons, filtered, periodInfo, periods);
+            renderMarginSummary('margin-summary-cons', consDS, periodInfo, ch, 'Na visão consolidada');
+          }
+        },
         tooltip: {
+          // Order entries from largest to smallest signed value for each month.
+          itemSort: (a, b) => (b.parsed.y ?? -Infinity) - (a.parsed.y ?? -Infinity),
           callbacks: {
             label: (ctx) => {
               const y = ctx.parsed.y;
               if (y == null) return `${ctx.dataset.label}: —`;
               const raw = y * div;
-              const item = { src: ctx.dataset._srcKey, label: ctx.dataset.label, isSubtotalLabel: true };
+              const item = { src: ctx.dataset._srcKey, label: ctx.dataset.label };
               return `${ctx.dataset.label}: ${fmt(raw, state.metric, { item })}`;
             }
           },
           backgroundColor:'#1a1a1a',
-          titleFont:{ weight:'700' }
+          titleFont:{ weight:'700', family: "'Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" },
+          bodyFont: { family: "'Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" }
         }
       },
       scales: {
-        x: { ticks:{ font:{ size:10 } }, grid:{ display:false } },
-        y: { ticks:{ font:{ size:10 },
-                     callback:(v) => fmt(v * div, state.metric, { item: { isSubtotalLabel:true } }) },
+        x: { ticks:{ font:{ size: Math.round(10 * state.marginFontScale) } }, grid:{ display:false } },
+        y: { reverse: state.invertY,
+             ticks:{ font:{ size: Math.round(10 * state.marginFontScale) },
+                     callback:(v) => fmt(v * div, state.metric) },
              grid:{ color:'rgba(0,0,0,.05)' } }
       }
     }
   });
-  return card;
+
+  // ── Side panels ──
+  // Panel 1: variações no recorte ativo (datasets já carregam _display)
+  renderMarginSummary('margin-summary', datasets, periodInfo, state.charts['margin'],
+                      'No recorte selecionado');
+  // Panel 2: variações na visão consolidada (recalcula display do zero, mas
+  // respeita a legenda do chart pra esconder as mesmas linhas que o usuário escondeu).
+  const consDatasets = buildConsolidatedDatasets(aggCons, filtered, periodInfo, periods);
+  renderMarginSummary('margin-summary-cons', consDatasets, periodInfo, state.charts['margin'],
+                      'Na visão consolidada');
+
+  const granLabel = periodInfo.type === 'Q'
+    ? `${fmtPeriod(periods[0],'Q')} → ${fmtPeriod(periods[periods.length-1],'Q')}`
+    : `${periods.length} meses`;
+  const cutLabel = (cutBU === 'ALL' && cutSeg === 'ALL') ? 'Consolidado'
+                 : (cutBU === 'ALL' ? cutSeg
+                 : (cutSeg === 'ALL' ? labelBU(cutBU)
+                 : `${labelBU(cutBU)} × ${cutSeg}`));
+  setText(document.getElementById('margin-sub'),
+    `Recorte: ${cutLabel} · ${granLabel} · ${labelVariant()} · ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)} · ${filtered.length} linhas`);
+}
+
+// Para o painel consolidado: mesma lista de linhas, mas display values recalculados
+// a partir do aggregate consolidado (e seu TPV/TPN próprios para %).
+function buildConsolidatedDatasets(aggCons, filteredLines, periodInfo, periods){
+  const tpvCons = aggCons.get('TPV');
+  const tpnCons = aggCons.get('TPN');
+  function periodValue(map, p){
+    if (periodInfo.type === 'M') return map && map.has(p) ? map.get(p) : null;
+    return quarterSum(map, p);
+  }
+  function displayFor(srcMap){
+    return periods.map(p => {
+      const v = periodValue(srcMap, p);
+      if (v == null) return null;
+      if (state.metric === 'abs') return v;
+      const denomMap = state.metric === 'ptpv' ? tpvCons : tpnCons;
+      const d = periodValue(denomMap, p);
+      if (!d) return null;
+      return state.metric === 'ptpv' ? (v / d) * 100 : (v / d);
+    });
+  }
+  return filteredLines.map(ln => {
+    const raw = aggCons.get(ln.src) || new Map();
+    return {
+      label: ln.label,
+      borderColor: ln.color,
+      _srcKey: ln.src,
+      _display: displayFor(raw)
+    };
+  });
+}
+
+// Painel lateral · maiores variações
+function renderMarginSummary(panelId, datasets, periodInfo, chart, headerLabel){
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  panel.replaceChildren();
+
+  // Header
+  const head = mkEl('div', null);
+  head.style.cssText = 'font:800 11px \"Proxima Nova\",-apple-system,sans-serif;text-transform:uppercase;letter-spacing:.6px;'
+                    + 'color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:6px';
+  head.append(mkEl('span', null, 'Maiores variações'));
+  panel.append(head);
+  const sub = mkEl('div', null);
+  sub.style.cssText = 'font:600 10px \"Proxima Nova\",-apple-system,sans-serif;color:var(--ink-2);margin-bottom:2px';
+  setText(sub, headerLabel || '');
+  panel.append(sub);
+  const sub2 = mkEl('div', null);
+  sub2.style.cssText = 'font:500 10px \"Proxima Nova\",-apple-system,sans-serif;color:var(--muted);margin-bottom:12px';
+  setText(sub2, periodInfo.type === 'Q' ? 'Δ entre o trimestre inicial e final' : 'Δ entre o primeiro e o último mês');
+  panel.append(sub2);
+
+  // For each dataset, compute first/last non-null in _display.
+  // Visibility é amarrada à legenda do CHART (que reflete o recorte filtrado);
+  // se o usuário escondeu Chargebacks no chart, esconde nos dois painéis.
+  // O lookup é por _srcKey, então o painel consolidado consegue casar a linha
+  // mesmo se o índice for diferente do dataset do chart.
+  const chartDatasets = chart && chart.data ? chart.data.datasets : null;
+  function isHidden(srcKey){
+    if (!chart || !chartDatasets) return false;
+    const i = chartDatasets.findIndex(ds => ds._srcKey === srcKey);
+    if (i < 0) return false;
+    return !chart.isDatasetVisible(i);
+  }
+  const variations = datasets.map(ds => {
+    if (isHidden(ds._srcKey)) return null;
+    const d = ds._display || [];
+    let first = null, last = null;
+    for (const v of d){ if (v != null){ first = v; break; } }
+    for (let j = d.length - 1; j >= 0; j--){ if (d[j] != null){ last = d[j]; break; } }
+    if (first == null || last == null) return null;
+    return { label: ds.label, color: ds.borderColor, first, last, delta: last - first };
+  }).filter(Boolean);
+
+  if (!variations.length){
+    const empty = mkEl('div', null, 'Sem dados no período.');
+    empty.style.cssText = 'color:var(--muted);font-size:11px;padding:8px 0';
+    panel.append(empty);
+    return;
+  }
+
+  // Bucket por sinal do delta. O critério verdadeiro de "constante" é se a
+  // VARIAÇÃO Δ arredondada à precisão exibida fica em zero — não basta os
+  // valores parecerem diferentes; o que importa é o tamanho do salto.
+  // (Ex.: −0,013% → −0,018% mostra "−0,01% → −0,02%" mas Δ é −0,005 → < 1bp.)
+  const bucketPrecision = (state.metric === 'ptpv' || state.metric === 'ptpn') ? 100 : 10;
+  function roundForBucket(v){ return Math.round(v * bucketPrecision) / bucketPrecision; }
+  const atencao = [], otimizados = [], constantes = [];
+  for (const v of variations){
+    const dRounded = roundForBucket(v.delta);
+    if (dRounded === 0) constantes.push(v);
+    else if (dRounded < 0) atencao.push(v);
+    else otimizados.push(v);
+  }
+  atencao.sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta));
+  otimizados.sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta));
+  constantes.sort((a,b) => a.label.localeCompare(b.label, 'pt-BR'));
+
+  function renderSection(title, items, accent){
+    if (!items.length) return;
+    const block = mkEl('div', null);
+    block.style.cssText = 'margin-top:12px';
+    const h = mkEl('div', null);
+    h.style.cssText = 'font:800 10.5px \"Proxima Nova\",-apple-system,sans-serif;'
+                    + 'text-transform:uppercase;letter-spacing:.6px;'
+                    + `color:${accent};margin-bottom:6px;`
+                    + `border-left:3px solid ${accent};padding-left:8px`;
+    setText(h, title + ' (' + items.length + ')');
+    block.append(h);
+
+    const ul = mkEl('ul', null);
+    ul.style.cssText = 'list-style:none;padding:0;margin:0';
+    for (const v of items){
+      const li = mkEl('li', null);
+      li.style.cssText = 'display:flex;flex-direction:column;padding:5px 0 6px;'
+                       + 'border-bottom:1px solid var(--border)';
+      const top1 = mkEl('div', null);
+      top1.style.cssText = 'display:flex;align-items:center;gap:7px;'
+                         + 'font:600 11.5px \"Proxima Nova\",-apple-system,sans-serif;color:var(--ink)';
+      const dot = mkEl('span', null);
+      dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;`
+                        + `background:${v.color};flex-shrink:0`;
+      top1.append(dot, document.createTextNode(v.label));
+      li.append(top1);
+
+      const bot = mkEl('div', null);
+      bot.style.cssText = 'display:flex;justify-content:space-between;align-items:center;'
+                       + 'font:500 10.5px \"Proxima Nova\",-apple-system,sans-serif;'
+                       + 'color:var(--muted);margin-top:3px;padding-left:15px';
+      bot.append(mkEl('span', null, `${fmt(v.first, state.metric)} → ${fmt(v.last, state.metric)}`));
+      if (items !== constantes){
+        const sign = v.delta > 0 ? '+' : '';
+        const dEl = mkEl('span', null, sign + fmt(v.delta, state.metric));
+        dEl.style.cssText = `font-weight:800;color:${accent}`;
+        bot.append(dEl);
+      }
+      li.append(bot);
+      ul.append(li);
+    }
+    block.append(ul);
+    panel.append(block);
+  }
+
+  renderSection('Pontos de atenção', atencao,    'var(--red)');
+  renderSection('Otimizados',        otimizados, 'var(--green)');
+  renderSection('Constantes',        constantes, 'var(--muted)');
+}
+
+function labelCut(c){
+  return ({ ALL:'Consolidado', OP:'Online Payments', POINT:'Point', QR:'QR',
+            'BIG SELLERS':'Big Sellers', SMB:'SMB', LONGTAIL:'Longtail' })[c] || c;
+}
+
+// ── Render: Árvore de Valor (Sankey) ────────────────────
+// Mesma lista de linhas da aba Margem (Processing → … itens VC), distribuídas:
+//   linhas de receita (valor positivo no período) → nó central "Receitas"
+//   nó "Receitas" → cada linha de custo (valor absoluto) + nó "Margem" (resto)
+// Modo respeita state.metric (Absoluto / % TPV / por TPN).
+function renderTree(){
+  const host = document.getElementById('tree-host');
+  if (!host) return;
+  host.replaceChildren();
+  if (!state.data) return;
+  const months = activeMonths();
+  const agg = aggregate({
+    bu: state.bu, segments: state.segments,
+    product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct
+  });
+
+  // Mesma lista exata da aba Margem (FTP só se o toggle global estiver ligado).
+  const linesSpec = [
+    { src: 'Processing_Fees',                 label: 'Processing Fees' },
+    { src: 'Financing_Revenues',              label: 'Fin Revenues' },
+    { src: '__FIN_COST__',                    label: 'Fin Cost' },
+    { src: state.variant === 'econ' ? 'Sales_Taxes_Econ' : 'Sales_Taxes_Contable',
+      label: state.variant === 'econ' ? 'Sales Taxes Econ' : 'Sales Taxes Contable' },
+    { src: 'Collection_Fees',                 label: 'Collection Fees' },
+    { src: 'CHARGEBACKS_Contable',            label: 'CBK' },
+    { src: 'Bad_Debt_Incobrables',            label: 'Bad Debt' },
+    { src: 'BPP',                             label: 'BPP' },
+    { src: 'Consultor_Certificado',           label: 'Consultor Certificado' },
+    { src: 'Plataforma',                      label: 'Plataforma' },
+    { src: 'CX_Variable',                     label: 'CX Variable' },
+    { src: 'Hosting_Variable',                label: 'Hosting Variable' },
+    { src: 'FP_Variable',                     label: 'FP Variable' },
+    { src: 'Telemetria',                      label: 'Telemetria' },
+    { src: 'Cashbacks_Sellers',               label: 'Cashbacks Sellers' },
+    { src: 'COUPONS',                         label: 'Coupons' },
+    { src: 'Other_Direct_Variable_Costs',     label: 'Other Direct Var Costs' },
+    ...(includeAdjInCalc() ? [{ src: '__VC_ADJ_TOTAL__', label: 'Others' }] : [])
+  ];
+
+  function lineTotal(src){
+    const m = agg.get(src);
+    if (!m) return 0;
+    let total = 0;
+    for (const month of months) total += m.get(month) || 0;
+    return total;
+  }
+
+  const totalLines = linesSpec.map(ln => ({ ...ln, value: lineTotal(ln.src) }))
+                              .filter(ln => ln.value !== 0);
+  let revenues = totalLines.filter(l => l.value > 0);
+  let costs    = totalLines.filter(l => l.value < 0).map(l => ({ ...l, value: -l.value }));
+  let totalRev = 0;
+  let totalCost = 0;
+  let margem = 0;
+
+  // Total TPV / TPN no período (pros modos ratio).
+  const tpvSum = (() => {
+    const m = agg.get('TPV'); let t = 0;
+    if (m) for (const mo of months) t += m.get(mo) || 0;
+    return t;
+  })();
+  const tpnSum = (() => {
+    const m = agg.get('TPN'); let t = 0;
+    if (m) for (const mo of months) t += m.get(mo) || 0;
+    return t;
+  })();
+
+  function transform(v){
+    if (state.metric === 'ptpv') return tpvSum ? (v / tpvSum) * 100 : 0;
+    if (state.metric === 'ptpn') return tpnSum ? (v / tpnSum) : 0;
+    return v / state.unit; // abs respeitando unidade selecionada
+  }
+  function fmtTree(v){
+  if (state.metric === 'ptpv') return fmtPct(v) + '%';
+  if (state.metric === 'ptpn') return fmtPct(v);
+    return fmtNum.format(v);
+  }
+  function refreshTreeTotals(){
+    totalRev  = revenues.reduce((s,r) => s + r.value, 0);
+    totalCost = costs.reduce((s,c) => s + c.value, 0);
+    margem    = totalRev - totalCost;
+  }
+  function roundsToDisplayedZero(rawValue){
+    const displayed = transform(rawValue);
+    const precision = (state.metric === 'ptpv' || state.metric === 'ptpn') ? 100 : 10;
+    return Math.round(displayed * precision) / precision === 0;
+  }
+  function bucketTinyTreeLines(items, srcPrefix){
+    const keep = [];
+    let tinySum = 0;
+    for (const it of items){
+      if (roundsToDisplayedZero(it.value)) tinySum += it.value;
+      else keep.push(it);
+    }
+    if (tinySum > 0) keep.push({ src: `__TREE_OTHERS_${srcPrefix}`, label: 'Others', value: tinySum });
+    return keep;
+  }
+  revenues = bucketTinyTreeLines(revenues, 'REV');
+  costs    = bucketTinyTreeLines(costs, 'COST');
+  refreshTreeTotals();
+  // Escala combinada: toggle "Rótulos ampliados" (×1.3) × controle ± Fonte.
+  // Precisa existir antes das annotations, que usam esse valor.
+  const big = state.treeBigLabels;
+  const fScale = (big ? 1.3 : 1) * state.treeFontScale;
+
+  // Build nodes — quando "Valores nos rótulos" está ligado, anexamos o valor
+  // formatado ao nome do nó pra ler sem hover (revenues em verde, custos com sinal de menos).
+  function nodeLabel(label, value, isCost){
+    if (!state.treeShowValues || value == null) return label;
+    const sign = isCost ? '−' : '+';
+    return `${label}  (${sign}${fmtTree(transform(value))})`;
+  }
+
+  // SVG próprio: rótulo, nó e fluxo usam a MESMA coordenada. Isso evita o
+  // desalinhamento que o Plotly Sankey causava ao recalcular node.y internamente.
+  {
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const revSorted = revenues.slice().sort((a,b) => b.value - a.value);
+    const costSorted = costs.slice().sort((a,b) => b.value - a.value);
+    const rightItems = [
+      { src:'__MARGIN__', label: margem >= 0 ? 'Margem (VC)' : 'Margem negativa (VC)',
+        value: Math.abs(margem), color: margem >= 0 ? '#1E88E5' : '#7B1FA2', isCost: margem < 0, isMargin:true },
+      ...costSorted.map(c => ({ ...c, color:'#C62828', isCost:true }))
+    ].filter(it => it.value > 0);
+
+    if (!revSorted.length && !rightItems.length){
+      host.append(mkEl('div','empty','Sem dados para a árvore no período selecionado.'));
+      return;
+    }
+
+    const rowH = Math.max(60, Math.round(60 * fScale));
+    const top = 54, bottom = 46;
+    const maxRows = Math.max(revSorted.length || 1, rightItems.length || 1);
+    const w = Math.max(1180, Math.ceil(host.clientWidth || 1180));
+    const h = Math.max(560, top + bottom + maxRows * rowH);
+    const leftLabelW = Math.max(300, Math.round(300 * fScale));
+    const rightLabelW = Math.max(360, Math.round(360 * fScale));
+    const nodeW = 18;
+    const xRev = leftLabelW + 20;
+    const xCenter = Math.round(w * 0.48);
+    const xRight = w - rightLabelW - 42;
+    const yStart = top + rowH / 2;
+    const fontSize = Math.round(12 * fScale);
+
+    function itemMag(it){ return Math.max(0, Math.abs(transform(it.value))); }
+    function decorate(items, side){
+      const maxMag = Math.max(...items.map(itemMag), 0.000001);
+      return items.map((it, i) => {
+        const cy = yStart + i * rowH;
+        const nodeH = Math.max(Math.round(7 * fScale), Math.min(rowH * .86, (itemMag(it) / maxMag) * rowH * .86));
+        return { ...it, cy, nodeH, side };
+      });
+    }
+    function sumNodeHeights(nodes){
+      return nodes.reduce((s,n) => s + n.nodeH, 0);
+    }
+    function stackCenterSlots(nodes, heightKey){
+      const stackH = nodes.reduce((s,n) => s + (n[heightKey] ?? n.nodeH), 0);
+      let y = centerY - stackH / 2;
+      return nodes.map(n => {
+        const hCenter = n[heightKey] ?? n.nodeH;
+        const centerCy = y + hCenter / 2;
+        y += hCenter;
+        return { ...n, centerCy };
+      });
+    }
+    function spreadSourceSlots(nodes, heightKey){
+      const gap = Math.max(18, Math.round(24 * fScale));
+      const stackH = nodes.reduce((s,n) => s + (n[heightKey] ?? n.nodeH), 0) + Math.max(0, nodes.length - 1) * gap;
+      let y = centerY - stackH / 2;
+      return nodes.map(n => {
+        const hSource = n[heightKey] ?? n.nodeH;
+        const sourceCy = y + hSource / 2;
+        y += hSource + gap;
+        return { ...n, cy: sourceCy, nodeH: hSource };
+      });
+    }
+    function allocateCenterHeights(nodes, totalH, minH){
+      if (!nodes.length) return [];
+      const floorH = Math.min(minH, totalH / nodes.length);
+      const fixedH = floorH * nodes.length;
+      const availableH = Math.max(0, totalH - fixedH);
+      const totalMag = nodes.reduce((s,n) => s + itemMag(n), 0);
+      return nodes.map(n => ({
+        ...n,
+        centerH: floorH + (totalMag ? (itemMag(n) / totalMag) * availableH : availableH / nodes.length)
+      }));
+    }
+    let revNodes = decorate(revSorted, 'left');
+    let rightNodes = decorate(rightItems, 'right');
+    // A barra central representa o nó agregado de receitas. Ela deve acompanhar
+    // exatamente a soma das faixas de receita no centro, sem custos nem gaps.
+    const centerY = top + (maxRows * rowH) / 2;
+    const sourceRevH = sumNodeHeights(revNodes);
+    const centerH = Math.min(h * .44, Math.max(sourceRevH * 2.15, rowH * 2.35));
+    const minCenterH = Math.max(6, Math.round(7 * fScale));
+    // As receitas usam a mesma escala visual do bloco central, mas ficam espalhadas
+    // na origem para mostrar os efeitos que formam o bloco de "Receitas".
+    revNodes = spreadSourceSlots(stackCenterSlots(allocateCenterHeights(revNodes, centerH, minCenterH), 'centerH'), 'centerH');
+    rightNodes = stackCenterSlots(allocateCenterHeights(rightNodes, centerH, Math.max(3, Math.round(4 * fScale))), 'centerH');
+
+    host.style.height = (h * state.treeChartScale) + 'px';
+    host.style.width = (100 * state.treeChartScale) + '%';
+    host.style.maxWidth = '100%';
+    host.style.margin = '0 auto';
+    host.style.overflow = 'auto';
+
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('role', 'img');
+    svg.style.display = 'block';
+    svg.style.background = '#fff';
+
+    function svgEl(tag, attrs){
+      const el = document.createElementNS(svgNS, tag);
+      for (const [k,v] of Object.entries(attrs || {})) el.setAttribute(k, v);
+      return el;
+    }
+    function addText(txt, x, y, anchor, color){
+      const t = svgEl('text', {
+        x, y, 'text-anchor': anchor, 'dominant-baseline':'middle',
+        fill: color || '#1a1a1a',
+        stroke: '#ffffff',
+        'stroke-width': 4,
+        'stroke-linejoin': 'round',
+        'paint-order': 'stroke fill',
+        'font-family': 'Proxima Nova, -apple-system, Segoe UI, sans-serif',
+        'font-size': fontSize,
+        'font-weight': 600
+      });
+      t.textContent = txt;
+      svg.append(t);
+    }
+    function addRect(x, cy, height, color){
+      svg.append(svgEl('rect', {
+        x, y: cy - height/2, width: nodeW, height,
+        rx: 3, ry: 3, fill: color
+      }));
+    }
+    function addRibbon(x1, y1, h1, x2, y2, h2, color){
+      const bend = Math.max(80, Math.abs(x2 - x1) * .48);
+      const c1 = x1 + bend;
+      const c2 = x2 - bend;
+      const topPath = `M ${x1} ${y1 - h1/2} C ${c1} ${y1 - h1/2}, ${c2} ${y2 - h2/2}, ${x2} ${y2 - h2/2}`;
+      const botPath = `L ${x2} ${y2 + h2/2} C ${c2} ${y2 + h2/2}, ${c1} ${y1 + h1/2}, ${x1} ${y1 + h1/2} Z`;
+      svg.append(svgEl('path', {
+        d: topPath + ' ' + botPath,
+        fill: color,
+        stroke: 'none',
+        opacity: .92
+      }));
+    }
+
+    // Ondas atrás dos nós: faixas preenchidas, proporcionais, com curva Sankey.
+    for (const n of revNodes){
+      addRibbon(xRev + nodeW, n.cy, n.nodeH, xCenter, n.centerCy, n.centerH, 'rgba(46,125,50,.38)');
+    }
+    for (const n of rightNodes){
+      const color = n.isMargin ? 'rgba(30,136,229,.55)' : 'rgba(198,40,40,.34)';
+      addRibbon(xCenter + nodeW, n.centerCy, n.centerH, xRight, n.cy, n.nodeH, color);
+    }
+
+    // Nós e labels externos
+    for (const n of revNodes){
+      addRect(xRev, n.cy, n.nodeH, '#2E7D32');
+      addText(nodeLabel(n.label, n.value, false), xRev - 12, n.cy, 'end');
+    }
+    addRect(xCenter, centerY, centerH, '#1a1a1a');
+    addText(nodeLabel('Receitas', totalRev, false), xCenter - 12, centerY, 'end');
+    for (const n of rightNodes){
+      addRect(xRight, n.cy, n.nodeH, n.color);
+      addText(nodeLabel(n.label, n.value, n.isCost), xRight + nodeW + 12, n.cy, 'start');
+    }
+
+    host.append(svg);
+
+    const sub = document.getElementById('tree-sub');
+    if (sub){
+      const recTxt = fmtTree(transform(totalRev));
+      const custosTxt = fmtTree(transform(totalCost));
+      const margemTxt = fmtTree(transform(margem));
+      setText(sub,
+        `Receitas: +${recTxt}  ·  Custos: -${custosTxt}  ·  Margem: ${margem >= 0 ? '+' : '-'}${margemTxt}` +
+        `  ·  ${labelVariant()}  ·  ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`);
+    }
+    return;
+  }
+
+  const nodeLabels = [];
+  const nodeColors = [];
+  const nodeX = [];
+  const nodeY = [];
+
+  // Layout: arranjamos com 'fixed' + y stacking pra ter coordenadas conhecidas,
+  // depois posicionamos os labels via ANNOTATIONS (esquerda para receitas,
+  // direita para custos e Margem, abaixo do nó central para Receitas).
+  function stackY(items){
+    const n = items.length;
+    if (n === 0) return [];
+    if (n === 1) return [0.5];
+    const total = items.reduce((s, it) => s + Math.max(0, it.value), 0) || 1;
+    const minH = 0.025;
+    let heights = items.map(it => Math.max((Math.max(0, it.value) / total), minH));
+    let sumH = heights.reduce((s, h) => s + h, 0);
+    let pad = (1 - sumH) / (n - 1);
+    if (pad < 0.005){ pad = 0.005; }
+    if (pad > 0.04){ pad = 0.04; }
+    const padTotal = pad * (n - 1);
+    const heightBudget = 1 - padTotal;
+    const scale = heightBudget / sumH;
+    heights = heights.map(h => h * scale);
+    const ys = []; let cursor = 0;
+    for (const h of heights){ ys.push(cursor + h/2); cursor += h + pad; }
+    return ys;
+  }
+
+  // Receitas (esquerda) — ordenadas por valor decrescente
+  const revSorted = revenues.slice().sort((a,b) => b.value - a.value);
+  const revYs = stackY(revSorted);
+  const revIdx = {};
+  revSorted.forEach((r, i) => {
+    revIdx[r.src] = nodeLabels.length;
+    nodeLabels.push(nodeLabel(r.label, r.value, false));
+    nodeColors.push('#2E7D32');
+    nodeX.push(0.0);
+    nodeY.push(revYs[i]);
+  });
+  // Nó central "Receitas"
+  const recIdx = nodeLabels.length;
+  const recLabelText = nodeLabel('Receitas', totalRev, false);
+  nodeLabels.push(recLabelText);
+  nodeColors.push('#1a1a1a');
+  nodeX.push(0.5);
+  nodeY.push(0.5);
+
+  // Direita — Margem PRIMEIRO, depois custos por valor desc
+  const costSorted = costs.slice().sort((a,b) => b.value - a.value);
+  const rightItems = [{ value: Math.abs(margem) }, ...costSorted];
+  const rightYs = stackY(rightItems);
+  const margemIdx = nodeLabels.length;
+  const margemBaseLbl = margem >= 0 ? 'Margem (VC)' : 'Margem negativa (VC)';
+  const margemLabelText = nodeLabel(margemBaseLbl, Math.abs(margem), margem < 0);
+  nodeLabels.push(margemLabelText);
+  nodeColors.push(margem >= 0 ? '#1E88E5' : '#7B1FA2');
+  nodeX.push(1.0);
+  nodeY.push(rightYs[0]);
+  const costIdx = {};
+  costSorted.forEach((c, i) => {
+    costIdx[c.src] = nodeLabels.length;
+    nodeLabels.push(nodeLabel(c.label, c.value, true));
+    nodeColors.push('#C62828');
+    nodeX.push(1.0);
+    nodeY.push(rightYs[i + 1]);
+  });
+
+  // ── Annotations: labels externos a cada nó ──
+  // Plotly Sankey: y dos nós (em fixed mode) corresponde ao yref='paper'
+  // dentro do plot area. Pra simplificar usamos yref='paper' e xref='paper'.
+  const annotations = [];
+  // Receitas individuais — à esquerda do bar verde (xanchor:right)
+  revSorted.forEach((r, i) => {
+    annotations.push({
+      x: 0.0, y: revYs[i], xref: 'paper', yref: 'paper',
+      xanchor: 'right', yanchor: 'middle',
+      text: nodeLabel(r.label, r.value, false),
+      showarrow: false, xshift: -10,
+      font: { family: "'Proxima Nova', -apple-system, sans-serif", size: Math.round(12 * fScale), color: '#1a1a1a' }
+    });
+  });
+  // Receitas (nó central) — à esquerda da barra preta totalizadora
+  annotations.push({
+    x: 0.5, y: 0.5, xref: 'paper', yref: 'paper',
+    xanchor: 'right', yanchor: 'middle',
+    text: recLabelText,
+    showarrow: false, xshift: -10,
+    font: { family: "'Proxima Nova', -apple-system, sans-serif", size: Math.round(12 * fScale), color: '#1a1a1a' }
+  });
+  // Margem — à direita do bar azul (xanchor:left)
+  annotations.push({
+    x: 1.0, y: rightYs[0], xref: 'paper', yref: 'paper',
+    xanchor: 'left', yanchor: 'middle',
+    text: margemLabelText,
+    showarrow: false, xshift: 10,
+    font: { family: "'Proxima Nova', -apple-system, sans-serif", size: Math.round(12 * fScale), color: '#1a1a1a' }
+  });
+  // Custos individuais — à direita do bar vermelho
+  costSorted.forEach((c, i) => {
+    annotations.push({
+      x: 1.0, y: rightYs[i + 1], xref: 'paper', yref: 'paper',
+      xanchor: 'left', yanchor: 'middle',
+      text: nodeLabel(c.label, c.value, true),
+      showarrow: false, xshift: 10,
+      font: { family: "'Proxima Nova', -apple-system, sans-serif", size: Math.round(12 * fScale), color: '#1a1a1a' }
+    });
+  });
+
+  // Build links — Plotly Sankey requer valores positivos.
+  const sources = [], targets = [], values = [], linkColors = [], linkCustom = [];
+  for (const r of revenues){
+    sources.push(revIdx[r.src]);
+    targets.push(recIdx);
+    values.push(transform(r.value));
+    linkColors.push('rgba(46, 125, 50, 0.45)');
+    linkCustom.push(`${r.label}<br>+${fmtTree(transform(r.value))}`);
+  }
+  for (const c of costs){
+    sources.push(recIdx);
+    targets.push(costIdx[c.src]);
+    values.push(transform(c.value));
+    linkColors.push('rgba(198, 40, 40, 0.4)');
+    linkCustom.push(`${c.label}<br>-${fmtTree(transform(c.value))}`);
+  }
+  // Margem só vira link se for positiva (Sankey não aceita valor < 0)
+  if (margem > 0){
+    sources.push(recIdx);
+    targets.push(margemIdx);
+    values.push(transform(margem));
+    linkColors.push('rgba(30, 136, 229, 0.55)');
+    linkCustom.push(`Margem<br>+${fmtTree(transform(margem))}`);
+  }
+
+  const data = [{
+    type: 'sankey',
+    orientation: 'h',
+    // 'fixed' respeita node.x/y → labels externos via annotations alinhados
+    // exatamente com os centros dos nós (também em paper coords).
+    arrangement: 'fixed',
+    valueformat: '.2f',
+    node: {
+      pad: Math.round(36 * (big ? 1.3 : 1) * Math.max(1, fScale)),
+      thickness: Math.round(18 * (big ? 1.2 : 1)),
+      line: { color: '#1a1a1a', width: 0.5 },
+      label: nodeLabels,
+      color: nodeColors,
+      x: nodeX,
+      y: nodeY,
+      hovertemplate: '%{label}<br>%{value}<extra></extra>'
+    },
+    link: {
+      source: sources,
+      target: targets,
+      value: values,
+      color: linkColors,
+      customdata: linkCustom,
+      hovertemplate: '%{customdata}<extra></extra>'
+    },
+    textfont: {
+      family: "'Proxima Nova', -apple-system, sans-serif",
+      size: Math.round(12 * fScale),
+      color: '#1a1a1a'
+    }
+  }];
+
+  const layout = {
+    font: { family: "'Proxima Nova', -apple-system, sans-serif",
+            size: Math.round(12 * fScale),
+            color: '#1a1a1a' },
+    hoverlabel: { font: { family: "'Proxima Nova', -apple-system, sans-serif", size: 11 } },
+    // Margens horizontais generosas para os labels nativos do Sankey.
+    margin: { l: 220, r: 240, t: 36, b: 36 },
+    paper_bgcolor: '#fff',
+    plot_bgcolor: '#fff'
+  };
+
+  // Tamanho do host: ALTURA precisa caber TODOS os nós da coluna direita
+  // com pad suficiente pra labels não se sobreporem (custos pequenos ficam
+  // muito próximos quando arrumados por valor decrescente).
+  const nodesMax = Math.max(revenues.length, costs.length + 1);
+  const fontH    = Math.round(12 * fScale);
+  const padBig   = big ? 1.4 : 1;
+  // Cada nó precisa de ~80-90px de espaço vertical pra label não tocar o vizinho
+  const minHperNode = Math.max(80, fontH + 60) * padBig;
+  const baseHeight = Math.max(1100, nodesMax * minHperNode + 100);
+  host.style.height    = (baseHeight * state.treeChartScale) + 'px';
+  host.style.width     = (100 * state.treeChartScale) + '%';
+  host.style.maxWidth  = '100%';
+  host.style.margin    = '0 auto';
+  host.style.overflow  = 'hidden';
+
+  Plotly.newPlot(host, data, layout, { responsive: true, displayModeBar: false });
+  // Garante que o Plotly refaça o layout com as novas dimensões
+  setTimeout(() => { try { Plotly.Plots.resize(host); } catch(e){} }, 30);
+
+  // Subtítulo executivo com totais
+  const sub = document.getElementById('tree-sub');
+  if (sub){
+    const recTxt    = fmtTree(transform(totalRev));
+    const custosTxt = fmtTree(transform(totalCost));
+    const margemTxt = fmtTree(transform(margem));
+    setText(sub,
+      `Receitas: +${recTxt}  ·  Custos: -${custosTxt}  ·  Margem: ${margem >= 0 ? '+' : '-'}${margemTxt}` +
+      `  ·  ${labelVariant()}  ·  ${state.metric === 'abs' ? labelUnit() : labelMetric(state.metric)}`);
+  }
+}
+
+// ── Render: Waterfall (Bridge VC Cenário A → VC Cenário B) ──
+// Cada barra é a VARIAÇÃO da linha (B − A). Inicia em VC@A, distribui
+// os deltas linha-a-linha e fecha em VC@B. Tabela P&L resumo à esquerda
+// mostra A, B e Δ. Adj fica condensado em "Others" na visão Contábil.
+function renderWaterfall(){
+  const host  = document.getElementById('wf-host');
+  const tab   = document.getElementById('wf-table');
+  if (!host) return;
+  host.replaceChildren();
+  if (tab) tab.replaceChildren();
+  if (!state.data) return;
+
+  // Popula os selects A/B com os períodos disponíveis (Mês ou Trimestre)
+  const isQ = state.waterfallType === 'Q';
+  const allMonths = state.data.months;
+  const periods = isQ
+    ? [...new Set(allMonths.map(quarterOfMonth))].sort()
+    : allMonths.slice();
+  const labelOf = (p) => isQ ? fmtPeriod(p, 'Q') : fmtMonth(p);
+  function syncSelect(sel, value){
+    sel.replaceChildren();
+    for (const p of periods){
+      const o = document.createElement('option');
+      o.value = p; o.textContent = labelOf(p);
+      sel.append(o);
+    }
+    if (!periods.includes(value)) value = periods[periods.length-1];
+    sel.value = value;
+    return value;
+  }
+  const selA = document.getElementById('wf-a');
+  const selB = document.getElementById('wf-b');
+  if (!state.waterfallA || !periods.includes(state.waterfallA)){
+    // Default A: mesmo trimestre/mês um ano antes do mais recente
+    const last = periods[periods.length-1];
+    const tryA = isQ
+      ? last.replace(/(\d{4})/, (s) => String(parseInt(s,10)-1))
+      : last.replace(/(\d{4})/, (s) => String(parseInt(s,10)-1));
+    state.waterfallA = periods.includes(tryA) ? tryA : periods[0];
+  }
+  if (!state.waterfallB || !periods.includes(state.waterfallB)){
+    state.waterfallB = periods[periods.length-1];
+  }
+  state.waterfallA = syncSelect(selA, state.waterfallA);
+  state.waterfallB = syncSelect(selB, state.waterfallB);
+
+  if (typeof Plotly === 'undefined'){
+    host.append(mkEl('div','empty','Plotly não disponível (abra dentro do Grid).'));
+    return;
+  }
+
+  const agg = aggregate({
+    bu: state.bu, segments: state.segments,
+    product: state.product, paymentMethod: state.paymentMethod, tap: state.tap, opProduct: state.opProduct
+  });
+  const salesTaxesKey = state.variant === 'econ' ? 'Sales_Taxes_Econ' : 'Sales_Taxes_Contable';
+  const salesTaxesLbl = state.variant === 'econ' ? 'Sales Taxes Econ' : 'Sales Taxes Contábil';
+  const vs = state.variant === 'econ' ? 'ECONOMICO' : 'CONTABLE';
+
+  // Soma do período (mês único OU soma dos meses do trimestre que estão na base)
+  function periodValue(map, p){
+    if (!map) return 0;
+    if (!isQ) return map.get(p) || 0;
+    const ms = monthsInQuarter(p).filter(m => allMonths.includes(m));
+    let s = 0; for (const m of ms) s += map.get(m) || 0;
+    return s;
+  }
+
+  const tpvA = periodValue(agg.get('TPV'), state.waterfallA);
+  const tpvB = periodValue(agg.get('TPV'), state.waterfallB);
+
+  // Para exibição: percentual usa o TPV do PRÓPRIO cenário; o "delta" também
+  // é em pontos percentuais (B%TPV − A%TPV) — métrica financeira padrão.
+  function asPctOrAbs(v, p){
+    if (state.waterfallMetric === 'ptpv'){
+      const tpv = (p === 'A' ? tpvA : tpvB);
+      return tpv ? (v / tpv) * 100 : 0;
+    }
+    return v / state.unit;
+  }
+  function fmtWf(v){
+    if (state.waterfallMetric === 'ptpv') return (v >= 0 ? '+' : '') + fmtPct(v) + '%';
+    return (v >= 0 ? '+' : '') + fmtNum.format(v);
+  }
+  function fmtVal(v){
+    if (state.waterfallMetric === 'ptpv') return fmtPct(v) + '%';
+    return fmtNum.format(v);
+  }
+
+  // Linhas — Take Rate components + VC items. Adj entra só via subtotal/Others no Contábil.
+  // Labels mais curtos para o Waterfall (mantemos os nomes longos nas outras abas).
+  const trLines = [
+    { src: 'Processing_Fees',     label: 'Processing Fees' },
+    { src: 'Financing_Revenues',  label: 'Fin Revenues' },
+    { src: '__FIN_COST__',        label: 'Fin Cost' },
+    { src: salesTaxesKey,         label: state.variant === 'econ' ? 'Sales Tx Econ' : 'Sales Tx Cont' }
+  ];
+  const vcLines = [
+    { src: 'Collection_Fees',             label: 'Collection Fees' },
+    { src: 'CHARGEBACKS_Contable',        label: 'CBK' },
+    { src: 'Bad_Debt_Incobrables',        label: 'Bad Debt' },
+    { src: 'BPP',                         label: 'BPP' },
+    { src: 'Consultor_Certificado',       label: 'Consultor Certificado' },
+    { src: 'Plataforma',                  label: 'Plataforma' },
+    { src: 'CX_Variable',                 label: 'CX Variable' },
+    { src: 'Hosting_Variable',            label: 'Hosting Variable' },
+    { src: 'FP_Variable',                 label: 'FP Variable' },
+    { src: 'Telemetria',                  label: 'Telemetria' },
+    { src: 'Cashbacks_Sellers',           label: 'Cashback' },
+    { src: 'COUPONS',                     label: 'Coupons' },
+    { src: 'Other_Direct_Variable_Costs', label: 'Other Var Costs' }
+  ];
+
+  // Computa valores A, B, ΔB-A em cada linha (no formato display)
+  function rowFor(it){
+    const rawA = periodValue(agg.get(it.src), state.waterfallA);
+    const rawB = periodValue(agg.get(it.src), state.waterfallB);
+    const a = asPctOrAbs(rawA, 'A');
+    const b = asPctOrAbs(rawB, 'B');
+    return { label: it.label, src: it.src, a, b, d: b - a };
+  }
+  const tr = trLines.map(rowFor);
+  const vc = vcLines.map(rowFor);
+
+  // Subtotais reais: Econômico exclui Adj no aggregate; Contábil inclui Adj
+  // mesmo que essas linhas fiquem condensadas em "Others" no waterfall.
+  function sumA(arr){ return arr.reduce((s,r) => s + r.a, 0); }
+  function sumB(arr){ return arr.reduce((s,r) => s + r.b, 0); }
+  const rawTakeRateA = periodValue(agg.get('NET_MONETIZATION_' + vs), state.waterfallA) +
+                       periodValue(agg.get('Collection_Fees'), state.waterfallA);
+  const rawTakeRateB = periodValue(agg.get('NET_MONETIZATION_' + vs), state.waterfallB) +
+                       periodValue(agg.get('Collection_Fees'), state.waterfallB);
+  const trA = asPctOrAbs(rawTakeRateA, 'A');
+  const trB = asPctOrAbs(rawTakeRateB, 'B');
+  const vcA = asPctOrAbs(periodValue(agg.get('VARIABLE_CONTRIBUTION_' + vs), state.waterfallA), 'A');
+  const vcB = asPctOrAbs(periodValue(agg.get('VARIABLE_CONTRIBUTION_' + vs), state.waterfallB), 'B');
+  const trHidden = { label:'Others', src:'__TR_HIDDEN__',
+    a: trA - sumA(tr), b: trB - sumB(tr), d: (trB - sumB(tr)) - (trA - sumA(tr)) };
+  const vcHidden = { label:'Others', src:'__VC_HIDDEN__',
+    a: vcA - trA - sumA(vc), b: vcB - trB - sumB(vc), d: (vcB - trB - sumB(vc)) - (vcA - trA - sumA(vc)) };
+
+  // ── Waterfall: bridge VC@A → VC@B ──
+  // Deltas menores que a precisão exibida (0,01% em % TPV; 0,1 em Abs) são
+  // agrupados em "Others" no final pra não poluir o chart com barras invisíveis.
+  const bucketP = (state.waterfallMetric === 'ptpv') ? 100 : 10;
+  function rdelta(d){ return Math.round(d * bucketP) / bucketP; }
+  function showHidden(r){ return rdelta(r.a) !== 0 || rdelta(r.b) !== 0 || rdelta(r.d) !== 0; }
+
+  const allDeltas = tr.concat(vc);
+  const significant = [];
+  let othersSum = 0, othersCount = 0;
+  for (const r of allDeltas){
+    if (rdelta(r.d) === 0){ othersSum += r.d; othersCount++; }
+    else significant.push(r);
+  }
+  for (const r of [trHidden, vcHidden]){
+    if (showHidden(r) && rdelta(r.d) !== 0){ othersSum += r.d; othersCount++; }
+  }
+
+  const xs = [], ys = [], measures = [], texts = [];
+  // Início: VC@A absoluto
+  xs.push(`VC ${labelOf(state.waterfallA)}`); ys.push(vcA); measures.push('absolute'); texts.push(fmtVal(vcA));
+  // Deltas significativos
+  for (const r of significant){
+    xs.push(r.label);
+    ys.push(r.d);
+    measures.push('relative');
+    texts.push(fmtWf(r.d));
+  }
+  // Bucket "Others" (se houver alguma linha com delta sub-precisão)
+  if (othersCount > 0){
+    xs.push('Others');
+    ys.push(othersSum);
+    measures.push('relative');
+    texts.push(fmtWf(othersSum));
+  }
+  // Fim: VC@B total
+  xs.push(`VC ${labelOf(state.waterfallB)}`); ys.push(0); measures.push('total'); texts.push(fmtVal(vcB));
+  const breakAnnotations = [xs[0], xs[xs.length-1]].map(x => ({
+    x, y: 0.065, xref:'x', yref:'paper',
+    text:'⌁', showarrow:false,
+    font:{ family:"'Proxima Nova', -apple-system, sans-serif", size:24, color:'#fff' },
+    align:'center'
+  }));
+
+  const data = [{
+    type: 'waterfall',
+    orientation: 'v',
+    measure: measures,
+    x: xs,
+    y: ys,
+    text: texts,
+    textposition: 'outside',
+    cliponaxis: false,
+    textfont: { family: "'Proxima Nova', -apple-system, sans-serif", size: 11, color:'#1a1a1a' },
+    connector: { line: { color: '#9CA3AF', dash: 'dot', width: 1 } },
+    // cornerradius arredonda os cantos das barras (Plotly 2.30+)
+    increasing: { marker: { color: '#43A047', line: { color:'#2E7D32', width:1 }, cornerradius: 6 } },
+    decreasing: { marker: { color: '#E53935', line: { color:'#B71C1C', width:1 }, cornerradius: 6 } },
+    totals:     { marker: { color: '#1a1a1a', cornerradius: 6 } }
+  }];
+  const layout = {
+    font: { family: "'Proxima Nova', -apple-system, sans-serif", size: 11, color:'#1a1a1a' },
+    hoverlabel: { font: { family: "'Proxima Nova', -apple-system, sans-serif", size: 11 } },
+    // Top maior pra labels acima das barras não cortarem
+    margin: { l: 24, r: 20, t: 72, b: 110 },
+    waterfallgap: .24,
+    paper_bgcolor: '#fff',
+    plot_bgcolor: '#fff',
+    annotations: breakAnnotations,
+    xaxis: { tickangle: -35, automargin: true, tickfont:{ size: 11, family: "'Proxima Nova', -apple-system, sans-serif" },
+             showgrid: false, zeroline: false, showline: false },
+    // Sem eixo Y na waterfall — só os labels das barras importam
+    yaxis: { visible: false, showgrid: false, zeroline: false, showline: false,
+             showticklabels: false, ticks: '' }
+  };
+  // Cap na altura — chart proporcional à tabela lateral, em vez de ocupar
+  // toda a área do grid container. Mais compacto agora que muitas linhas
+  // foram agrupadas em "Others".
+  host.style.maxHeight = '430px';
+  host.style.height    = '430px';
+  Plotly.newPlot(host, data, layout, { responsive: true, displayModeBar: false });
+  setTimeout(() => { try { Plotly.Plots.resize(host); } catch(e){} }, 30);
+
+  // ── P&L resumo lateral — A, B, Δ ──
+  function buildTable(){
+    const tbl = mkEl('table', null);
+    tbl.style.cssText = 'width:100%;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums;'
+                     + 'border-radius:10px;overflow:hidden;border:1px solid var(--border)';
+    const head = mkEl('thead', null);
+    const hr = mkEl('tr', null);
+    function th(t, cls){
+      const e = mkEl('th', null, t);
+      e.style.cssText = 'padding:8px 6px;text-align:right;font:800 10px \"Proxima Nova\",-apple-system,sans-serif;'
+                     + 'text-transform:uppercase;letter-spacing:.5px;color:var(--ink);background:var(--yellow);'
+                     + 'border-bottom:2px solid var(--yellow-dark)' + (cls === 'left' ? ';text-align:left' : '');
+      return e;
+    }
+    hr.append(th('P&L','left'));
+    hr.append(th(labelOf(state.waterfallA)));
+    hr.append(th(labelOf(state.waterfallB)));
+    hr.append(th('Δ'));
+    head.append(hr);
+    tbl.append(head);
+    const body = mkEl('tbody', null);
+    function pushRow(label, a, b, d, bold){
+      const tr2 = mkEl('tr', null);
+      function td(t, cls, color){
+        const e = mkEl('td', null, t);
+        e.style.cssText = 'padding:6px;text-align:right;border-bottom:1px solid var(--border);' + (cls === 'left' ? 'text-align:left;' : '')
+                       + (bold ? 'font-weight:800;background:#FFF9E0;' : '')
+                       + (color ? `color:${color};` : '');
+        return e;
+      }
+      tr2.append(td(label, 'left'));
+      tr2.append(td(fmtVal(a)));
+      tr2.append(td(fmtVal(b)));
+      const sign = d > 0 ? '+' : '';
+      tr2.append(td(sign + fmtVal(d), '', d > 0 ? 'var(--green)' : d < 0 ? 'var(--red)' : ''));
+      body.append(tr2);
+    }
+    const trTable = showHidden(trHidden) ? tr.concat(trHidden) : tr;
+    const vcTable = showHidden(vcHidden) ? vc.concat(vcHidden) : vc;
+    // Take Rate components + subtotal
+    for (const r of trTable) pushRow(r.label, r.a, r.b, r.d);
+    pushRow('Take Rate', trA, trB, trB - trA, true);
+    // VC components + subtotal
+    for (const r of vcTable) pushRow(r.label, r.a, r.b, r.d);
+    pushRow('Variable Contribution', vcA, vcB, vcB - vcA, true);
+    tbl.append(body);
+    return tbl;
+  }
+  if (tab) tab.append(buildTable());
+
+  setText(document.getElementById('wf-sub'),
+    `${labelOf(state.waterfallA)} → ${labelOf(state.waterfallB)} · Δ VC ${fmtWf(vcB - vcA)}` +
+    `  ·  ${labelVariant()}  ·  ${state.waterfallMetric === 'abs' ? labelUnit() : '% TPV'}`);
 }
 
 function buildChartCard(id, title, months, series, aggFn, full){
@@ -1276,6 +3831,14 @@ function buildChartCard(id, title, months, series, aggFn, full){
   head.append(mkEl('span', null, title));
   const badgeTxt = state.metric === 'abs' ? labelUnit() : labelMetric(state.metric);
   head.append(mkEl('span','badge', badgeTxt));
+  const cap = mkEl('span', 'badge', 'Capturar');
+  cap.style.cursor = 'pointer';
+  cap.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    captureElement(card, `grafico-${id}`);
+  });
+  head.append(cap);
   card.append(head);
   const host = mkEl('div','chart-host');
   const cv = document.createElement('canvas');
@@ -1285,15 +3848,34 @@ function buildChartCard(id, title, months, series, aggFn, full){
   const skipUnit = lineItem.isCount || lineItem.isRatio || state.metric !== 'abs';
   const div = skipUnit ? 1 : state.unit;
 
+  // Granularidade da aba Gráficos: mensal ou trimestral (Quarters).
+  const isQ = state.ggGran === 'Q';
+  const periods = isQ ? [...new Set(months.map(quarterOfMonth))].sort() : months;
+  const monthSet = new Set(months);
+  function pv(map, p){
+    if (!map) return null;
+    if (!isQ) return map.has(p) ? map.get(p) : null;
+    const ms = monthsInQuarter(p).filter(m => monthSet.has(m));
+    let total = 0, any = false;
+    for (const m of ms){ if (map.has(m)){ total += map.get(m); any = true; } }
+    return any ? total : null;
+  }
+
   const datasets = series.map(s => {
     const agg = aggFn(s.key);
-    const t = applyMetric(agg.get(state.ggLine) || new Map(), state.metric, agg.get('TPV'), agg.get('TPN'));
+    const lineMap = agg.get(state.ggLine) || new Map();
+    const tpvMap  = agg.get('TPV');
+    const tpnMap  = agg.get('TPN');
     return {
       label: s.label,
-      data: months.map(m => {
-        if (!t.has(m)) return null;
-        const v = t.get(m);
-        return v == null ? null : v / div;
+      data: periods.map(p => {
+        const v = pv(lineMap, p);
+        if (v == null) return null;
+        if (state.metric === 'abs') return v / div;
+        const dMap = state.metric === 'ptpv' ? tpvMap : tpnMap;
+        const d    = pv(dMap, p);
+        if (!d) return null;
+        return state.metric === 'ptpv' ? (v / d) * 100 : (v / d);
       }),
       borderColor: s.color, backgroundColor: s.color,
       borderWidth: 2, tension: .25, pointRadius: 2.5, pointHoverRadius: 5, spanGaps: true
@@ -1302,7 +3884,7 @@ function buildChartCard(id, title, months, series, aggFn, full){
 
   state.charts[id] = new Chart(cv.getContext('2d'), {
     type: 'line',
-    data: { labels: months.map(fmtMonth), datasets },
+    data: { labels: periods.map(p => isQ ? fmtPeriod(p, 'Q') : fmtMonth(p)), datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
@@ -1319,14 +3901,17 @@ function buildChartCard(id, title, months, series, aggFn, full){
             }
           },
           backgroundColor:'#1a1a1a',
-          titleFont:{ weight:'700' }
+          titleFont:{ weight:'700', family: "'Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" },
+          bodyFont: { family: "'Proxima Nova',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" }
         }
       },
       scales: {
-        x: { ticks:{ font:{ size:10 } }, grid:{ display:false } },
-        y: { ticks:{ font:{ size:10 },
+        // Sem grid em X nem Y conforme pedido — chart "clean".
+        x: { ticks:{ font:{ size:10 } }, grid:{ display:false }, border:{ display:false } },
+        y: { reverse: state.invertY,
+             ticks:{ font:{ size:10 },
                      callback:(v) => fmt(v * div, state.metric, { item: lineItem }) },
-             grid:{ color:'rgba(0,0,0,.05)' } }
+             grid:{ display:false }, border:{ display:false } }
       }
     }
   });
@@ -1337,10 +3922,12 @@ function buildChartCard(id, title, months, series, aggFn, full){
 function syncFilters(){
   const segWrap = document.getElementById('segment-pills');
   const prdSel = document.getElementById('f-product');
-  const segs = new Set(), prods = new Set();
+  const pmSel = document.getElementById('f-payment-method');
+  const segs = new Set(), prods = new Set(), paymentMethods = new Set();
   for (const r of state.data.rows){
     if (r.segment) segs.add(r.segment);
     if (r.product) prods.add(r.product);
+    if (r.paymentMethod) paymentMethods.add(r.paymentMethod);
   }
 
   // Segment pills — preserve current selection where possible.
@@ -1377,7 +3964,7 @@ function syncFilters(){
     });
   });
 
-  // Product (single-select dropdown, unchanged)
+  // Product/payment method (single-select dropdowns)
   function rebuild(sel, values, current){
     const prev = current ?? sel.value;
     sel.replaceChildren();
@@ -1391,6 +3978,7 @@ function syncFilters(){
     return sel.value;
   }
   state.product = rebuild(prdSel, prods, state.product);
+  state.paymentMethod = rebuild(pmSel, paymentMethods, state.paymentMethod);
 }
 
 function setUpdatedBadge(){
@@ -1412,25 +4000,108 @@ function flashUpdated(){
 }
 
 // ── Tabs ────────────────────────────────────────────────
+function syncMetricPills(){
+  document.querySelectorAll('#metric-pills .pill').forEach(p => {
+    const blocked = state.tab === 'sim' && p.dataset.metric === 'ptpn';
+    p.style.display = blocked ? 'none' : '';
+    p.classList.toggle('on', p.dataset.metric === state.metric);
+  });
+}
+function activeDecimalMetric(){
+  if (state.tab === 'wf') return state.waterfallMetric;
+  return state.metric;
+}
+function syncDecimalControls(){
+  const wrap = document.getElementById('decimal-wrap');
+  const value = document.querySelector('#decimal-pills [data-dec="value"]');
+  const mode = activeDecimalMetric();
+  const show = mode === 'ptpv' || mode === 'ptpn';
+  if (wrap) wrap.style.display = show ? '' : 'none';
+  if (value){
+    const d = Math.max(0, Math.min(6, state.metricDecimals || 2));
+    value.textContent = `${d} ${d === 1 ? 'casa' : 'casas'}`;
+  }
+}
+function syncTabChrome(){
+  const isSim = state.tab === 'sim';
+  const show = (id, on) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = on ? '' : 'none';
+  };
+  show('bu-wrap', !isSim);
+  show('segment-wrap', !isSim);
+  show('product-wrap', !isSim);
+  show('invert-y-wrap', !isSim);
+  if (isSim){
+    show('tap-wrap', false);
+    show('opprod-wrap', false);
+    if (state.metric === 'ptpn') state.metric = 'ptpv';
+  } else {
+    show('tap-wrap', state.bu === 'POINT');
+    show('opprod-wrap', state.bu === 'OP');
+  }
+  syncMetricPills();
+  syncDecimalControls();
+}
 function switchTab(t){
   state.tab = t;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'panel-' + t));
   // Load the metric remembered for this tab, then update the pill UI.
   state.metric = state.metricByTab[t] || 'abs';
-  document.querySelectorAll('#metric-pills .pill').forEach(p =>
-    p.classList.toggle('on', p.dataset.metric === state.metric));
+  if (t === 'sim' && state.metric === 'ptpn') state.metric = 'ptpv';
+  syncTabChrome();
   rerender();
 }
 function rerender(){
   if (!state.data) return;
   if (state.tab === 'evo') renderEvo();
   else if (state.tab === 'sum') renderSum();
+  else if (state.tab === 'sim') renderSim();
   else if (state.tab === 'gg') renderGG();
   else if (state.tab === 'margin') renderMargin();
+  else if (state.tab === 'tree')   renderTree();
+  else if (state.tab === 'wf')     renderWaterfall();
+}
+
+function wireDocs(){
+  const modal = document.getElementById('doc-modal');
+  const open = document.getElementById('doc-open');
+  const close = document.getElementById('doc-close');
+  if (!modal || !open || !close) return;
+  function openDoc(){
+    modal.classList.add('on');
+    modal.setAttribute('aria-hidden', 'false');
+    close.focus();
+  }
+  function closeDoc(){
+    modal.classList.remove('on');
+    modal.setAttribute('aria-hidden', 'true');
+    open.focus();
+  }
+  open.addEventListener('click', openDoc);
+  close.addEventListener('click', closeDoc);
+  modal.addEventListener('click', ev => {
+    if (ev.target === modal) closeDoc();
+  });
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape' && modal.classList.contains('on')) closeDoc();
+  });
 }
 
 function wire(){
+  wireDocs();
+  syncTabChrome();
+  const excelBtn = document.getElementById('excel-export');
+  if (excelBtn){
+    excelBtn.addEventListener('click', () => {
+      const old = excelBtn.textContent;
+      excelBtn.textContent = 'Exportando...';
+      const ok = exportCurrentExcel();
+      excelBtn.textContent = ok ? 'Exportado' : old;
+      setTimeout(() => { excelBtn.textContent = old; }, 1200);
+    });
+  }
   document.querySelectorAll('.tab-btn').forEach(b =>
     b.addEventListener('click', () => switchTab(b.dataset.tab)));
   document.querySelectorAll('#bu-pills .pill').forEach(p =>
@@ -1457,8 +4128,29 @@ function wire(){
         document.querySelectorAll('#tap-pills .pill').forEach(x => x.classList.toggle('on', x.dataset.tap === 'ALL'));
         document.querySelectorAll('#opprod-pills .pill').forEach(x => x.classList.toggle('on', x.dataset.opprod === 'ALL'));
       }
+      syncTabChrome();
       rerender();
     }));
+  document.querySelectorAll('#sim-bu-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#sim-bu-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.simBU = p.dataset.simBu;
+      resetSimInputs();
+      rerender();
+    }));
+  document.querySelectorAll('#sim-scenario-bu-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#sim-scenario-bu-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.simScenarioBU = p.dataset.simScenarioBu;
+      rerender();
+    }));
+  const simReset = document.getElementById('sim-reset');
+  if (simReset){
+    simReset.addEventListener('click', () => {
+      resetSimInputs();
+      rerender();
+    });
+  }
   document.querySelectorAll('#tap-pills .pill').forEach(p =>
     p.addEventListener('click', () => {
       document.querySelectorAll('#tap-pills .pill').forEach(x => x.classList.toggle('on', x === p));
@@ -1469,11 +4161,167 @@ function wire(){
       document.querySelectorAll('#opprod-pills .pill').forEach(x => x.classList.toggle('on', x === p));
       state.opProduct = p.dataset.opprod; rerender();
     }));
+  document.querySelectorAll('#evo-gran-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#evo-gran-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.evoGran = p.dataset.gran; rerender();
+    }));
+  document.querySelectorAll('#gg-gran-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#gg-gran-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.ggGran = p.dataset.gran; rerender();
+    }));
+  document.querySelectorAll('#margin-cut-bu-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#margin-cut-bu-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.marginCutBU = p.dataset.cut; rerender();
+    }));
+  document.querySelectorAll('#margin-cut-seg-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#margin-cut-seg-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.marginCutSeg = p.dataset.cut; rerender();
+    }));
+  document.querySelectorAll('#margin-gran-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#margin-gran-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.marginGran = p.dataset.gran;
+      const qRange = document.getElementById('margin-q-range');
+      if (qRange) qRange.style.display = state.marginGran === 'Q' ? 'flex' : 'none';
+      rerender();
+    }));
+  const qFrom = document.getElementById('margin-q-from');
+  const qTo   = document.getElementById('margin-q-to');
+  if (qFrom) qFrom.addEventListener('change', e => { state.marginQFrom = e.target.value; rerender(); });
+  if (qTo)   qTo.addEventListener('change',   e => { state.marginQTo   = e.target.value; rerender(); });
+  const ftpPill = document.querySelector('#margin-ftp-pills .pill');
+  if (ftpPill){
+    ftpPill.addEventListener('click', () => {
+      state.marginShowFTP = !state.marginShowFTP;
+      ftpPill.classList.toggle('on', state.marginShowFTP);
+      rerender();
+    });
+  }
+  const lblPill = document.querySelector('#margin-labels-pills .pill');
+  if (lblPill){
+    lblPill.addEventListener('click', () => {
+      state.marginShowLabels = !state.marginShowLabels;
+      lblPill.classList.toggle('on', state.marginShowLabels);
+      rerender();
+    });
+  }
+  const bigLeg = document.querySelector('#margin-biglegend-pills .pill');
+  if (bigLeg){
+    bigLeg.addEventListener('click', () => {
+      state.marginBigLegend = !state.marginBigLegend;
+      bigLeg.classList.toggle('on', state.marginBigLegend);
+      rerender();
+    });
+  }
+  const treeBig = document.querySelector('#tree-biglabels-pills .pill');
+  if (treeBig){
+    treeBig.addEventListener('click', () => {
+      state.treeBigLabels = !state.treeBigLabels;
+      treeBig.classList.toggle('on', state.treeBigLabels);
+      rerender();
+    });
+  }
+  const treeVal = document.querySelector('#tree-values-pills .pill');
+  if (treeVal){
+    treeVal.addEventListener('click', () => {
+      state.treeShowValues = !state.treeShowValues;
+      treeVal.classList.toggle('on', state.treeShowValues);
+      rerender();
+    });
+  }
+  const sumRes = document.querySelector('#sum-resumed-pills .pill');
+  if (sumRes){
+    sumRes.addEventListener('click', () => {
+      state.sumResumed = !state.sumResumed;
+      sumRes.classList.toggle('on', state.sumResumed);
+      rerender();
+    });
+  }
+  const sumQr = document.querySelector('#sum-hideqr-pills .pill');
+  if (sumQr){
+    sumQr.addEventListener('click', () => {
+      state.sumHideQR = !state.sumHideQR;
+      sumQr.classList.toggle('on', state.sumHideQR);
+      rerender();
+    });
+  }
+  const sumHm = document.querySelector('#sum-heatmap-pills .pill');
+  if (sumHm){
+    sumHm.classList.toggle('on', state.sumHeatmap);
+    sumHm.addEventListener('click', () => {
+      state.sumHeatmap = !state.sumHeatmap;
+      sumHm.classList.toggle('on', state.sumHeatmap);
+      rerender();
+    });
+  }
+  const sumBold = document.querySelector('#sum-bold-pills .pill');
+  if (sumBold){
+    sumBold.classList.toggle('on', state.sumBold);
+    sumBold.addEventListener('click', () => {
+      state.sumBold = !state.sumBold;
+      sumBold.classList.toggle('on', state.sumBold);
+      rerender();
+    });
+  }
+  const sumDiv = document.querySelector('#sum-acqdiv-pills .pill');
+  if (sumDiv){
+    sumDiv.addEventListener('click', () => {
+      state.sumAcqDivider = !state.sumAcqDivider;
+      sumDiv.classList.toggle('on', state.sumAcqDivider);
+      rerender();
+    });
+  }
+  // ── Margem ± controles ──
+  function bumpScale(key, delta, min, max){
+    state[key] = Math.round(Math.min(max, Math.max(min, state[key] + delta)) * 10) / 10;
+    rerender();
+  }
+  document.querySelectorAll('#margin-chart-size-pills .pill').forEach(p =>
+    p.addEventListener('click', () => bumpScale('marginChartScale', p.dataset.act === 'chart-inc' ? 0.1 : -0.1, 0.5, 2.0)));
+  document.querySelectorAll('#margin-font-size-pills .pill').forEach(p =>
+    p.addEventListener('click', () => bumpScale('marginFontScale', p.dataset.act === 'font-inc' ? 0.1 : -0.1, 0.7, 2.0)));
+  // ── Árvore ± controles ──
+  document.querySelectorAll('#tree-chart-size-pills .pill').forEach(p =>
+    p.addEventListener('click', () => bumpScale('treeChartScale', p.dataset.act === 'chart-inc' ? 0.1 : -0.1, 0.5, 2.0)));
+  document.querySelectorAll('#tree-font-size-pills .pill').forEach(p =>
+    p.addEventListener('click', () => bumpScale('treeFontScale', p.dataset.act === 'font-inc' ? 0.1 : -0.1, 0.7, 2.0)));
+  document.querySelectorAll('#wf-metric-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#wf-metric-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.waterfallMetric = p.dataset.metric;
+      syncDecimalControls();
+      rerender();
+    }));
+  document.querySelectorAll('#wf-type-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      document.querySelectorAll('#wf-type-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      state.waterfallType = p.dataset.type;
+      state.waterfallA = null; state.waterfallB = null; // re-default ao trocar tipo
+      rerender();
+    }));
+  const wfA = document.getElementById('wf-a');
+  const wfB = document.getElementById('wf-b');
+  if (wfA) wfA.addEventListener('change', e => { state.waterfallA = e.target.value; rerender(); });
+  if (wfB) wfB.addEventListener('change', e => { state.waterfallB = e.target.value; rerender(); });
   document.querySelectorAll('#metric-pills .pill').forEach(p =>
     p.addEventListener('click', () => {
-      document.querySelectorAll('#metric-pills .pill').forEach(x => x.classList.toggle('on', x === p));
+      if (state.tab === 'sim' && p.dataset.metric === 'ptpn') return;
       state.metric = p.dataset.metric;
       state.metricByTab[state.tab] = state.metric; // remember per-tab preference
+      syncMetricPills();
+      syncDecimalControls();
+      rerender();
+    }));
+  document.querySelectorAll('#decimal-pills .pill').forEach(p =>
+    p.addEventListener('click', () => {
+      const act = p.dataset.dec;
+      if (act === 'inc') state.metricDecimals = Math.min(6, (state.metricDecimals || 2) + 1);
+      else if (act === 'dec') state.metricDecimals = Math.max(0, (state.metricDecimals || 2) - 1);
+      syncDecimalControls();
       rerender();
     }));
   document.querySelectorAll('#unit-pills .pill').forEach(p =>
@@ -1482,15 +4330,47 @@ function wire(){
       state.unit = parseInt(p.dataset.unit, 10) || 1;
       rerender();
     }));
+  const invY = document.querySelector('#invert-y-pills .pill');
+  if (invY){
+    invY.addEventListener('click', () => {
+      state.invertY = !state.invertY;
+      invY.classList.toggle('on', state.invertY);
+      rerender();
+    });
+  }
   document.querySelectorAll('#variant-pills .pill').forEach(p =>
     p.addEventListener('click', () => {
       document.querySelectorAll('#variant-pills .pill').forEach(x => x.classList.toggle('on', x === p));
       state.variant = p.dataset.variant;
       state.ggLine = null; // force re-pick a default line matching the new variant
+      resetSimInputs();
       rerender();
     }));
   document.getElementById('f-product').addEventListener('change', e => { state.product = e.target.value; rerender(); });
-  document.getElementById('f-period') .addEventListener('change', e => { state.period  = e.target.value; rerender(); });
+  document.getElementById('f-payment-method').addEventListener('change', e => { state.paymentMethod = e.target.value; rerender(); });
+  document.getElementById('f-period') .addEventListener('change', e => {
+    state.period = e.target.value;
+    const wrap = document.getElementById('period-custom-wrap');
+    if (wrap) wrap.style.display = state.period === 'CUSTOM' ? 'flex' : 'none';
+    if (state.period === 'CUSTOM') populatePeriodCustomSelects();
+    resetSimInputs();
+    rerender();
+  });
+  const pf = document.getElementById('f-period-from');
+  const pt = document.getElementById('f-period-to');
+  if (pf) pf.addEventListener('change', e => { state.periodFrom = e.target.value; resetSimInputs(); rerender(); });
+  if (pt) pt.addEventListener('change', e => { state.periodTo   = e.target.value; resetSimInputs(); rerender(); });
+  document.querySelectorAll('[data-capture]').forEach(btn => {
+    btn.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const old = btn.textContent;
+      btn.textContent = 'Copiando...';
+      const ok = await captureTarget(btn.dataset.capture, btn.dataset.file || 'captura');
+      btn.textContent = ok ? 'Copiado' : old;
+      setTimeout(() => { btn.textContent = old; }, 1200);
+    });
+  });
 }
 
 // ── Data fetch via Grid.sheets ──────────────────────────
@@ -1499,9 +4379,13 @@ async function fetchSheet(){
   if (!window.Grid || !window.Grid.sheets){
     throw new Error('Grid SDK não disponível — abra este doc dentro do Grid (grid.adminml.com).');
   }
-  const resp = await window.Grid.sheets.get(SHEET_ID, SHEET_RANGE);
-  if (!resp || !resp.values) throw new Error('Resposta vazia de Grid.sheets.get');
-  return parseSheet(resp.values);
+  const parts = await Promise.all(SHEET_TABS.map(async tab => {
+    const range = `${tab.name}!${SHEET_RANGE_A1}`;
+    const resp = await window.Grid.sheets.get(SHEET_ID, range);
+    if (!resp || !resp.values) throw new Error(`Resposta vazia de Grid.sheets.get para a aba ${tab.name}`);
+    return parseSheet(resp.values, tab.bu);
+  }));
+  return mergeSheetParts(parts);
 }
 
 async function pollOnce(){
@@ -1534,7 +4418,8 @@ async function boot(){
     }
     state.data = await fetchSheet();
     state.lastHash = stableHash(state.data);
-    syncFilters(); setUpdatedBadge(); wire(); rerender();
+    syncFilters(); populateQuarterSelects(); populatePeriodCustomSelects();
+    setUpdatedBadge(); wire(); rerender();
     document.getElementById('boot').style.display = 'none';
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) schedulePoll(0);
@@ -1564,3 +4449,4 @@ if (window.Grid){
 </script>
 </body>
 </html>
+
