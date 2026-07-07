@@ -163,7 +163,7 @@
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
     Fonte: Google Sheets MPOS MNG · Valores em R$ Milhões · Atualizado Jul/2026
-    <br><span style="opacity:.6">Forecast 2026 = Actual Sin Distribuir (Jan–Jul) + Forecast (Ago–Dez) · Vol. Devices Plano 2026 = MLB Plan Point V1 · Vol. Despachos = Acompanhamento Custo Despacho · Aba Volume pendente de leitura via API</span>
+    <br><span style="opacity:.6">Forecast 2026 = Actual Sin Distribuir (Jan–Jul) + Forecast (Ago–Dez) · Vol. Devices e Despachos carregados ao vivo das abas Volume e Vol Despachos e Envios</span>
   </div>
 </div>
 
@@ -531,7 +531,71 @@ function setQ(q){ST.q=q;render();}
 function setPrimary(v){ST.prim=v;render();}
 function setCompare(v){ST.comp=v;render();}
 
-window.addEventListener('DOMContentLoaded',render);
+const MPOS_SHEET_ID='1zGp8an4VMzaY_Nu_BG5vD2WVY_gQxWNHjfQ-OUtxDVI';
+const CENARIO_KEY_MAP={
+  'Realizado 2024':'Realizado 2024',
+  'Realizado 2025':'Realizado 2025',
+  'Realizado 2026':'Realizado 2026',
+  'Forecast 2026':'Forecast 2026',
+  'Plano 2025':'Plano 2025',
+  'Plano 2026':'Plano 2026',
+};
+const MO3_PT=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const MO3_ES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const MO3_EN=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+function isMonthHeader(h){
+  const s=String(h||'').toLowerCase().replace(/[^a-z]/g,'').slice(0,3);
+  return MO3_PT.indexOf(s)>=0||MO3_ES.indexOf(s)>=0||MO3_EN.indexOf(s)>=0;
+}
+function moIdx(h){
+  const s=String(h||'').toLowerCase().replace(/[^a-z]/g,'').slice(0,3);
+  let i=MO3_PT.indexOf(s); if(i>=0)return i;
+  i=MO3_ES.indexOf(s); if(i>=0)return i;
+  i=MO3_EN.indexOf(s); if(i>=0)return i;
+  return -1;
+}
+
+function parseVolumeTab(values, field){
+  if(!values||values.length<2)return;
+  const hdr=(values[0]||[]).map(function(c){return String(c||'').trim();});
+  // build colIdx[0..11] = column index for each month
+  const colIdx=new Array(12).fill(-1);
+  hdr.forEach(function(h,i){
+    const idx=moIdx(h);
+    if(idx>=0&&colIdx[idx]<0)colIdx[idx]=i;
+  });
+  const hasMo=colIdx.some(function(x){return x>=0;});
+  if(!hasMo)return;
+  for(let r=1;r<values.length;r++){
+    const row=values[r];
+    if(!row||!row[0])continue;
+    const cen=String(row[0]).trim();
+    const key=CENARIO_KEY_MAP[cen];
+    if(!key||!D[key])continue;
+    D[key][field]=colIdx.map(function(ci){
+      if(ci<0)return null;
+      const v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+      return isNaN(v)?null:v;
+    });
+  }
+}
+
+function loadSheetsData(){
+  if(typeof Grid==='undefined'||!Grid.sheets)return;
+  var loaded=0;
+  function tryRender(){loaded++;if(loaded>=2)render();}
+  Grid.sheets.get(MPOS_SHEET_ID,'Volume').then(function(res){
+    if(res&&res.values)parseVolumeTab(res.values,'vol');
+    tryRender();
+  }).catch(function(){tryRender();});
+  Grid.sheets.get(MPOS_SHEET_ID,'Vol Despachos e Envios').then(function(res){
+    if(res&&res.values)parseVolumeTab(res.values,'vol_despacho');
+    tryRender();
+  }).catch(function(){tryRender();});
+}
+
+window.addEventListener('DOMContentLoaded',function(){render();loadSheetsData();});
 </script>
 </body>
 </html>
