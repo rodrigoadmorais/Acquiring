@@ -600,26 +600,33 @@ function parseVolumeTab(tabName, values, field){
   if(found===0)console.warn('[MPOS Vol] No scenarios matched. Sample rows:',values.slice(hdrIdx,hdrIdx+5));
 }
 
-function loadSheetsData(){
-  if(typeof Grid==='undefined'||!Grid.sheets){
-    console.warn('[MPOS Vol] Grid.sheets not available');return;
-  }
+function fetchSheets(){
   var loaded=0;
   function tryRender(){loaded++;if(loaded>=2)render();}
-  // Use explicit range syntax (SheetName!A1:N500) for reliability
   Grid.sheets.get(MPOS_SHEET_ID,'Volume!A1:N500').then(function(res){
-    console.log('[MPOS Vol] Volume response:',res?'ok':'null', res&&res.values?res.values.length+' rows':'no values');
+    console.log('[MPOS Vol] Volume:',res&&res.values?res.values.length+' rows':'empty');
     if(res&&res.values)parseVolumeTab('Volume',res.values,'vol');
     tryRender();
-  }).catch(function(e){console.error('[MPOS Vol] Volume error:',e);tryRender();});
+  }).catch(function(e){console.error('[MPOS Vol] Volume err:',e);tryRender();});
   Grid.sheets.get(MPOS_SHEET_ID,'Vol Despachos e Envios!A1:N500').then(function(res){
-    console.log('[MPOS Vol] VolDespacho response:',res?'ok':'null', res&&res.values?res.values.length+' rows':'no values');
+    console.log('[MPOS Vol] VolDespacho:',res&&res.values?res.values.length+' rows':'empty');
     if(res&&res.values)parseVolumeTab('Vol Despachos e Envios',res.values,'vol_despacho');
     tryRender();
-  }).catch(function(e){console.error('[MPOS Vol] VolDespacho error:',e);tryRender();});
+  }).catch(function(e){console.error('[MPOS Vol] VolDespacho err:',e);tryRender();});
 }
 
-window.addEventListener('DOMContentLoaded',function(){render();loadSheetsData();});
+function waitForGrid(tries){
+  if(typeof Grid!=='undefined'&&Grid.sheets){
+    console.log('[MPOS Vol] Grid.sheets ready');
+    fetchSheets();
+  } else if(tries>0){
+    setTimeout(function(){waitForGrid(tries-1);},300);
+  } else {
+    console.warn('[MPOS Vol] Grid.sheets never became available');
+  }
+}
+
+window.addEventListener('DOMContentLoaded',function(){render();waitForGrid(30);});
 </script>
 </body>
 </html>
