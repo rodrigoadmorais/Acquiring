@@ -600,58 +600,48 @@ function parseVolumeTab(tabName, values, field){
   if(found===0)console.warn('[MPOS Vol] No scenarios matched. Sample rows:',values.slice(hdrIdx,hdrIdx+5));
 }
 
-// Lê aba do Google Sheets via gviz/tq (funciona para planilhas acessíveis pelo usuário logado)
-function gvizFetch(tabName){
-  const url='https://docs.google.com/spreadsheets/d/'+MPOS_SHEET_ID
-    +'/gviz/tq?tqx=out:json&sheet='+encodeURIComponent(tabName);
-  return fetch(url,{credentials:'include'}).then(function(r){
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    return r.text();
-  }).then(function(txt){
-    // Response: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
-    const m=txt.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?\s*$/);
-    if(!m)throw new Error('gviz parse failed');
-    const obj=JSON.parse(m[1]);
-    if(!obj.table)throw new Error('no table');
-    // Convert gviz table → values array (like Sheets API)
-    const cols=obj.table.cols.map(function(c){return c.label||c.id||'';});
-    const rows=obj.table.rows.map(function(row){
-      return (row.c||[]).map(function(c){return(c&&c.v!==null&&c.v!==undefined)?c.v:null;});
-    });
-    return [cols].concat(rows);
-  });
+function doFetchSheets(){
+  var loaded=0;
+  function done(){loaded++;if(loaded>=2)render();}
+  function fetchTab(tabName,field){
+    Grid.sheets.get(MPOS_SHEET_ID,tabName+'!A1:N500')
+      .then(function(res){
+        console.log('[MPOS Vol]',tabName,res&&res.values?res.values.length+' rows':'empty');
+        if(res&&res.values)parseVolumeTab(tabName,res.values,field);
+        done();
+      })
+      .catch(function(e){console.error('[MPOS Vol] erro',tabName,e);done();});
+  }
+  fetchTab('Volume','vol');
+  fetchTab('Vol Despachos e Envios','vol_despacho');
 }
 
-// Fallback: Grid.sheets.get se disponível
-function gridSheetsFetch(tabName){
-  if(typeof Grid==='undefined'||!Grid.sheets)return Promise.reject('no Grid');
-  return Grid.sheets.get(MPOS_SHEET_ID,tabName+'!A1:N500').then(function(res){
-    if(!res||!res.values)throw new Error('empty');
-    return res.values;
-  });
+function initGrid(tries){
+  if(typeof Grid==='undefined'){
+    if(tries>0)setTimeout(function(){initGrid(tries-1);},300);
+    else console.warn('[MPOS Vol] Grid nunca ficou disponível');
+    return;
+  }
+  // Grid existe — chamar configure() como o acquiring_operational_view faz
+  try{
+    var docId=(location.pathname.match(/\/d\/([^/]+)/)||[])[1]||'01KWYG47FER9JXNJMWER3FQQ3E';
+    Grid.configure({docId:docId});
+    console.log('[MPOS Vol] Grid.configure() ok, docId='+docId);
+  }catch(e){console.warn('[MPOS Vol] Grid.configure() erro:',e);}
+
+  if(Grid.sheets){
+    doFetchSheets();
+  } else {
+    // Aguarda Grid.sheets aparecer após configure()
+    var w=0;
+    var iv=setInterval(function(){
+      if(Grid.sheets){clearInterval(iv);doFetchSheets();}
+      else if(++w>20){clearInterval(iv);console.warn('[MPOS Vol] Grid.sheets não disponível após configure');}
+    },200);
+  }
 }
 
-function fetchTab(tabName,field){
-  // Try Grid.sheets first, fall back to gviz
-  return gridSheetsFetch(tabName)
-    .catch(function(){
-      console.log('[MPOS Vol] Grid.sheets falhou, tentando gviz para',tabName);
-      return gvizFetch(tabName);
-    })
-    .then(function(values){
-      console.log('[MPOS Vol]',tabName,values.length,'linhas');
-      parseVolumeTab(tabName,values,field);
-    })
-    .catch(function(e){console.error('[MPOS Vol] falha total em',tabName,e);});
-}
-
-window.addEventListener('DOMContentLoaded',function(){
-  render();
-  Promise.all([
-    fetchTab('Volume','vol'),
-    fetchTab('Vol Despachos e Envios','vol_despacho'),
-  ]).then(function(){render();});
-});
+window.addEventListener('DOMContentLoaded',function(){render();initGrid(50);});
 </script>
 </body>
 </html>
