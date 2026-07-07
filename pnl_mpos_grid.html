@@ -456,7 +456,11 @@ function getA(ver,rowId,idxList){
 }
 
 const ROWS=[
-  {id:'vol',         lbl:'Volume (Devices)',              t:'vol', hl:true},
+  {id:'vol',         lbl:'Volume (Devices)',              t:'vol', hl:true, expandable:'vol'},
+  {id:'vol_air',     lbl:'AIR',                          t:'vol', sub:true, childOf:'vol'},
+  {id:'vol_mini',    lbl:'MINI',                         t:'vol', sub:true, childOf:'vol'},
+  {id:'vol_pro',     lbl:'PRO',                          t:'vol', sub:true, childOf:'vol'},
+  {id:'vol_smart',   lbl:'SMART',                        t:'vol', sub:true, childOf:'vol'},
   // Receita
   {id:'_rec',        lbl:'RECEITA',                       t:'hdr', grp:true},
   {id:'net_sales',   lbl:'Sales MPOS Líquido',            t:'cur', comp:true, hl:true, expandable:'net_sales'},
@@ -487,7 +491,11 @@ const ROWS=[
 
 // PYL Oficial view — original line names as they appear in the MNG spreadsheet
 const ROWS_OFICIAL=[
-  {id:'vol',         lbl:'Volume (Devices)',                                      t:'vol', hl:true},
+  {id:'vol',         lbl:'Volume (Devices)',                                      t:'vol', hl:true, expandable:'vol'},
+  {id:'vol_air',     lbl:'AIR',                                                   t:'vol', sub:true, childOf:'vol'},
+  {id:'vol_mini',    lbl:'MINI',                                                  t:'vol', sub:true, childOf:'vol'},
+  {id:'vol_pro',     lbl:'PRO',                                                   t:'vol', sub:true, childOf:'vol'},
+  {id:'vol_smart',   lbl:'SMART',                                                 t:'vol', sub:true, childOf:'vol'},
   {id:'_rec',        lbl:'RECEITA',                                               t:'hdr', grp:true},
   {id:'net_sales',   lbl:'Sales MPOS Líquido',                                   t:'cur', comp:true, hl:true, expandable:'net_sales'},
   {id:'sales_gross', lbl:'Sales MPOS Bruto',                                      t:'cur', sub:true, childOf:'net_sales'},
@@ -519,7 +527,7 @@ const ROWS_OFICIAL=[
 ];
 
 const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false};
-const EXPANDED={net_sales:false,_imp:false};
+const EXPANDED={vol:false,net_sales:false,_imp:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
 function togglePYL(){
@@ -884,11 +892,38 @@ function parseVolDespacho(values){
   });
 }
 
+var VOL_DEVS=['AIR','MINI','PRO','SMART'];
+var VOL_DEV_FIELDS={AIR:'vol_air',MINI:'vol_mini',PRO:'vol_pro',SMART:'vol_smart'};
+
+function accumVolRow(row,key,colMap,months,acc,devAcc,devCol){
+  var devRaw=String(row[devCol]||'').trim().toUpperCase();
+  var isDev=VOL_DEVS.indexOf(devRaw)>=0;
+  for(var m=0;m<months;m++){
+    var ci=colMap[m];if(ci===undefined)continue;
+    var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+    if(isNaN(v)||v<=0)continue;
+    acc[m]=(acc[m]||0)+v;
+    if(isDev){
+      var dk=VOL_DEV_FIELDS[devRaw];
+      if(!devAcc[dk])devAcc[dk]=Array(12).fill(null);
+      devAcc[dk][m]=(devAcc[dk][m]||0)+v;
+    }
+  }
+}
+
+function storeVolAcc(key,acc,devAcc){
+  D[key].vol=acc;
+  VOL_DEVS.forEach(function(d){
+    var f=VOL_DEV_FIELDS[d];
+    if(devAcc[f]&&devAcc[f].some(function(v){return v!==null&&v>0;}))D[key][f]=devAcc[f];
+  });
+}
+
 function parseVolume(values){
   if(!values||values.length<2){console.warn('[MPOS Vol] Volume: sem dados');return;}
   console.log('[MPOS Vol] Volume',values.length,'rows');
 
-  // ── Section 1: Plano/Forecast ─ YYYYMM cols in header, cenário in col 0 ──
+  // ── Section 1: Plano/Forecast ─ YYYYMM cols in header, cenário in col 0, device in col 3 ──
   var planoHdr=-1,planoColMap={};
   for(var ri=0;ri<Math.min(values.length,30);ri++){
     var row=values[ri]||[];var tmp={};var cnt=0;
@@ -896,41 +931,41 @@ function parseVolume(values){
     if(cnt>=3){planoHdr=ri;planoColMap=tmp;break;}
   }
   if(planoHdr>=0){
-    var years={};
-    Object.keys(planoColMap).forEach(function(k){years[k.split('_')[0]]=1;});
-    var yList=Object.keys(years).map(Number);
-    var acc={};
+    var pyears={};
+    Object.keys(planoColMap).forEach(function(k){pyears[k.split('_')[0]]=1;});
+    var pyList=Object.keys(pyears).map(Number);
+    // Build per-year col arrays [ci for month 0..11]
+    var pyColArr={};
+    pyList.forEach(function(y){
+      pyColArr[y]=Array.from({length:12},function(_,m){return planoColMap[y+'_'+m];});
+    });
+    var acc={},devAcc={};
     for(var r=planoHdr+1;r<values.length;r++){
       var row=values[r]||[];
-      var cenRaw=String(row[0]||'').trim();
-      if(!cenRaw)continue;
-      yList.forEach(function(year){
+      var cenRaw=String(row[0]||'').trim();if(!cenRaw)continue;
+      pyList.forEach(function(year){
         var key=cenToKey(cenRaw,year);
         if(!key||!D[key])return;
         if(!acc[key])acc[key]=Array(12).fill(null);
-        for(var m=0;m<12;m++){
-          var ci=planoColMap[year+'_'+m];if(ci===undefined)continue;
-          var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
-          if(!isNaN(v)&&v>0)acc[key][m]=(acc[key][m]||0)+v;
-        }
+        if(!devAcc[key])devAcc[key]={};
+        accumVolRow(row,key,pyColArr[year],12,acc[key],devAcc[key],3);
       });
     }
     Object.keys(acc).forEach(function(key){
       console.log('[MPOS Vol] → Plano',key,'vol',acc[key].slice(0,6));
-      D[key].vol=acc[key];
+      storeVolAcc(key,acc[key],devAcc[key]||{});
     });
   }
 
-  // ── Section 2: Actual/Realizado ─ date cols DD/MM/YYYY in header ──
-  // Dates like 01/01/2024 = 1st Jan 2024 (Brazilian format DD/MM/YYYY)
+  // ── Section 2: Actual/Realizado ─ date cols DD/MM/YYYY in header, device in col 3 ──
   var actualHdr=-1,actualColMap={};
   for(var ri=0;ri<values.length;ri++){
     var row=values[ri]||[];var tmp={};var cnt=0;
     row.forEach(function(h,ci){
       var s=String(h||'').trim();
-      var m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if(m){
-        var mon=parseInt(m[2],10)-1;var yr=parseInt(m[3],10);
+      var mt=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(mt){
+        var mon=parseInt(mt[2],10)-1;var yr=parseInt(mt[3],10);
         if(yr>=2020&&mon>=0&&mon<=11){tmp[yr+'_'+mon]=ci;cnt++;}
       }
     });
@@ -940,23 +975,24 @@ function parseVolume(values){
     var ayears={};
     Object.keys(actualColMap).forEach(function(k){ayears[k.split('_')[0]]=1;});
     var ayList=Object.keys(ayears).map(Number);
-    var acc2={};
+    var ayColArr={};
+    ayList.forEach(function(y){
+      ayColArr[y]=Array.from({length:12},function(_,m){return actualColMap[y+'_'+m];});
+    });
+    var acc2={},devAcc2={};
     for(var r=actualHdr+1;r<values.length;r++){
       var row=values[r]||[];
       ayList.forEach(function(year){
         var key='Realizado '+year;
         if(!D[key])return;
         if(!acc2[key])acc2[key]=Array(12).fill(null);
-        for(var m=0;m<12;m++){
-          var ci=actualColMap[year+'_'+m];if(ci===undefined)continue;
-          var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
-          if(!isNaN(v)&&v>0)acc2[key][m]=(acc2[key][m]||0)+v;
-        }
+        if(!devAcc2[key])devAcc2[key]={};
+        accumVolRow(row,key,ayColArr[year],12,acc2[key],devAcc2[key],3);
       });
     }
     Object.keys(acc2).forEach(function(key){
       var hasData=acc2[key].some(function(v){return v!==null&&v>0;});
-      if(hasData){console.log('[MPOS Vol] → Actual',key,'vol',acc2[key].slice(0,6));D[key].vol=acc2[key];}
+      if(hasData){console.log('[MPOS Vol] → Actual',key,'vol',acc2[key].slice(0,6));storeVolAcc(key,acc2[key],devAcc2[key]||{});}
     });
   }
 
