@@ -498,7 +498,7 @@ const ROWS=[
   {id:'resultado_vendas_unit', lbl:'Resultado/Device',          t:'cunit', sub:true, childOf:'resultado_vendas', unitCost:{cost:'resultado_vendas',vol:'vol'}},
   // ── OTHER COSTS ──
   {id:'_other',      lbl:'OTHER COSTS',                   t:'hdr', grp:true},
-  {id:'distribución',     lbl:'Distribución',    t:'cur', sub:true, expandable:'distribución'},
+  {id:'distribución',     lbl:'Distribución',    t:'cur', sub:true, expandable:'distribución', tip:'Distribución Point + COGS Interco Distribucion Produtos – Egresos + COGS Interco Allocations – Egresos'},
   {id:'vol_envios',       lbl:'Total Envios',    t:'vol', sub:true, childOf:'distribución'},
   {id:'cu_distribución',  lbl:'Custo/Envio',     t:'cunit', sub:true, childOf:'distribución', unitCost:{cost:'distribución',vol:'vol_envios'}},
   {id:'warehousing_total',lbl:'Warehousing',     t:'cur', sub:true, expandable:'warehousing_total'},
@@ -507,7 +507,7 @@ const ROWS=[
   {id:'telemetria',       lbl:'Telemetria Point',t:'cur', sub:true, expandable:'telemetria'},
   {id:'vol_mads',         lbl:'MADs Totais',     t:'vol', sub:true, childOf:'telemetria'},
   {id:'cu_telemetria',    lbl:'Custo/MAD',       t:'cunit', sub:true, childOf:'telemetria', unitCost:{cost:'telemetria',vol:'vol_mads'}},
-  {id:'bobinas',          lbl:'Bobinas',                      t:'cur', sub:true},
+  {id:'bobinas',          lbl:'Bobinas',                      t:'cur', sub:true, tip:'Insumos Point + Other Variable Fintech Costs'},
   {id:'hedge',            lbl:'Hedge',                        t:'cur', sub:true},
   {id:'provision',        lbl:'Estoque',          orig:'MPOS Ajuste VNR', t:'cur', sub:true, expandable:'provision'},
   {id:'estoque_total',    lbl:'Total Estoque',    t:'vol', sub:true, childOf:'provision', expandable:'estoque_total'},
@@ -698,8 +698,9 @@ function renderTable(){
     const icon=isExp?`<span class="expand-icon${isOpen?' open':''}">▶</span>`:'';
     const onclk=isExp?`onclick="toggleExpand('${isExp}')" title="Clique para ${isOpen?'ocultar':'ver'} detalhes"`:'';
 
-    const lblCell=row.orig
-      ?`${icon}<span class="tip-wrap" style="cursor:help;border-bottom:1px dashed var(--muted)">${row.lbl}<span class="tip">Nome original: ${row.orig}</span></span>`
+    const tipText=row.tip||(row.orig?'Nome original: '+row.orig:null);
+    const lblCell=tipText
+      ?`${icon}<span class="tip-wrap" style="cursor:help;border-bottom:1px dashed var(--muted)">${row.lbl}<span class="tip">${tipText}</span></span>`
       :icon+row.lbl;
     tb+=`<tr class="${rc} ${sub} ${expCls}"><td ${onclk}>${lblCell}</td>`;
 
