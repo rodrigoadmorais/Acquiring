@@ -448,6 +448,7 @@ function getM(ver,rowId,mi){
     case 'receita_liq':return add(add(r('sales_gross'),r('descuentos')),add(r('icms'),r('pis_cofins')));
     case 'distribución':return add(add(r('shipping'),r('interco_dist')),r('interco_egr'));
     case 'warehousing_total':return add(r('interco_wh'),r('warehousing'));
+    case 'resultado_vendas': return add(getM(ver,'receita_liq',mi),r('cmv'));
     case 'bobinas':return add(r('insumos'),r('other_vfc'));
     case 'estoque_total':{
       var ih=r('estoque_inhouse'),rp=r('estoque_reparo');
@@ -492,7 +493,9 @@ const ROWS=[
   {id:'icms',        lbl:'ICMS',                          t:'cur', sub:true, childOf:'_imp'},
   {id:'pis_cofins',  lbl:'PIS/COFINS',                    t:'cur', sub:true, childOf:'_imp'},
   {id:'receita_liq', lbl:'RECEITA LÍQUIDA',               t:'cur', comp:true, hl:true},
-  {id:'cmv',         lbl:'CMV – Cost of Products Sold',   t:'cur', sub:true},
+  {id:'cmv',              lbl:'CMV – Cost of Products Sold',      t:'cur', sub:true},
+  {id:'resultado_vendas', lbl:'Resultado Vendas',               t:'cur', comp:true, hl:true, expandable:'resultado_vendas'},
+  {id:'resultado_vendas_unit', lbl:'Resultado/Device',          t:'cunit', sub:true, childOf:'resultado_vendas', unitCost:{cost:'resultado_vendas',vol:'vol'}},
   // ── OTHER COSTS ──
   {id:'_other',      lbl:'OTHER COSTS',                   t:'hdr', grp:true},
   {id:'distribución',     lbl:'Distribución',    t:'cur', sub:true, expandable:'distribución'},
@@ -532,7 +535,9 @@ const ROWS_OFICIAL=[
   {id:'icms',        lbl:'ICMS',                                                  t:'cur', sub:true, childOf:'_imp'},
   {id:'pis_cofins',  lbl:'PIS/COFINS',                                            t:'cur', sub:true, childOf:'_imp'},
   {id:'receita_liq', lbl:'RECEITA LÍQUIDA',                                       t:'cur', comp:true, hl:true},
-  {id:'cmv',         lbl:'CMV – Cost of Products Sold',                           t:'cur', sub:true},
+  {id:'cmv',              lbl:'CMV – Cost of Products Sold',                      t:'cur', sub:true},
+  {id:'resultado_vendas', lbl:'Resultado Vendas',                                 t:'cur', comp:true, hl:true, expandable:'resultado_vendas'},
+  {id:'resultado_vendas_unit', lbl:'Resultado/Device',                            t:'cunit', sub:true, childOf:'resultado_vendas', unitCost:{cost:'resultado_vendas',vol:'vol'}},
   {id:'_other',      lbl:'OTHER COSTS',                                           t:'hdr', grp:true},
   {id:'shipping',    lbl:'Distribución Point',    t:'cur', sub:true, expandable:'distribución'},
   {id:'vol_envios',  lbl:'Total Envios',          t:'vol', sub:true, childOf:'distribución'},
@@ -563,7 +568,7 @@ const ROWS_OFICIAL=[
 ];
 
 const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false};
-const EXPANDED={vol:false,net_sales:false,_imp:false,provision:false,estoque_total:false,distribución:false,warehousing_total:false,telemetria:false};
+const EXPANDED={vol:false,net_sales:false,_imp:false,resultado_vendas:false,provision:false,estoque_total:false,distribución:false,warehousing_total:false,telemetria:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
 function togglePYL(){
