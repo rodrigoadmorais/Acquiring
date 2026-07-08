@@ -464,7 +464,7 @@ function getM(ver,rowId,mi){
     }
     case 'bm':{
       let s=N;
-      BM_KEYS.forEach(k=>{const v=r(k);if(v!==N)s=(s??0)+v;});
+      BM_KEYS.forEach(k=>{const v=getM(ver,k,mi);if(v!==N)s=(s??0)+v;});
       return s;
     }
     default:return r(rowId);
