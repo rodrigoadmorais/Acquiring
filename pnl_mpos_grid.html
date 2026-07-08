@@ -432,10 +432,10 @@ const D={
 };
 
 // All P&L line IDs that feed into BM
-const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','bobinas','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
+const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','insumos','other_vfc','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
 // Bridge uses net_sales (gross+descuentos combined) to simplify waterfall
-const BRIDGE_KEYS=['net_sales','icms','pis_cofins','cmv','bobinas','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
-const BRIDGE_LBLS={net_sales:'Sales MPOS',icms:'ICMS',pis_cofins:'PIS/COFINS',cmv:'CMV',bobinas:'Bobinas',scrap:'Scrap',refurb:'Refurb',provision:'Estoque',prev_costo:'Prev. Custo',hedge:'Hedge',distribución:'Distribución',warehousing_total:'Warehousing',alquiler:'Aluguel',bad_debt:'Bad Debt',telemetria:'Telemetria'};
+const BRIDGE_KEYS=['net_sales','icms','pis_cofins','cmv','insumos','other_vfc','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
+const BRIDGE_LBLS={net_sales:'Sales MPOS',icms:'ICMS',pis_cofins:'PIS/COFINS',cmv:'CMV',insumos:'Insumos',other_vfc:'Bobinas',scrap:'Scrap',refurb:'Refurb',provision:'Estoque',prev_costo:'Prev. Custo',hedge:'Hedge',distribución:'Distribución',warehousing_total:'Warehousing',alquiler:'Aluguel',bad_debt:'Bad Debt',telemetria:'Telemetria'};
 
 // Get single-month value (handles computed rows)
 function getM(ver,rowId,mi){
@@ -507,9 +507,10 @@ const ROWS=[
   {id:'telemetria',       lbl:'Telemetria Point',t:'cur', sub:true, expandable:'telemetria'},
   {id:'vol_mads',         lbl:'MADs Totais',     t:'vol', sub:true, childOf:'telemetria'},
   {id:'cu_telemetria',    lbl:'Custo/MAD',       t:'cunit', sub:true, childOf:'telemetria', unitCost:{cost:'telemetria',vol:'vol_mads'}},
-  {id:'bobinas',          lbl:'Bobinas',                      t:'cur', sub:true, expandable:'bobinas', tip:'Insumos Point + Other Variable Fintech Costs'},
-  {id:'vol_bobinas',      lbl:'Qtd. Bobinas',               t:'vol',   sub:true, childOf:'bobinas'},
-  {id:'cu_bobinas',       lbl:'Custo/Bobina',               t:'cunit', sub:true, childOf:'bobinas', unitCost:{cost:'bobinas',vol:'vol_bobinas'}},
+  {id:'insumos',          lbl:'Insumos',                      t:'cur', sub:true},
+  {id:'other_vfc',        lbl:'Bobinas',                      t:'cur', sub:true, expandable:'other_vfc'},
+  {id:'vol_bobinas',      lbl:'Qtd. Bobinas',               t:'vol',   sub:true, childOf:'other_vfc'},
+  {id:'cu_bobinas',       lbl:'Custo/Bobina',               t:'cunit', sub:true, childOf:'other_vfc', unitCost:{cost:'other_vfc',vol:'vol_bobinas'}},
   {id:'hedge',            lbl:'Hedge',                        t:'cur', sub:true},
   {id:'provision',        lbl:'Estoque',          orig:'MPOS Ajuste VNR', t:'cur', sub:true, expandable:'provision'},
   {id:'estoque_total',    lbl:'Total Estoque',    t:'vol', sub:true, childOf:'provision', expandable:'estoque_total'},
@@ -553,10 +554,10 @@ const ROWS_OFICIAL=[
   {id:'telemetria',  lbl:'Telemetria Point',      t:'cur', sub:true, expandable:'telemetria'},
   {id:'vol_mads',    lbl:'MADs Totais',           t:'vol', sub:true, childOf:'telemetria'},
   {id:'cu_telemetria', lbl:'Custo/MAD',           t:'cunit', sub:true, childOf:'telemetria', unitCost:{cost:'telemetria',vol:'vol_mads'}},
-  {id:'insumos',     lbl:'Insumos Point',                                         t:'cur', sub:true, expandable:'bobinas'},
-  {id:'vol_bobinas', lbl:'Qtd. Bobinas',                                          t:'vol',   sub:true, childOf:'bobinas'},
-  {id:'cu_bobinas',  lbl:'Custo/Bobina',                                          t:'cunit', sub:true, childOf:'bobinas', unitCost:{cost:'bobinas',vol:'vol_bobinas'}},
-  {id:'other_vfc',   lbl:'Other Variable Fintech Costs',                          t:'cur', sub:true},
+  {id:'insumos',     lbl:'Insumos Point',                                         t:'cur', sub:true},
+  {id:'other_vfc',   lbl:'Other Variable Fintech Costs',                          t:'cur', sub:true, expandable:'other_vfc'},
+  {id:'vol_bobinas', lbl:'Qtd. Bobinas',                                          t:'vol',   sub:true, childOf:'other_vfc'},
+  {id:'cu_bobinas',  lbl:'Custo/Bobina',                                          t:'cunit', sub:true, childOf:'other_vfc', unitCost:{cost:'other_vfc',vol:'vol_bobinas'}},
   {id:'prev_costo',  lbl:'Previsión Costo MPOS (Legacy)',                         t:'cur', sub:true},
   {id:'hedge',       lbl:'Previsión Costo MPOS (Hedge)',                          t:'cur', sub:true},
   {id:'provision',        lbl:'MPOS Ajuste VNR',                                   t:'cur', sub:true, expandable:'provision'},
@@ -572,7 +573,7 @@ const ROWS_OFICIAL=[
 ];
 
 const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false};
-const EXPANDED={vol:false,net_sales:false,_imp:false,resultado_vendas:false,bobinas:false,provision:false,estoque_total:false,distribución:false,warehousing_total:false,telemetria:false};
+const EXPANDED={vol:false,net_sales:false,_imp:false,resultado_vendas:false,other_vfc:false,provision:false,estoque_total:false,distribución:false,warehousing_total:false,telemetria:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
 function togglePYL(){
