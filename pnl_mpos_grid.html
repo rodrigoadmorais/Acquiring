@@ -478,26 +478,23 @@ function getA(ver,rowId,idxList){
 }
 
 const ROWS=[
+  // ── VENDAS ──
+  {id:'_vendas',     lbl:'VENDAS',                        t:'hdr', grp:true},
   {id:'vol',         lbl:'Volume (Devices)',              t:'vol', hl:true, expandable:'vol'},
   {id:'vol_air',     lbl:'AIR',                          t:'vol', sub:true, childOf:'vol'},
   {id:'vol_mini',    lbl:'MINI',                         t:'vol', sub:true, childOf:'vol'},
   {id:'vol_pro',     lbl:'PRO',                          t:'vol', sub:true, childOf:'vol'},
   {id:'vol_smart',   lbl:'SMART',                        t:'vol', sub:true, childOf:'vol'},
-  // Receita
-  {id:'_rec',        lbl:'RECEITA',                       t:'hdr', grp:true},
   {id:'net_sales',   lbl:'Sales MPOS Líquido',            t:'cur', comp:true, hl:true, expandable:'net_sales'},
   {id:'sales_gross', lbl:'Sales MPOS Bruto',              t:'cur', sub:true, childOf:'net_sales'},
   {id:'descuentos',  lbl:'Descuentos MPOS',               t:'cur', sub:true, childOf:'net_sales'},
-  // Impostos
-  {id:'_imp',        lbl:'IMPOSTOS',                      t:'hdr', grp:true},
   {id:'total_taxes', lbl:'Total Impostos',                t:'cur', comp:true, hl:true, expandable:'_imp'},
   {id:'icms',        lbl:'ICMS',                          t:'cur', sub:true, childOf:'_imp'},
   {id:'pis_cofins',  lbl:'PIS/COFINS',                    t:'cur', sub:true, childOf:'_imp'},
-  // Receita Líquida
   {id:'receita_liq', lbl:'RECEITA LÍQUIDA',               t:'cur', comp:true, hl:true},
-  // COGS (ordenado por magnitude: hardware > logística > saas > consumíveis > hedging > provisões > resíduos)
-  {id:'_cogs',       lbl:'COGS & PROVISÕES',              t:'hdr', grp:true},
   {id:'cmv',         lbl:'CMV – Cost of Products Sold',   t:'cur', sub:true},
+  // ── OTHER COSTS ──
+  {id:'_other',      lbl:'OTHER COSTS',                   t:'hdr', grp:true},
   {id:'distribución',     lbl:'Distribución',    t:'cur', sub:true, expandable:'distribución'},
   {id:'vol_envios',       lbl:'Total Envios',    t:'vol', sub:true, childOf:'distribución'},
   {id:'cu_distribución',  lbl:'Custo/Envio',     t:'cunit', sub:true, childOf:'distribución', unitCost:{cost:'distribución',vol:'vol_envios'}},
@@ -507,17 +504,17 @@ const ROWS=[
   {id:'telemetria',       lbl:'Telemetria Point',t:'cur', sub:true, expandable:'telemetria'},
   {id:'vol_mads',         lbl:'MADs Totais',     t:'vol', sub:true, childOf:'telemetria'},
   {id:'cu_telemetria',    lbl:'Custo/MAD',       t:'cunit', sub:true, childOf:'telemetria', unitCost:{cost:'telemetria',vol:'vol_mads'}},
-  {id:'bobinas',     lbl:'Bobinas',                       t:'cur', sub:true},
-  {id:'hedge',            lbl:'Hedge',                                        t:'cur', sub:true},
-  {id:'provision',        lbl:'Estoque',            orig:'MPOS Ajuste VNR',   t:'cur', sub:true, expandable:'provision'},
-  {id:'estoque_total',    lbl:'Total Estoque',      t:'vol', sub:true, childOf:'provision', expandable:'estoque_total'},
-  {id:'estoque_inhouse',  lbl:'In House',           t:'vol', sub:true, childOf:'estoque_total'},
-  {id:'estoque_reparo',   lbl:'Reparo',             t:'vol', sub:true, childOf:'estoque_total'},
-  {id:'estoque_delta',    lbl:'Delta Estoque',      t:'vol_inv', sub:true, childOf:'provision'},
-  {id:'scrap',       lbl:'Scrap MPOS',                    t:'cur', sub:true},
-  {id:'refurb',      lbl:'Reacondicionamentos',           t:'cur', sub:true},
-  // BM
-  {id:'bm',          lbl:'BM (Gross Profit)',             t:'cur', comp:true, hl:true, bm:true},
+  {id:'bobinas',          lbl:'Bobinas',                      t:'cur', sub:true},
+  {id:'hedge',            lbl:'Hedge',                        t:'cur', sub:true},
+  {id:'provision',        lbl:'Estoque',          orig:'MPOS Ajuste VNR', t:'cur', sub:true, expandable:'provision'},
+  {id:'estoque_total',    lbl:'Total Estoque',    t:'vol', sub:true, childOf:'provision', expandable:'estoque_total'},
+  {id:'estoque_inhouse',  lbl:'In House',         t:'vol', sub:true, childOf:'estoque_total'},
+  {id:'estoque_reparo',   lbl:'Reparo',           t:'vol', sub:true, childOf:'estoque_total'},
+  {id:'estoque_delta',    lbl:'Delta Estoque',    t:'vol_inv', sub:true, childOf:'provision'},
+  {id:'scrap',            lbl:'Scrap MPOS',                   t:'cur', sub:true},
+  {id:'refurb',           lbl:'Reacondicionamentos',          t:'cur', sub:true},
+  // ── GP ──
+  {id:'bm',          lbl:'GP (Gross Profit)',              t:'cur', comp:true, hl:true, bm:true},
 ];
 
 // PYL Oficial view — original line names as they appear in the MNG spreadsheet
@@ -527,17 +524,16 @@ const ROWS_OFICIAL=[
   {id:'vol_mini',    lbl:'MINI',                                                  t:'vol', sub:true, childOf:'vol'},
   {id:'vol_pro',     lbl:'PRO',                                                   t:'vol', sub:true, childOf:'vol'},
   {id:'vol_smart',   lbl:'SMART',                                                 t:'vol', sub:true, childOf:'vol'},
-  {id:'_rec',        lbl:'RECEITA',                                               t:'hdr', grp:true},
+  {id:'_vendas',     lbl:'VENDAS',                                                t:'hdr', grp:true},
   {id:'net_sales',   lbl:'Sales MPOS Líquido',                                   t:'cur', comp:true, hl:true, expandable:'net_sales'},
   {id:'sales_gross', lbl:'Sales MPOS Bruto',                                      t:'cur', sub:true, childOf:'net_sales'},
   {id:'descuentos',  lbl:'Descuentos MPOS',                                       t:'cur', sub:true, childOf:'net_sales'},
-  {id:'_imp',        lbl:'IMPOSTOS',                                              t:'hdr', grp:true},
   {id:'total_taxes', lbl:'Total Impostos',                                        t:'cur', comp:true, hl:true, expandable:'_imp'},
   {id:'icms',        lbl:'ICMS',                                                  t:'cur', sub:true, childOf:'_imp'},
   {id:'pis_cofins',  lbl:'PIS/COFINS',                                            t:'cur', sub:true, childOf:'_imp'},
   {id:'receita_liq', lbl:'RECEITA LÍQUIDA',                                       t:'cur', comp:true, hl:true},
-  {id:'_cogs',       lbl:'COGS & PROVISÕES',                                      t:'hdr', grp:true},
   {id:'cmv',         lbl:'CMV – Cost of Products Sold',                           t:'cur', sub:true},
+  {id:'_other',      lbl:'OTHER COSTS',                                           t:'hdr', grp:true},
   {id:'shipping',    lbl:'Distribución Point',    t:'cur', sub:true, expandable:'distribución'},
   {id:'vol_envios',  lbl:'Total Envios',          t:'vol', sub:true, childOf:'distribución'},
   {id:'cu_distribución', lbl:'Custo/Envio',       t:'cunit', sub:true, childOf:'distribución', unitCost:{cost:'distribución',vol:'vol_envios'}},
@@ -563,7 +559,7 @@ const ROWS_OFICIAL=[
   {id:'bad_debt',    lbl:'Incobrables / Bad Debt',                               t:'cur', sub:true},
   {id:'scrap',       lbl:'Scrap MPOS',                                            t:'cur', sub:true},
   {id:'refurb',      lbl:'Reacondicionamentos Point',                             t:'cur', sub:true},
-  {id:'bm',          lbl:'BM (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
+  {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
 const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false};
@@ -649,7 +645,7 @@ function renderKPI(){
     {l:'Sales Bruto',v:sg,pv:sg_c,hi:true,icon:'💰'},
     {l:'Receita Líquida',v:rl,pv:rl_c,hi:true,icon:'💵'},
     {l:'CMV Hardware',v:cmv,pv:cmv_c,hi:false,icon:'🏭'},
-    {l:'BM',v:bm,pv:bm_c,hi:true,icon:'📊'},
+    {l:'GP',v:bm,pv:bm_c,hi:true,icon:'📊'},
   ].map(k=>`<article class="card kpi-card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
       <span class="kpi-lbl">${k.l}</span><span style="font-size:1rem">${k.icon}</span>
@@ -922,9 +918,9 @@ function renderBridge(){
   // Legend
   svg=`<div style="overflow-x:auto">
     <div style="display:flex;gap:20px;align-items:center;margin-bottom:12px;flex-wrap:wrap;font-size:.72rem;font-weight:600">
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#2D3277;display:inline-block"></span>Valor absoluto BM</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#00A650;display:inline-block"></span>Melhora BM</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#E53935;display:inline-block"></span>Piora BM</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#2D3277;display:inline-block"></span>Valor absoluto GP</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#00A650;display:inline-block"></span>Melhora GP</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:#E53935;display:inline-block"></span>Piora GP</span>
     </div>
     ${svg}
   </div>`;
