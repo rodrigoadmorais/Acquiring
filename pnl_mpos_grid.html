@@ -489,7 +489,9 @@ const ROWS=[
   {id:'bobinas',     lbl:'Bobinas',                       t:'cur', sub:true},
   {id:'scrap',       lbl:'Scrap MPOS',                    t:'cur', sub:true},
   {id:'refurb',      lbl:'Reacondicionamentos Point',     t:'cur', sub:true},
-  {id:'provision',        lbl:'Estoque',            orig:'MPOS Ajuste VNR',   t:'cur', sub:true},
+  {id:'provision',        lbl:'Estoque',            orig:'MPOS Ajuste VNR',   t:'cur', sub:true, expandable:'provision'},
+  {id:'estoque_inhouse',  lbl:'In House',           t:'vol', sub:true, childOf:'provision'},
+  {id:'estoque_reparo',   lbl:'Reparo',             t:'vol', sub:true, childOf:'provision'},
   {id:'hedge',            lbl:'Hedge',                                        t:'cur', sub:true},
   {id:'distribución',     lbl:'Distribución',    t:'cur', sub:true, expandable:'distribución'},
   {id:'vol_envios',       lbl:'Total Envios',    t:'vol', sub:true, childOf:'distribución'},
@@ -526,7 +528,9 @@ const ROWS_OFICIAL=[
   {id:'other_vfc',   lbl:'Other Variable Fintech Costs',                          t:'cur', sub:true},
   {id:'scrap',       lbl:'Scrap MPOS',                                            t:'cur', sub:true},
   {id:'refurb',      lbl:'Reacondicionamentos Point',                             t:'cur', sub:true},
-  {id:'provision',   lbl:'MPOS Ajuste VNR',                                       t:'cur', sub:true},
+  {id:'provision',        lbl:'MPOS Ajuste VNR',                                   t:'cur', sub:true, expandable:'provision'},
+  {id:'estoque_inhouse',  lbl:'In House',                                           t:'vol', sub:true, childOf:'provision'},
+  {id:'estoque_reparo',   lbl:'Reparo',                                             t:'vol', sub:true, childOf:'provision'},
   {id:'prev_costo',  lbl:'Previsión Costo MPOS (Legacy)',                         t:'cur', sub:true},
   {id:'hedge',       lbl:'Previsión Costo MPOS (Hedge)',                          t:'cur', sub:true},
   {id:'shipping',    lbl:'Distribución Point',    t:'cur', sub:true, expandable:'distribución'},
@@ -547,7 +551,7 @@ const ROWS_OFICIAL=[
 ];
 
 const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false};
-const EXPANDED={vol:false,net_sales:false,_imp:false,distribución:false,warehousing_total:false,telemetria:false};
+const EXPANDED={vol:false,net_sales:false,_imp:false,provision:false,distribución:false,warehousing_total:false,telemetria:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
 function togglePYL(){
@@ -1237,6 +1241,34 @@ function getRetry(range,attempt){
   });
 }
 
+function parseEstoque(values){
+  if(!values||values.length<2)return;
+  console.log('[MPOS Estoque]',values.length,'rows');
+  var acc={};
+  for(var r=1;r<values.length;r++){
+    var row=values[r]||[];
+    var ym=parseYYYYMM(String(row[1]||'').trim());
+    if(!ym)continue;
+    var ih=parseFloat(String(row[2]||'').replace(/\./g,'').replace(',','.'));
+    var rp=parseFloat(String(row[3]||'').replace(/\./g,'').replace(',','.'));
+    var k=ym.year+'_'+ym.month;
+    if(!acc[k])acc[k]={inhouse:0,reparo:0};
+    if(!isNaN(ih))acc[k].inhouse+=ih;
+    if(!isNaN(rp))acc[k].reparo+=rp;
+  }
+  var years={};
+  Object.keys(acc).forEach(function(k){years[k.split('_')[0]]=1;});
+  Object.keys(years).forEach(function(year){
+    var ver='Realizado '+year;
+    if(!D[ver])return;
+    var ih=Array(12).fill(null),rp=Array(12).fill(null);
+    for(var m=0;m<12;m++){var a=acc[year+'_'+m];if(a){ih[m]=a.inhouse;rp[m]=a.reparo;}}
+    D[ver].estoque_inhouse=ih;
+    D[ver].estoque_reparo=rp;
+    console.log('[MPOS Estoque] →',ver,'InHouse',ih.slice(0,6));
+  });
+}
+
 function doFetchSheets(){
   function fetchWith(tabName,parser){
     return getRetry(tabName+'!A:AZ',0)
@@ -1248,6 +1280,8 @@ function doFetchSheets(){
   fetchWith('Volume',parseVolume)
     .then(function(){return sleep(160);})
     .then(function(){return fetchWith('Vol Despachos e Envios',parseVolDespacho);})
+    .then(function(){return sleep(160);})
+    .then(function(){return getRetry('Estoque!A1:D90',0).then(function(res){if(res&&res.values)parseEstoque(res.values);}).catch(function(e){console.error('[MPOS Estoque] erro',e);});})
     .then(function(){render();});
 }
 
