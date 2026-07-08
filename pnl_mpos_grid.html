@@ -493,10 +493,13 @@ const ROWS=[
   {id:'hedge',            lbl:'Hedge',                                        t:'cur', sub:true},
   {id:'distribución',     lbl:'Distribución',    t:'cur', sub:true, expandable:'distribución'},
   {id:'vol_envios',       lbl:'Total Envios',    t:'vol', sub:true, childOf:'distribución'},
+  {id:'cu_distribución',  lbl:'Custo/Envio',     t:'cunit', sub:true, childOf:'distribución', unitCost:{cost:'distribución',vol:'vol_envios'}},
   {id:'warehousing_total',lbl:'Warehousing',     t:'cur', sub:true, expandable:'warehousing_total'},
   {id:'vol_despacho',     lbl:'Vol. Despachos',  t:'vol', sub:true, childOf:'warehousing_total'},
+  {id:'cu_warehousing',   lbl:'Custo/Despacho',  t:'cunit', sub:true, childOf:'warehousing_total', unitCost:{cost:'warehousing_total',vol:'vol_despacho'}},
   {id:'telemetria',       lbl:'Telemetria Point',t:'cur', sub:true, expandable:'telemetria'},
   {id:'vol_mads',         lbl:'MADs Totais',     t:'vol', sub:true, childOf:'telemetria'},
+  {id:'cu_telemetria',    lbl:'Custo/MAD',       t:'cunit', sub:true, childOf:'telemetria', unitCost:{cost:'telemetria',vol:'vol_mads'}},
   // BM
   {id:'bm',          lbl:'BM (Gross Profit)',             t:'cur', comp:true, hl:true, bm:true},
 ];
@@ -528,15 +531,18 @@ const ROWS_OFICIAL=[
   {id:'hedge',       lbl:'Previsión Costo MPOS (Hedge)',                          t:'cur', sub:true},
   {id:'shipping',    lbl:'Distribución Point',    t:'cur', sub:true, expandable:'distribución'},
   {id:'vol_envios',  lbl:'Total Envios',          t:'vol', sub:true, childOf:'distribución'},
+  {id:'cu_distribución', lbl:'Custo/Envio',       t:'cunit', sub:true, childOf:'distribución', unitCost:{cost:'distribución',vol:'vol_envios'}},
   {id:'interco_dist',lbl:'COGS Interco Distribucion Produtos – Egresos',          t:'cur', sub:true, childOf:'distribución'},
   {id:'interco_egr', lbl:'COGS Interco Allocations – Egresos',                   t:'cur', sub:true, childOf:'distribución'},
   {id:'interco_wh',  lbl:'COGS Interco Warehousing Produtos – Egresos',          t:'cur', sub:true, expandable:'warehousing_total'},
   {id:'vol_despacho',lbl:'Vol. Despachos',        t:'vol', sub:true, childOf:'warehousing_total'},
+  {id:'cu_warehousing', lbl:'Custo/Despacho',     t:'cunit', sub:true, childOf:'warehousing_total', unitCost:{cost:'warehousing_total',vol:'vol_despacho'}},
   {id:'warehousing', lbl:'Warehousing Point',     t:'cur', sub:true, childOf:'warehousing_total'},
   {id:'alquiler',    lbl:'Aluguel MPOS',                                          t:'cur', sub:true},
   {id:'bad_debt',    lbl:'Incobrables / Bad Debt',                               t:'cur', sub:true},
   {id:'telemetria',  lbl:'Telemetria Point',      t:'cur', sub:true, expandable:'telemetria'},
   {id:'vol_mads',    lbl:'MADs Totais',           t:'vol', sub:true, childOf:'telemetria'},
+  {id:'cu_telemetria', lbl:'Custo/MAD',           t:'cunit', sub:true, childOf:'telemetria', unitCost:{cost:'telemetria',vol:'vol_mads'}},
   {id:'bm',          lbl:'BM (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
@@ -560,8 +566,17 @@ function fc(v,t){
     if(abs>=1e3)return(v/1e3).toFixed(1)+'k';
     return v.toFixed(0);
   }
+  if(t==='cunit'){
+    const s='R$'+Math.abs(v).toFixed(2);
+    return v<0?`<span class="vn">${s}</span>`:v>0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
+  }
   const s=v.toFixed(2)+'M';
   return v<0?`<span class="vn">${s}</span>`:v>0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
+}
+
+function computeUC(costM,vol){
+  if(costM===N||vol===N||vol===0)return N;
+  return(costM*1e6)/vol;
 }
 
 function fd(v,ref,hi){
@@ -663,21 +678,40 @@ function renderTable(){
     tb+=`<tr class="${rc} ${sub} ${expCls}"><td ${onclk}>${lblCell}</td>`;
 
     if(isComp){
-      VERS.forEach(v=>{
-        const av=getA(v,row.id,idx);
-        tb+=`<td>${fc(av,row.t)}</td>`;
-      });
+      if(row.unitCost){
+        const uc=row.unitCost;
+        VERS.forEach(v=>{
+          const av=computeUC(getA(v,uc.cost,idx),getA(v,uc.vol,idx));
+          tb+=`<td>${fc(av,row.t)}</td>`;
+        });
+      } else {
+        VERS.forEach(v=>{
+          const av=getA(v,row.id,idx);
+          tb+=`<td>${fc(av,row.t)}</td>`;
+        });
+      }
     } else {
-      idx.forEach(i=>{
-        const mv=getM(ST.prim,row.id,i);
-        tb+=`<td>${fc(mv,row.t)}</td>`;
-      });
-      const fy=getA(ST.prim,row.id,idx);
-      tb+=`<td class="col-fy">${fc(fy,row.t)}</td>`;
-      if(ST.comp!==ST.prim){
-        const fyc=getA(ST.comp,row.id,idx);
-        const isBenefitPos=(row.id==='sales_gross'||row.id==='net_sales'||row.id==='receita_liq'||row.id==='bm');
-        tb+=`<td>${fd(fy,fyc,isBenefitPos)}</td>`;
+      if(row.unitCost){
+        const uc=row.unitCost;
+        idx.forEach(i=>{
+          const mv=computeUC(getM(ST.prim,uc.cost,i),getM(ST.prim,uc.vol,i));
+          tb+=`<td>${fc(mv,row.t)}</td>`;
+        });
+        const fyv=computeUC(getA(ST.prim,uc.cost,idx),getA(ST.prim,uc.vol,idx));
+        tb+=`<td class="col-fy">${fc(fyv,row.t)}</td>`;
+        if(ST.comp!==ST.prim) tb+=`<td></td>`;
+      } else {
+        idx.forEach(i=>{
+          const mv=getM(ST.prim,row.id,i);
+          tb+=`<td>${fc(mv,row.t)}</td>`;
+        });
+        const fy=getA(ST.prim,row.id,idx);
+        tb+=`<td class="col-fy">${fc(fy,row.t)}</td>`;
+        if(ST.comp!==ST.prim){
+          const fyc=getA(ST.comp,row.id,idx);
+          const isBenefitPos=(row.id==='sales_gross'||row.id==='net_sales'||row.id==='receita_liq'||row.id==='bm');
+          tb+=`<td>${fd(fy,fyc,isBenefitPos)}</td>`;
+        }
       }
     }
     tb+='</tr>';
