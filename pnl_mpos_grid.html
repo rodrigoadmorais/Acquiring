@@ -457,8 +457,15 @@ function getM(ver,rowId,mi){
     }
     case 'estoque_delta':{
       var cur=getM(ver,'estoque_total',mi);
-      if(mi===0||cur===N)return N;
-      var prev=getM(ver,'estoque_total',mi-1);
+      if(cur===N)return N;
+      var prev;
+      if(mi===0){
+        var yr=parseInt((ver.match(/\d{4}/)||['0'])[0],10);
+        var prevVer='Realizado '+(yr-1);
+        prev=D[prevVer]?getM(prevVer,'estoque_total',11):N;
+      } else {
+        prev=getM(ver,'estoque_total',mi-1);
+      }
       if(prev===N)return N;
       return cur-prev;
     }
