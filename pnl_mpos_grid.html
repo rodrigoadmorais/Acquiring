@@ -1332,6 +1332,40 @@ function parseEstoque(values){
   });
 }
 
+function parseMNG(values){
+  if(!values||values.length<2)return;
+  console.log('[MPOS MNG]',values.length,'rows');
+  // Find header row: first row with ≥3 YYYYMM values
+  var hdrIdx=-1,colMap={};
+  for(var ri=0;ri<Math.min(values.length,10);ri++){
+    var row=values[ri]||[];var tmp={};var cnt=0;
+    row.forEach(function(h,ci){var ym=parseYYYYMM(h);if(ym){tmp[ym.year+'_'+ym.month]=ci;cnt++;}});
+    if(cnt>=3){hdrIdx=ri;colMap=tmp;break;}
+  }
+  if(hdrIdx<0){console.warn('[MPOS MNG] Sem header YYYYMM');return;}
+  var years={};
+  Object.keys(colMap).forEach(function(k){years[k.split('_')[0]]=1;});
+  var yearList=Object.keys(years).map(Number);
+  for(var r=hdrIdx+1;r<values.length;r++){
+    var row=values[r]||[];
+    // Col G (idx 6) = PYL_4 — "Gastos de bobinas"
+    var pyl4=String(row[6]||'').toLowerCase().trim();
+    if(pyl4.indexOf('gastos de bobinas')<0)continue;
+    var cenRaw=String(row[0]||'').trim(); // Col A = cenário
+    yearList.forEach(function(year){
+      var key=cenToKey(cenRaw,year);
+      if(!key||!D[key])return;
+      var vals=Array.from({length:12},function(_,m){
+        var ci=colMap[year+'_'+m];if(ci===undefined)return null;
+        var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+        return isNaN(v)?null:v;
+      });
+      D[key].other_vfc=vals;
+      console.log('[MPOS MNG] →',key,'other_vfc',vals.slice(0,6));
+    });
+  }
+}
+
 function doFetchSheets(){
   function fetchWith(tabName,parser){
     return getRetry(tabName+'!A:AZ',0)
@@ -1343,6 +1377,8 @@ function doFetchSheets(){
   fetchWith('Volume',parseVolume)
     .then(function(){return sleep(160);})
     .then(function(){return fetchWith('Vol Despachos e Envios',parseVolDespacho);})
+    .then(function(){return sleep(160);})
+    .then(function(){return fetchWith('MNG',parseMNG);})
     .then(function(){return sleep(160);})
     .then(function(){return getRetry('Estoque!A1:M90',0).then(function(res){if(res&&res.values)parseEstoque(res.values);}).catch(function(e){console.error('[MPOS Estoque] erro',e);});})
     .then(function(){render();});
