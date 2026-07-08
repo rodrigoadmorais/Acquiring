@@ -505,7 +505,7 @@ const ROWS=[
   {id:'estoque_total',    lbl:'Total Estoque',      t:'vol', sub:true, expandable:'estoque_total'},
   {id:'estoque_inhouse',  lbl:'In House',           t:'vol', sub:true, childOf:'estoque_total'},
   {id:'estoque_reparo',   lbl:'Reparo',             t:'vol', sub:true, childOf:'estoque_total'},
-  {id:'estoque_delta',    lbl:'Delta Estoque',      t:'vol', sub:true},
+  {id:'estoque_delta',    lbl:'Delta Estoque',      t:'vol_inv', sub:true, childOf:'estoque_total'},
   {id:'hedge',            lbl:'Hedge',                                        t:'cur', sub:true},
   {id:'distribución',     lbl:'Distribución',    t:'cur', sub:true, expandable:'distribución'},
   {id:'vol_envios',       lbl:'Total Envios',    t:'vol', sub:true, childOf:'distribución'},
@@ -546,7 +546,7 @@ const ROWS_OFICIAL=[
   {id:'estoque_total',    lbl:'Total Estoque',                                      t:'vol', sub:true, expandable:'estoque_total'},
   {id:'estoque_inhouse',  lbl:'In House',                                           t:'vol', sub:true, childOf:'estoque_total'},
   {id:'estoque_reparo',   lbl:'Reparo',                                             t:'vol', sub:true, childOf:'estoque_total'},
-  {id:'estoque_delta',    lbl:'Delta Estoque',                                      t:'vol', sub:true},
+  {id:'estoque_delta',    lbl:'Delta Estoque',                                      t:'vol_inv', sub:true, childOf:'estoque_total'},
   {id:'prev_costo',  lbl:'Previsión Costo MPOS (Legacy)',                         t:'cur', sub:true},
   {id:'hedge',       lbl:'Previsión Costo MPOS (Hedge)',                          t:'cur', sub:true},
   {id:'shipping',    lbl:'Distribución Point',    t:'cur', sub:true, expandable:'distribución'},
@@ -585,6 +585,11 @@ function fc(v,t){
     if(abs>=1e6)return(v/1e6).toFixed(1)+'M';
     if(abs>=1e3)return(v/1e3).toFixed(1)+'k';
     return v.toFixed(0);
+  }
+  if(t==='vol_inv'){
+    const abs=Math.abs(v);
+    const s=abs>=1e6?(v/1e6).toFixed(1)+'M':abs>=1e3?(v/1e3).toFixed(1)+'k':Math.round(v).toLocaleString('pt-BR');
+    return v>0?`<span class="vn">${s}</span>`:v<0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
   }
   if(t==='cunit'){
     const s='R$'+Math.abs(v).toFixed(2);
