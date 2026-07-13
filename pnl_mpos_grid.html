@@ -226,7 +226,10 @@
   <div class="card" id="main-tbl-card" style="padding:20px 24px">
     <div class="tbl-hdr">
       <h3 class="tbl-title" id="tbl-title">Detalhamento · P&amp;L MPOS</h3>
-      <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="tbl-sub"></span>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="tbl-sub"></span>
+        <button id="btn-unit-mode" onclick="ST.unit_mode=!ST.unit_mode;renderTable()" style="display:none;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;border:1.5px solid var(--ml-blue);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Ver Unitário (R$/device)</button>
+      </div>
     </div>
     <div class="tbl-wrap">
       <table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table>
@@ -593,7 +596,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false};
+const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:false};
 const EXPANDED={vol:false,net_sales:false,_imp:false,resultado_vendas:false,other_vfc:false,provision:false,estoque_total:false,distribución:false,warehousing_total:false,telemetria:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
@@ -693,6 +696,14 @@ function renderTable(){
   const isComp=ST.mode==='comparison';
   document.getElementById('tbl-title').textContent=isComp?'Comparativo Multi-Cenário · P&L MPOS':'Evolução Mensal · P&L MPOS';
   document.getElementById('tbl-sub').textContent=isComp?`FY / ${ST.q} · Todos os cenários`:`${ST.prim} · ${ST.q}`;
+  // Unit toggle button (comparison only)
+  const btnEl=document.getElementById('btn-unit-mode');
+  if(btnEl){
+    btnEl.style.display=isComp?'inline-flex':'none';
+    btnEl.textContent=ST.unit_mode?'Ver Valor Absoluto':'Ver Unitário (R$/device)';
+    btnEl.style.background=ST.unit_mode?'var(--ml-blue)':'transparent';
+    btnEl.style.color=ST.unit_mode?'#fff':'var(--ml-blue)';
+  }
 
   // Header
   let th='<th>P&L Line</th>';
@@ -736,6 +747,12 @@ function renderTable(){
         VERS.forEach(v=>{
           const av=computeUC(getA(v,uc.cost,idx),getA(v,uc.vol,idx));
           tb+=`<td>${fc(av,row.t)}</td>`;
+        });
+      } else if(ST.unit_mode && row.t==='cur'){
+        VERS.forEach(v=>{
+          const av=getA(v,row.id,idx);
+          const vol=getA(v,'vol',idx);
+          tb+=`<td>${fc(computeUC(av,vol),'cunit')}</td>`;
         });
       } else {
         VERS.forEach(v=>{
@@ -812,7 +829,7 @@ function fcBr(v,t){
     if(abs>=1e3)return(v/1e3).toFixed(1)+'k';
     return Math.round(v).toLocaleString('pt-BR');
   }
-  return (v>=0?'':'')+v.toFixed(2)+'M';
+  return (v>=0?'':'')+v.toFixed(1)+'M';
 }
 
 function renderBridge(){
@@ -940,8 +957,8 @@ function renderBridge(){
     // Value label on bar
     const labelY=b.val>=0?yBar-6:yBar+Math.max(hBar,2)+14;
     const labelTxt=b.type==='anchor'
-      ?Math.abs(b.val).toFixed(2)+'M'
-      :(b.val>=0?'+':'')+b.val.toFixed(2)+'M';
+      ?Math.abs(b.val).toFixed(1)+'M'
+      :(b.val>=0?'+':'')+b.val.toFixed(1)+'M';
     svg+=`<text x="${cx}" y="${labelY}" text-anchor="middle" font-size="10" font-weight="700" fill="${color}">${labelTxt}</text>`;
 
     // Bottom label (rotated)
@@ -1442,7 +1459,7 @@ function brTip(evt,idx){
   bd.forEach(function(x){
     const sign=x.delta>=0?'+':'';
     const col=x.delta>=0?'#00A650':'#E53935';
-    html+=`<div style="display:flex;justify-content:space-between;gap:24px"><span style="color:#D1D5DB">${x.lbl}</span><span style="color:${col};font-weight:700">${sign}${x.delta.toFixed(2)}M</span></div>`;
+    html+=`<div style="display:flex;justify-content:space-between;gap:24px"><span style="color:#D1D5DB">${x.lbl}</span><span style="color:${col};font-weight:700">${sign}${x.delta.toFixed(1)}M</span></div>`;
   });
   const el=document.getElementById('br-tooltip');
   el.innerHTML=html;
