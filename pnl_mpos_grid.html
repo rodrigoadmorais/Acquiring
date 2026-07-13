@@ -1171,7 +1171,7 @@ function renderUnitarios(){
   function fmtUnitVal(v,abs){
     if(v===null||v===N||v===undefined)return'<span style="color:var(--muted)">—</span>';
     var s=abs?(Math.abs(v).toFixed(1)+'M'):('R$'+Math.abs(v).toFixed(2));
-    return`<span style="color:var(--ml-blue)">${s}</span>`;
+    return`<span style="color:var(--ml-navy)">${s}</span>`;
   }
   const isAbs=ST.unit_abs;
   const btnAbs=document.getElementById('btn-unit-abs');
