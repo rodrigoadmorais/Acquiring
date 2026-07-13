@@ -1161,7 +1161,7 @@ function renderUnitarios(){
 
   const metrics=[
     {lbl:'Resultado/Device',sub:'Resultado Vendas',totalKey:'resultado_vendas',volKey:'vol',fmt:'cunit',benPos:true},
-    {lbl:'Custo Bobinas/Device',sub:'Bobinas',totalKey:'other_vfc',volKey:'vol',fmt:'cunit',benPos:false},
+    {lbl:'Custo/Bobina',sub:'Bobinas',totalKey:'other_vfc',volKey:'vol_bobinas',fmt:'cunit',benPos:false},
     {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false},
     {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false},
     {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false},
@@ -1170,6 +1170,17 @@ function renderUnitarios(){
   const isAbs=ST.unit_abs;
   const btnAbs=document.getElementById('btn-unit-abs');
   if(btnAbs)btnAbs.textContent=isAbs?'Ver Unitário (R$/device)':'Ver Absoluto (R$M)';
+
+  // sort by absolute value of right-side metric (largest first)
+  metrics.sort(function(a,b){
+    var tA=getA(pair.right,a.totalKey,idx);
+    var vA=getA(pair.right,a.volKey,idx);
+    var tB=getA(pair.right,b.totalKey,idx);
+    var vB=getA(pair.right,b.volKey,idx);
+    var ucA=(tA!==null&&vA!==null&&vA!==0)?Math.abs(computeUC(tA,vA)):0;
+    var ucB=(tB!==null&&vB!==null&&vB!==0)?Math.abs(computeUC(tB,vB)):0;
+    return ucB-ucA;
+  });
 
   const cards=metrics.map(function(m){
     const tL=getA(pair.left,m.totalKey,idx);
