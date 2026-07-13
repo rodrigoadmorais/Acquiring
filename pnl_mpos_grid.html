@@ -1158,6 +1158,7 @@ function renderUnitarios(){
     :{left:'Plano 2026',right:'Realizado 2026',lbl:'Plano 2026 vs Realizado 2026'};
   const btn=document.getElementById('btn-unit-pair');
   btn.textContent=ST.unit_pair==='real'?'Comparar Plano 2026':'Comparar Realizado 2025';
+  btn.onclick=function(){ST.unit_pair=ST.unit_pair==='real'?'plano':'real';renderUnitarios();};
 
   const metrics=[
     {lbl:'Resultado/Device',sub:'Resultado Vendas',totalKey:'resultado_vendas',volKey:'vol',fmt:'cunit',benPos:false},
