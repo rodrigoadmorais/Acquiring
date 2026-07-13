@@ -1165,27 +1165,40 @@ function renderUnitariosInsights(metrics,pair,idx){
   var melhoras=results.filter(function(r){return r.benPos?r.pct>0:r.pct<0;}).sort(function(a,b){return Math.abs(b.pct)-Math.abs(a.pct);});
   var pioras=results.filter(function(r){return r.benPos?r.pct<0:r.pct>0;}).sort(function(a,b){return Math.abs(b.pct)-Math.abs(a.pct);});
 
-  var bullets=[];
-  pioras.forEach(function(r){
-    var dir=r.pct>0?'subiu':'caiu';
-    bullets.push({color:'var(--red)',icon:'↑',text:'<strong>'+r.lbl+'</strong> '+dir+' <strong>'+Math.abs(r.pct).toFixed(1)+'%</strong> vs '+vsLbl+' — de R$'+r.ucL.toFixed(2)+' para R$'+r.ucR.toFixed(2)+'.'});
-  });
-  melhoras.forEach(function(r){
-    var dir=r.pct>0?'cresceu':'reduziu';
-    bullets.push({color:'var(--green)',icon:'✓',text:'<strong>'+r.lbl+'</strong> '+dir+' <strong>'+Math.abs(r.pct).toFixed(1)+'%</strong> vs '+vsLbl+' — de R$'+r.ucL.toFixed(2)+' para R$'+r.ucR.toFixed(2)+'.'});
-  });
+  // build narrative sentences
+  function fmtR(r){
+    var abs=Math.abs(r.pct).toFixed(1)+'%';
+    var isGood=r.benPos?r.pct>0:r.pct<0;
+    var color=isGood?'var(--green)':'var(--red)';
+    var dir=r.pct>0?'subiu':'reduziu';
+    return '<strong>'+r.lbl+'</strong> <span style="color:'+color+';font-weight:700">'+dir+' '+abs+'</span>'
+      +' (de R$'+r.ucL.toFixed(2)+' para R$'+r.ucR.toFixed(2)+')';
+  }
+
+  var sentences=[];
+  // main pressure points first
+  if(pioras.length>0){
+    var top=pioras.slice(0,2);
+    var s='Os principais pontos de pressão no período foram '+top.map(fmtR).join(' e ')+'.';
+    if(pioras.length>2){
+      s+=' Adicionalmente, '+pioras.slice(2).map(fmtR).join(', ')+' também apresentaram deterioração.';
+    }
+    sentences.push(s);
+  }
+  if(melhoras.length>0){
+    var top2=melhoras.slice(0,2);
+    var s2='Em contrapartida, destaca-se a melhora em '+top2.map(fmtR).join(' e ')+'.';
+    if(melhoras.length>2){
+      s2+=' '+melhoras.slice(2).map(function(r){return fmtR(r)+' também evoluiu positivamente';}).join('. ')+'.';
+    }
+    sentences.push(s2);
+  }
+  if(sentences.length===0)sentences.push('Sem variações significativas no período selecionado.');
 
   var html='<div class="card" style="padding:20px 28px;border-left:4px solid var(--ml-blue)">'
-    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'
-    +'<span style="font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ml-blue)">✦ Resumo IA · '+pair.left+' vs '+rightLbl+'</span>'
-    +'</div>'
-    +'<div style="display:flex;flex-direction:column;gap:8px">';
-  bullets.forEach(function(b){
-    html+='<div style="display:flex;gap:10px;align-items:flex-start;font-size:.82rem;line-height:1.5;color:var(--text)">'
-      +'<span style="color:'+b.color+';font-weight:700;flex-shrink:0;margin-top:1px">'+b.icon+'</span>'
-      +'<span>'+b.text+'</span></div>';
-  });
-  html+='</div></div>';
+    +'<div style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ml-blue);margin-bottom:10px">✦ Resumo IA · '+pair.left+' vs '+rightLbl+'</div>'
+    +'<p style="font-size:.85rem;line-height:1.7;color:var(--text);margin:0">'+sentences.join(' ')+'</p>'
+    +'</div>';
   document.getElementById('unitarios-insights').innerHTML=html;
 }
 function renderUnitarios(){
