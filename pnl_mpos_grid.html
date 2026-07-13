@@ -1153,8 +1153,10 @@ function renderUnitarios(){
     const vR=getA(pair.right,m.volKey,idx);
     const ucL=(tL!==null&&vL!==null&&vL!==0)?computeUC(tL,vL):null;
     const ucR=(tR!==null&&vR!==null&&vR!==0)?computeUC(tR,vR):null;
-    const pct=(ucL!==null&&ucL!==0&&ucR!==null)?((ucR-ucL)/Math.abs(ucL)*100):null;
-    const isBenPos=false;
+    const absL=ucL!==null?Math.abs(ucL):null;
+    const absR=ucR!==null?Math.abs(ucR):null;
+    const pct=(absL!==null&&absL!==0&&absR!==null)?((absR-absL)/absL*100):null;
+    const isBenPos=m.totalKey==='net_sales';
     const good=pct!==null?(isBenPos?pct>0:pct<0):null;
     const pctHtml=pct!==null
       ?`<span style="font-size:.78rem;font-weight:700;color:${good?'var(--green)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(1)}% vs ${pair.left==='Realizado 2025'?'2025':'Plano'}</span>`
