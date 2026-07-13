@@ -242,6 +242,7 @@
       <div id="bridge-chart" style="margin-top:16px;overflow-x:auto"></div>
     </div>
   </div>
+  <div id="br-tooltip" style="display:none;position:fixed;z-index:9999;background:#111827;color:#F9FAFB;padding:10px 14px;border-radius:10px;font-size:.75rem;pointer-events:none;min-width:180px;line-height:1.8;box-shadow:0 8px 24px rgba(0,0,0,.3)"></div>
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
     Fonte: Google Sheets MPOS MNG · Valores em R$ Milhões · Atualizado Jul/2026
@@ -828,11 +829,13 @@ function renderBridge(){
 
   const items=BRIDGE_ITEMS.map(function(bi){
     if(bi.type==='group'){
-      const delta=bi.keys.reduce(function(s,k){
+      const breakdown=bi.keys.map(function(k){
         const a=getA(ST.br_lv,k,idxL),b=getA(ST.br_rv,k,idxR);
-        return s+(b!==null?b:0)-(a!==null?a:0);
-      },0);
-      return{lbl:bi.lbl,delta:delta};
+        const d=(b!==null?b:0)-(a!==null?a:0);
+        return{lbl:BRIDGE_LBLS[k]||k,delta:d};
+      });
+      const delta=breakdown.reduce(function(s,x){return s+x.delta;},0);
+      return{lbl:bi.lbl,delta:delta,breakdown:breakdown};
     }
     const lbl=BRIDGE_LBLS[bi.key]||(rowMap[bi.key]||{}).lbl||bi.key;
     const a=getA(ST.br_lv,bi.key,idxL),b=getA(ST.br_rv,bi.key,idxR);
@@ -841,19 +844,24 @@ function renderBridge(){
 
   // Waterfall sequence: [start, ...deltas..., end]
   const bars=[];
+  window._brTips=[];
   bars.push({lbl:ST.br_lq,sublbl:ST.br_lv,val:bmA,from:0,to:bmA,type:'anchor'});
+  window._brTips.push(null);
   let running=bmA;
   items.forEach(function(it){
-    bars.push({lbl:it.lbl,val:it.delta,from:running,to:running+it.delta,type:'delta'});
+    bars.push({lbl:it.lbl,val:it.delta,from:running,to:running+it.delta,type:'delta',breakdown:it.breakdown||null});
+    window._brTips.push(it.breakdown||null);
     running+=it.delta;
   });
   // Residual: floating-point drift or any BM component not in BM_KEYS
   const residual=bmB!==null&&bmA!==null?bmB-running:0;
   if(Math.abs(residual)>=0.01){
     bars.push({lbl:'Outros',val:residual,from:running,to:running+residual,type:'delta',isOther:true});
+    window._brTips.push(null);
     running+=residual;
   }
   bars.push({lbl:ST.br_rq,sublbl:ST.br_rv,val:bmB,from:0,to:bmB,type:'anchor'});
+  window._brTips.push(null);
 
   // Layout constants
   const W=Math.max(bars.length*96+120,700);
@@ -926,7 +934,8 @@ function renderBridge(){
     // Bar shadow
     svg+=`<rect x="${x+2}" y="${yBar+2}" width="${barW}" height="${Math.max(hBar,2)}" rx="5" fill="rgba(0,0,0,.07)"/>`;
     // Bar
-    svg+=`<rect x="${x}" y="${yBar}" width="${barW}" height="${Math.max(hBar,2)}" rx="5" fill="${color}"/>`;
+    const tipAttr=b.breakdown?`onmouseover="brTip(event,${i})" onmouseout="brTipHide()" style="cursor:help"`:'';
+    svg+=`<rect x="${x}" y="${yBar}" width="${barW}" height="${Math.max(hBar,2)}" rx="5" fill="${color}" ${tipAttr}/>`;
 
     // Value label on bar
     const labelY=b.val>=0?yBar-6:yBar+Math.max(hBar,2)+14;
@@ -1425,6 +1434,26 @@ function initGrid(tries){
   }
 }
 
+function brTip(evt,idx){
+  const tips=window._brTips||[];
+  const bd=tips[idx];
+  if(!bd)return;
+  let html='';
+  bd.forEach(function(x){
+    const sign=x.delta>=0?'+':'';
+    const col=x.delta>=0?'#00A650':'#E53935';
+    html+=`<div style="display:flex;justify-content:space-between;gap:24px"><span style="color:#D1D5DB">${x.lbl}</span><span style="color:${col};font-weight:700">${sign}${x.delta.toFixed(2)}M</span></div>`;
+  });
+  const el=document.getElementById('br-tooltip');
+  el.innerHTML=html;
+  el.style.display='block';
+  el.style.left=(evt.clientX+14)+'px';
+  el.style.top=(evt.clientY-10)+'px';
+}
+function brTipHide(){
+  const el=document.getElementById('br-tooltip');
+  if(el)el.style.display='none';
+}
 window.addEventListener('DOMContentLoaded',function(){render();initGrid(50);});
 </script>
 </body>
