@@ -435,7 +435,7 @@ const D={
 const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','insumos','other_vfc','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
 // Bridge uses net_sales (gross+descuentos combined) to simplify waterfall
 const BRIDGE_KEYS=['net_sales','icms','pis_cofins','cmv','insumos','other_vfc','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
-const BRIDGE_LBLS={net_sales:'Sales MPOS',icms:'ICMS',pis_cofins:'PIS/COFINS',cmv:'CMV',insumos:'Insumos',other_vfc:'Bobinas',scrap:'Scrap',refurb:'Refurb',provision:'Estoque',prev_costo:'Prev. Custo',hedge:'Hedge',distribución:'Distribución',warehousing_total:'Warehousing',alquiler:'Aluguel',bad_debt:'Bad Debt',telemetria:'Telemetria'};
+const BRIDGE_LBLS={net_sales:'Sales MPOS',icms:'ICMS',pis_cofins:'PIS/COFINS',cmv:'CMV',insumos:'Insumos',other_vfc:'Bobinas',scrap:'Scrap',refurb:'Recondicionamento',provision:'Estoque',prev_costo:'Prev. Custo',hedge:'Hedge',distribución:'Distribución',warehousing_total:'Warehousing',alquiler:'Aluguel',bad_debt:'Bad Debt',telemetria:'Telemetria'};
 
 // Get single-month value (handles computed rows)
 function getM(ver,rowId,mi){
@@ -525,7 +525,7 @@ const ROWS=[
   {id:'estoque_reparo',   lbl:'Reparo',           t:'vol', sub:true, childOf:'estoque_total'},
   {id:'estoque_delta',    lbl:'Delta Estoque',    t:'vol_inv', sub:true, childOf:'provision'},
   {id:'scrap',            lbl:'Scrap MPOS',                   t:'cur', sub:true},
-  {id:'refurb',           lbl:'Reacondicionamentos',          t:'cur', sub:true},
+  {id:'refurb',           lbl:'Recondicionamento',            t:'cur', sub:true},
   // ── GP ──
   {id:'bm',          lbl:'GP (Gross Profit)',              t:'cur', comp:true, hl:true, bm:true},
 ];
