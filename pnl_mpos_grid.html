@@ -1358,7 +1358,7 @@ function parseMNG(values){
       var vals=Array.from({length:12},function(_,m){
         var ci=colMap[year+'_'+m];if(ci===undefined)return null;
         var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
-        return isNaN(v)?null:v;
+        return isNaN(v)?null:v/1e6;
       });
       D[key].other_vfc=vals;
       console.log('[MPOS MNG] →',key,'other_vfc',vals.slice(0,6));
