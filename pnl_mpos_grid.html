@@ -257,6 +257,13 @@
       <div class="tbl-hdr">
         <h3 class="tbl-title">Unitários · Preço e Custo por Unidade</h3>
         <div style="display:flex;gap:8px;align-items:center">
+          <select id="unit-month-sel" onchange="ST.unit_month=this.value===''?null:parseInt(this.value);renderUnitarios()" style="padding:5px 12px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;outline:none">
+            <option value="">FY / Quarter</option>
+            <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
+            <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
+            <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
+            <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
+          </select>
           <button id="btn-unit-abs" onclick="ST.unit_abs=!ST.unit_abs;renderUnitarios()" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--ml-blue);background:transparent;color:var(--ml-blue);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Ver Absoluto (R$M)</button>
           <button id="btn-unit-pair" onclick="" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano 2026</button>
         </div>
@@ -615,7 +622,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false};
+const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null};
 const COMP_PAIRS={
   real:      {left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
   real_plano:{left:'Realizado 2025',right:'Plano 2026',    lbl:'Realizado 2025 vs Plano 2026'},
@@ -1138,7 +1145,13 @@ function renderSubBridges(){
   document.getElementById('sub-bridges-container').innerHTML=cards.join('');
 }
 function renderUnitarios(){
-  const idx=PERIODS.FY;
+  const MOS_LABELS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const idx=ST.unit_month!==null?[ST.unit_month]:(PERIODS[ST.q]||PERIODS.FY);
+  // render month selector
+  const sel=document.getElementById('unit-month-sel');
+  if(sel){
+    sel.value=ST.unit_month===null?'':String(ST.unit_month);
+  }
   const pair=ST.unit_pair==='real'
     ?{left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'}
     :{left:'Plano 2026',right:'Realizado 2026',lbl:'Plano 2026 vs Realizado 2026'};
