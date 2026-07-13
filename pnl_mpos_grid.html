@@ -261,6 +261,10 @@
     </div>
     <div id="unitarios-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
   </div>
+  <div id="unit-tip" style="display:none;position:fixed;z-index:9999;background:#111827;border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:none;width:280px">
+    <div id="unit-tip-label" style="font-size:.7rem;font-weight:700;color:#9CA3AF;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em"></div>
+    <canvas id="unit-tip-canvas" width="248" height="110"></canvas>
+  </div>
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
     Fonte: Google Sheets MPOS MNG · Valores em R$ Milhões · Atualizado Jul/2026
@@ -1165,11 +1169,11 @@ function renderUnitarios(){
       <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">${m.lbl}</div>
       <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${m.sub}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
-        <div>
+        <div onmouseenter="showUnitTip(event,'${pair.left}','${m.totalKey}','${m.volKey}','${m.lbl} · ${pair.left}')" onmouseleave="hideUnitTip()" style="cursor:default">
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.left}</div>
           <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(ucL,'cunit')}</div>
         </div>
-        <div>
+        <div onmouseenter="showUnitTip(event,'${pair.right}','${m.totalKey}','${m.volKey}','${m.lbl} · ${pair.right}')" onmouseleave="hideUnitTip()" style="cursor:default">
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
           <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(ucR,'cunit')}</div>
         </div>
@@ -1178,6 +1182,85 @@ function renderUnitarios(){
     </div>`;
   });
   document.getElementById('unitarios-cards').innerHTML=cards.join('');
+}
+
+var _unitTipChart=null;
+function showUnitTip(evt,ver,totalKey,volKey,label){
+  var mos=VER_MOS[ver]||[];
+  var data=[];
+  for(var mi=0;mi<12;mi++){
+    var t=getA(ver,totalKey,[mi]);
+    var v=getA(ver,volKey,[mi]);
+    var uc=(t!==null&&v!==null&&v!==0)?Math.abs(computeUC(t,v)):null;
+    data.push(uc);
+  }
+  var tip=document.getElementById('unit-tip');
+  document.getElementById('unit-tip-label').textContent=label;
+  var x=evt.clientX+20, y=evt.clientY-60;
+  if(x+290>window.innerWidth)x=evt.clientX-300;
+  if(y+160>window.innerHeight)y=window.innerHeight-165;
+  tip.style.left=x+'px';
+  tip.style.top=y+'px';
+  tip.style.display='block';
+  if(_unitTipChart){_unitTipChart.destroy();_unitTipChart=null;}
+  var ctx=document.getElementById('unit-tip-canvas').getContext('2d');
+  var grad=ctx.createLinearGradient(0,0,0,110);
+  grad.addColorStop(0,'rgba(52,131,250,0.35)');
+  grad.addColorStop(1,'rgba(52,131,250,0.00)');
+  _unitTipChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:mos,
+      datasets:[{
+        data:data,
+        borderColor:'#3483FA',
+        borderWidth:2,
+        fill:true,
+        backgroundColor:grad,
+        tension:0.4,
+        pointRadius:3,
+        pointHoverRadius:5,
+        pointBackgroundColor:'#fff',
+        pointBorderWidth:2,
+        pointBorderColor:'#3483FA',
+        spanGaps:true,
+      }]
+    },
+    options:{
+      responsive:false,
+      animation:{duration:200},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#1F2937',
+          titleColor:'#9CA3AF',
+          bodyColor:'#F9FAFB',
+          padding:8,
+          cornerRadius:8,
+          callbacks:{
+            title:function(items){return items[0].label;},
+            label:function(item){
+              var v=item.raw;
+              return v===null?'—':'R$ '+v.toFixed(2);
+            }
+          }
+        },
+        datalabels:{display:false},
+      },
+      scales:{
+        x:{
+          ticks:{color:'#6B7280',font:{size:9},maxRotation:0},
+          grid:{display:false},
+          border:{display:false},
+        },
+        y:{display:false},
+      }
+    }
+  });
+}
+function hideUnitTip(){
+  document.getElementById('unit-tip').style.display='none';
+  if(_unitTipChart){_unitTipChart.destroy();_unitTipChart=null;}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
