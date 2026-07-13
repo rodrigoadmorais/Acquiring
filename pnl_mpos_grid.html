@@ -274,7 +274,7 @@
   </div>
   <div id="unit-tip" style="display:none;position:fixed;z-index:9999;background:#111827;border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:none;width:280px">
     <div id="unit-tip-label" style="font-size:.7rem;font-weight:700;color:#9CA3AF;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em"></div>
-    <canvas id="unit-tip-canvas" width="248" height="110"></canvas>
+    <canvas id="unit-tip-canvas" width="248" height="130"></canvas>
   </div>
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
@@ -1245,9 +1245,28 @@ function showUnitTip(evt,ver,totalKey,volKey,label){
   requestAnimationFrame(function(){
     var canvas=document.getElementById('unit-tip-canvas');
     var ctx=canvas.getContext('2d');
-    var grad=ctx.createLinearGradient(0,0,0,110);
+    var grad=ctx.createLinearGradient(0,0,0,130);
     grad.addColorStop(0,'rgba(52,131,250,0.35)');
     grad.addColorStop(1,'rgba(52,131,250,0.00)');
+    var pointLabelsPlugin={
+      id:'ptLabels',
+      afterDatasetsDraw:function(chart){
+        var c=chart.ctx;
+        var ds=chart.data.datasets[0];
+        var meta=chart.getDatasetMeta(0);
+        c.save();
+        c.font='bold 7.5px Inter,sans-serif';
+        c.textAlign='center';
+        c.fillStyle='#D1D5DB';
+        meta.data.forEach(function(pt,i){
+          var v=ds.data[i];
+          if(v===null||v===undefined)return;
+          var lbl='R$'+v.toFixed(2);
+          c.fillText(lbl,pt.x,pt.y-6);
+        });
+        c.restore();
+      }
+    };
     _unitTipChart=new Chart(ctx,{
       type:'line',
       data:{
@@ -1267,6 +1286,7 @@ function showUnitTip(evt,ver,totalKey,volKey,label){
           spanGaps:true,
         }]
       },
+      plugins:[pointLabelsPlugin],
       options:{
         responsive:false,
         animation:{duration:150},
