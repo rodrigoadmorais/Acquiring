@@ -442,8 +442,7 @@ const BRIDGE_LBLS={net_sales:'Sales MPOS',icms:'ICMS',pis_cofins:'PIS/COFINS',cm
 const BRIDGE_ITEMS=[
   {type:'group', lbl:'Vendas',  keys:['net_sales','pis_cofins','cmv','hedge']},
   {type:'group', lbl:'Estoque', keys:['icms','provision']},
-  {type:'single',key:'insumos'},
-  {type:'single',key:'other_vfc'},
+  {type:'group', lbl:'Insumos', keys:['insumos','other_vfc']},
   {type:'single',key:'scrap'},
   {type:'single',key:'refurb'},
   {type:'single',key:'prev_costo'},
