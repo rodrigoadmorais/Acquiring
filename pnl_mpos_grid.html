@@ -256,7 +256,10 @@
     <div class="card" style="padding:20px 24px;margin-bottom:16px">
       <div class="tbl-hdr">
         <h3 class="tbl-title">Unitários · Preço e Custo por Unidade</h3>
-        <button id="btn-unit-pair" onclick="ST.unit_pair=ST.unit_pair==='real'?'plano':'real';renderUnitarios()" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano 2026</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="btn-unit-abs" onclick="ST.unit_abs=!ST.unit_abs;renderUnitarios()" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--ml-blue);background:transparent;color:var(--ml-blue);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Ver Absoluto (R$M)</button>
+          <button id="btn-unit-pair" onclick="" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano 2026</button>
+        </div>
       </div>
     </div>
     <div id="unitarios-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
@@ -613,7 +616,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real'};
+const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false};
 const COMP_PAIRS={
   real:      {left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
   real_plano:{left:'Realizado 2025',right:'Plano 2026',    lbl:'Realizado 2025 vs Plano 2026'},
@@ -1144,11 +1147,15 @@ function renderUnitarios(){
   btn.textContent=ST.unit_pair==='real'?'Comparar Plano 2026':'Comparar Realizado 2025';
 
   const metrics=[
-    {lbl:'Preço/Device',sub:'Vendas MPOS',totalKey:'net_sales',volKey:'vol',fmt:'cunit'},
-    {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit'},
-    {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit'},
-    {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit'},
+    {lbl:'Resultado/Device',sub:'Resultado Vendas',totalKey:'resultado_vendas',volKey:'vol',fmt:'cunit',benPos:true},
+    {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false},
+    {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false},
+    {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false},
   ];
+
+  const isAbs=ST.unit_abs;
+  const btnAbs=document.getElementById('btn-unit-abs');
+  if(btnAbs)btnAbs.textContent=isAbs?'Ver Unitário (R$/device)':'Ver Absoluto (R$M)';
 
   const cards=metrics.map(function(m){
     const tL=getA(pair.left,m.totalKey,idx);
@@ -1157,25 +1164,32 @@ function renderUnitarios(){
     const vR=getA(pair.right,m.volKey,idx);
     const ucL=(tL!==null&&vL!==null&&vL!==0)?computeUC(tL,vL):null;
     const ucR=(tR!==null&&vR!==null&&vR!==0)?computeUC(tR,vR):null;
-    const absL=ucL!==null?Math.abs(ucL):null;
-    const absR=ucR!==null?Math.abs(ucR):null;
-    const pct=(absL!==null&&absL!==0&&absR!==null)?((absR-absL)/absL*100):null;
-    const isBenPos=m.totalKey==='net_sales';
-    const good=pct!==null?(isBenPos?pct>0:pct<0):null;
+    // displayed value and type depend on mode
+    const dL=isAbs?tL:ucL;
+    const dR=isAbs?tR:ucR;
+    const dTypeL=isAbs?'cur':'cunit';
+    const dTypeR=isAbs?'cur':'cunit';
+    // pct always uses absolute magnitude for costs
+    const compL=isAbs?(tL!==null?Math.abs(tL):null):(ucL!==null?Math.abs(ucL):null);
+    const compR=isAbs?(tR!==null?Math.abs(tR):null):(ucR!==null?Math.abs(ucR):null);
+    const pct=(compL!==null&&compL!==0&&compR!==null)?((compR-compL)/compL*100):null;
+    const good=pct!==null?(m.benPos?pct>0:pct<0):null;
+    const vsLbl=pair.left==='Realizado 2025'?'2025':(pair.left==='Plano 2026'?'Plano':'');
     const pctHtml=pct!==null
-      ?`<span style="font-size:.78rem;font-weight:700;color:${good?'var(--green)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(1)}% vs ${pair.left==='Realizado 2025'?'2025':'Plano'}</span>`
+      ?`<span style="font-size:.78rem;font-weight:700;color:${good?'var(--green)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(1)}% vs ${vsLbl}</span>`
       :`<span style="font-size:.78rem;color:var(--muted)">—</span>`;
+    const cardLbl=isAbs?m.sub:(m.lbl+' · '+m.sub);
     return `<div class="card" style="padding:24px 28px">
-      <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">${m.lbl}</div>
-      <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${m.sub}</div>
+      <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">${isAbs?m.sub:m.lbl}</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${isAbs?'Total R$M':m.sub}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
         <div onmouseenter="showUnitTip(event,'${pair.left}','${m.totalKey}','${m.volKey}','${m.lbl} · ${pair.left}')" onmouseleave="hideUnitTip()" style="cursor:default">
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.left}</div>
-          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(ucL,'cunit')}</div>
+          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(dL,dTypeL)}</div>
         </div>
         <div onmouseenter="showUnitTip(event,'${pair.right}','${m.totalKey}','${m.volKey}','${m.lbl} · ${pair.right}')" onmouseleave="hideUnitTip()" style="cursor:default">
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
-          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(ucR,'cunit')}</div>
+          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(dR,dTypeR)}</div>
         </div>
       </div>
       <div style="padding-top:12px;border-top:1px solid var(--border)">${pctHtml}</div>
