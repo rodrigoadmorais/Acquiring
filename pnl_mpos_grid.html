@@ -270,6 +270,7 @@
         </div>
       </div>
     </div>
+    <div id="unitarios-insights" style="margin-bottom:16px"></div>
     <div id="unitarios-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
   </div>
   <div id="unit-tip" style="display:none;position:fixed;z-index:9999;background:#111827;border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:none;width:280px">
@@ -623,7 +624,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null};
+const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null};
 const COMP_PAIRS={
   real:      {left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
   real_plano:{left:'Realizado 2025',right:'Plano 2026',    lbl:'Realizado 2025 vs Plano 2026'},
@@ -1145,6 +1146,48 @@ function renderSubBridges(){
   ];
   document.getElementById('sub-bridges-container').innerHTML=cards.join('');
 }
+function renderUnitariosInsights(metrics,pair,idx){
+  var results=metrics.map(function(m){
+    var tL=getA(pair.left,m.totalKey,idx);
+    var vL=getA(pair.left,m.volKey,idx);
+    var tR=getA(pair.right,m.totalKey,idx);
+    var vR=getA(pair.right,m.volKey,idx);
+    var ucL=(tL!==null&&vL!==null&&vL!==0)?Math.abs(computeUC(tL,vL)):null;
+    var ucR=(tR!==null&&vR!==null&&vR!==0)?Math.abs(computeUC(tR,vR)):null;
+    var pct=(ucL!==null&&ucL!==0&&ucR!==null)?((ucR-ucL)/ucL*100):null;
+    return{lbl:m.lbl,sub:m.sub,pct:pct,ucL:ucL,ucR:ucR,benPos:m.benPos};
+  }).filter(function(r){return r.pct!==null;});
+
+  var vsLbl=pair.left==='Realizado 2025'?'2025':(pair.left==='Plano 2026'?'Plano 2026':'');
+  var rightLbl=pair.right==='Realizado 2026'?'2026':pair.right;
+
+  // classify each as melhora/piora
+  var melhoras=results.filter(function(r){return r.benPos?r.pct>0:r.pct<0;}).sort(function(a,b){return Math.abs(b.pct)-Math.abs(a.pct);});
+  var pioras=results.filter(function(r){return r.benPos?r.pct<0:r.pct>0;}).sort(function(a,b){return Math.abs(b.pct)-Math.abs(a.pct);});
+
+  var bullets=[];
+  pioras.forEach(function(r){
+    var dir=r.pct>0?'subiu':'caiu';
+    bullets.push({color:'var(--red)',icon:'↑',text:'<strong>'+r.lbl+'</strong> '+dir+' <strong>'+Math.abs(r.pct).toFixed(1)+'%</strong> vs '+vsLbl+' — de R$'+r.ucL.toFixed(2)+' para R$'+r.ucR.toFixed(2)+'.'});
+  });
+  melhoras.forEach(function(r){
+    var dir=r.pct>0?'cresceu':'reduziu';
+    bullets.push({color:'var(--green)',icon:'✓',text:'<strong>'+r.lbl+'</strong> '+dir+' <strong>'+Math.abs(r.pct).toFixed(1)+'%</strong> vs '+vsLbl+' — de R$'+r.ucL.toFixed(2)+' para R$'+r.ucR.toFixed(2)+'.'});
+  });
+
+  var html='<div class="card" style="padding:20px 28px;border-left:4px solid var(--ml-blue)">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'
+    +'<span style="font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ml-blue)">✦ Resumo IA · '+pair.left+' vs '+rightLbl+'</span>'
+    +'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">';
+  bullets.forEach(function(b){
+    html+='<div style="display:flex;gap:10px;align-items:flex-start;font-size:.82rem;line-height:1.5;color:var(--text)">'
+      +'<span style="color:'+b.color+';font-weight:700;flex-shrink:0;margin-top:1px">'+b.icon+'</span>'
+      +'<span>'+b.text+'</span></div>';
+  });
+  html+='</div></div>';
+  document.getElementById('unitarios-insights').innerHTML=html;
+}
 function renderUnitarios(){
   const MOS_LABELS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const idx=ST.unit_month!==null?[ST.unit_month]:(PERIODS[ST.q]||PERIODS.FY);
@@ -1228,6 +1271,7 @@ function renderUnitarios(){
     </div>`;
   });
   document.getElementById('unitarios-cards').innerHTML=cards.join('');
+  renderUnitariosInsights(metrics,pair,idx);
 }
 
 var _unitTipChart=null;
