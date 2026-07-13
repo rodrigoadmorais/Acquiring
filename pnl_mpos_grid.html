@@ -177,6 +177,9 @@
       <button class="mode-btn" id="btn-bridge" onclick="setMode('bridge')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Bridge
       </button>
+      <button class="mode-btn" id="btn-unitarios" onclick="setMode('unitarios')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="7" height="7"/><rect x="15" y="3" width="7" height="7"/><rect x="2" y="14" width="7" height="7"/><rect x="15" y="14" width="7" height="7"/></svg>Unitários
+      </button>
     </div>
   </div>
 </header>
@@ -248,6 +251,16 @@
     <div id="sub-bridges-container" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:16px"></div>
   </div>
   <div id="br-tooltip" style="display:none;position:fixed;z-index:9999;background:#111827;color:#F9FAFB;padding:10px 14px;border-radius:10px;font-size:.75rem;pointer-events:none;min-width:180px;line-height:1.8;box-shadow:0 8px 24px rgba(0,0,0,.3)"></div>
+
+  <div id="unitarios-sec" style="display:none">
+    <div class="card" style="padding:20px 24px;margin-bottom:16px">
+      <div class="tbl-hdr">
+        <h3 class="tbl-title">Unitários · Preço e Custo por Unidade</h3>
+        <button id="btn-unit-pair" onclick="ST.unit_pair=ST.unit_pair==='real'?'plano':'real';renderUnitarios()" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano 2026</button>
+      </div>
+    </div>
+    <div id="unitarios-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
+  </div>
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
     Fonte: Google Sheets MPOS MNG · Valores em R$ Milhões · Atualizado Jul/2026
@@ -596,7 +609,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real'};
+const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real'};
 const COMP_PAIRS={
   real:{left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
   plano:{left:'Plano 2025',right:'Plano 2026',lbl:'Plano 2025 vs 2026'},
@@ -812,17 +825,21 @@ function renderTable(){
 function render(){
   renderQ();renderVer();
   const isBr=ST.mode==='bridge';
+  const isUnit=ST.mode==='unitarios';
   document.getElementById('bridge-sel').style.display=isBr?'flex':'none';
-  document.getElementById('evol-sel').style.display=isBr?'none':(ST.mode==='evolution'?'flex':'none');
-  document.getElementById('kpi').style.display=isBr?'none':'';
+  document.getElementById('evol-sel').style.display=(isBr||isUnit)?'none':(ST.mode==='evolution'?'flex':'none');
+  document.getElementById('kpi').style.display=(isBr||isUnit)?'none':'';
   document.getElementById('bridge-sec').style.display=isBr?'block':'none';
-  document.getElementById('main-tbl-card').style.display=isBr?'none':'block';
+  document.getElementById('unitarios-sec').style.display=isUnit?'block':'none';
+  document.getElementById('main-tbl-card').style.display=(isBr||isUnit)?'none':'block';
   if(isBr){renderBridgeSelectors();renderBridge();}
+  else if(isUnit){renderUnitarios();}
   else{renderKPI();renderTable();}
 }
 function setMode(m){
   ST.mode=m;
-  ['evol','comp','bridge'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',m==={evol:'evolution',comp:'comparison',bridge:'bridge'}[k]));
+  const modeMap={evol:'evolution',comp:'comparison',bridge:'bridge',unitarios:'unitarios'};
+  ['evol','comp','bridge','unitarios'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',m===modeMap[k]));
   render();
 }
 function setQ(q){ST.q=q;render();}
@@ -1110,6 +1127,53 @@ function renderSubBridges(){
   ];
   document.getElementById('sub-bridges-container').innerHTML=cards.join('');
 }
+function renderUnitarios(){
+  const idx=PERIODS.FY;
+  const pair=ST.unit_pair==='real'
+    ?{left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'}
+    :{left:'Plano 2026',right:'Realizado 2026',lbl:'Plano 2026 vs Realizado 2026'};
+  const btn=document.getElementById('btn-unit-pair');
+  btn.textContent=ST.unit_pair==='real'?'Comparar Plano 2026':'Comparar Realizado 2025';
+
+  const metrics=[
+    {lbl:'Preço/Device',sub:'Vendas MPOS',totalKey:'net_sales',volKey:'vol',fmt:'cunit'},
+    {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit'},
+    {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit'},
+    {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit'},
+  ];
+
+  const cards=metrics.map(function(m){
+    const tL=getA(pair.left,m.totalKey,idx);
+    const vL=getA(pair.left,m.volKey,idx);
+    const tR=getA(pair.right,m.totalKey,idx);
+    const vR=getA(pair.right,m.volKey,idx);
+    const ucL=(tL!==null&&vL!==null&&vL!==0)?computeUC(tL,vL):null;
+    const ucR=(tR!==null&&vR!==null&&vR!==0)?computeUC(tR,vR):null;
+    const pct=(ucL!==null&&ucL!==0&&ucR!==null)?((ucR-ucL)/Math.abs(ucL)*100):null;
+    const isBenPos=false;
+    const good=pct!==null?(isBenPos?pct>0:pct<0):null;
+    const pctHtml=pct!==null
+      ?`<span style="font-size:.78rem;font-weight:700;color:${good?'var(--green)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(1)}% vs ${pair.left==='Realizado 2025'?'2025':'Plano'}</span>`
+      :`<span style="font-size:.78rem;color:var(--muted)">—</span>`;
+    return `<div class="card" style="padding:24px 28px">
+      <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">${m.lbl}</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${m.sub}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
+        <div>
+          <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.left}</div>
+          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(ucL,'cunit')}</div>
+        </div>
+        <div>
+          <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
+          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(ucR,'cunit')}</div>
+        </div>
+      </div>
+      <div style="padding-top:12px;border-top:1px solid var(--border)">${pctHtml}</div>
+    </div>`;
+  });
+  document.getElementById('unitarios-cards').innerHTML=cards.join('');
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MPOS_SHEET_ID='1zGp8an4VMzaY_Nu_BG5vD2WVY_gQxWNHjfQ-OUtxDVI';
