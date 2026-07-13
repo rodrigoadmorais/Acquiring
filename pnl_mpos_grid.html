@@ -1168,6 +1168,11 @@ function renderUnitarios(){
     {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false},
   ];
 
+  function fmtUnitVal(v,abs){
+    if(v===null||v===N||v===undefined)return'<span style="color:var(--muted)">—</span>';
+    var s=abs?(Math.abs(v).toFixed(1)+'M'):('R$'+Math.abs(v).toFixed(2));
+    return`<span style="color:var(--ml-blue)">${s}</span>`;
+  }
   const isAbs=ST.unit_abs;
   const btnAbs=document.getElementById('btn-unit-abs');
   if(btnAbs)btnAbs.textContent=isAbs?'Ver Unitário (R$/device)':'Ver Absoluto (R$M)';
@@ -1211,11 +1216,11 @@ function renderUnitarios(){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
         <div onmouseenter="showUnitTip(event,'${pair.left}','${m.totalKey}','${m.volKey}','${m.lbl} · ${pair.left}')" onmouseleave="hideUnitTip()" style="cursor:default">
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.left}</div>
-          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(dL,dTypeL)}</div>
+          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dL,isAbs)}</div>
         </div>
         <div onmouseenter="showUnitTip(event,'${pair.right}','${m.totalKey}','${m.volKey}','${m.lbl} · ${pair.right}')" onmouseleave="hideUnitTip()" style="cursor:default">
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
-          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:var(--text)">${fc(dR,dTypeR)}</div>
+          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dR,isAbs)}</div>
         </div>
       </div>
       <div style="padding-top:12px;border-top:1px solid var(--border)">${pctHtml}</div>
