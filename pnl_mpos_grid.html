@@ -245,6 +245,7 @@
       </div>
       <div id="bridge-chart" style="margin-top:16px;overflow-x:auto"></div>
     </div>
+    <div id="sub-bridges-container" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:16px"></div>
   </div>
   <div id="br-tooltip" style="display:none;position:fixed;z-index:9999;background:#111827;color:#F9FAFB;padding:10px 14px;border-radius:10px;font-size:.75rem;pointer-events:none;min-width:180px;line-height:1.8;box-shadow:0 8px 24px rgba(0,0,0,.3)"></div>
 
@@ -1005,7 +1006,111 @@ function renderBridge(){
   </div>`;
 
   document.getElementById('bridge-chart').innerHTML=svg;
+  renderSubBridges();
 }
+
+// ── Sub-bridges: price × volume decomposition ─────────────────────────────
+function subBridgeSVG(tL,tR,effects){
+  if(tL===null||tR===null){return'<p style="color:var(--muted);font-size:.75rem;padding:4px 0">Sem dados suficientes</p>';}
+  const bars=[];
+  bars.push({type:'anchor',lbl:ST.br_lq+'\n'+ST.br_lv.replace('Realizado ','Real ').replace('Plano ','Plano '),val:tL,from:0,to:tL});
+  let run=tL;
+  effects.forEach(function(e){bars.push({type:'delta',lbl:e.lbl,val:e.val,from:run,to:run+e.val});run+=e.val;});
+  bars.push({type:'anchor',lbl:ST.br_rq+'\n'+ST.br_rv.replace('Realizado ','Real ').replace('Plano ','Plano '),val:tR,from:0,to:tR});
+
+  const W=320,H=200,MT=22,MB=54,ML=48,MR=10;
+  const cW=W-ML-MR,cH=H-MT-MB;
+  const barW=Math.min(46,cW/bars.length*0.55);
+  const gap=cW/bars.length;
+
+  const allV=[];
+  bars.forEach(function(b){allV.push(b.from,b.to,0);});
+  let yMin=Math.min.apply(null,allV),yMax=Math.max.apply(null,allV);
+  const yPad=(yMax-yMin)*0.22||1;yMin-=yPad;yMax+=yPad;
+  function yPx(v){return MT+cH-(v-yMin)/(yMax-yMin)*cH;}
+  const y0=yPx(0);
+  const C_A='#2D3277',C_P='#00A650',C_N='#E53935';
+
+  let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;display:block;font-family:Inter,sans-serif">`;
+  // zero line
+  s+=`<line x1="${ML}" y1="${y0}" x2="${W-MR}" y2="${y0}" stroke="#9CA3AF" stroke-width="1.2"/>`;
+  // 3 y-ticks
+  for(var ti=1;ti<=3;ti++){
+    var tv=yMin+(yMax-yMin)*ti/4;var py=yPx(tv);
+    s+=`<line x1="${ML}" y1="${py}" x2="${W-MR}" y2="${py}" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="4,3"/>`;
+    s+=`<text x="${ML-5}" y="${py+3.5}" text-anchor="end" font-size="8.5" fill="#9CA3AF">${tv.toFixed(1)}</text>`;
+  }
+  // bars
+  bars.forEach(function(b,i){
+    var cx=ML+i*gap+gap/2,x=cx-barW/2;
+    var color,yBar,hBar;
+    if(b.type==='anchor'){
+      color=C_A;
+      if(b.val>=0){yBar=yPx(b.val);hBar=y0-yBar;}else{yBar=y0;hBar=yPx(b.val)-y0;}
+    } else {
+      color=b.val>0?C_P:C_N;
+      yBar=yPx(Math.max(b.from,b.to));hBar=Math.max(Math.abs(yPx(b.from)-yPx(b.to)),2);
+      // connector from prev bar
+      if(i>0){
+        var prevTo=bars[i-1].to;
+        var yc=yPx(prevTo);
+        var x1=ML+(i-1)*gap+gap/2+barW/2+2,x2=cx-barW/2-2;
+        s+=`<line x1="${x1}" y1="${yc}" x2="${x2}" y2="${yc}" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="3,2"/>`;
+      }
+    }
+    hBar=Math.max(hBar,2);
+    s+=`<rect x="${x+1}" y="${yBar+1}" width="${barW}" height="${hBar}" rx="4" fill="rgba(0,0,0,.06)"/>`;
+    s+=`<rect x="${x}" y="${yBar}" width="${barW}" height="${hBar}" rx="4" fill="${color}"/>`;
+    // value label
+    var sign=b.type==='anchor'?'':b.val>=0?'+':'';
+    var lv=b.type==='anchor'?b.val:b.val;
+    var labelY=b.to>=b.from?yBar-4:yBar+hBar+11;
+    s+=`<text x="${cx}" y="${labelY}" text-anchor="middle" font-size="8.5" font-weight="700" fill="${color}">${sign}${lv.toFixed(1)}M</text>`;
+    // bottom label (two lines: period \n version)
+    var parts=b.lbl.split('\n');
+    var lblY=H-MB+14;
+    var short0=parts[0].length>10?parts[0].slice(0,9)+'…':parts[0];
+    var short1=(parts[1]||'').length>10?(parts[1]||'').slice(0,9)+'…':(parts[1]||'');
+    s+=`<text transform="rotate(-32,${cx},${lblY})" x="${cx}" y="${lblY}" text-anchor="end" font-size="8.5" font-weight="${b.type==='anchor'?'700':'400'}" fill="${b.type==='anchor'?C_A:'#374151'}">${short0}</text>`;
+    if(short1) s+=`<text transform="rotate(-32,${cx},${lblY+11})" x="${cx}" y="${lblY+11}" text-anchor="end" font-size="7.5" fill="#9CA3AF">${short1}</text>`;
+  });
+  s+='</svg>';
+  return s;
+}
+
+function pvDecomp(totalKey,volKey,idxL,idxR){
+  var tL=getA(ST.br_lv,totalKey,idxL),tR=getA(ST.br_rv,totalKey,idxR);
+  var vL=getA(ST.br_lv,volKey,idxL),vR=getA(ST.br_rv,volKey,idxR);
+  if(tL===null||tR===null||vL===null||vR===null||vL===0||vR===0)return null;
+  var pL=tL/vL,pR=tR/vR;
+  var volEff=(vR-vL)*pL;
+  var priceEff=vR*(pR-pL);
+  return{tL,tR,volEff,priceEff};
+}
+
+function subBridgeCard(title,totalKey,volKey,volLbl,priceLbl,idxL,idxR){
+  var d=pvDecomp(totalKey,volKey,idxL,idxR);
+  var body=d
+    ?subBridgeSVG(d.tL,d.tR,[{lbl:volLbl,val:d.volEff},{lbl:priceLbl,val:d.priceEff}])
+    :'<p style="color:var(--muted);font-size:.75rem">Sem dados</p>';
+  return`<div class="card" style="padding:14px 18px">
+    <div style="font-size:.78rem;font-weight:800;letter-spacing:-.03em;margin-bottom:6px">${title}</div>
+    ${body}
+  </div>`;
+}
+
+function renderSubBridges(){
+  const idxL=PERIODS[ST.br_lq]||PERIODS.FY;
+  const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
+  const cards=[
+    subBridgeCard('Vendas','net_sales','vol','Vol. Devices','Preço/Device',idxL,idxR),
+    subBridgeCard('Telemetria','telemetria','vol_mads','Vol. MADs','Preço/MAD',idxL,idxR),
+    subBridgeCard('Warehousing','warehousing_total','vol_despacho','Vol. Despachos','Preço/Despacho',idxL,idxR),
+    subBridgeCard('Shipping','distribución','vol_envios','Vol. Envios','Preço/Envio',idxL,idxR),
+  ];
+  document.getElementById('sub-bridges-container').innerHTML=cards.join('');
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 const MPOS_SHEET_ID='1zGp8an4VMzaY_Nu_BG5vD2WVY_gQxWNHjfQ-OUtxDVI';
 
