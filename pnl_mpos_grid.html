@@ -232,7 +232,7 @@
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="tbl-sub"></span>
         <button id="btn-unit-mode" onclick="ST.unit_mode=!ST.unit_mode;renderTable()" style="display:none;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;border:1.5px solid var(--ml-blue);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Ver Unitário (R$/device)</button>
-        <button id="btn-comp-pair" onclick="ST.comp_pair=ST.comp_pair==='real'?'plano':'real';renderTable()" style="display:none;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano</button>
+        <button id="btn-comp-pair" onclick="" style="display:none;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano</button>
       </div>
     </div>
     <div class="tbl-wrap">
@@ -611,9 +611,11 @@ const ROWS_OFICIAL=[
 
 const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real'};
 const COMP_PAIRS={
-  real:{left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
-  plano:{left:'Plano 2025',right:'Plano 2026',lbl:'Plano 2025 vs 2026'},
+  real:      {left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
+  real_plano:{left:'Realizado 2025',right:'Plano 2026',    lbl:'Realizado 2025 vs Plano 2026'},
+  r26_plano: {left:'Realizado 2026',right:'Plano 2026',    lbl:'Realizado 2026 vs Plano 2026'},
 };
+const COMP_PAIR_ORDER=['real','real_plano','r26_plano'];
 const EXPANDED={vol:false,net_sales:false,_imp:false,resultado_vendas:false,other_vfc:false,provision:false,estoque_total:false,distribución:false,warehousing_total:false,telemetria:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
@@ -726,8 +728,10 @@ function renderTable(){
   const btnPair=document.getElementById('btn-comp-pair');
   if(btnPair){
     btnPair.style.display=isComp?'inline-flex':'none';
-    const other=ST.comp_pair==='real'?'plano':'real';
-    btnPair.textContent='Comparar '+COMP_PAIRS[other].lbl.replace(' vs ',' vs ');
+    const curIdx=COMP_PAIR_ORDER.indexOf(ST.comp_pair);
+    const nextKey=COMP_PAIR_ORDER[(curIdx+1)%COMP_PAIR_ORDER.length];
+    btnPair.textContent=COMP_PAIRS[nextKey].lbl;
+    btnPair.onclick=function(){ST.comp_pair=nextKey;renderTable();};
   }
 
   // Header
