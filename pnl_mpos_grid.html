@@ -1260,7 +1260,7 @@ function showUnitTip(evt,ver,totalKey,volKey,label){
         meta.data.forEach(function(pt,i){
           var v=ds.data[i];
           if(v===null||v===undefined)return;
-          var lbl='R$'+v.toFixed(1)+'M';
+          var lbl=v.toFixed(1)+'M';
           c.fillText(lbl,pt.x,pt.y-6);
         });
         c.restore();
