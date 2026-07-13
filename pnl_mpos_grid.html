@@ -433,9 +433,22 @@ const D={
 
 // All P&L line IDs that feed into BM
 const BM_KEYS=['sales_gross','descuentos','icms','pis_cofins','cmv','insumos','other_vfc','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
-// Bridge uses net_sales (gross+descuentos combined) to simplify waterfall
-const BRIDGE_KEYS=['net_sales','icms','pis_cofins','cmv','insumos','other_vfc','scrap','refurb','provision','prev_costo','hedge','distribución','warehousing_total','alquiler','bad_debt','telemetria'];
+// Bridge: ordered items — groups aggregate multiple keys into one bar
 const BRIDGE_LBLS={net_sales:'Sales MPOS',icms:'ICMS',pis_cofins:'PIS/COFINS',cmv:'CMV',insumos:'Insumos',other_vfc:'Bobinas',scrap:'Scrap',refurb:'Recondicionamento',provision:'Estoque',prev_costo:'Prev. Custo',hedge:'Hedge',distribución:'Distribución',warehousing_total:'Warehousing',alquiler:'Aluguel',bad_debt:'Bad Debt',telemetria:'Telemetria'};
+const BRIDGE_ITEMS=[
+  {type:'group', lbl:'Efeito Vendas',  keys:['net_sales','pis_cofins','cmv','hedge']},
+  {type:'group', lbl:'Efeito Estoque', keys:['icms','provision']},
+  {type:'single',key:'insumos'},
+  {type:'single',key:'other_vfc'},
+  {type:'single',key:'scrap'},
+  {type:'single',key:'refurb'},
+  {type:'single',key:'prev_costo'},
+  {type:'single',key:'distribución'},
+  {type:'single',key:'warehousing_total'},
+  {type:'single',key:'alquiler'},
+  {type:'single',key:'bad_debt'},
+  {type:'single',key:'telemetria'},
+];
 
 // Get single-month value (handles computed rows)
 function getM(ver,rowId,mi){
@@ -813,14 +826,17 @@ function renderBridge(){
   const rowMap={};
   [...ROWS,...ROWS_OFICIAL].forEach(function(r){if(!rowMap[r.id])rowMap[r.id]=r;});
 
-  const items=BRIDGE_KEYS.map(function(key){
-    const lbl=BRIDGE_LBLS[key]||(rowMap[key]||{}).lbl||key;
-    const a=getA(ST.br_lv,key,idxL);
-    const b=getA(ST.br_rv,key,idxR);
-    const aV=a!==null?a:0;
-    const bV=b!==null?b:0;
-    const delta=bV-aV;
-    return{key,lbl,a,b,delta};
+  const items=BRIDGE_ITEMS.map(function(bi){
+    if(bi.type==='group'){
+      const delta=bi.keys.reduce(function(s,k){
+        const a=getA(ST.br_lv,k,idxL),b=getA(ST.br_rv,k,idxR);
+        return s+(b!==null?b:0)-(a!==null?a:0);
+      },0);
+      return{lbl:bi.lbl,delta:delta};
+    }
+    const lbl=BRIDGE_LBLS[bi.key]||(rowMap[bi.key]||{}).lbl||bi.key;
+    const a=getA(ST.br_lv,bi.key,idxL),b=getA(ST.br_rv,bi.key,idxR);
+    return{lbl,delta:(b!==null?b:0)-(a!==null?a:0)};
   }).filter(function(it){return Math.abs(it.delta)>=0.001;});
 
   // Waterfall sequence: [start, ...deltas..., end]
