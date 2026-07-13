@@ -229,6 +229,7 @@
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="tbl-sub"></span>
         <button id="btn-unit-mode" onclick="ST.unit_mode=!ST.unit_mode;renderTable()" style="display:none;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;border:1.5px solid var(--ml-blue);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Ver Unitário (R$/device)</button>
+        <button id="btn-comp-pair" onclick="ST.comp_pair=ST.comp_pair==='real'?'plano':'real';renderTable()" style="display:none;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano</button>
       </div>
     </div>
     <div class="tbl-wrap">
@@ -595,7 +596,11 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:false};
+const ST={mode:'evolution',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real'};
+const COMP_PAIRS={
+  real:{left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
+  plano:{left:'Plano 2025',right:'Plano 2026',lbl:'Plano 2025 vs 2026'},
+};
 const EXPANDED={vol:false,net_sales:false,_imp:false,resultado_vendas:false,other_vfc:false,provision:false,estoque_total:false,distribución:false,warehousing_total:false,telemetria:false};
 function toggleExpand(key){EXPANDED[key]=!EXPANDED[key];renderTable();}
 
@@ -693,21 +698,30 @@ function renderTable(){
   const idx=QS[ST.q];
   const mos=VER_MOS[ST.prim]||[];
   const isComp=ST.mode==='comparison';
-  document.getElementById('tbl-title').textContent=isComp?'Comparativo Multi-Cenário · P&L MPOS':'Evolução Mensal · P&L MPOS';
-  document.getElementById('tbl-sub').textContent=isComp?`FY / ${ST.q} · Todos os cenários`:`${ST.prim} · ${ST.q}`;
-  // Unit toggle button (comparison only)
-  const btnEl=document.getElementById('btn-unit-mode');
-  if(btnEl){
-    btnEl.style.display=isComp?'inline-flex':'none';
-    btnEl.textContent=ST.unit_mode?'Ver Valor Absoluto':'Ver Unitário (R$/device)';
-    btnEl.style.background=ST.unit_mode?'var(--ml-blue)':'transparent';
-    btnEl.style.color=ST.unit_mode?'#fff':'var(--ml-blue)';
+  const pair=COMP_PAIRS[ST.comp_pair]||COMP_PAIRS.real;
+  document.getElementById('tbl-title').textContent=isComp?`Comparativo · ${pair.lbl}`:'Evolução Mensal · P&L MPOS';
+  document.getElementById('tbl-sub').textContent=isComp?`${ST.unit_mode?'R$/device · ':''}${ST.q}`:`${ST.prim} · ${ST.q}`;
+
+  // Comparison controls
+  const btnUnit=document.getElementById('btn-unit-mode');
+  if(btnUnit){
+    btnUnit.style.display=isComp?'inline-flex':'none';
+    btnUnit.textContent=ST.unit_mode?'Ver Valor Absoluto':'Ver Unitário (R$/device)';
+    btnUnit.style.background=ST.unit_mode?'var(--ml-blue)':'transparent';
+    btnUnit.style.color=ST.unit_mode?'#fff':'var(--ml-blue)';
+  }
+  const btnPair=document.getElementById('btn-comp-pair');
+  if(btnPair){
+    btnPair.style.display=isComp?'inline-flex':'none';
+    const other=ST.comp_pair==='real'?'plano':'real';
+    btnPair.textContent='Comparar '+COMP_PAIRS[other].lbl.replace(' vs ',' vs ');
   }
 
   // Header
   let th='<th>P&L Line</th>';
   if(isComp){
-    VERS.forEach(v=>th+=`<th>${v}</th>`);
+    const unit=ST.unit_mode?' (R$/dev)':'';
+    th+=`<th>${pair.left}${unit}</th><th>${pair.right}${unit}</th><th>Var %</th>`;
   } else {
     idx.forEach(i=>th+=`<th>${mos[i]||''}</th>`);
     th+='<th class="col-fy">FY/QT</th>';
@@ -715,9 +729,21 @@ function renderTable(){
   }
   document.getElementById('th').innerHTML=th;
 
+  // Helper: get display value for comparison cell
+  function compVal(ver,row){
+    if(row.unitCost){
+      const uc=row.unitCost;
+      return{v:computeUC(getA(ver,uc.cost,idx),getA(ver,uc.vol,idx)),t:row.t};
+    }
+    if(ST.unit_mode && row.t==='cur'){
+      return{v:computeUC(getA(ver,row.id,idx),getA(ver,'vol',idx)),t:'cunit'};
+    }
+    return{v:getA(ver,row.id,idx),t:row.t};
+  }
+
   // Body
   let tb='';
-  const nc=isComp?(1+VERS.length):(2+idx.length+(ST.comp!==ST.prim?1:0));
+  const nc=isComp?4:(2+idx.length+(ST.comp!==ST.prim?1:0));
   activeRows().forEach(row=>{
     if(row.grp){
       tb+=`<tr class="grp-hdr"><td colspan="${nc}">${row.lbl}</td></tr>`;
@@ -741,23 +767,18 @@ function renderTable(){
     tb+=`<tr class="${rc} ${sub} ${expCls}"><td ${onclk}>${lblCell}</td>`;
 
     if(isComp){
-      if(row.unitCost){
-        const uc=row.unitCost;
-        VERS.forEach(v=>{
-          const av=computeUC(getA(v,uc.cost,idx),getA(v,uc.vol,idx));
-          tb+=`<td>${fc(av,row.t)}</td>`;
-        });
-      } else if(ST.unit_mode && row.t==='cur'){
-        VERS.forEach(v=>{
-          const av=getA(v,row.id,idx);
-          const vol=getA(v,'vol',idx);
-          tb+=`<td>${fc(computeUC(av,vol),'cunit')}</td>`;
-        });
+      const L=compVal(pair.left,row);
+      const R=compVal(pair.right,row);
+      tb+=`<td>${fc(L.v,L.t)}</td><td>${fc(R.v,R.t)}</td>`;
+      // Var %
+      if(L.v!==null&&L.v!==0&&R.v!==null){
+        const pct=(R.v-L.v)/Math.abs(L.v)*100;
+        const isBenPos=['sales_gross','net_sales','receita_liq','resultado_vendas','bm'].includes(row.id);
+        const good=isBenPos?pct>0:pct<0;
+        const sign=pct>=0?'+':'';
+        tb+=`<td><span class="${good?'vp':'vn'}" style="font-size:.75rem;font-weight:700">${sign}${pct.toFixed(1)}%</span></td>`;
       } else {
-        VERS.forEach(v=>{
-          const av=getA(v,row.id,idx);
-          tb+=`<td>${fc(av,row.t)}</td>`;
-        });
+        tb+=`<td><span class="v-">—</span></td>`;
       }
     } else {
       if(row.unitCost){
