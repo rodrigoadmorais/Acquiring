@@ -658,7 +658,7 @@ function fc(v,t){
     const s='R$'+Math.abs(v).toFixed(2);
     return v<0?`<span class="vn">${s}</span>`:v>0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
   }
-  const s=v.toFixed(2)+'M';
+  const s=v.toFixed(1)+'M';
   return v<0?`<span class="vn">${s}</span>`:v>0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
 }
 
@@ -1259,7 +1259,7 @@ function showUnitTip(evt,ver,totalKey,volKey,label){
         meta.data.forEach(function(pt,i){
           var v=ds.data[i];
           if(v===null||v===undefined)return;
-          var lbl='R$'+v.toFixed(2)+'M';
+          var lbl='R$'+v.toFixed(1)+'M';
           c.fillText(lbl,pt.x,pt.y-6);
         });
         c.restore();
@@ -1300,7 +1300,7 @@ function showUnitTip(evt,ver,totalKey,volKey,label){
               title:function(items){return items[0].label;},
               label:function(item){
                 var v=item.raw;
-                return v===null?'—':'R$ '+v.toFixed(2)+'M';
+                return v===null?'—':'R$ '+v.toFixed(1)+'M';
               }
             }
           },
