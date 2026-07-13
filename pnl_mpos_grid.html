@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="/d/_assets/grid-sdk.js"></script>
+  <script src="/d/_libs/chart.min.js"></script>
   <style>
     :root{
       --ml-yellow:#FFE600;--ml-blue:#3483FA;--ml-blue-dark:#1259C3;
@@ -1230,59 +1231,61 @@ function showUnitTip(evt,ver,totalKey,volKey,label){
   tip.style.top=y+'px';
   tip.style.display='block';
   if(_unitTipChart){_unitTipChart.destroy();_unitTipChart=null;}
-  var ctx=document.getElementById('unit-tip-canvas').getContext('2d');
-  var grad=ctx.createLinearGradient(0,0,0,110);
-  grad.addColorStop(0,'rgba(52,131,250,0.35)');
-  grad.addColorStop(1,'rgba(52,131,250,0.00)');
-  _unitTipChart=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels:mos,
-      datasets:[{
-        data:data,
-        borderColor:'#3483FA',
-        borderWidth:2,
-        fill:true,
-        backgroundColor:grad,
-        tension:0.4,
-        pointRadius:3,
-        pointHoverRadius:5,
-        pointBackgroundColor:'#fff',
-        pointBorderWidth:2,
-        pointBorderColor:'#3483FA',
-        spanGaps:true,
-      }]
-    },
-    options:{
-      responsive:false,
-      animation:{duration:200},
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'#1F2937',
-          titleColor:'#9CA3AF',
-          bodyColor:'#F9FAFB',
-          padding:8,
-          cornerRadius:8,
-          callbacks:{
-            title:function(items){return items[0].label;},
-            label:function(item){
-              var v=item.raw;
-              return v===null?'—':'R$ '+v.toFixed(2);
-            }
-          }
-        },
-        datalabels:{display:false},
+  requestAnimationFrame(function(){
+    var canvas=document.getElementById('unit-tip-canvas');
+    var ctx=canvas.getContext('2d');
+    var grad=ctx.createLinearGradient(0,0,0,110);
+    grad.addColorStop(0,'rgba(52,131,250,0.35)');
+    grad.addColorStop(1,'rgba(52,131,250,0.00)');
+    _unitTipChart=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels:mos,
+        datasets:[{
+          data:data,
+          borderColor:'#3483FA',
+          borderWidth:2,
+          fill:true,
+          backgroundColor:grad,
+          tension:0.4,
+          pointRadius:3,
+          pointHoverRadius:5,
+          pointBackgroundColor:'#fff',
+          pointBorderWidth:2,
+          pointBorderColor:'#3483FA',
+          spanGaps:true,
+        }]
       },
-      scales:{
-        x:{
-          ticks:{color:'#6B7280',font:{size:9},maxRotation:0},
-          grid:{display:false},
-          border:{display:false},
+      options:{
+        responsive:false,
+        animation:{duration:150},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'#1F2937',
+            titleColor:'#9CA3AF',
+            bodyColor:'#F9FAFB',
+            padding:8,
+            cornerRadius:8,
+            callbacks:{
+              title:function(items){return items[0].label;},
+              label:function(item){
+                var v=item.raw;
+                return v===null?'—':'R$ '+v.toFixed(2);
+              }
+            }
+          },
         },
-        y:{display:false},
+        scales:{
+          x:{
+            ticks:{color:'#6B7280',font:{size:9},maxRotation:0},
+            grid:{display:false},
+            border:{display:false},
+          },
+          y:{display:false},
+        }
       }
-    }
+    });
   });
 }
 function hideUnitTip(){
