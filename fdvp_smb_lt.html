@@ -539,7 +539,7 @@ function parseRaw(rows) {
         if (/Terceros/i.test(c2))       clean.push({ metric:'INV_TP', scenario:sc, canal:'FDVT', ...months });
       } else if (c0==='HCs') {
         const sc = /realizado/i.test(c1)?'R':'P';
-        if (/FDVP/i.test(c2)) clean.push({ metric:'HC', scenario:sc, canal:'FDVP', ...months });
+        if (/FDVP|^MLB$/i.test(c2)) clean.push({ metric:'HC', scenario:sc, canal:'FDVP', ...months });
       } else if (c0==='TPV M0') {
         const sc = /realizado/i.test(c1)?'R':'P';
         if (/PROPRIA|PROPIA|FDVP/i.test(c2)) clean.push({ metric:'TPV', scenario:sc, canal:'FDVP', ...months });
