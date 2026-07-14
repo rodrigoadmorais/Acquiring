@@ -136,8 +136,14 @@ const YELLOW  = '#FFE600';
 const DARK    = '#222222';
 
 const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const DEFAULT_START_MONTH = '202502';
-const DEFAULT_END_MONTH = '202603';
+
+function defaultMonthRange() {
+  const now = new Date();
+  const endDate   = new Date(now.getFullYear(), now.getMonth() - 1, 1); // mês anterior
+  const startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 11, 1); // -11 = janela de 12 meses
+  const fmt = d => String(d.getFullYear() * 100 + d.getMonth() + 1);
+  return { start: fmt(startDate), end: fmt(endDate) };
+}
 const FORCED_FDVP_HC = {
   '202506': { real: 1020, pct: 96 },
   '202507': { real: 1075, pct: 92 },
@@ -187,7 +193,8 @@ function monthKeysFromRows(rows) {
 
 let ALL_MONTHS = buildMonthKeys('202501', '202612');
 let MONTH_LABELS = Object.fromEntries(ALL_MONTHS.map(m => [m, monthLabel(m)]));
-let MONTHS = ALL_MONTHS.slice(ALL_MONTHS.indexOf(DEFAULT_START_MONTH), ALL_MONTHS.indexOf(DEFAULT_END_MONTH) + 1); // default: Fev/25-Mar/26
+const _defRange = defaultMonthRange();
+let MONTHS = ALL_MONTHS.slice(ALL_MONTHS.indexOf(_defRange.start), ALL_MONTHS.indexOf(_defRange.end) + 1);
 
 function setMonthRange() {
   const startSel = document.getElementById('startMonthSelect');
@@ -199,7 +206,10 @@ function setMonthRange() {
   if (_lastRows) { currentData = compute(_lastRows); renderCharts(currentData); }
 }
 
-function buildMonthSelect(previousStart = DEFAULT_START_MONTH, previousEnd = DEFAULT_END_MONTH) {
+function buildMonthSelect(previousStart, previousEnd) {
+  const { start: defStart, end: defEnd } = defaultMonthRange();
+  previousStart = previousStart || defStart;
+  previousEnd   = previousEnd   || defEnd;
   const startSel = document.getElementById('startMonthSelect');
   const endSel   = document.getElementById('endMonthSelect');
   startSel.innerHTML = '';
@@ -216,8 +226,9 @@ function buildMonthSelect(previousStart = DEFAULT_START_MONTH, previousEnd = DEF
 }
 
 function syncMonthControls(rows) {
-  const currentStart = document.getElementById('startMonthSelect').value || DEFAULT_START_MONTH;
-  const currentEnd = document.getElementById('endMonthSelect').value || DEFAULT_END_MONTH;
+  const { start: defStart, end: defEnd } = defaultMonthRange();
+  const currentStart = document.getElementById('startMonthSelect').value || defStart;
+  const currentEnd   = document.getElementById('endMonthSelect').value   || defEnd;
   ALL_MONTHS = monthKeysFromRows(rows);
   MONTH_LABELS = Object.fromEntries(ALL_MONTHS.map(m => [m, monthLabel(m)]));
   buildMonthSelect(currentStart, currentEnd);
