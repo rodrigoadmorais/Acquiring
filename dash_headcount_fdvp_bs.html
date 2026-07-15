@@ -199,10 +199,10 @@
     </div>
   </div>
 
-  <!-- ROW 3.5: Proporção de Líderes por Executivo de Vendas de Campo -->
+  <!-- ROW 3.5: Proporção de Analistas por Líder (FDVP) -->
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-5">
-    <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Span de Controle — Líderes por Executivo de Vendas de Campo</p>
-    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4" id="liderSub">Apenas Realizado (Líderes = Gerente, Gerente Sr, Supervisor, Team Leader) — Média 2025 vs Realizado 2026</p>
+    <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Senioridade — Analistas por Líder (FDVP)</p>
+    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4" id="liderSub">Apenas Realizado — Média 2025 vs Realizado 2026</p>
     <div id="liderWarn" class="hidden text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4 leading-relaxed"></div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="liderGrid"></div>
   </div>
@@ -962,31 +962,35 @@ function canonicalizeCargo(cargo){
   return CARGO_ALIASES[normText(c)]||c;
 }
 
-// ── SPAN DE CONTROLE (Lideres por Executivo de Vendas de Campo) ─────────────────
-// Analise separada, sempre com dados de REALIZADO cru (LOADED_YEARS[year].actual,
-// pre-composicao com Plano/FCST) - nao usa P25/P26 nem a serie composta em R25/R26.
-const LIDER_CARGOS=new Set(['GERENTE','GERENTE SR','SUPERVISOR','TEAM LEADER'].map(normText));
+// ── ANALISTAS POR LIDER (FDVP) ───────────────────────────────────────────────────
+// De/para fornecido pelo usuario - canal FDVP, cargos exatos abaixo. Cargos fora
+// dessa lista (ex: "Ejecutivo Comercial Senior") ficam de fora de proposito.
+// Sempre com dados de REALIZADO cru (LOADED_YEARS[year].actual, pre-composicao
+// com Plano/FCST) - nao usa P25/P26 nem a serie composta em R25/R26.
+const LEADERSHIP_CANAL='FDVP';
+const LIDER_CARGOS=new Set(['Gerente Sr','Gerente','Supervisor','Team Leader'].map(normText));
+const ANALISTA_CARGOS=new Set(['Ejecutivo de Ventas de Campo','Ejecutivo Comercial','Ejecutivo Comercial Semi Senior'].map(normText));
 function isLiderCargo(cargo){return LIDER_CARGOS.has(normText(cargo));}
+function isAnalistaCargo(cargo){return ANALISTA_CARGOS.has(normText(cargo));}
 function computeLeadershipStats(year){
   const y=LOADED_YEARS[year];
   if(!y||!y.actual||!y.actual.length)return null;
-  const scoped=y.actual.filter(r=>ST.canal==='all'||r.canal===ST.canal);
+  const scoped=y.actual.filter(r=>r.canal===LEADERSHIP_CANAL);
   const merged=mergeByKey(scoped);
   const liderRows=merged.filter(r=>isLiderCargo(r.cargo));
-  const evcRows=merged.filter(r=>normText(r.cargo)===normText('Ejecutivo de Ventas de Campo'));
-  if(!liderRows.length||!evcRows.length)return null;
+  const analistaRows=merged.filter(r=>isAnalistaCargo(r.cargo));
+  if(!liderRows.length||!analistaRows.length)return null;
   const liderTot=monthlyTotals(liderRows,12);
-  const evcTot=monthlyTotals(evcRows,12);
+  const analistaTot=monthlyTotals(analistaRows,12);
   const months=(y.actualMonths||[]).map((on,i)=>on?i:-1).filter(i=>i>=0);
   if(!months.length)return null;
   const avgLider=months.reduce((s,i)=>s+liderTot[i],0)/months.length;
-  const avgEvc=months.reduce((s,i)=>s+evcTot[i],0)/months.length;
+  const avgAnalista=months.reduce((s,i)=>s+analistaTot[i],0)/months.length;
   const tlRows=merged.filter(r=>normText(r.cargo)==='TEAM LEADER');
   const avgTl=tlRows.length?months.reduce((s,i)=>s+monthlyTotals(tlRows,12)[i],0)/months.length:0;
   return{
-    avgLider,avgEvc,monthsCount:months.length,
-    ratioPct:avgEvc?(avgLider/avgEvc*100):0,
-    span:avgLider?(avgEvc/avgLider):0,
+    avgLider,avgAnalista,monthsCount:months.length,
+    ratio:avgLider?(avgAnalista/avgLider):0,
     hasTeamLeader:avgTl>0
   };
 }
@@ -997,33 +1001,32 @@ function renderLeadershipRatio(){
   if(!el)return;
   const s25=computeLeadershipStats('2025');
   const s26=computeLeadershipStats('2026');
-  const canalLbl=ST.canal==='all'?'Todos os canais':ST.canal;
   const sub=document.getElementById('liderSub');
-  if(sub)sub.textContent=`Apenas Realizado (Lideres = Gerente, Gerente Sr, Supervisor, Team Leader) — Canal: ${canalLbl}`;
+  if(sub)sub.textContent='Apenas Realizado — Canal FDVP · Líderes = Gerente Sr, Gerente, Supervisor, Team Leader · Analistas = Ejecutivo de Ventas de Campo, Ejecutivo Comercial, Ejecutivo Comercial Semi Senior';
   const card=(title,stats)=>{
     if(!stats)return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
-      +`<p class="text-sm text-gray-400">Sem dado realizado para este canal</p></div>`;
+      +`<p class="text-sm text-gray-400">Sem dado realizado para FDVP</p></div>`;
     const tlNote=stats.hasTeamLeader?'inclui Team Leader':'<span style="color:#E03131">sem Team Leader na fonte</span>';
     return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
-      +`<p class="text-2xl font-black" style="color:#003087">1 : ${fmt1(stats.span)}</p>`
-      +`<p class="text-[11px] text-gray-500 mt-1">1 líder para cada ${fmt1(stats.span)} Exec. de Vendas de Campo</p>`
-      +`<p class="text-[10px] text-gray-400 mt-2">Média líderes: ${fmt1(stats.avgLider)} · Média EVC: ${fmt1(stats.avgEvc)} · ${stats.monthsCount} meses</p>`
+      +`<p class="text-2xl font-black" style="color:#003087">${fmt1(stats.ratio)} : 1</p>`
+      +`<p class="text-[11px] text-gray-500 mt-1">${fmt1(stats.ratio)} Analistas para cada Líder</p>`
+      +`<p class="text-[10px] text-gray-400 mt-2">Média líderes: ${fmt1(stats.avgLider)} · Média analistas: ${fmt1(stats.avgAnalista)} · ${stats.monthsCount} meses</p>`
       +`<p class="text-[10px] font-semibold mt-1" style="color:${stats.hasTeamLeader?'#00A650':'#E03131'}">${tlNote}</p></div>`;
   };
   let deltaHtml;
   const mismatchTL=!!(s25&&s26&&s25.hasTeamLeader&&!s26.hasTeamLeader);
   if(s25&&s26){
-    const delta=s26.span-s25.span;
-    const pctDelta=s25.span?(delta/s25.span*100):0;
+    const delta=s26.ratio-s25.ratio;
+    const pctDelta=s25.ratio?(delta/s25.ratio*100):0;
     const up=delta>=0;
-    const color=up?'#E03131':'#00A650'; // span maior = menos lideres por EVC = pior (vermelho)
+    const color=up?'#E03131':'#00A650'; // ratio maior = menos lideres por analista = pior (vermelho)
     const arrow=up?'▲':'▼';
     deltaHtml=`<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Variação 2026 vs 2025</p>`
       +`<p class="text-2xl font-black" style="color:${color}">${arrow} ${fmt1(Math.abs(delta))}</p>`
-      +`<p class="text-[11px] text-gray-500 mt-1">Span de controle ${up?'aumentou':'diminuiu'} (${up?'menos':'mais'} líderes por EVC) · ${pctDelta>=0?'+':''}${Math.round(pctDelta)}%</p>`
+      +`<p class="text-[11px] text-gray-500 mt-1">Proporção ${up?'aumentou':'diminuiu'} (${up?'menos':'mais'} líderes por analista) · ${pctDelta>=0?'+':''}${Math.round(pctDelta)}%</p>`
       +(mismatchTL?`<p class="text-[10px] font-semibold mt-1" style="color:#E03131">Não comparável — ver aviso acima</p>`:'')
       +`</div>`;
   }else{
@@ -1037,7 +1040,7 @@ function renderLeadershipRatio(){
     if(mismatchTL){
       warnEl.innerHTML='<b>Atenção — comparação não é 1:1:</b> a aba fonte do Realizado 2026 ("Real 2026") '
         +'não traz nenhuma linha de cargo "Team Leader", que responde por boa parte do headcount de líderes em 2025. '
-        +'A queda no span de controle abaixo reflete esse gap de dado na origem, não necessariamente uma mudança real de estrutura.';
+        +'A variação na proporção abaixo reflete esse gap de dado na origem, não necessariamente uma mudança real de estrutura.';
     }
   }
 }
