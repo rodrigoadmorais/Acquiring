@@ -302,8 +302,8 @@
       </div>
     </div>
     <!-- chart -->
-    <div style="position:relative">
-      <canvas id="unit-modal-canvas" style="width:100%;display:block"></canvas>
+    <div id="unit-modal-chart-wrap" style="position:relative;width:100%;height:360px">
+      <canvas id="unit-modal-canvas"></canvas>
     </div>
   </div>
 
@@ -1356,97 +1356,101 @@ function openUnitModal(totalKey,volKey,lbl){
   document.getElementById("unit-modal-overlay").style.display="block";
   document.getElementById("unit-modal").style.display="block";
   if(_unitModalChart){_unitModalChart.destroy();_unitModalChart=null;}
-  requestAnimationFrame(function(){
-    var canvas=document.getElementById("unit-modal-canvas");
-    canvas.style.width="100%";
-    canvas.width=canvas.offsetWidth*window.devicePixelRatio||canvas.offsetWidth;
-    canvas.height=340*window.devicePixelRatio||340;
-    canvas.style.height="340px";
-    var ctx=canvas.getContext("2d");
-    // Gradients
-    var grad25=ctx.createLinearGradient(0,0,0,340);
-    grad25.addColorStop(0,"rgba(156,163,175,0.22)");
-    grad25.addColorStop(1,"rgba(156,163,175,0.00)");
-    var grad26=ctx.createLinearGradient(0,0,0,340);
-    grad26.addColorStop(0,"rgba(52,131,250,0.22)");
-    grad26.addColorStop(1,"rgba(52,131,250,0.00)");
-    // inline datalabel plugin
-    var ptPlugin={
-      id:"ptLbls",
-      afterDatasetsDraw:function(chart){
-        var c=chart.ctx;
-        c.save();
-        var dpr=window.devicePixelRatio||1;
-        c.font="700 "+(10*dpr)+"px Inter,sans-serif";
-        c.textAlign="center";
-        var pad=3*dpr,h=14*dpr,r=4*dpr,gap=24*dpr;
-        chart.data.datasets.forEach(function(ds,di){
-          var meta=chart.getDatasetMeta(di);
-          meta.data.forEach(function(pt,i){
-            var v=ds.data[i];
-            if(v===null||v===undefined)return;
-            var txt=v.toFixed(1)+"M";
-            var w=c.measureText(txt).width+pad*2;
-            var bx=pt.x-w/2,by=pt.y-gap-h;
-            c.beginPath();
-            c.moveTo(bx+r,by);c.lineTo(bx+w-r,by);
-            c.quadraticCurveTo(bx+w,by,bx+w,by+r);
-            c.lineTo(bx+w,by+h-r);
-            c.quadraticCurveTo(bx+w,by+h,bx+w-r,by+h);
-            c.lineTo(bx+r,by+h);
-            c.quadraticCurveTo(bx,by+h,bx,by+h-r);
-            c.lineTo(bx,by+r);
-            c.quadraticCurveTo(bx,by,bx+r,by);
-            c.closePath();
-            c.fillStyle="rgba(255,255,255,0.95)";
-            c.fill();
-            c.strokeStyle=ds.borderColor;
-            c.lineWidth=1*dpr;
-            c.stroke();
-            c.fillStyle=ds.borderColor;
-            c.fillText(txt,pt.x,by+h-3*dpr);
-          });
+  // Use responsive Chart.js — let it own the canvas; no manual DPR math
+  var wrap=document.getElementById("unit-modal-chart-wrap");
+  wrap.innerHTML='<canvas id="unit-modal-canvas"></canvas>';
+  var canvas=document.getElementById("unit-modal-canvas");
+  var ctx=canvas.getContext("2d");
+  // Gradients created after chart knows its size — use plugin hook
+  var ptPlugin={
+    id:"ptLbls",
+    beforeDraw:function(chart){
+      // build gradients in chart coordinate space (correct height)
+      var h=chart.chartArea?chart.chartArea.bottom-chart.chartArea.top:chart.height;
+      var c=chart.ctx;
+      var g25=c.createLinearGradient(0,chart.chartArea?chart.chartArea.top:0,0,(chart.chartArea?chart.chartArea.top:0)+h);
+      g25.addColorStop(0,"rgba(156,163,175,0.25)");
+      g25.addColorStop(1,"rgba(156,163,175,0.00)");
+      var g26=c.createLinearGradient(0,chart.chartArea?chart.chartArea.top:0,0,(chart.chartArea?chart.chartArea.top:0)+h);
+      g26.addColorStop(0,"rgba(52,131,250,0.20)");
+      g26.addColorStop(1,"rgba(52,131,250,0.00)");
+      chart.data.datasets[0].backgroundColor=g25;
+      chart.data.datasets[1].backgroundColor=g26;
+    },
+    afterDatasetsDraw:function(chart){
+      var c=chart.ctx;
+      c.save();
+      c.font="700 11px Inter,sans-serif";
+      c.textAlign="center";
+      var pad=4,h=16,r=5,gap=20;
+      chart.data.datasets.forEach(function(ds,di){
+        var meta=chart.getDatasetMeta(di);
+        if(meta.hidden)return;
+        meta.data.forEach(function(pt,i){
+          var v=ds.data[i];
+          if(v===null||v===undefined)return;
+          var txt=v.toFixed(1)+"M";
+          var w=c.measureText(txt).width+pad*2;
+          var bx=pt.x-w/2,by=pt.y-gap-h;
+          // pill
+          c.beginPath();
+          c.moveTo(bx+r,by);c.lineTo(bx+w-r,by);
+          c.quadraticCurveTo(bx+w,by,bx+w,by+r);
+          c.lineTo(bx+w,by+h-r);
+          c.quadraticCurveTo(bx+w,by+h,bx+w-r,by+h);
+          c.lineTo(bx+r,by+h);
+          c.quadraticCurveTo(bx,by+h,bx,by+h-r);
+          c.lineTo(bx,by+r);
+          c.quadraticCurveTo(bx,by,bx+r,by);
+          c.closePath();
+          c.fillStyle="rgba(255,255,255,0.96)";
+          c.fill();
+          c.strokeStyle=ds.borderColor;
+          c.lineWidth=1.2;
+          c.stroke();
+          c.fillStyle=ds.borderColor;
+          c.fillText(txt,pt.x,by+h-4);
         });
-        c.restore();
-      }
-    };
-    _unitModalChart=new Chart(ctx,{
-      type:"line",
-      data:{
-        labels:labels,
-        datasets:[
-          {label:"2025",data:data25,borderColor:"#9CA3AF",borderWidth:2.5,fill:true,backgroundColor:grad25,tension:0.38,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#9CA3AF",spanGaps:false},
-          {label:"2026",data:data26,borderColor:"#3483FA",borderWidth:3,fill:true,backgroundColor:grad26,tension:0.38,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#3483FA",spanGaps:false},
-        ]
-      },
-      plugins:[ptPlugin],
-      options:{
-        responsive:false,
-        animation:{duration:300,easing:"easeOutQuart"},
-        layout:{padding:{top:36,right:12,bottom:0,left:0}},
-        plugins:{
-          legend:{display:true,position:"top",align:"end",labels:{usePointStyle:true,pointStyle:"circle",padding:24,font:{size:12,weight:"700"},color:"#374151"}},
-          tooltip:{
-            backgroundColor:"#111827",titleColor:"#F9FAFB",bodyColor:"#D1D5DB",
-            padding:14,cornerRadius:14,boxPadding:4,
-            callbacks:{label:function(item){var v=item.raw;return v===null?"—":" "+item.dataset.label+": "+v.toFixed(1)+"M";}}
-          },
+      });
+      c.restore();
+    }
+  };
+  _unitModalChart=new Chart(ctx,{
+    type:"line",
+    data:{
+      labels:labels,
+      datasets:[
+        {label:"2025",data:data25,borderColor:"#9CA3AF",borderWidth:2.5,fill:true,backgroundColor:"rgba(156,163,175,0.2)",tension:0.38,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#9CA3AF",spanGaps:false},
+        {label:"2026",data:data26,borderColor:"#3483FA",borderWidth:3,fill:true,backgroundColor:"rgba(52,131,250,0.2)",tension:0.38,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#3483FA",spanGaps:false},
+      ]
+    },
+    plugins:[ptPlugin],
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      devicePixelRatio:window.devicePixelRatio||2,
+      animation:{duration:300,easing:"easeOutQuart"},
+      layout:{padding:{top:38,right:16,bottom:4,left:4}},
+      plugins:{
+        legend:{display:true,position:"top",align:"end",labels:{usePointStyle:true,pointStyle:"circle",padding:24,font:{size:12,weight:"700"},color:"#374151"}},
+        tooltip:{
+          backgroundColor:"#111827",titleColor:"#F9FAFB",bodyColor:"#D1D5DB",
+          padding:14,cornerRadius:14,boxPadding:4,
+          callbacks:{label:function(item){var v=item.raw;return v===null?"—":" "+item.dataset.label+": "+v.toFixed(1)+"M";}}
         },
-        scales:{
-          x:{
-            ticks:{color:"#6B7280",font:{size:10,weight:"500"},maxRotation:0,autoSkip:true,maxTicksLimit:24},
-            grid:{display:false},border:{display:false}
-          },
-          y:{
-            display:true,
-            position:"left",
-            ticks:{color:"#9CA3AF",font:{size:10},callback:function(v){return v.toFixed(1)+"M";},maxTicksLimit:6},
-            grid:{color:"rgba(0,0,0,.05)",drawBorder:false},
-            border:{display:false}
-          },
-        }
+      },
+      scales:{
+        x:{
+          ticks:{color:"#6B7280",font:{size:10,weight:"500"},maxRotation:0,autoSkip:true,maxTicksLimit:24},
+          grid:{display:false},border:{display:false}
+        },
+        y:{
+          display:true,position:"left",
+          ticks:{color:"#9CA3AF",font:{size:10},callback:function(v){return v.toFixed(1)+"M";},maxTicksLimit:6},
+          grid:{color:"rgba(0,0,0,.05)"},border:{display:false}
+        },
       }
-    });
+    }
   });
 }
 function closeUnitModal(){
