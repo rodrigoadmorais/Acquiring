@@ -1188,6 +1188,23 @@ async function gridGetRange(range){
 // "Real 2026" e uma pivot (TAG/SUBCANAL|CANAL 2/JOB_CLASSIFICATION + datas DD/MM/YYYY),
 // sem coluna de Cenario - a aba inteira representa REALIZADO 2026. Linhas de subtotal
 // (Total geral, "<Canal> Total", etc.) tem JOB_CLASSIFICATION vazio e sao descartadas.
+// Mapa SUBCANAL/CANAL 2 (pivot) -> Canal/Sub-bu (schema flat), validado contra
+// os combos reais de CANAL 1/CANAL 2/Sub-bu/Canal na aba "Plano e FCST 2026".
+// NAO usar o TAG da pivot para decidir canal: "Hunting Instore"+FDVP e' o canal
+// FDVP (Sub-bu=Point), enquanto "Big Sellers - Hunting Big Sellers" cobre TANTO
+// Sub-bu=Instore quanto Sub-bu=OP dependendo do SUBCANAL - o TAG sozinho nao
+// diferencia. "Farming Assessorado" e' canal proprio (FARMING ASSESSORADO), nao
+// um sub-bu de Big Sellers. Sem esse mapa, subbu ficava com a grafia crua da
+// pivot (ex: "INSTORE" maiusculo) que nao batia com o valor do filtro Sub-BU
+// ("Instore"), fazendo linhas inteiras sumirem silenciosamente ao filtrar.
+const PIVOT_SUBCANAL_MAP={
+  'ENGAGEMENT':{canal:'BIG SELLERS',subbu:'Cross'},
+  'INSTORE':{canal:'BIG SELLERS',subbu:'Instore'},
+  'OP':{canal:'BIG SELLERS',subbu:'OP'},
+  'ONBOARDING':{canal:'BIG SELLERS',subbu:'Onboarding'},
+  'FARMING ASSESSORADO':{canal:'FARMING ASSESSORADO',subbu:'Point'},
+  'FDVP':{canal:'FDVP',subbu:'Point'}
+};
 function parsePivotReal2026(values,year){
   const rows=[];
   for(let r=0;r<values.length;r++){
@@ -1204,11 +1221,10 @@ function parsePivotReal2026(values,year){
       const cargoRaw=String(row[2]??'').trim();
       if(!cargoRaw)continue;
       const subRaw=String(row[1]??'').trim();
-      const tagRaw=String(row[0]??'').trim();
-      const isFdvp=normText(subRaw)==='FDVP';
+      const map=PIVOT_SUBCANAL_MAP[normText(subRaw)];
       const obj={
-        canal:isFdvp?'FDVP':'BIG SELLERS',
-        subbu:isFdvp?tagRaw:subRaw,
+        canal:map?map.canal:'BIG SELLERS',
+        subbu:map?map.subbu:subRaw,
         cargo:canonicalizeCargo(cargoRaw),role:'',rv:'',
         m:Array(12).fill(null)
       };
