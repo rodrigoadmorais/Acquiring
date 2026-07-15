@@ -199,6 +199,14 @@
     </div>
   </div>
 
+  <!-- ROW 3.5: Proporção de Líderes por Executivo de Vendas de Campo -->
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-5">
+    <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Span de Controle — Líderes por Executivo de Vendas de Campo</p>
+    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4" id="liderSub">Apenas Realizado (Líderes = Gerente, Gerente Sr, Supervisor, Team Leader) — Média 2025 vs Realizado 2026</p>
+    <div id="liderWarn" class="hidden text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4 leading-relaxed"></div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="liderGrid"></div>
+  </div>
+
   <!-- TABLE -->
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-5">
     <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Tabela Detalhada — Drill-down por Canal</p>
@@ -818,6 +826,7 @@ function render(){
   renderSubBu(d);
   renderRankings(d.real,d);
   renderTable(d.plan,d.real,d);
+  renderLeadershipRatio();
 }
 
 // ── UI CONTROLS ────────────────────────────────────────────────────────────────
@@ -952,6 +961,87 @@ function canonicalizeCargo(cargo){
   if(!c)return c;
   return CARGO_ALIASES[normText(c)]||c;
 }
+
+// ── SPAN DE CONTROLE (Lideres por Executivo de Vendas de Campo) ─────────────────
+// Analise separada, sempre com dados de REALIZADO cru (LOADED_YEARS[year].actual,
+// pre-composicao com Plano/FCST) - nao usa P25/P26 nem a serie composta em R25/R26.
+const LIDER_CARGOS=new Set(['GERENTE','GERENTE SR','SUPERVISOR','TEAM LEADER'].map(normText));
+function isLiderCargo(cargo){return LIDER_CARGOS.has(normText(cargo));}
+function computeLeadershipStats(year){
+  const y=LOADED_YEARS[year];
+  if(!y||!y.actual||!y.actual.length)return null;
+  const scoped=y.actual.filter(r=>ST.canal==='all'||r.canal===ST.canal);
+  const merged=mergeByKey(scoped);
+  const liderRows=merged.filter(r=>isLiderCargo(r.cargo));
+  const evcRows=merged.filter(r=>normText(r.cargo)===normText('Ejecutivo de Ventas de Campo'));
+  if(!liderRows.length||!evcRows.length)return null;
+  const liderTot=monthlyTotals(liderRows,12);
+  const evcTot=monthlyTotals(evcRows,12);
+  const months=(y.actualMonths||[]).map((on,i)=>on?i:-1).filter(i=>i>=0);
+  if(!months.length)return null;
+  const avgLider=months.reduce((s,i)=>s+liderTot[i],0)/months.length;
+  const avgEvc=months.reduce((s,i)=>s+evcTot[i],0)/months.length;
+  const tlRows=merged.filter(r=>normText(r.cargo)==='TEAM LEADER');
+  const avgTl=tlRows.length?months.reduce((s,i)=>s+monthlyTotals(tlRows,12)[i],0)/months.length:0;
+  return{
+    avgLider,avgEvc,monthsCount:months.length,
+    ratioPct:avgEvc?(avgLider/avgEvc*100):0,
+    span:avgLider?(avgEvc/avgLider):0,
+    hasTeamLeader:avgTl>0
+  };
+}
+function fmt1(v){return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});}
+function renderLeadershipRatio(){
+  const el=document.getElementById('liderGrid');
+  const warnEl=document.getElementById('liderWarn');
+  if(!el)return;
+  const s25=computeLeadershipStats('2025');
+  const s26=computeLeadershipStats('2026');
+  const canalLbl=ST.canal==='all'?'Todos os canais':ST.canal;
+  const sub=document.getElementById('liderSub');
+  if(sub)sub.textContent=`Apenas Realizado (Lideres = Gerente, Gerente Sr, Supervisor, Team Leader) — Canal: ${canalLbl}`;
+  const card=(title,stats)=>{
+    if(!stats)return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
+      +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
+      +`<p class="text-sm text-gray-400">Sem dado realizado para este canal</p></div>`;
+    const tlNote=stats.hasTeamLeader?'inclui Team Leader':'<span style="color:#E03131">sem Team Leader na fonte</span>';
+    return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
+      +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
+      +`<p class="text-2xl font-black" style="color:#003087">1 : ${fmt1(stats.span)}</p>`
+      +`<p class="text-[11px] text-gray-500 mt-1">1 líder para cada ${fmt1(stats.span)} Exec. de Vendas de Campo</p>`
+      +`<p class="text-[10px] text-gray-400 mt-2">Média líderes: ${fmt1(stats.avgLider)} · Média EVC: ${fmt1(stats.avgEvc)} · ${stats.monthsCount} meses</p>`
+      +`<p class="text-[10px] font-semibold mt-1" style="color:${stats.hasTeamLeader?'#00A650':'#E03131'}">${tlNote}</p></div>`;
+  };
+  let deltaHtml;
+  const mismatchTL=!!(s25&&s26&&s25.hasTeamLeader&&!s26.hasTeamLeader);
+  if(s25&&s26){
+    const delta=s26.span-s25.span;
+    const pctDelta=s25.span?(delta/s25.span*100):0;
+    const up=delta>=0;
+    const color=up?'#E03131':'#00A650'; // span maior = menos lideres por EVC = pior (vermelho)
+    const arrow=up?'▲':'▼';
+    deltaHtml=`<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
+      +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Variação 2026 vs 2025</p>`
+      +`<p class="text-2xl font-black" style="color:${color}">${arrow} ${fmt1(Math.abs(delta))}</p>`
+      +`<p class="text-[11px] text-gray-500 mt-1">Span de controle ${up?'aumentou':'diminuiu'} (${up?'menos':'mais'} líderes por EVC) · ${pctDelta>=0?'+':''}${Math.round(pctDelta)}%</p>`
+      +(mismatchTL?`<p class="text-[10px] font-semibold mt-1" style="color:#E03131">Não comparável — ver aviso acima</p>`:'')
+      +`</div>`;
+  }else{
+    deltaHtml=`<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
+      +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Variação 2026 vs 2025</p>`
+      +`<p class="text-sm text-gray-400">Dados insuficientes para comparar</p></div>`;
+  }
+  el.innerHTML=card('2025 — Média Realizado',s25)+card('2026 — Realizado (YTD)',s26)+deltaHtml;
+  if(warnEl){
+    warnEl.classList.toggle('hidden',!mismatchTL);
+    if(mismatchTL){
+      warnEl.innerHTML='<b>Atenção — comparação não é 1:1:</b> a aba fonte do Realizado 2026 ("Real 2026") '
+        +'não traz nenhuma linha de cargo "Team Leader", que responde por boa parte do headcount de líderes em 2025. '
+        +'A queda no span de controle abaixo reflete esse gap de dado na origem, não necessariamente uma mudança real de estrutura.';
+    }
+  }
+}
+
 function rowKey(r){
   return [r.canal,r.subbu,r.role,r.cargo,r.rv].map(normText).join('|');
 }
@@ -990,7 +1080,12 @@ function parseGridValues(values,year){
     if(!normText(header[cenarioIdx]).startsWith('CENARIO'))continue;
     const canalIdx=headerIndex(header,['CANAL 1','CANAL']);
     const subbuIdx=headerIndex(header,['Sub-bu','Sub-BU']);
-    const roleIdx=headerIndex(header,['Position type','Role']);
+    // headerIndex resolve pela ordem das COLUNAS, nao pela ordem da lista de labels.
+    // Como o header real tem "Role" (area funcional) antes de "Position type"
+    // (Lideres/Analistas), passar as duas juntas pegava sempre "Role" errado.
+    // O campo `role` do dash e usado como Lideres/Analistas (ver filtro fRole) -
+    // por isso "Position type" tem que ser resolvido com prioridade explicita.
+    const roleIdx=(()=>{const p=headerIndex(header,['Position type']);return p>=0?p:headerIndex(header,['Role']);})();
     const cargoIdx=headerIndex(header,['Cargo']);
     const rvIdx=headerIndex(header,['RV']);
     const monthCols=header
@@ -1188,6 +1283,9 @@ async function loadFromGrid(){
   setLoadStatus('Plano vs Realizado + Forecast · Lendo planilha fonte pelo Grid');
   const y26=await ensureYear('2026');
   setDefault2026FullYear();
+  // Carrega 2025 tambem em background (sem bloquear o load principal) para que
+  // o card de Span de Controle (2025 vs 2026) ja abra populado nos dois anos.
+  ensureYear('2025').then(render).catch(e=>console.warn('Falha ao pre-carregar 2025:',e));
   const now=new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   setLoadStatus(`Fonte Grid: planilha Headcount · realizado ate ${latestMonthLabel(M26,y26.actualMonths)} · atualizado ${now}`);
   return true;
