@@ -879,11 +879,28 @@ function exportExcel(){
 
 // ── DATA LOADER ────────────────────────────────────────────────────────────────
 const SHEET_ID='16_ND5bNmWBKVkh77S_zPF-JLGHow9bFCGCp9BHPTe-w';
+// NOTE: abas com "+" no nome quebram Grid.sheets.get ("Sheet range contains invalid
+// characters") - por isso as abas fonte foram renomeadas sem "+" na planilha.
 const GRID_RANGES={
-  '2025':["'Real + Plano 2025'!A1:Z400"],
-  '2026':["'Plano + FCST 2026'!A1:Z400","'Real 2026'!A1:Z400"]
+  '2025':[{range:'Real e Plano 2025!A1:AF998',type:'flat'}],
+  '2026':[
+    {range:'Plano e FCST 2026!A1:AH957',type:'flat'},
+    {range:'Real 2026!A1:Z1000',type:'pivot'}
+  ]
 };
 const LOADED_YEARS={};
+
+function fixMojibake(v){
+  if(typeof v!=='string')return v;
+  const codes=[...v].map(c=>c.codePointAt(0));
+  if(!codes.some(c=>c>=0x80&&c<=0xff))return v;
+  if(codes.some(c=>c>0xff))return v;
+  try{
+    return new TextDecoder('utf-8',{fatal:true}).decode(new Uint8Array(codes));
+  }catch(e){
+    return v;
+  }
+}
 
 function normText(v){
   return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
@@ -1051,7 +1068,7 @@ async function gridGetRange(range){
     try{
       const resp=await Grid.sheets.get(SHEET_ID,range);
       const values=resp&&resp.values?resp.values:resp;
-      return values||[];
+      return (values||[]).map(row=>Array.isArray(row)?row.map(fixMojibake):row);
     }catch(err){
       lastErr=err;
       if(!shouldRetryGridRead(err)||attempt===2)break;
@@ -1061,17 +1078,68 @@ async function gridGetRange(range){
   }
   throw lastErr||new Error('Range '+range+' nao pode ser lido');
 }
+// "Real 2026" e uma pivot (TAG/SUBCANAL|CANAL 2/JOB_CLASSIFICATION + datas DD/MM/YYYY),
+// sem coluna de Cenario - a aba inteira representa REALIZADO 2026. Linhas de subtotal
+// (Total geral, "<Canal> Total", etc.) tem JOB_CLASSIFICATION vazio e sao descartadas.
+function parsePivotReal2026(values,year){
+  const rows=[];
+  for(let r=0;r<values.length;r++){
+    const header=values[r]||[];
+    if(normText(header[0])!=='TAG')continue;
+    const monthCols=header
+      .map((h,idx)=>({idx,month:monthIndexFromHeader(h,year)}))
+      .filter(x=>x.month>=0&&x.month<12);
+    if(!monthCols.length)continue;
+    for(let i=r+1;i<values.length;i++){
+      const row=values[i]||[];
+      if(normText(row[0])==='TAG')break;
+      if(!row.some(c=>String(c??'').trim()!==''))break;
+      const cargo=String(row[2]??'').trim();
+      if(!cargo)continue;
+      const subRaw=String(row[1]??'').trim();
+      const tagRaw=String(row[0]??'').trim();
+      const isFdvp=normText(subRaw)==='FDVP';
+      const obj={
+        canal:isFdvp?'FDVP':'BIG SELLERS',
+        subbu:isFdvp?tagRaw:subRaw,
+        cargo,role:'',rv:'',
+        m:Array(12).fill(null)
+      };
+      monthCols.forEach(({idx,month})=>{obj.m[month]=toNumber(row[idx]);});
+      rows.push(obj);
+    }
+  }
+  return mergeByKey(rows);
+}
 async function ensureYear(year){
   if(LOADED_YEARS[year])return LOADED_YEARS[year];
-  const ranges=GRID_RANGES[year]||[];
-  const combined={plan:[],actual:[],fcst:[]};
-  for(const range of ranges){
-    const values=await gridGetRange(range);
+  const specs=GRID_RANGES[year]||[];
+  const combined={plan:[],actual:[],fcst:[],pivotActual:[]};
+  for(const spec of specs){
+    const values=await gridGetRange(spec.range);
     if(!values.length)continue;
-    const parsed=Array.isArray(values[0])?parseGridValues(values,year):parseObjectRows(values,year);
-    combined.plan.push(...parsed.plan);
-    combined.actual.push(...(parsed.actual||[]));
-    combined.fcst.push(...(parsed.fcst||[]));
+    if(spec.type==='pivot'){
+      combined.pivotActual.push(...parsePivotReal2026(values,year));
+    }else{
+      const parsed=Array.isArray(values[0])?parseGridValues(values,year):parseObjectRows(values,year);
+      combined.plan.push(...parsed.plan);
+      combined.actual.push(...(parsed.actual||[]));
+      combined.fcst.push(...(parsed.fcst||[]));
+    }
+  }
+  if(combined.pivotActual.length){
+    // pivot (ex: "Real 2026") nao tem Role/RV - herda do Cargo equivalente no Plano
+    // para o filtro de RV continuar funcionando nos dados realizados.
+    const cargoLookup={};
+    combined.plan.forEach(p=>{
+      const k=normText(p.cargo);
+      if(k&&!cargoLookup[k])cargoLookup[k]={role:p.role,rv:p.rv};
+    });
+    combined.pivotActual.forEach(r=>{
+      const hit=cargoLookup[normText(r.cargo)];
+      if(hit){r.role=r.role||hit.role;r.rv=r.rv||hit.rv;}
+    });
+    combined.actual.push(...combined.pivotActual);
   }
   const composed=composeActualForecast(combined.actual,combined.fcst);
   const parsed={plan:mergeByKey(combined.plan),actual:combined.actual,fcst:combined.fcst,real:composed.rows,actualMonths:composed.actualMonths};
