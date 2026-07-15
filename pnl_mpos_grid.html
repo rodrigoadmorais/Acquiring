@@ -274,15 +274,37 @@
     <div id="unitarios-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
   </div>
   <div id="unit-modal-overlay" onclick="closeUnitModal()" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)"></div>
-  <div id="unit-modal" style="display:none;position:fixed;z-index:9991;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:28px 32px;box-shadow:0 24px 80px rgba(0,0,0,.25);width:min(980px,95vw)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div>
-        <div id="unit-modal-label" style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ml-blue)"></div>
-        <div id="unit-modal-sub" style="font-size:.8rem;color:var(--muted);margin-top:2px">Evolução mensal · valores absolutos R$M</div>
+  <div id="unit-modal" style="display:none;position:fixed;z-index:9991;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:24px;padding:32px 36px 28px;box-shadow:0 32px 100px rgba(0,0,0,.22);width:min(1020px,96vw);max-height:92vh;overflow:auto">
+    <!-- header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(255,230,0,.18);display:flex;align-items:center;justify-content:center;font-size:1.2rem">📈</div>
+        <div>
+          <div id="unit-modal-label" style="font-size:1rem;font-weight:800;letter-spacing:-.03em;color:#1F2937"></div>
+          <div id="unit-modal-sub" style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#6B7280;margin-top:2px">Evolução Mensal · R$M · 2025 → 2026</div>
+        </div>
       </div>
-      <button onclick="closeUnitModal()" style="background:none;border:none;cursor:pointer;font-size:1.3rem;color:var(--muted);line-height:1;padding:4px 8px">✕</button>
+      <button onclick="closeUnitModal()" style="display:flex;align-items:center;gap:6px;background:#F3F4F6;border:none;cursor:pointer;border-radius:999px;padding:7px 16px;font-size:.82rem;font-weight:600;color:#6B7280">✕ Fechar</button>
     </div>
-    <canvas id="unit-modal-canvas" height="380" style="width:100%"></canvas>
+    <!-- KPI strip -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px">
+      <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:16px;padding:16px 20px">
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6B7280;margin-bottom:6px">Média 2025</div>
+        <div id="um-kpi25" style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:#1F2937">—</div>
+      </div>
+      <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:16px;padding:16px 20px">
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6B7280;margin-bottom:6px">Média 2026</div>
+        <div id="um-kpi26" style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:#1F2937">—</div>
+      </div>
+      <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:16px;padding:16px 20px">
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6B7280;margin-bottom:6px">Variação</div>
+        <div id="um-kpivar" style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:#1F2937">—</div>
+      </div>
+    </div>
+    <!-- chart -->
+    <div style="position:relative">
+      <canvas id="unit-modal-canvas" style="width:100%;display:block"></canvas>
+    </div>
   </div>
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
@@ -1302,44 +1324,70 @@ var _unitModalChart=null;
 function openUnitModal(totalKey,volKey,lbl){
   var mos25=VER_MOS["Realizado 2025"]||[];
   var mos26=VER_MOS["Realizado 2026"]||[];
-  var labels=mos25.concat(mos26);
-  var data25=[],data26=[];
+  // Build 24-point arrays (null-padded so each series occupies its own half)
+  var raw25=[],raw26=[];
   for(var mi=0;mi<12;mi++){
-    var t25=getA("Realizado 2025",totalKey,[mi]);
-    data25.push(t25!==null?Math.abs(t25):null);
-    data26.push(null);
+    var t=getA("Realizado 2025",totalKey,[mi]);
+    raw25.push(t!==null?Math.abs(t):null);
   }
   for(var mi=0;mi<12;mi++){
-    var t26=getA("Realizado 2026",totalKey,[mi]);
-    data25.push(null);
-    data26.push(t26!==null?Math.abs(t26):null);
+    var t=getA("Realizado 2026",totalKey,[mi]);
+    raw26.push(t!==null?Math.abs(t):null);
   }
-  document.getElementById("unit-modal-label").textContent=lbl+" · Evolução 2025 → 2026";
+  var data25=raw25.concat(new Array(12).fill(null));
+  var data26=new Array(12).fill(null).concat(raw26);
+  // KPI cards
+  var v25=raw25.filter(function(v){return v!==null;}),v26=raw26.filter(function(v){return v!==null;});
+  var avg25=v25.length?v25.reduce(function(a,b){return a+b;},0)/v25.length:null;
+  var avg26=v26.length?v26.reduce(function(a,b){return a+b;},0)/v26.length:null;
+  var varPct=(avg25&&avg26)?((avg26-avg25)/avg25*100):null;
+  document.getElementById("um-kpi25").textContent=avg25!==null?("R$"+avg25.toFixed(1)+"M"):"—";
+  document.getElementById("um-kpi26").textContent=avg26!==null?("R$"+avg26.toFixed(1)+"M"):"—";
+  var varEl=document.getElementById("um-kpivar");
+  if(varPct!==null){
+    var sign=varPct>=0?"+":"";
+    varEl.textContent=sign+varPct.toFixed(1)+"% vs 2025";
+    varEl.style.color=varPct>=0?"#00A650":"#E53935";
+  } else { varEl.textContent="—"; varEl.style.color="#1F2937"; }
+  // Labels: /25 and /26 suffix
+  var ptLabels=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  var labels=ptLabels.map(function(m){return m+"/25";}).concat(ptLabels.map(function(m){return m+"/26";}));
+  document.getElementById("unit-modal-label").textContent=lbl;
   document.getElementById("unit-modal-overlay").style.display="block";
   document.getElementById("unit-modal").style.display="block";
   if(_unitModalChart){_unitModalChart.destroy();_unitModalChart=null;}
   requestAnimationFrame(function(){
     var canvas=document.getElementById("unit-modal-canvas");
-    canvas.width=canvas.offsetWidth;
-    canvas.height=380;
+    canvas.style.width="100%";
+    canvas.width=canvas.offsetWidth*window.devicePixelRatio||canvas.offsetWidth;
+    canvas.height=340*window.devicePixelRatio||340;
+    canvas.style.height="340px";
     var ctx=canvas.getContext("2d");
+    // Gradients
+    var grad25=ctx.createLinearGradient(0,0,0,340);
+    grad25.addColorStop(0,"rgba(156,163,175,0.22)");
+    grad25.addColorStop(1,"rgba(156,163,175,0.00)");
+    var grad26=ctx.createLinearGradient(0,0,0,340);
+    grad26.addColorStop(0,"rgba(52,131,250,0.22)");
+    grad26.addColorStop(1,"rgba(52,131,250,0.00)");
+    // inline datalabel plugin
     var ptPlugin={
       id:"ptLbls",
       afterDatasetsDraw:function(chart){
         var c=chart.ctx;
         c.save();
-        c.font="700 10px Inter,sans-serif";
+        var dpr=window.devicePixelRatio||1;
+        c.font="700 "+(10*dpr)+"px Inter,sans-serif";
         c.textAlign="center";
-        var pad=3,h=14,r=4;
+        var pad=3*dpr,h=14*dpr,r=4*dpr,gap=24*dpr;
         chart.data.datasets.forEach(function(ds,di){
           var meta=chart.getDatasetMeta(di);
           meta.data.forEach(function(pt,i){
             var v=ds.data[i];
             if(v===null||v===undefined)return;
-            var lbl=v.toFixed(1)+"M";
-            var w=c.measureText(lbl).width+pad*2;
-            var bx=pt.x-w/2,by=pt.y-28;
-            /* pill background */
+            var txt=v.toFixed(1)+"M";
+            var w=c.measureText(txt).width+pad*2;
+            var bx=pt.x-w/2,by=pt.y-gap-h;
             c.beginPath();
             c.moveTo(bx+r,by);c.lineTo(bx+w-r,by);
             c.quadraticCurveTo(bx+w,by,bx+w,by+r);
@@ -1350,14 +1398,13 @@ function openUnitModal(totalKey,volKey,lbl){
             c.lineTo(bx,by+r);
             c.quadraticCurveTo(bx,by,bx+r,by);
             c.closePath();
-            c.fillStyle="rgba(255,255,255,0.92)";
+            c.fillStyle="rgba(255,255,255,0.95)";
             c.fill();
             c.strokeStyle=ds.borderColor;
-            c.lineWidth=1;
+            c.lineWidth=1*dpr;
             c.stroke();
-            /* text */
             c.fillStyle=ds.borderColor;
-            c.fillText(lbl,pt.x,by+h-4);
+            c.fillText(txt,pt.x,by+h-3*dpr);
           });
         });
         c.restore();
@@ -1368,21 +1415,35 @@ function openUnitModal(totalKey,volKey,lbl){
       data:{
         labels:labels,
         datasets:[
-          {label:"2025",data:data25,borderColor:"#9CA3AF",borderWidth:2.5,fill:false,tension:0.35,pointRadius:5,pointHoverRadius:7,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#9CA3AF",spanGaps:false},
-          {label:"2026",data:data26,borderColor:"#3483FA",borderWidth:3,fill:false,tension:0.35,pointRadius:5,pointHoverRadius:7,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#3483FA",spanGaps:false},
+          {label:"2025",data:data25,borderColor:"#9CA3AF",borderWidth:2.5,fill:true,backgroundColor:grad25,tension:0.38,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#9CA3AF",spanGaps:false},
+          {label:"2026",data:data26,borderColor:"#3483FA",borderWidth:3,fill:true,backgroundColor:grad26,tension:0.38,pointRadius:5,pointHoverRadius:8,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#3483FA",spanGaps:false},
         ]
       },
       plugins:[ptPlugin],
       options:{
         responsive:false,
-        animation:{duration:200},
+        animation:{duration:300,easing:"easeOutQuart"},
+        layout:{padding:{top:36,right:12,bottom:0,left:0}},
         plugins:{
-          legend:{display:true,position:"top",labels:{usePointStyle:true,padding:20,font:{size:12,weight:"700"}}},
-          tooltip:{backgroundColor:"#111827",titleColor:"#9CA3AF",bodyColor:"#F9FAFB",padding:10,cornerRadius:10,callbacks:{label:function(item){var v=item.raw;return v===null?"—":item.dataset.label+": "+v.toFixed(1)+"M";}}},
+          legend:{display:true,position:"top",align:"end",labels:{usePointStyle:true,pointStyle:"circle",padding:24,font:{size:12,weight:"700"},color:"#374151"}},
+          tooltip:{
+            backgroundColor:"#111827",titleColor:"#F9FAFB",bodyColor:"#D1D5DB",
+            padding:14,cornerRadius:14,boxPadding:4,
+            callbacks:{label:function(item){var v=item.raw;return v===null?"—":" "+item.dataset.label+": "+v.toFixed(1)+"M";}}
+          },
         },
         scales:{
-          x:{ticks:{color:"#6B7280",font:{size:10},maxRotation:45},grid:{display:false},border:{display:false}},
-          y:{display:false},
+          x:{
+            ticks:{color:"#6B7280",font:{size:10,weight:"500"},maxRotation:0,autoSkip:true,maxTicksLimit:24},
+            grid:{display:false},border:{display:false}
+          },
+          y:{
+            display:true,
+            position:"left",
+            ticks:{color:"#9CA3AF",font:{size:10},callback:function(v){return v.toFixed(1)+"M";},maxTicksLimit:6},
+            grid:{color:"rgba(0,0,0,.05)",drawBorder:false},
+            border:{display:false}
+          },
         }
       }
     });
