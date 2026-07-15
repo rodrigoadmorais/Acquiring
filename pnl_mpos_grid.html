@@ -273,9 +273,16 @@
     <div id="unitarios-insights" style="margin-bottom:16px"></div>
     <div id="unitarios-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
   </div>
-  <div id="unit-tip" style="display:none;position:fixed;z-index:9999;background:#111827;border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:none;width:280px">
-    <div id="unit-tip-label" style="font-size:.7rem;font-weight:700;color:#9CA3AF;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em"></div>
-    <canvas id="unit-tip-canvas" width="248" height="130"></canvas>
+  <div id="unit-modal-overlay" onclick="closeUnitModal()" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)"></div>
+  <div id="unit-modal" style="display:none;position:fixed;z-index:9991;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:28px 32px;box-shadow:0 24px 80px rgba(0,0,0,.25);width:min(700px,90vw)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div>
+        <div id="unit-modal-label" style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ml-blue)"></div>
+        <div id="unit-modal-sub" style="font-size:.8rem;color:var(--muted);margin-top:2px">Evolução mensal · valores absolutos R$M</div>
+      </div>
+      <button onclick="closeUnitModal()" style="background:none;border:none;cursor:pointer;font-size:1.3rem;color:var(--muted);line-height:1;padding:4px 8px">✕</button>
+    </div>
+    <canvas id="unit-modal-canvas" height="260" style="width:100%"></canvas>
   </div>
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
@@ -1267,15 +1274,19 @@ function renderUnitarios(){
       ?`<span style="font-size:.78rem;font-weight:700;color:${good?'var(--green)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(1)}% vs ${vsLbl}</span>`
       :`<span style="font-size:.78rem;color:var(--muted)">—</span>`;
     const cardLbl=isAbs?m.sub:(m.lbl+' · '+m.sub);
-    return `<div class="card" style="padding:24px 28px">
-      <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">${isAbs?m.sub:m.lbl}</div>
+    const mKey=m.totalKey+'|'+m.volKey+'|'+encodeURIComponent(m.lbl);
+    return `<div class="card" style="padding:24px 28px;cursor:pointer;transition:box-shadow .15s" onclick="openUnitModal('${m.totalKey}','${m.volKey}','${m.lbl}')" onmouseenter="this.style.boxShadow='0 28px 60px rgba(15,23,42,.15)'" onmouseleave="this.style.boxShadow=''">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">${isAbs?m.sub:m.lbl}</div>
+        <span style="font-size:.65rem;color:var(--muted);font-weight:600;opacity:.7">Ver evolução ↗</span>
+      </div>
       <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${isAbs?'Total R$M':m.sub}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
-        <div onmouseenter="showUnitTip(event,'${pair.left}','${m.totalKey}','${m.volKey}','${m.lbl} · ${pair.left}')" onmouseleave="hideUnitTip()" style="cursor:default">
+        <div>
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.left}</div>
           <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dL,isAbs)}</div>
         </div>
-        <div onmouseenter="showUnitTip(event,'${pair.right}','${m.totalKey}','${m.volKey}','${m.lbl} · ${pair.right}')" onmouseleave="hideUnitTip()" style="cursor:default">
+        <div>
           <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
           <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dR,isAbs)}</div>
         </div>
@@ -1287,103 +1298,79 @@ function renderUnitarios(){
   renderUnitariosInsights(metrics,pair,idx);
 }
 
-var _unitTipChart=null;
-function showUnitTip(evt,ver,totalKey,volKey,label){
-  var mos=VER_MOS[ver]||[];
-  var data=[];
+var _unitModalChart=null;
+function openUnitModal(totalKey,volKey,lbl){
+  var mos25=VER_MOS["Realizado 2025"]||[];
+  var mos26=VER_MOS["Realizado 2026"]||[];
+  var labels=mos25.concat(mos26);
+  var data25=[],data26=[];
   for(var mi=0;mi<12;mi++){
-    var t=getA(ver,totalKey,[mi]);
-    data.push(t!==null?Math.abs(t):null);
+    var t25=getA("Realizado 2025",totalKey,[mi]);
+    data25.push(t25!==null?Math.abs(t25):null);
+    data26.push(null);
   }
-  var tip=document.getElementById('unit-tip');
-  document.getElementById('unit-tip-label').textContent=label;
-  var x=evt.clientX+20, y=evt.clientY-60;
-  if(x+290>window.innerWidth)x=evt.clientX-300;
-  if(y+160>window.innerHeight)y=window.innerHeight-165;
-  tip.style.left=x+'px';
-  tip.style.top=y+'px';
-  tip.style.display='block';
-  if(_unitTipChart){_unitTipChart.destroy();_unitTipChart=null;}
+  for(var mi=0;mi<12;mi++){
+    var t26=getA("Realizado 2026",totalKey,[mi]);
+    data25.push(null);
+    data26.push(t26!==null?Math.abs(t26):null);
+  }
+  document.getElementById("unit-modal-label").textContent=lbl+" · Evolução 2025 → 2026";
+  document.getElementById("unit-modal-overlay").style.display="block";
+  document.getElementById("unit-modal").style.display="block";
+  if(_unitModalChart){_unitModalChart.destroy();_unitModalChart=null;}
   requestAnimationFrame(function(){
-    var canvas=document.getElementById('unit-tip-canvas');
-    var ctx=canvas.getContext('2d');
-    var grad=ctx.createLinearGradient(0,0,0,130);
-    grad.addColorStop(0,'rgba(52,131,250,0.35)');
-    grad.addColorStop(1,'rgba(52,131,250,0.00)');
-    var pointLabelsPlugin={
-      id:'ptLabels',
+    var canvas=document.getElementById("unit-modal-canvas");
+    canvas.width=canvas.offsetWidth;
+    canvas.height=260;
+    var ctx=canvas.getContext("2d");
+    var ptPlugin={
+      id:"ptLbls",
       afterDatasetsDraw:function(chart){
         var c=chart.ctx;
-        var ds=chart.data.datasets[0];
-        var meta=chart.getDatasetMeta(0);
         c.save();
-        c.font='bold 7.5px Inter,sans-serif';
-        c.textAlign='center';
-        c.fillStyle='#D1D5DB';
-        meta.data.forEach(function(pt,i){
-          var v=ds.data[i];
-          if(v===null||v===undefined)return;
-          var lbl=v.toFixed(1)+'M';
-          c.fillText(lbl,pt.x,pt.y-6);
+        c.font="bold 8px Inter,sans-serif";
+        c.textAlign="center";
+        chart.data.datasets.forEach(function(ds,di){
+          var meta=chart.getDatasetMeta(di);
+          meta.data.forEach(function(pt,i){
+            var v=ds.data[i];
+            if(v===null||v===undefined)return;
+            c.fillStyle=ds.borderColor;
+            c.fillText(v.toFixed(1)+"M",pt.x,pt.y-8);
+          });
         });
         c.restore();
       }
     };
-    _unitTipChart=new Chart(ctx,{
-      type:'line',
+    _unitModalChart=new Chart(ctx,{
+      type:"line",
       data:{
-        labels:mos,
-        datasets:[{
-          data:data,
-          borderColor:'#3483FA',
-          borderWidth:2,
-          fill:true,
-          backgroundColor:grad,
-          tension:0.4,
-          pointRadius:3,
-          pointHoverRadius:5,
-          pointBackgroundColor:'#fff',
-          pointBorderWidth:2,
-          pointBorderColor:'#3483FA',
-          spanGaps:true,
-        }]
+        labels:labels,
+        datasets:[
+          {label:"2025",data:data25,borderColor:"#9CA3AF",borderWidth:2,fill:false,tension:0.35,pointRadius:4,pointBackgroundColor:"#fff",pointBorderWidth:2,pointBorderColor:"#9CA3AF",spanGaps:false},
+          {label:"2026",data:data26,borderColor:"#3483FA",borderWidth:2.5,fill:false,tension:0.35,pointRadius:4,pointBackgroundColor:"#fff",pointBorderWidth:2,pointBorderColor:"#3483FA",spanGaps:false},
+        ]
       },
-      plugins:[pointLabelsPlugin],
+      plugins:[ptPlugin],
       options:{
         responsive:false,
-        animation:{duration:150},
+        animation:{duration:200},
         plugins:{
-          legend:{display:false},
-          tooltip:{
-            backgroundColor:'#1F2937',
-            titleColor:'#9CA3AF',
-            bodyColor:'#F9FAFB',
-            padding:8,
-            cornerRadius:8,
-            callbacks:{
-              title:function(items){return items[0].label;},
-              label:function(item){
-                var v=item.raw;
-                return v===null?'—':'R$ '+v.toFixed(1)+'M';
-              }
-            }
-          },
+          legend:{display:true,position:"top",labels:{usePointStyle:true,padding:20,font:{size:12,weight:"700"}}},
+          tooltip:{backgroundColor:"#111827",titleColor:"#9CA3AF",bodyColor:"#F9FAFB",padding:10,cornerRadius:10,callbacks:{label:function(item){var v=item.raw;return v===null?"—":item.dataset.label+": "+v.toFixed(1)+"M";}}},
         },
         scales:{
-          x:{
-            ticks:{color:'#6B7280',font:{size:9},maxRotation:0},
-            grid:{display:false},
-            border:{display:false},
-          },
+          x:{ticks:{color:"#6B7280",font:{size:10},maxRotation:45},grid:{display:false},border:{display:false}},
           y:{display:false},
         }
       }
     });
   });
 }
-function hideUnitTip(){
-  document.getElementById('unit-tip').style.display='none';
-  if(_unitTipChart){_unitTipChart.destroy();_unitTipChart=null;}
+function closeUnitModal(){
+  document.getElementById("unit-modal-overlay").style.display="none";
+  document.getElementById("unit-modal").style.display="none";
+  if(_unitModalChart){_unitModalChart.destroy();_unitModalChart=null;}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
