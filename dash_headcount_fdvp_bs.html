@@ -940,6 +940,18 @@ function headerIndex(header,labels){
   }
   return -1;
 }
+// A base fonte tem grafias divergentes para o mesmo cargo (case, abreviacoes) -
+// canonizar aqui garante que merge, tabela, rankings e export somem como um so.
+const CARGO_ALIASES={
+  'EJECUTIVO COMERCIAL SEMI SENIOR':'Ejecutivo Comercial Semi Senior',
+  'GERENTE SENIOR':'Gerente Sr',
+  'GERENTE SR':'Gerente Sr'
+};
+function canonicalizeCargo(cargo){
+  const c=String(cargo??'').trim();
+  if(!c)return c;
+  return CARGO_ALIASES[normText(c)]||c;
+}
 function rowKey(r){
   return [r.canal,r.subbu,r.role,r.cargo,r.rv].map(normText).join('|');
 }
@@ -994,7 +1006,7 @@ function parseGridValues(values,year){
       const obj={
         canal:String(row[canalIdx]??'').trim(),
         subbu:String(row[subbuIdx]??'').trim(),
-        cargo:String(row[cargoIdx]??'').trim(),
+        cargo:canonicalizeCargo(row[cargoIdx]),
         role:String(row[roleIdx]??'').trim(),
         rv:String(row[rvIdx]??'').trim(),
         m:Array(12).fill(null)
@@ -1022,7 +1034,7 @@ function parseObjectRows(rows,year){
     const obj={
       canal:String(row['CANAL 1']||row['Canal']||'').trim(),
       subbu:String(row['Sub-bu']||row['Sub-BU']||'').trim(),
-      cargo:String(row['Cargo']||'').trim(),
+      cargo:canonicalizeCargo(row['Cargo']),
       role:String(row['Position type']||row['Role']||'').trim(),
       rv:String(row['RV']||'').trim(),
       m:keys.map(k=>toNumber(row[k]))
@@ -1094,15 +1106,15 @@ function parsePivotReal2026(values,year){
       const row=values[i]||[];
       if(normText(row[0])==='TAG')break;
       if(!row.some(c=>String(c??'').trim()!==''))break;
-      const cargo=String(row[2]??'').trim();
-      if(!cargo)continue;
+      const cargoRaw=String(row[2]??'').trim();
+      if(!cargoRaw)continue;
       const subRaw=String(row[1]??'').trim();
       const tagRaw=String(row[0]??'').trim();
       const isFdvp=normText(subRaw)==='FDVP';
       const obj={
         canal:isFdvp?'FDVP':'BIG SELLERS',
         subbu:isFdvp?tagRaw:subRaw,
-        cargo,role:'',rv:'',
+        cargo:canonicalizeCargo(cargoRaw),role:'',rv:'',
         m:Array(12).fill(null)
       };
       monthCols.forEach(({idx,month})=>{obj.m[month]=toNumber(row[idx]);});
