@@ -1328,15 +1328,36 @@ function openUnitModal(totalKey,volKey,lbl){
       afterDatasetsDraw:function(chart){
         var c=chart.ctx;
         c.save();
-        c.font="bold 8px Inter,sans-serif";
+        c.font="700 9px Inter,sans-serif";
         c.textAlign="center";
+        var pad=3,h=14,r=4;
         chart.data.datasets.forEach(function(ds,di){
           var meta=chart.getDatasetMeta(di);
           meta.data.forEach(function(pt,i){
             var v=ds.data[i];
             if(v===null||v===undefined)return;
+            var lbl=v.toFixed(1)+"M";
+            var w=c.measureText(lbl).width+pad*2;
+            var bx=pt.x-w/2,by=pt.y-28;
+            /* pill background */
+            c.beginPath();
+            c.moveTo(bx+r,by);c.lineTo(bx+w-r,by);
+            c.quadraticCurveTo(bx+w,by,bx+w,by+r);
+            c.lineTo(bx+w,by+h-r);
+            c.quadraticCurveTo(bx+w,by+h,bx+w-r,by+h);
+            c.lineTo(bx+r,by+h);
+            c.quadraticCurveTo(bx,by+h,bx,by+h-r);
+            c.lineTo(bx,by+r);
+            c.quadraticCurveTo(bx,by,bx+r,by);
+            c.closePath();
+            c.fillStyle="rgba(255,255,255,0.92)";
+            c.fill();
+            c.strokeStyle=ds.borderColor;
+            c.lineWidth=1;
+            c.stroke();
+            /* text */
             c.fillStyle=ds.borderColor;
-            c.fillText(v.toFixed(1)+"M",pt.x,pt.y-8);
+            c.fillText(lbl,pt.x,by+h-4);
           });
         });
         c.restore();
