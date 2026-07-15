@@ -274,7 +274,7 @@
     <div id="unitarios-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
   </div>
   <div id="unit-modal-overlay" onclick="closeUnitModal()" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)"></div>
-  <div id="unit-modal" style="display:none;position:fixed;z-index:9991;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:28px 32px;box-shadow:0 24px 80px rgba(0,0,0,.25);width:min(700px,90vw)">
+  <div id="unit-modal" style="display:none;position:fixed;z-index:9991;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:28px 32px;box-shadow:0 24px 80px rgba(0,0,0,.25);width:min(980px,95vw)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <div>
         <div id="unit-modal-label" style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ml-blue)"></div>
@@ -282,7 +282,7 @@
       </div>
       <button onclick="closeUnitModal()" style="background:none;border:none;cursor:pointer;font-size:1.3rem;color:var(--muted);line-height:1;padding:4px 8px">✕</button>
     </div>
-    <canvas id="unit-modal-canvas" height="260" style="width:100%"></canvas>
+    <canvas id="unit-modal-canvas" height="380" style="width:100%"></canvas>
   </div>
 
   <div style="text-align:center;margin-top:16px;font-size:.67rem;color:var(--muted)">
@@ -1321,14 +1321,14 @@ function openUnitModal(totalKey,volKey,lbl){
   requestAnimationFrame(function(){
     var canvas=document.getElementById("unit-modal-canvas");
     canvas.width=canvas.offsetWidth;
-    canvas.height=260;
+    canvas.height=380;
     var ctx=canvas.getContext("2d");
     var ptPlugin={
       id:"ptLbls",
       afterDatasetsDraw:function(chart){
         var c=chart.ctx;
         c.save();
-        c.font="700 9px Inter,sans-serif";
+        c.font="700 10px Inter,sans-serif";
         c.textAlign="center";
         var pad=3,h=14,r=4;
         chart.data.datasets.forEach(function(ds,di){
@@ -1368,8 +1368,8 @@ function openUnitModal(totalKey,volKey,lbl){
       data:{
         labels:labels,
         datasets:[
-          {label:"2025",data:data25,borderColor:"#9CA3AF",borderWidth:2,fill:false,tension:0.35,pointRadius:4,pointBackgroundColor:"#fff",pointBorderWidth:2,pointBorderColor:"#9CA3AF",spanGaps:false},
-          {label:"2026",data:data26,borderColor:"#3483FA",borderWidth:2.5,fill:false,tension:0.35,pointRadius:4,pointBackgroundColor:"#fff",pointBorderWidth:2,pointBorderColor:"#3483FA",spanGaps:false},
+          {label:"2025",data:data25,borderColor:"#9CA3AF",borderWidth:2.5,fill:false,tension:0.35,pointRadius:5,pointHoverRadius:7,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#9CA3AF",spanGaps:false},
+          {label:"2026",data:data26,borderColor:"#3483FA",borderWidth:3,fill:false,tension:0.35,pointRadius:5,pointHoverRadius:7,pointBackgroundColor:"#fff",pointBorderWidth:2.5,pointBorderColor:"#3483FA",spanGaps:false},
         ]
       },
       plugins:[ptPlugin],
