@@ -880,8 +880,8 @@ function exportExcel(){
 // ── DATA LOADER ────────────────────────────────────────────────────────────────
 const SHEET_ID='16_ND5bNmWBKVkh77S_zPF-JLGHow9bFCGCp9BHPTe-w';
 const GRID_RANGES={
-  '2025':['2025!A1:Z180'],
-  '2026':['2026!A1:Z180']
+  '2025':["'Real + Plano 2025'!A1:Z400"],
+  '2026':["'Plano + FCST 2026'!A1:Z400","'Real 2026'!A1:Z400"]
 };
 const LOADED_YEARS={};
 
@@ -1045,28 +1045,37 @@ function shouldRetryGridRead(err){
   const txt=String((err&&(err.detail||err.message||err.error))||err||'').toLowerCase();
   return !!(err&&err.retry)||txt.includes('quota')||txt.includes('too many')||txt.includes('429');
 }
-async function gridGetYear(year){
+async function gridGetRange(range){
   let lastErr=null;
-  for(const range of GRID_RANGES[year]){
-    for(let attempt=0;attempt<3;attempt++){
-      try{
-        const resp=await Grid.sheets.get(SHEET_ID,range);
-        const values=resp&&resp.values?resp.values:resp;
-        if(values&&values.length)return values;
-      }catch(err){
-        lastErr=err;
-        if(!shouldRetryGridRead(err)||attempt===2)break;
-        setLoadStatus('Grid aguardando liberacao temporaria da planilha - tentando novamente');
-        await sleep(12000*(attempt+1));
-      }
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      const resp=await Grid.sheets.get(SHEET_ID,range);
+      const values=resp&&resp.values?resp.values:resp;
+      return values||[];
+    }catch(err){
+      lastErr=err;
+      if(!shouldRetryGridRead(err)||attempt===2)break;
+      setLoadStatus('Grid aguardando liberacao temporaria da planilha - tentando novamente');
+      await sleep(12000*(attempt+1));
     }
   }
-  throw lastErr||new Error('Aba '+year+' nao encontrada na planilha');
+  throw lastErr||new Error('Range '+range+' nao pode ser lido');
 }
 async function ensureYear(year){
   if(LOADED_YEARS[year])return LOADED_YEARS[year];
-  const values=await gridGetYear(year);
-  const parsed=transformRows(values,year);
+  const ranges=GRID_RANGES[year]||[];
+  const combined={plan:[],actual:[],fcst:[]};
+  for(const range of ranges){
+    const values=await gridGetRange(range);
+    if(!values.length)continue;
+    const parsed=Array.isArray(values[0])?parseGridValues(values,year):parseObjectRows(values,year);
+    combined.plan.push(...parsed.plan);
+    combined.actual.push(...(parsed.actual||[]));
+    combined.fcst.push(...(parsed.fcst||[]));
+  }
+  const composed=composeActualForecast(combined.actual,combined.fcst);
+  const parsed={plan:mergeByKey(combined.plan),actual:combined.actual,fcst:combined.fcst,real:composed.rows,actualMonths:composed.actualMonths};
+  if(!parsed.plan.length&&!parsed.real.length)throw new Error('Aba '+year+' nao encontrada na planilha');
   if(year==='2025'){
     if(parsed.plan.length)P25=parsed.plan;
     if(parsed.real.length)R25=parsed.real;
