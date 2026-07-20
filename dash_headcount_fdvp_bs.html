@@ -954,7 +954,13 @@ function headerIndex(header,labels){
 const CARGO_ALIASES={
   'EJECUTIVO COMERCIAL SEMI SENIOR':'Ejecutivo Comercial Semi Senior',
   'GERENTE SENIOR':'Gerente Sr',
-  'GERENTE SR':'Gerente Sr'
+  'GERENTE SR':'Gerente Sr',
+  // Rename organizacional: o cargo FDVP antes chamado "Team Leader" passou a se
+  // chamar "Ejecutivo Comercial Senior" - so existe em FDVP e nao ha conflito
+  // com nenhum outro cargo (2025 nao tinha "Ejecutivo Comercial Senior" em FDVP,
+  // e "Team Leader" nunca existiu fora de FDVP). Renomear aqui, na origem, faz
+  // 2025 e 2026 ficarem like-por-like em qualquer analise por cargo.
+  'TEAM LEADER':'Ejecutivo Comercial Senior'
 };
 function canonicalizeCargo(cargo){
   const c=String(cargo??'').trim();
@@ -964,11 +970,14 @@ function canonicalizeCargo(cargo){
 
 // ── ANALISTAS POR LIDER (FDVP) ───────────────────────────────────────────────────
 // De/para fornecido pelo usuario - canal FDVP, cargos exatos abaixo. Cargos fora
-// dessa lista (ex: "Ejecutivo Comercial Senior") ficam de fora de proposito.
+// dessa lista ficam de fora de proposito.
+// "Team Leader" foi renomeado para "Ejecutivo Comercial Senior" (rename
+// organizacional, ver CARGO_ALIASES) - por isso o de/para usa o nome novo aqui,
+// classificado como Lider (mesma funcao, so mudou o nome do cargo).
 // Sempre com dados de REALIZADO cru (LOADED_YEARS[year].actual, pre-composicao
 // com Plano/FCST) - nao usa P25/P26 nem a serie composta em R25/R26.
 const LEADERSHIP_CANAL='FDVP';
-const LIDER_CARGOS=new Set(['Gerente Sr','Gerente','Supervisor','Team Leader'].map(normText));
+const LIDER_CARGOS=new Set(['Gerente Sr','Gerente','Supervisor','Ejecutivo Comercial Senior'].map(normText));
 const ANALISTA_CARGOS=new Set(['Ejecutivo de Ventas de Campo','Ejecutivo Comercial','Ejecutivo Comercial Semi Senior'].map(normText));
 function isLiderCargo(cargo){return LIDER_CARGOS.has(normText(cargo));}
 function isAnalistaCargo(cargo){return ANALISTA_CARGOS.has(normText(cargo));}
@@ -986,7 +995,7 @@ function computeLeadershipStats(year){
   if(!months.length)return null;
   const avgLider=months.reduce((s,i)=>s+liderTot[i],0)/months.length;
   const avgAnalista=months.reduce((s,i)=>s+analistaTot[i],0)/months.length;
-  const tlRows=merged.filter(r=>normText(r.cargo)==='TEAM LEADER');
+  const tlRows=merged.filter(r=>normText(r.cargo)==='EJECUTIVO COMERCIAL SENIOR');
   const avgTl=tlRows.length?months.reduce((s,i)=>s+monthlyTotals(tlRows,12)[i],0)/months.length:0;
   return{
     avgLider,avgAnalista,monthsCount:months.length,
@@ -1002,12 +1011,12 @@ function renderLeadershipRatio(){
   const s25=computeLeadershipStats('2025');
   const s26=computeLeadershipStats('2026');
   const sub=document.getElementById('liderSub');
-  if(sub)sub.textContent='Apenas Realizado — Canal FDVP · Líderes = Gerente Sr, Gerente, Supervisor, Team Leader · Analistas = Ejecutivo de Ventas de Campo, Ejecutivo Comercial, Ejecutivo Comercial Semi Senior';
+  if(sub)sub.textContent='Apenas Realizado — Canal FDVP · Líderes = Gerente Sr, Gerente, Supervisor, Ejecutivo Comercial Senior (ex-Team Leader) · Analistas = Ejecutivo de Ventas de Campo, Ejecutivo Comercial, Ejecutivo Comercial Semi Senior';
   const card=(title,stats)=>{
     if(!stats)return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
       +`<p class="text-sm text-gray-400">Sem dado realizado para FDVP</p></div>`;
-    const tlNote=stats.hasTeamLeader?'inclui Team Leader':'<span style="color:#E03131">sem Team Leader na fonte</span>';
+    const tlNote=stats.hasTeamLeader?'inclui Ejecutivo Comercial Senior (ex-Team Leader)':'<span style="color:#E03131">sem Ejecutivo Comercial Senior/Team Leader na fonte</span>';
     return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
       +`<p class="text-2xl font-black" style="color:#003087">${fmt1(stats.ratio)} : 1</p>`
@@ -1039,8 +1048,9 @@ function renderLeadershipRatio(){
     warnEl.classList.toggle('hidden',!mismatchTL);
     if(mismatchTL){
       warnEl.innerHTML='<b>Atenção — comparação não é 1:1:</b> a aba fonte do Realizado 2026 ("Real 2026") '
-        +'não traz nenhuma linha de cargo "Team Leader", que responde por boa parte do headcount de líderes em 2025. '
-        +'A variação na proporção abaixo reflete esse gap de dado na origem, não necessariamente uma mudança real de estrutura.';
+        +'não traz nenhuma linha de cargo "Ejecutivo Comercial Senior" (o antigo "Team Leader" renomeado), que responde '
+        +'por boa parte do headcount de líderes em 2025. A variação na proporção abaixo reflete esse gap de dado na '
+        +'origem, não necessariamente uma mudança real de estrutura.';
     }
   }
 }
