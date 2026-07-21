@@ -1341,8 +1341,8 @@ function openUnitModal(totalKey,volKey,lbl){
   var avg25=v25.length?v25.reduce(function(a,b){return a+b;},0)/v25.length:null;
   var avg26=v26.length?v26.reduce(function(a,b){return a+b;},0)/v26.length:null;
   var varPct=(avg25&&avg26)?((avg26-avg25)/avg25*100):null;
-  document.getElementById("um-kpi25").textContent=avg25!==null?("R$"+avg25.toFixed(1)+"M"):"—";
-  document.getElementById("um-kpi26").textContent=avg26!==null?("R$"+avg26.toFixed(1)+"M"):"—";
+  document.getElementById("um-kpi25").textContent=avg25!==null?("R$"+avg25.toFixed(2)+"M"):"—";
+  document.getElementById("um-kpi26").textContent=avg26!==null?("R$"+avg26.toFixed(2)+"M"):"—";
   var varEl=document.getElementById("um-kpivar");
   if(varPct!==null){
     var sign=varPct>=0?"+":"";
