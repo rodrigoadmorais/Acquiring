@@ -688,7 +688,7 @@ function fc(v,t){
     const s='R$'+Math.abs(v).toFixed(2);
     return v<0?`<span class="vn">${s}</span>`:v>0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
   }
-  const s=v.toFixed(1)+'M';
+  const s=v.toFixed(2)+'M';
   return v<0?`<span class="vn">${s}</span>`:v>0?`<span class="vp">${s}</span>`:`<span class="vz">${s}</span>`;
 }
 
