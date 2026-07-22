@@ -1302,9 +1302,8 @@ function renderUnitarios(){
       :`<span style="font-size:.78rem;color:var(--muted)">—</span>`;
     const cardLbl=isAbs?m.sub:(m.lbl+' · '+m.sub);
     const mKey=m.totalKey+'|'+m.volKey+'|'+encodeURIComponent(m.lbl);
-    const ownerTag=m.ownerEmail?'a':'span';
-    const ownerAttrs=m.ownerEmail?` href="mailto:${m.ownerEmail}" title="Enviar e-mail para ${m.ownerEmail}" onclick="event.stopPropagation()"`:'';
-    const ownerHtml=m.owner?`<${ownerTag}${ownerAttrs} style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ml-blue);background:rgba(52,131,250,.1);border-radius:999px;padding:3px 9px;white-space:nowrap;text-decoration:none;cursor:${m.ownerEmail?'pointer':'default'}">${m.owner}</${ownerTag}>`:'';
+    const ownerAttrs=m.ownerEmail?` onclick="event.stopPropagation();showOwnerPopover('${m.ownerEmail}',this)" title="Ver contato"`:'';
+    const ownerHtml=m.owner?`<span${ownerAttrs} style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ml-blue);background:rgba(52,131,250,.1);border-radius:999px;padding:3px 9px;white-space:nowrap;cursor:${m.ownerEmail?'pointer':'default'}">${m.owner}</span>`:'';
     const noteHtml=m.note?`<div style="margin-top:10px;padding:8px 10px;background:rgba(255,159,28,.08);border-left:2px solid var(--orange);border-radius:6px;font-size:.68rem;line-height:1.4;color:#7A4A00">${m.note}</div>`:'';
     return `<div class="card" style="padding:24px 28px;cursor:pointer;transition:box-shadow .15s" onclick="openUnitModal('${m.totalKey}','${m.volKey}','${m.lbl}')" onmouseenter="this.style.boxShadow='0 28px 60px rgba(15,23,42,.15)'" onmouseleave="this.style.boxShadow=''">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px">
@@ -1331,6 +1330,36 @@ function renderUnitarios(){
   });
   document.getElementById('unitarios-cards').innerHTML=cards.join('');
   renderUnitariosInsights(metrics,pair,idx);
+}
+
+function showOwnerPopover(email,el){
+  document.querySelectorAll('.owner-pop').forEach(function(p){p.remove();});
+  var pop=document.createElement('div');
+  pop.className='owner-pop';
+  pop.style.cssText='position:absolute;z-index:99999;background:#111827;color:#F9FAFB;padding:10px 12px;border-radius:12px;font-size:.74rem;box-shadow:0 12px 32px rgba(0,0,0,.3);display:flex;align-items:center;gap:10px;white-space:nowrap';
+  pop.innerHTML='<span style="font-weight:600">'+email+'</span>'
+    +'<button class="op-copy" style="background:#3483FA;border:none;color:#fff;border-radius:7px;padding:4px 10px;font-size:.7rem;cursor:pointer;font-weight:700">Copiar</button>';
+  document.body.appendChild(pop);
+  var rect=el.getBoundingClientRect();
+  pop.style.top=(rect.bottom+window.scrollY+6)+'px';
+  pop.style.left=(rect.left+window.scrollX)+'px';
+  var copyBtn=pop.querySelector('.op-copy');
+  copyBtn.onclick=function(ev){
+    ev.stopPropagation();
+    var done=function(){copyBtn.textContent='Copiado ✓';setTimeout(function(){pop.remove();},1000);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(email).then(done).catch(done);
+    } else {
+      var ta=document.createElement('textarea');
+      ta.value=email;document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');}catch(e){}
+      document.body.removeChild(ta);done();
+    }
+  };
+  pop.onclick=function(ev){ev.stopPropagation();};
+  setTimeout(function(){
+    document.addEventListener('click',function closeIt(){pop.remove();document.removeEventListener('click',closeIt);},{once:true});
+  },0);
 }
 
 var _unitModalChart=null;
