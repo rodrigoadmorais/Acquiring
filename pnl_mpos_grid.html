@@ -1302,21 +1302,6 @@ function renderUnitarios(){
     return'R$'+(a>=100?a.toFixed(0):a.toFixed(1))+'M';
   }
 
-  // sparkline SVG da tendência mensal do Realizado 2026 (valor total abs), para preencher o card
-  function sparkSVG(field){
-    var pts=[];
-    for(var mi=0;mi<12;mi++){var t=getA('Realizado 2026',field,[mi]);if(t!==null&&t!==undefined)pts.push(Math.abs(t));}
-    if(pts.length<2)return'<div style="font-size:.62rem;color:var(--muted);opacity:.6">sem série</div>';
-    var min=Math.min.apply(null,pts),max=Math.max.apply(null,pts),range=(max-min)||1;
-    var W=100,H=34,step=W/(pts.length-1);
-    var coords=pts.map(function(v,i){return[i*step,H-3-((v-min)/range)*(H-6)];});
-    var d=coords.map(function(c,i){return(i?'L':'M')+c[0].toFixed(1)+' '+c[1].toFixed(1);}).join(' ');
-    var area=d+' L'+W+' '+H+' L0 '+H+' Z';
-    return'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:40px;display:block">'
-      +'<path d="'+area+'" fill="rgba(52,131,250,.10)"/>'
-      +'<path d="'+d+'" fill="none" stroke="#3483FA" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>'
-      +'</svg>';
-  }
 
   const cards=metrics.map(function(m){
     const tL=getA(pair.left,m.totalKey,idx);
@@ -1336,8 +1321,12 @@ function renderUnitarios(){
     const pct=(compL!==null&&compL!==0&&compR!==null)?((compR-compL)/compL*100):null;
     const good=pct!==null?(m.benPos?pct>0:pct<0):null;
     const vsLbl=pair.left==='Realizado 2025'?'2025':(pair.left==='Plano 2026'?'Plano':'');
-    const pctHtml=pct!==null
-      ?`<span style="font-size:.78rem;font-weight:700;color:${good?'var(--green)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(1)}% vs ${vsLbl}</span>`
+    const pctColor=good?'var(--green)':'var(--red)';
+    const pctBg=good?'rgba(0,166,80,.1)':'rgba(229,57,53,.1)';
+    const arrow=pct!==null?(pct>=0?'▲':'▼'):'';
+    const pctBadge=pct!==null
+      ?`<div style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:${pctBg}"><span style="font-size:.85rem;color:${pctColor}">${arrow}</span><span style="font-size:1.05rem;font-weight:800;letter-spacing:-.03em;color:${pctColor}">${pct>=0?'+':''}${pct.toFixed(1)}%</span></div>
+         <div style="font-size:.62rem;color:var(--muted);font-weight:600;text-align:center;margin-top:4px">vs ${vsLbl}</div>`
       :`<span style="font-size:.78rem;color:var(--muted)">—</span>`;
     const fyTotal=getA('Realizado 2026',m.totalKey,PERIODS.FY);
     const mKey=m.totalKey+'|'+m.volKey+'|'+encodeURIComponent(m.lbl);
@@ -1363,26 +1352,22 @@ function renderUnitarios(){
             <span style="font-size:.68rem;color:var(--muted);font-weight:600;opacity:.7;white-space:nowrap">Ver evolução ↗</span>
           </div>
         </div>
-        <div style="display:flex;align-items:flex-end;gap:40px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
           <div style="flex-shrink:0">
             <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.left}</div>
-            <div style="font-size:1.7rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dL,isAbs)}</div>
+            <div style="font-size:1.8rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dL,isAbs)}</div>
           </div>
+          <div style="flex-shrink:0;text-align:center">${pctBadge}</div>
           <div style="flex-shrink:0">
             <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
-            <div style="font-size:1.7rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dR,isAbs)}</div>
+            <div style="font-size:1.8rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dR,isAbs)}</div>
           </div>
-          <div style="flex:1;min-width:60px;align-self:flex-end;padding-bottom:2px">
-            <div style="font-size:.6rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Tendência 2026</div>
-            ${sparkSVG(m.totalKey)}
-          </div>
-          <div style="flex-shrink:0;text-align:right;padding:10px 16px;background:#F8FAFC;border:1px solid var(--border);border-radius:14px">
+          <div style="flex-shrink:0;text-align:right;padding:12px 18px;background:#F8FAFC;border:1px solid var(--border);border-radius:14px">
             <div style="font-size:.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Total no ano · Real 2026</div>
-            <div style="font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:#1F2937;margin-top:2px">${fmtFY(fyTotal)}</div>
+            <div style="font-size:1.4rem;font-weight:800;letter-spacing:-.04em;color:#1F2937;margin-top:2px">${fmtFY(fyTotal)}</div>
             <div style="font-size:.6rem;color:var(--muted);margin-top:1px">acumulado (R$M)</div>
           </div>
         </div>
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">${pctHtml}</div>
         ${noteHtml}
       </div>
     </div>`;
