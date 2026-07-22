@@ -1246,12 +1246,12 @@ function renderUnitarios(){
   btn.onclick=function(){ST.unit_pair=ST.unit_pair==='real'?'plano':'real';renderUnitarios();};
 
   const metrics=[
-    {lbl:'Receita Líq./Device',sub:'Receitas e Impostos',totalKey:'receita_liq',volKey:'vol',fmt:'cunit',benPos:true},
-    {lbl:'CMV/Device',sub:'CMV',totalKey:'cmv',volKey:'vol',fmt:'cunit',benPos:false},
-    {lbl:'Custo/Bobina',sub:'Bobinas · kit c/ 6',totalKey:'other_vfc',volKey:'vol_bobinas',fmt:'cunit',benPos:false},
-    {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false},
-    {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false},
-    {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false},
+    {lbl:'Receita Líq./Device',sub:'Receitas e Impostos',totalKey:'receita_liq',volKey:'vol',fmt:'cunit',benPos:true,owner:'Negócios'},
+    {lbl:'CMV/Device',sub:'CMV',totalKey:'cmv',volKey:'vol',fmt:'cunit',benPos:false,owner:'Controladoria',ownerEmail:'gabriel.gassantos@mercadolivre.com'},
+    {lbl:'Custo/Bobina',sub:'Bobinas · kit c/ 6',totalKey:'other_vfc',volKey:'vol_bobinas',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com'},
+    {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com'},
+    {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',note:'Migração da operação terceirizada para própria viabilizou despacho de segunda a sábado (antes seg-sex), ganhando agilidade operacional.'},
+    {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',note:'Início da modalidade de entrega Same Day.'},
   ];
 
   function fmtUnitVal(v,abs){
@@ -1297,10 +1297,16 @@ function renderUnitarios(){
       :`<span style="font-size:.78rem;color:var(--muted)">—</span>`;
     const cardLbl=isAbs?m.sub:(m.lbl+' · '+m.sub);
     const mKey=m.totalKey+'|'+m.volKey+'|'+encodeURIComponent(m.lbl);
+    const ownerTip=m.ownerEmail?' title="'+m.ownerEmail+'"':'';
+    const ownerHtml=m.owner?`<span${ownerTip} style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ml-blue);background:rgba(52,131,250,.1);border-radius:999px;padding:3px 9px;white-space:nowrap;cursor:${m.ownerEmail?'help':'default'}">${m.owner}</span>`:'';
+    const noteHtml=m.note?`<div style="margin-top:10px;padding:8px 10px;background:rgba(255,159,28,.08);border-left:2px solid var(--orange);border-radius:6px;font-size:.68rem;line-height:1.4;color:#7A4A00">${m.note}</div>`:'';
     return `<div class="card" style="padding:24px 28px;cursor:pointer;transition:box-shadow .15s" onclick="openUnitModal('${m.totalKey}','${m.volKey}','${m.lbl}')" onmouseenter="this.style.boxShadow='0 28px 60px rgba(15,23,42,.15)'" onmouseleave="this.style.boxShadow=''">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">${isAbs?m.sub:m.lbl}</div>
-        <span style="font-size:.65rem;color:var(--muted);font-weight:600;opacity:.7">Ver evolução ↗</span>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">${isAbs?m.sub:m.lbl}</div>
+          ${ownerHtml}
+        </div>
+        <span style="font-size:.65rem;color:var(--muted);font-weight:600;opacity:.7;white-space:nowrap">Ver evolução ↗</span>
       </div>
       <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${isAbs?'Total R$M':m.sub}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
@@ -1314,6 +1320,7 @@ function renderUnitarios(){
         </div>
       </div>
       <div style="padding-top:12px;border-top:1px solid var(--border)">${pctHtml}</div>
+      ${noteHtml}
     </div>`;
   });
   document.getElementById('unitarios-cards').innerHTML=cards.join('');
