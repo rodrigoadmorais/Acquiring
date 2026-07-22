@@ -1991,6 +1991,91 @@ function parseMNG(values){
   }
 }
 
+// Normaliza rótulo da coluna PYL_4 (remove acentos/hifens variantes) para casar com o mapa abaixo
+function normLbl(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'') // remove acentos
+    .replace(/[‐-―]/g,'-') // normaliza travessões/hifens
+    .toLowerCase().trim().replace(/\s+/g,' ');
+}
+
+// PYL_4 (coluna G da aba MNG) → campo interno do dashboard
+// Observação: "Other Shipping Costs" existe na planilha mas não está incluída em nenhum
+// total hoje (Custo/Envio soma apenas Distribución Point + Interco Distribucion + Interco Allocations).
+const PYL4_FIELD_MAP={
+  'cost of products sold':'cmv',
+  'insumos point':'insumos',
+  'reacondicionamientos point':'refurb',
+  'distribucion point':'shipping',
+  'warehousing point':'warehousing',
+  'mpos ajuste vnr':'provision',
+  'sales mpos':'sales_gross',
+  'descuentos mpos':'descuentos',
+  'cmv - sales tax icms':'icms',
+  'cmv - sales tax pis y cofins':'pis_cofins',
+  'cogs interco allocations - egresos':'interco_egr',
+  'cogs interco distribucion productos - egresos':'interco_dist',
+  'cogs interco warehousing productos - egresos':'interco_wh',
+  'scrap mpos':'scrap',
+  'prevision costo mpos':'prev_costo',
+  'prevision costo mpos (hedge)':'hedge',
+  'alquiler mpos':'alquiler',
+  'incobrables':'bad_debt',
+  'incobrables mp':'bad_debt',
+  'telemetria point':'telemetria',
+};
+
+function parsePYLMain(values){
+  if(!values||values.length<2)return;
+  console.log('[MPOS PYL]',values.length,'rows');
+  // Header: primeira linha com ≥3 colunas YYYYMM (col A..G são Cenario/MNG_1-4/PYL_3-4)
+  var hdrIdx=-1,colMap={};
+  for(var ri=0;ri<Math.min(values.length,10);ri++){
+    var row=values[ri]||[];var tmp={};var cnt=0;
+    row.forEach(function(h,ci){var ym=parseYYYYMM(h);if(ym){tmp[ym.year+'_'+ym.month]=ci;cnt++;}});
+    if(cnt>=3){hdrIdx=ri;colMap=tmp;break;}
+  }
+  if(hdrIdx<0){console.warn('[MPOS PYL] Sem header YYYYMM na aba MNG');return;}
+  var years={};
+  Object.keys(colMap).forEach(function(k){years[k.split('_')[0]]=1;});
+  var yearList=Object.keys(years).map(Number);
+
+  // Acumuladores: acc[verKey][field] = Array(12) — soma quando há mais de uma linha-fonte (ex.: bad_debt)
+  var acc={};
+  var matched=0;
+  for(var r=hdrIdx+1;r<values.length;r++){
+    var row=values[r]||[];
+    var cenRaw=String(row[0]||'').trim();
+    var pyl4=normLbl(row[6]);
+    var field=PYL4_FIELD_MAP[pyl4];
+    if(!field)continue;
+    matched++;
+    yearList.forEach(function(year){
+      var key=cenToKey(cenRaw,year);
+      if(!key||!D[key])return;
+      if(!acc[key])acc[key]={};
+      if(!acc[key][field])acc[key][field]=Array(12).fill(null);
+      for(var m=0;m<12;m++){
+        var ci=colMap[year+'_'+m];
+        if(ci===undefined)continue;
+        var raw=row[ci];
+        if(raw===undefined||raw===null||String(raw).trim()==='')continue; // coluna em branco → não soma, mantém null
+        var v=parseFloat(String(raw).replace(/\./g,'').replace(',','.'));
+        if(isNaN(v))continue;
+        var mv=v/1e6;
+        acc[key][field][m]=(acc[key][field][m]===null?0:acc[key][field][m])+mv;
+      }
+    });
+  }
+  console.log('[MPOS PYL] linhas casadas:',matched);
+  Object.keys(acc).forEach(function(key){
+    Object.keys(acc[key]).forEach(function(field){
+      D[key][field]=acc[key][field];
+      console.log('[MPOS PYL] →',key,field,acc[key][field].slice(0,6));
+    });
+  });
+}
+
 function doFetchSheets(){
   function fetchWith(tabName,parser){
     return getRetry(tabName+'!A:AZ',0)
@@ -2003,7 +2088,7 @@ function doFetchSheets(){
     .then(function(){return sleep(160);})
     .then(function(){return fetchWith('Vol Despachos e Envios',parseVolDespacho);})
     .then(function(){return sleep(160);})
-    .then(function(){return fetchWith('MNG',parseMNG);})
+    .then(function(){return fetchWith('MNG',function(values){parseMNG(values);parsePYLMain(values);});})
     .then(function(){return sleep(160);})
     .then(function(){return getRetry('Estoque!A1:M90',0).then(function(res){if(res&&res.values)parseEstoque(res.values);}).catch(function(e){console.error('[MPOS Estoque] erro',e);});})
     .then(function(){render();});
