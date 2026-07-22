@@ -266,12 +266,13 @@
             <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
           </select>
           <button id="btn-unit-abs" onclick="ST.unit_abs=!ST.unit_abs;renderUnitarios()" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--ml-blue);background:transparent;color:var(--ml-blue);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Ver Absoluto (R$M)</button>
+          <button id="btn-unit-ytd" onclick="ST.unit_ytd=!ST.unit_ytd;renderUnitarios()" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--orange);background:transparent;color:var(--orange);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar YTD (mesmos meses)</button>
           <button id="btn-unit-pair" onclick="" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano 2026</button>
         </div>
       </div>
     </div>
     <div id="unitarios-insights" style="margin-bottom:16px"></div>
-    <div id="unitarios-cards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px"></div>
+    <div id="unitarios-cards" style="display:grid;grid-template-columns:1fr;gap:14px"></div>
   </div>
   <div id="unit-modal-overlay" onclick="closeUnitModal()" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)"></div>
   <div id="unit-modal" style="display:none;position:fixed;z-index:9991;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:24px;padding:32px 36px 28px;box-shadow:0 32px 100px rgba(0,0,0,.22);width:min(1020px,96vw);max-height:92vh;overflow:auto">
@@ -301,9 +302,15 @@
         <div id="um-kpivar" style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em;color:#1F2937">—</div>
       </div>
     </div>
-    <!-- chart -->
-    <div id="unit-modal-chart-wrap" style="position:relative;width:100%;height:360px">
+    <!-- chart: valor -->
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#374151;margin-bottom:8px">💰 Evolução do Valor Total (R$M)</div>
+    <div id="unit-modal-chart-wrap" style="position:relative;width:100%;height:280px;margin-bottom:26px">
       <canvas id="unit-modal-canvas"></canvas>
+    </div>
+    <!-- chart: volume -->
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#374151;margin-bottom:8px">📦 Evolução do Volume (unidades)</div>
+    <div id="unit-modal-chart-wrap-vol" style="position:relative;width:100%;height:280px">
+      <canvas id="unit-modal-canvas-vol"></canvas>
     </div>
   </div>
 
@@ -653,7 +660,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null};
+const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null,unit_ytd:false};
 const COMP_PAIRS={
   real:      {left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
   real_plano:{left:'Realizado 2025',right:'Plano 2026',    lbl:'Realizado 2025 vs Plano 2026'},
@@ -1230,9 +1237,23 @@ function renderUnitariosInsights(metrics,pair,idx){
     +'</div>';
   document.getElementById('unitarios-insights').innerHTML=html;
 }
+// Alinha o período do lado esquerdo (ex.: ano anterior inteiro) ao volume de meses
+// realmente disponível no lado direito, quando o toggle "Comparar YTD" está ativo.
+function getUnitIdx(baseIdx,verRight){
+  if(!ST.unit_ytd)return baseIdx;
+  var d=D[verRight];
+  if(!d)return baseIdx;
+  var arr=(d.vol&&d.vol.some(function(v){return v!==null&&v!==undefined;}))?d.vol:d.sales_gross;
+  if(!arr)return baseIdx;
+  var last=-1;
+  for(var i=0;i<12;i++){if(arr[i]!==null&&arr[i]!==undefined)last=i;}
+  if(last<0)return baseIdx;
+  return baseIdx.filter(function(i){return i<=last;});
+}
+
 function renderUnitarios(){
   const MOS_LABELS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const idx=ST.unit_month!==null?[ST.unit_month]:(PERIODS[ST.q]||PERIODS.FY);
+  const baseIdx=ST.unit_month!==null?[ST.unit_month]:(PERIODS[ST.q]||PERIODS.FY);
   // render month selector
   const sel=document.getElementById('unit-month-sel');
   if(sel){
@@ -1241,17 +1262,24 @@ function renderUnitarios(){
   const pair=ST.unit_pair==='real'
     ?{left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'}
     :{left:'Plano 2026',right:'Realizado 2026',lbl:'Plano 2026 vs Realizado 2026'};
+  const idx=getUnitIdx(baseIdx,pair.right);
   const btn=document.getElementById('btn-unit-pair');
   btn.textContent=ST.unit_pair==='real'?'Comparar Plano 2026':'Comparar Realizado 2025';
   btn.onclick=function(){ST.unit_pair=ST.unit_pair==='real'?'plano':'real';renderUnitarios();};
+  const btnYtd=document.getElementById('btn-unit-ytd');
+  if(btnYtd){
+    btnYtd.style.background=ST.unit_ytd?'var(--orange)':'transparent';
+    btnYtd.style.color=ST.unit_ytd?'#fff':'var(--orange)';
+    btnYtd.textContent=ST.unit_ytd?'YTD ativo ✓':'Comparar YTD (mesmos meses)';
+  }
 
   const metrics=[
-    {lbl:'Receita Líq./Device',sub:'Receitas e Impostos',totalKey:'receita_liq',volKey:'vol',fmt:'cunit',benPos:true,owner:'Negócios'},
-    {lbl:'CMV/Device',sub:'CMV',totalKey:'cmv',volKey:'vol',fmt:'cunit',benPos:false,owner:'Controladoria',ownerEmail:'gabriel.gassantos@mercadolivre.com'},
-    {lbl:'Custo/Bobina',sub:'Bobinas · kit c/ 6',totalKey:'other_vfc',volKey:'vol_bobinas',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com'},
-    {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com'},
-    {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',note:'Migração da operação terceirizada para própria viabilizou despacho de segunda a sábado (antes seg-sex), ganhando agilidade operacional.'},
-    {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',note:'Full passou de 25% dos envios em 2025 para 45% em 2026. Same Day, modalidade iniciada no período, já representa 4% dos envios mensais.'},
+    {lbl:'Receita Líq./Device',sub:'Receitas e Impostos',totalKey:'receita_liq',volKey:'vol',fmt:'cunit',benPos:true,owner:'Negócios',icon:'💰'},
+    {lbl:'CMV/Device',sub:'CMV',totalKey:'cmv',volKey:'vol',fmt:'cunit',benPos:false,owner:'Controladoria',ownerEmail:'gabriel.gassantos@mercadolivre.com',icon:'🏷️'},
+    {lbl:'Custo/Bobina',sub:'Bobinas · kit c/ 6',totalKey:'other_vfc',volKey:'vol_bobinas',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🧻'},
+    {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'📡'},
+    {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🏭',note:'Migração da operação terceirizada para própria viabilizou despacho de segunda a sábado (antes seg-sex), ganhando agilidade operacional.'},
+    {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🚚',note:'Full passou de 25% dos envios em 2025 para 45% em 2026. Same Day, modalidade iniciada no período, já representa 4% dos envios mensais.'},
   ];
 
   function fmtUnitVal(v,abs){
@@ -1274,12 +1302,7 @@ function renderUnitarios(){
     return ucB-ucA;
   });
 
-  // Por hora: manter os dois cards com comentário (Envio e Despacho) lado a lado, na 2ª linha
-  const withNote=metrics.filter(function(m){return m.note;});
-  const withoutNote=metrics.filter(function(m){return !m.note;});
-  const orderedMetrics=withoutNote.slice(0,2).concat(withNote).concat(withoutNote.slice(2));
-
-  const cards=orderedMetrics.map(function(m){
+  const cards=metrics.map(function(m){
     const tL=getA(pair.left,m.totalKey,idx);
     const vL=getA(pair.left,m.volKey,idx);
     const tR=getA(pair.right,m.totalKey,idx);
@@ -1304,31 +1327,34 @@ function renderUnitarios(){
     const mKey=m.totalKey+'|'+m.volKey+'|'+encodeURIComponent(m.lbl);
     const ownerAttrs=m.ownerEmail?` onclick="event.stopPropagation();showOwnerPopover('${m.ownerEmail}',this)" title="Ver contato"`:'';
     const ownerHtml=m.owner?`<span${ownerAttrs} style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ml-blue);background:rgba(52,131,250,.1);border-radius:999px;padding:3px 9px;white-space:nowrap;cursor:${m.ownerEmail?'pointer':'default'}">${m.owner}</span>`:'';
-    const noteHtml=m.note?`<div style="margin-top:10px;padding:8px 10px;background:rgba(255,159,28,.08);border-left:2px solid var(--orange);border-radius:6px;font-size:.68rem;line-height:1.4;color:#7A4A00">${m.note}</div>`:'';
-    return `<div class="card" style="padding:24px 28px;cursor:pointer;transition:box-shadow .15s" onclick="openUnitModal('${m.totalKey}','${m.volKey}','${m.lbl}')" onmouseenter="this.style.boxShadow='0 28px 60px rgba(15,23,42,.15)'" onmouseleave="this.style.boxShadow=''">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">${isAbs?m.sub:m.lbl}</div>
-          ${ownerHtml}
+    const noteHtml=m.note?`<div style="margin-top:12px;padding:8px 10px;background:rgba(255,159,28,.08);border-left:2px solid var(--orange);border-radius:6px;font-size:.68rem;line-height:1.4;color:#7A4A00">${m.note}</div>`:'';
+    return `<div class="card" style="padding:22px 26px;cursor:pointer;transition:box-shadow .15s;display:flex;gap:20px;align-items:stretch" onclick="openUnitModal('${m.totalKey}','${m.volKey}','${m.lbl}')" onmouseenter="this.style.boxShadow='0 28px 60px rgba(15,23,42,.15)'" onmouseleave="this.style.boxShadow=''">
+      <div style="flex-shrink:0;width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,rgba(255,230,0,.22),rgba(52,131,250,.12));display:flex;align-items:center;justify-content:center;font-size:2.1rem">${m.icon||'📊'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#1F2937">${isAbs?m.sub:m.lbl}</div>
+            ${ownerHtml}
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+            <span onclick="event.stopPropagation();showCalcDetail('${m.totalKey}','${m.volKey}','${m.lbl.replace(/'/g,"\\'")}','${pair.left}','${pair.right}')" style="font-size:.68rem;color:var(--ml-blue);font-weight:700;opacity:.85;white-space:nowrap;cursor:pointer">🔍 Ver base</span>
+            <span style="font-size:.68rem;color:var(--muted);font-weight:600;opacity:.7;white-space:nowrap">Ver evolução ↗</span>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-          <span onclick="event.stopPropagation();showCalcDetail('${m.totalKey}','${m.volKey}','${m.lbl.replace(/'/g,"\\'")}','${pair.left}','${pair.right}')" style="font-size:.65rem;color:var(--ml-blue);font-weight:700;opacity:.85;white-space:nowrap;cursor:pointer">🔍 Ver base</span>
-          <span style="font-size:.65rem;color:var(--muted);font-weight:600;opacity:.7;white-space:nowrap">Ver evolução ↗</span>
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:14px">${isAbs?'Total R$M':m.sub}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px;max-width:520px">
+          <div>
+            <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.left}</div>
+            <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dL,isAbs)}</div>
+          </div>
+          <div>
+            <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
+            <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dR,isAbs)}</div>
+          </div>
         </div>
+        <div style="padding-top:12px;border-top:1px solid var(--border)">${pctHtml}</div>
+        ${noteHtml}
       </div>
-      <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${isAbs?'Total R$M':m.sub}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
-        <div>
-          <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.left}</div>
-          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dL,isAbs)}</div>
-        </div>
-        <div>
-          <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
-          <div style="font-size:1.5rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dR,isAbs)}</div>
-        </div>
-      </div>
-      <div style="padding-top:12px;border-top:1px solid var(--border)">${pctHtml}</div>
-      ${noteHtml}
     </div>`;
   });
   document.getElementById('unitarios-cards').innerHTML=cards.join('');
@@ -1350,10 +1376,10 @@ const CALC_BREAKDOWN={
 
 function showCalcDetail(totalKey,volKey,lbl,verL,verR){
   document.querySelectorAll('.calc-pop-overlay').forEach(function(p){p.remove();});
-  var idx=ST.unit_month!==null?[ST.unit_month]:(PERIODS[ST.q]||PERIODS.FY);
-  var periodLbl=ST.unit_month!==null
+  var idx=getUnitIdx(ST.unit_month!==null?[ST.unit_month]:(PERIODS[ST.q]||PERIODS.FY),verR);
+  var periodLbl=(ST.unit_month!==null
     ?['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][ST.unit_month]
-    :ST.q;
+    :ST.q)+(ST.unit_ytd?' · YTD':'');
   var comps=CALC_BREAKDOWN[totalKey]||null;
   function row(ver){
     var t=getA(ver,totalKey,idx);
@@ -1430,52 +1456,21 @@ function showOwnerPopover(email,el){
   },0);
 }
 
-var _unitModalChart=null;
-function openUnitModal(totalKey,volKey,lbl){
-  var mos25=VER_MOS["Realizado 2025"]||[];
-  var mos26=VER_MOS["Realizado 2026"]||[];
-  // Build 24-point arrays (null-padded so each series occupies its own half)
-  var raw25=[],raw26=[];
-  for(var mi=0;mi<12;mi++){
-    var t=getA("Realizado 2025",totalKey,[mi]);
-    raw25.push(t!==null?Math.abs(t):null);
-  }
-  for(var mi=0;mi<12;mi++){
-    var t=getA("Realizado 2026",totalKey,[mi]);
-    raw26.push(t!==null?Math.abs(t):null);
-  }
-  var data25=raw25.concat(new Array(12).fill(null));
-  var data26=new Array(12).fill(null).concat(raw26);
-  // KPI cards
-  var v25=raw25.filter(function(v){return v!==null;}),v26=raw26.filter(function(v){return v!==null;});
-  var avg25=v25.length?v25.reduce(function(a,b){return a+b;},0)/v25.length:null;
-  var avg26=v26.length?v26.reduce(function(a,b){return a+b;},0)/v26.length:null;
-  var varPct=(avg25&&avg26)?((avg26-avg25)/avg25*100):null;
-  document.getElementById("um-kpi25").textContent=avg25!==null?("R$"+avg25.toFixed(2)+"M"):"—";
-  document.getElementById("um-kpi26").textContent=avg26!==null?("R$"+avg26.toFixed(2)+"M"):"—";
-  var varEl=document.getElementById("um-kpivar");
-  if(varPct!==null){
-    var sign=varPct>=0?"+":"";
-    varEl.textContent=sign+varPct.toFixed(1)+"% vs 2025";
-    varEl.style.color=varPct>=0?"#00A650":"#E53935";
-  } else { varEl.textContent="—"; varEl.style.color="#1F2937"; }
-  // Labels: /25 and /26 suffix
-  var ptLabels=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-  var labels=ptLabels.map(function(m){return m+"/25";}).concat(ptLabels.map(function(m){return m+"/26";}));
-  document.getElementById("unit-modal-label").textContent=lbl;
-  document.getElementById("unit-modal-overlay").style.display="block";
-  document.getElementById("unit-modal").style.display="block";
-  if(_unitModalChart){_unitModalChart.destroy();_unitModalChart=null;}
-  // Use responsive Chart.js — let it own the canvas; no manual DPR math
-  var wrap=document.getElementById("unit-modal-chart-wrap");
-  wrap.innerHTML='<canvas id="unit-modal-canvas"></canvas>';
-  var canvas=document.getElementById("unit-modal-canvas");
+function fmtValM(v){return v.toFixed(1)+"M";}
+function fmtVolCount(v){
+  var av=Math.abs(v);
+  if(av>=1e6)return(v/1e6).toFixed(1)+"M";
+  if(av>=1e3)return(v/1e3).toFixed(1)+"k";
+  return Math.round(v).toLocaleString("pt-BR");
+}
+
+// Constrói um chart de evolução 24 meses (2025 cinza → 2026 azul) num canvas específico
+function buildEvoChart(canvasId,data25,data26,labels,fmt){
+  var canvas=document.getElementById(canvasId);
   var ctx=canvas.getContext("2d");
-  // Gradients created after chart knows its size — use plugin hook
   var ptPlugin={
-    id:"ptLbls",
+    id:"ptLbls_"+canvasId,
     beforeDraw:function(chart){
-      // build gradients in chart coordinate space (correct height)
       var h=chart.chartArea?chart.chartArea.bottom-chart.chartArea.top:chart.height;
       var c=chart.ctx;
       var g25=c.createLinearGradient(0,chart.chartArea?chart.chartArea.top:0,0,(chart.chartArea?chart.chartArea.top:0)+h);
@@ -1499,10 +1494,9 @@ function openUnitModal(totalKey,volKey,lbl){
         meta.data.forEach(function(pt,i){
           var v=ds.data[i];
           if(v===null||v===undefined)return;
-          var txt=v.toFixed(1)+"M";
+          var txt=fmt(v);
           var w=c.measureText(txt).width+pad*2;
           var bx=pt.x-w/2,by=pt.y-gap-h;
-          // pill
           c.beginPath();
           c.moveTo(bx+r,by);c.lineTo(bx+w-r,by);
           c.quadraticCurveTo(bx+w,by,bx+w,by+r);
@@ -1525,7 +1519,7 @@ function openUnitModal(totalKey,volKey,lbl){
       c.restore();
     }
   };
-  _unitModalChart=new Chart(ctx,{
+  return new Chart(ctx,{
     type:"line",
     data:{
       labels:labels,
@@ -1546,7 +1540,7 @@ function openUnitModal(totalKey,volKey,lbl){
         tooltip:{
           backgroundColor:"#111827",titleColor:"#F9FAFB",bodyColor:"#D1D5DB",
           padding:14,cornerRadius:14,boxPadding:4,
-          callbacks:{label:function(item){var v=item.raw;return v===null?"—":" "+item.dataset.label+": "+v.toFixed(1)+"M";}}
+          callbacks:{label:function(item){var v=item.raw;return v===null?"—":" "+item.dataset.label+": "+fmt(v);}}
         },
       },
       scales:{
@@ -1556,16 +1550,64 @@ function openUnitModal(totalKey,volKey,lbl){
         },
         y:{
           display:true,position:"left",
-          ticks:{color:"#9CA3AF",font:{size:10},callback:function(v){return v.toFixed(1)+"M";},maxTicksLimit:6},
+          ticks:{color:"#9CA3AF",font:{size:10},callback:function(v){return fmt(v);},maxTicksLimit:6},
           grid:{color:"rgba(0,0,0,.05)"},border:{display:false}
         },
       }
     }
   });
 }
+
+var _unitModalChart=null;
+var _unitModalChartVol=null;
+function openUnitModal(totalKey,volKey,lbl){
+  // Séries 24 meses (2025 → 2026), tanto do valor total quanto do volume
+  function build24(field){
+    var raw25=[],raw26=[];
+    for(var mi=0;mi<12;mi++){
+      var t=getA("Realizado 2025",field,[mi]);
+      raw25.push(t!==null?Math.abs(t):null);
+    }
+    for(var mi=0;mi<12;mi++){
+      var t=getA("Realizado 2026",field,[mi]);
+      raw26.push(t!==null?Math.abs(t):null);
+    }
+    return{raw25:raw25,raw26:raw26,data25:raw25.concat(new Array(12).fill(null)),data26:new Array(12).fill(null).concat(raw26)};
+  }
+  var valSeries=build24(totalKey);
+  var volSeries=build24(volKey);
+
+  // KPI cards (baseados no valor total)
+  var v25=valSeries.raw25.filter(function(v){return v!==null;}),v26=valSeries.raw26.filter(function(v){return v!==null;});
+  var avg25=v25.length?v25.reduce(function(a,b){return a+b;},0)/v25.length:null;
+  var avg26=v26.length?v26.reduce(function(a,b){return a+b;},0)/v26.length:null;
+  var varPct=(avg25&&avg26)?((avg26-avg25)/avg25*100):null;
+  document.getElementById("um-kpi25").textContent=avg25!==null?("R$"+avg25.toFixed(2)+"M"):"—";
+  document.getElementById("um-kpi26").textContent=avg26!==null?("R$"+avg26.toFixed(2)+"M"):"—";
+  var varEl=document.getElementById("um-kpivar");
+  if(varPct!==null){
+    var sign=varPct>=0?"+":"";
+    varEl.textContent=sign+varPct.toFixed(1)+"% vs 2025";
+    varEl.style.color=varPct>=0?"#00A650":"#E53935";
+  } else { varEl.textContent="—"; varEl.style.color="#1F2937"; }
+
+  var ptLabels=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  var labels=ptLabels.map(function(m){return m+"/25";}).concat(ptLabels.map(function(m){return m+"/26";}));
+  document.getElementById("unit-modal-label").textContent=lbl;
+  document.getElementById("unit-modal-overlay").style.display="block";
+  document.getElementById("unit-modal").style.display="block";
+  if(_unitModalChart){_unitModalChart.destroy();_unitModalChart=null;}
+  if(_unitModalChartVol){_unitModalChartVol.destroy();_unitModalChartVol=null;}
+
+  document.getElementById("unit-modal-chart-wrap").innerHTML='<canvas id="unit-modal-canvas"></canvas>';
+  document.getElementById("unit-modal-chart-wrap-vol").innerHTML='<canvas id="unit-modal-canvas-vol"></canvas>';
+  _unitModalChart=buildEvoChart("unit-modal-canvas",valSeries.data25,valSeries.data26,labels,fmtValM);
+  _unitModalChartVol=buildEvoChart("unit-modal-canvas-vol",volSeries.data25,volSeries.data26,labels,fmtVolCount);
+}
 function closeUnitModal(){
   document.getElementById("unit-modal-overlay").style.display="none";
   document.getElementById("unit-modal").style.display="none";
+  if(_unitModalChartVol){_unitModalChartVol.destroy();_unitModalChartVol=null;}
   if(_unitModalChart){_unitModalChart.destroy();_unitModalChart=null;}
 }
 
