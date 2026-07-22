@@ -1311,7 +1311,10 @@ function renderUnitarios(){
           <div style="font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">${isAbs?m.sub:m.lbl}</div>
           ${ownerHtml}
         </div>
-        <span style="font-size:.65rem;color:var(--muted);font-weight:600;opacity:.7;white-space:nowrap">Ver evolução ↗</span>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <span onclick="event.stopPropagation();showCalcDetail('${m.totalKey}','${m.volKey}','${m.lbl.replace(/'/g,"\\'")}','${pair.left}','${pair.right}')" style="font-size:.65rem;color:var(--ml-blue);font-weight:700;opacity:.85;white-space:nowrap;cursor:pointer">🔍 Ver base</span>
+          <span style="font-size:.65rem;color:var(--muted);font-weight:600;opacity:.7;white-space:nowrap">Ver evolução ↗</span>
+        </div>
       </div>
       <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${isAbs?'Total R$M':m.sub}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
@@ -1330,6 +1333,49 @@ function renderUnitarios(){
   });
   document.getElementById('unitarios-cards').innerHTML=cards.join('');
   renderUnitariosInsights(metrics,pair,idx);
+}
+
+function showCalcDetail(totalKey,volKey,lbl,verL,verR){
+  document.querySelectorAll('.calc-pop-overlay').forEach(function(p){p.remove();});
+  var idx=ST.unit_month!==null?[ST.unit_month]:(PERIODS[ST.q]||PERIODS.FY);
+  var periodLbl=ST.unit_month!==null
+    ?['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][ST.unit_month]
+    :ST.q;
+  function row(ver){
+    var t=getA(ver,totalKey,idx);
+    var v=getA(ver,volKey,idx);
+    var uc=(t!==null&&v!==null&&v!==0)?computeUC(t,v):null;
+    return{ver:ver,t:t,v:v,uc:uc};
+  }
+  var rL=row(verL),rR=row(verR);
+  function fmtT(v){return v===null||v===undefined?'—':('R$'+v.toFixed(2)+'M');}
+  function fmtV(v){return v===null||v===undefined?'—':Math.round(v).toLocaleString('pt-BR');}
+  function fmtU(v){return v===null||v===undefined?'—':('R$'+v.toFixed(2));}
+  function line(r){
+    return '<div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px">'
+      +'<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6B7280;margin-bottom:8px">'+r.ver+'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;margin-bottom:4px"><span style="color:#6B7280">Total ('+totalKey+')</span><strong>'+fmtT(r.t)+'</strong></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;margin-bottom:8px"><span style="color:#6B7280">Volume ('+volKey+')</span><strong>'+fmtV(r.v)+'</strong></div>'
+      +'<div style="border-top:1px dashed #E5E7EB;padding-top:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:.78rem;color:#374151;font-weight:600">Custo Unitário</span><strong style="color:var(--ml-navy);font-size:1.05rem">'+fmtU(r.uc)+'</strong></div>'
+      +'</div>';
+  }
+  var overlay=document.createElement('div');
+  overlay.className='calc-pop-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)';
+  overlay.onclick=function(){overlay.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='position:fixed;z-index:9996;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:26px 28px;box-shadow:0 24px 80px rgba(0,0,0,.25);width:min(560px,92vw)';
+  box.onclick=function(ev){ev.stopPropagation();};
+  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+    +'<div style="font-size:.95rem;font-weight:800;color:#1F2937">'+lbl+'</div>'
+    +'<button style="background:#F3F4F6;border:none;cursor:pointer;border-radius:999px;padding:6px 14px;font-size:.78rem;font-weight:600;color:#6B7280">✕ Fechar</button>'
+    +'</div>'
+    +'<div style="font-size:.72rem;color:#6B7280;margin-bottom:18px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Base de cálculo · '+periodLbl+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+line(rL)+line(rR)+'</div>'
+    +'<div style="margin-top:14px;font-size:.7rem;color:#9CA3AF;text-align:center">Custo Unitário = Total (R$M) × 1.000.000 ÷ Volume</div>';
+  box.querySelector('button').onclick=function(){overlay.remove();};
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 
 function showOwnerPopover(email,el){
