@@ -1274,10 +1274,10 @@ function renderUnitarios(){
     return ucB-ucA;
   });
 
-  // Por hora: manter os dois cards com comentário (Envio e Despacho) lado a lado na mesma linha
+  // Por hora: manter os dois cards com comentário (Envio e Despacho) lado a lado, na 2ª linha
   const withNote=metrics.filter(function(m){return m.note;});
   const withoutNote=metrics.filter(function(m){return !m.note;});
-  const orderedMetrics=withNote.concat(withoutNote);
+  const orderedMetrics=withoutNote.slice(0,2).concat(withNote).concat(withoutNote.slice(2));
 
   const cards=orderedMetrics.map(function(m){
     const tL=getA(pair.left,m.totalKey,idx);
