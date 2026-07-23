@@ -1362,10 +1362,13 @@ function renderUnitarios(){
             <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:4px">${pair.right}</div>
             <div style="font-size:1.8rem;font-weight:800;letter-spacing:-.05em">${fmtUnitVal(dR,isAbs)}</div>
           </div>
-          <div style="flex-shrink:0;text-align:right;padding:12px 18px;background:#F8FAFC;border:1px solid var(--border);border-radius:14px">
-            <div style="font-size:.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Total no ano · Real 2026</div>
-            <div style="font-size:1.4rem;font-weight:800;letter-spacing:-.04em;color:#1F2937;margin-top:2px">${fmtFY(fyTotal)}</div>
-            <div style="font-size:.6rem;color:var(--muted);margin-top:1px">acumulado (R$M)</div>
+          <div style="flex-shrink:0">
+            <button onclick="event.stopPropagation();var b=document.getElementById('fytot-${m.totalKey}');var h=b.style.display==='none';b.style.display=h?'block':'none';this.style.display=h?'none':'inline-flex'" style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:999px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">💰 Ver total no ano</button>
+            <div id="fytot-${m.totalKey}" style="display:none;text-align:right;padding:12px 18px;background:#F8FAFC;border:1px solid var(--border);border-radius:14px">
+              <div style="font-size:.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Total no ano · Real 2026</div>
+              <div style="font-size:1.4rem;font-weight:800;letter-spacing:-.04em;color:#1F2937;margin-top:2px">${fmtFY(fyTotal)}</div>
+              <div style="font-size:.6rem;color:var(--muted);margin-top:1px">acumulado (R$M)</div>
+            </div>
           </div>
         </div>
         ${noteHtml}
