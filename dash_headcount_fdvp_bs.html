@@ -750,7 +750,8 @@ function canonProduct(raw){
 }
 // Position -> Role (Lideres/Analistas), reaproveitado pelo filtro ROLE e pelo
 // card de senioridade (nao ha coluna Position-type separada nesta fonte).
-const LIDER_POSITIONS=new Set(['GERENTE','GERENTE SENIOR','SUPERVISOR']);
+// "Ejecutivo Comercial Senior" e' Lider (confirmado pelo usuario), nao Analista.
+const LIDER_POSITIONS=new Set(['GERENTE','GERENTE SENIOR','SUPERVISOR','EJECUTIVO COMERCIAL SENIOR']);
 function deriveRole(position){
   return LIDER_POSITIONS.has(normText(position))?'Lideres':'Analistas';
 }
@@ -758,6 +759,11 @@ function deriveRole(position){
 // ── ANALISTAS POR LIDER (Produto Point) ─────────────────────────────────────────
 // Sempre com dados de REALIZADO cru (LOADED_YEARS[year].actual, pre-composicao
 // com Plano/FCST) - nao usa P25/P26 nem a serie composta em R25/R26.
+// De/para do usuario para o lado "Analistas" desta analise especifica - lista
+// FECHADA, diferente do Role generico (que classifica Analista/Asistente como
+// Analistas tambem). Aqui "Analista" (puro) e "Asistente" ficam de fora de
+// proposito - nao contam nem como lider nem como analista nesta razao.
+const ANALISTA_CARGOS_POINT=new Set(['Analista Semi-Senior','Analista Senior','Ejecutivo Comercial','Ejecutivo Comercial Semi Senior'].map(normText));
 const LEADERSHIP_CANAL='Point';
 function computeLeadershipStats(year){
   const y=LOADED_YEARS[year];
@@ -765,7 +771,7 @@ function computeLeadershipStats(year){
   const scoped=y.actual.filter(r=>r.canal===LEADERSHIP_CANAL);
   const merged=mergeByKey(scoped);
   const liderRows=merged.filter(r=>r.role==='Lideres');
-  const analistaRows=merged.filter(r=>r.role==='Analistas');
+  const analistaRows=merged.filter(r=>ANALISTA_CARGOS_POINT.has(normText(r.cargo)));
   if(!liderRows.length||!analistaRows.length)return null;
   const liderTot=monthlyTotals(liderRows,12);
   const analistaTot=monthlyTotals(analistaRows,12);
@@ -782,7 +788,7 @@ function renderLeadershipRatio(){
   const s25=computeLeadershipStats('2025');
   const s26=computeLeadershipStats('2026');
   const sub=document.getElementById('liderSub');
-  if(sub)sub.textContent='Apenas Realizado — Produto Point (inclui Acquiring General + Payments General) · Líderes = Gerente, Gerente Senior, Supervisor · Analistas = demais posições';
+  if(sub)sub.textContent='Apenas Realizado — Produto Point (inclui Acquiring General + Payments General) · Líderes = Gerente, Gerente Senior, Supervisor, Ejecutivo Comercial Senior · Analistas = Analista Semi-Senior, Analista Senior, Ejecutivo Comercial, Ejecutivo Comercial Semi Senior';
   const card=(title,stats)=>{
     if(!stats)return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
