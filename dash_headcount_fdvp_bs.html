@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Headcount — FDVP & Big Sellers</title>
+<title>Dashboard Headcount — Resumo Corp</title>
 <script src="/d/_assets/grid-sdk.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -45,7 +45,7 @@
         <span class="text-[13px] font-black tracking-tight" style="color:#003087">ML</span>
       </div>
       <div>
-        <h1 class="text-base font-black uppercase tracking-tight" style="color:#003087">Dashboard Headcount — FDVP &amp; Big Sellers</h1>
+        <h1 class="text-base font-black uppercase tracking-tight" style="color:#003087">Dashboard Headcount — Resumo Corp</h1>
         <p id="lastUpd" class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-0.5">Plano vs Realizado + Forecast · Budget 2025 &amp; 2026 · Conectando ao Grid</p>
       </div>
     </div>
@@ -83,27 +83,13 @@
     </div>
   </div>
   <div class="h-6 w-px bg-gray-200"></div>
-  <!-- Canal -->
+  <!-- Produto (antigo Canal) -->
   <div class="flex items-center gap-2">
-    <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">CANAL</span>
+    <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">PRODUTO</span>
     <select id="fCanal" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
       <option value="all">Todos</option>
-      <option value="BIG SELLERS">Big Sellers</option>
-      <option value="FDVP" selected>FDVP</option>
-      <option value="FARMING ASSESSORADO">Farming Assessorado</option>
-    </select>
-  </div>
-  <div class="h-6 w-px bg-gray-200"></div>
-  <!-- Sub-BU -->
-  <div class="flex items-center gap-2">
-    <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">SUB-BU</span>
-    <select id="fSubBu" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
-      <option value="all">Todas</option>
-      <option value="Cross">Cross (E&amp;G)</option>
-      <option value="Instore">Instore</option>
-      <option value="OP">OP</option>
-      <option value="Onboarding">Onboarding</option>
-      <option value="Point">FDVP / Point</option>
+      <option value="Point" selected>Point</option>
+      <option value="Online Payments">Online Payments</option>
     </select>
   </div>
   <div class="h-6 w-px bg-gray-200"></div>
@@ -114,16 +100,6 @@
       <option value="all">Todos</option>
       <option value="Analistas">Analistas</option>
       <option value="Lideres">Líderes</option>
-    </select>
-  </div>
-  <div class="h-6 w-px bg-gray-200"></div>
-  <!-- RV -->
-  <div class="flex items-center gap-2">
-    <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">RV</span>
-    <select id="fRV" onchange="applyFilters()" class="text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#009EE3] cursor-pointer">
-      <option value="all">Todos</option>
-      <option value="Sim">Com RV</option>
-      <option value="Não">Sem RV</option>
     </select>
   </div>
   <!-- Período 2026 — visível por padrão (default = 2026) -->
@@ -185,32 +161,24 @@
     <div style="position:relative;height:200px"><canvas id="cGap"></canvas></div>
   </div>
 
-  <!-- ROW 3: Canal + Sub-BU -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-5">
-      <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Headcount por Canal</p>
-      <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4">Média mensal por canal — Plano vs Realizado</p>
-      <div style="position:relative;height:240px"><canvas id="cCanal"></canvas></div>
-    </div>
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-5">
-      <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Atingimento por Sub-BU</p>
-      <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4">% Realizado / Plano — média mensal</p>
-      <div style="position:relative;height:240px"><canvas id="cSubBu"></canvas></div>
-    </div>
+  <!-- ROW 3: Headcount por Produto (full width - sem dimensao Sub-BU nesta fonte) -->
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-5">
+    <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Headcount por Produto</p>
+    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4">Média mensal por produto — Plano vs Realizado (Acquiring General e Payments General somados em Point)</p>
+    <div style="position:relative;height:240px"><canvas id="cCanal"></canvas></div>
   </div>
 
-  <!-- ROW 3.5: Proporção de Analistas por Líder (FDVP) -->
+  <!-- ROW 3.5: Proporção de Analistas por Líder (Produto Point) -->
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-5">
-    <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Senioridade — Analistas por Líder (FDVP)</p>
+    <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Senioridade — Analistas por Líder (Produto Point)</p>
     <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4" id="liderSub">Apenas Realizado — Média 2025 vs Realizado 2026</p>
-    <div id="liderWarn" class="hidden text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4 leading-relaxed"></div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="liderGrid"></div>
   </div>
 
   <!-- TABLE -->
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-300 p-5">
-    <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Tabela Detalhada — Drill-down por Canal</p>
-    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4">Clique no canal para expandir os cargos</p>
+    <p class="text-sm font-black text-gray-800 uppercase tracking-tight">Tabela Detalhada — Drill-down por Produto</p>
+    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1 mb-4">Clique no produto para expandir os cargos</p>
     <div style="overflow-x:auto">
       <table class="w-full border-collapse">
         <thead id="tHead"></thead>
@@ -223,147 +191,17 @@
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────────
-let P25=[
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,8,10,10,11,14,14,15,15,15,15,15]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,5,5,5,5,5,5,5,5,5,5]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[31,33,36,36,40,42,42,42,42,42,42,42]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[12,13,14,15,16,18,18,18,18,18,18,18]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[3,4,4,4,4,5,5,5,5,5,5,5]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[21,23,26,26,26,26,26,26,26,26,26,26]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[9,9,10,10,10,10,10,10,10,10,10,10]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente Sr",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[4,4,4,4,5,5,6,6,7,7,7,7]},
-  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[4,4,6,6,7,7,8,8,9,9,9,9]},
-  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[70,70,90,90,110,110,130,130,150,150,150,150]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[140,140,180,270,330,330,390,390,450,450,450,450]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[505,505,650,570,697,690,815,830,958,950,950,950]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[55,55,70,60,73,80,94,80,92,100,100,100]},
-];
-let R25=[
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[7,6,7,8,11,12,12,11,11,12,11,11]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[5,5,4,4,3,5,5,6,6,7,5,4]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,1,2,2,2,3,2,2,1,2,2]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,2,1,1,1,1,1,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[29,33,33,30,37,43,42,38,48,57,63,67]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[5,6,6,6,6,5,5,5,5,3,3,3]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[2,3,4,4,4,5,5,5,5,5,5,5]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,0]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[20,18,23,34,28,27,28,27,29,31,33,34]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[4,4,4,3,3,3,3,3,3,3,2,2]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[3,3,3,4,4,4,4,4,4,4,4,4]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,0,0]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,2,2,2,3,3,3,3,3,3,3,3]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente Sr",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,0,0]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,1,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,5,6,6,6,6,6,6]},
-  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[2,5,5,5,5,5,4,4,4,4,4,4]},
-  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[67,66,70,82,86,101,100,105,114,116,126,131]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[134,107,129,137,152,211,218,277,305,405,519,579]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[511,516,581,596,648,774,727,779,823,761,746,744]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[29,38,40,43,46,44,44,63,62,61,61,61]},
-];
-let P26=[
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[15,15,15,15,15,15,15,15,15,15,15,15]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[65,65,65,65,65,65,65,65,65,65,65,65]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[10,10,10,10,10,10,10,10,10,10,10,10]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[30,30,30,30,30,30,30,29,29,29,29,29]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,6,6,6,6,6]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,4,4,4,4,4,4,4]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Instore",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[7,7,7,7,7,7,7,7,7,7,7,7]},
-  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[6,6,6,7,7,7,8,8,8,8,8,8]},
-  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[150,150,162,162,162,173,173,173,173,173,173,173]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[622,622,670,737,737,789,852,852,852,852,852,852]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[799,799,860,772,772,827,730,730,730,730,730,730]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[79,79,85,106,106,114,148,148,148,148,148,148]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. de Ventas Campo Assess.",role:"Analistas",rv:"Sim",m:[6,6,6,6,6,6,6,6,6,6,6,6]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Assess.",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Semi Sr Assess.",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,5,5,5,5,5]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Senior Assess.",role:"Analistas",rv:"Sim",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Gerente Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Supervisor Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-];
-let R26=[
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Semi Senior",role:"Analistas",rv:"Sim",m:[11,12,15,15,15,15,15,15,15,15,15,15]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Exec. Comercial Senior",role:"Analistas",rv:"Sim",m:[4,5,6,6,6,6,6,6,6,6,6,6]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Supervisor Engagement",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Cross",cargo:"Gerente Sr Engagement",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Semi Sr Instore",role:"Analistas",rv:"Sim",m:[64,64,65,74,83,83,83,83,83,83,83,83]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Senior Instore",role:"Analistas",rv:"Sim",m:[1,1,10,10,10,10,10,10,10,10,10,10]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Supervisor Instore",role:"Lideres",rv:"Não",m:[5,5,6,6,6,6,6,6,6,6,6,6]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Gerente Instore",role:"Lideres",rv:"Não",m:[0,0,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Semi Sr OP",role:"Analistas",rv:"Sim",m:[34,33,30,30,30,30,30,29,29,29,29,29]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Exec. Comercial Senior OP",role:"Analistas",rv:"Sim",m:[2,2,5,5,5,5,5,6,6,6,6,6]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Supervisor OP",role:"Lideres",rv:"Não",m:[4,4,4,4,4,4,4,4,4,4,4,4]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"Gerente Sr OP",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Instore",cargo:"Exec. Comercial Instore",role:"Analistas",rv:"Sim",m:[0,1,0,0,0,0,0,0,0,0,0,0]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Expert",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Specialist",role:"Analistas",rv:"Não",m:[3,3,3,3,3,3,3,3,3,3,3,3]},
-  {canal:"BIG SELLERS",subbu:"OP",cargo:"LC Gerente",role:"Lideres",rv:"Não",m:[0,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Assistente Onboarding",role:"Analistas",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Ssr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Analista Sr Onboarding",role:"Analistas",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"BIG SELLERS",subbu:"Onboarding",cargo:"Supervisor Onboarding",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"FDVP",subbu:"Point",cargo:"Gerente Sr FDVP",role:"Lideres",rv:"Não",m:[2,2,2,2,2,2,2,2,2,2,2,2]},
-  {canal:"FDVP",subbu:"Point",cargo:"Gerente FDVP",role:"Lideres",rv:"Não",m:[6,6,7,7,7,7,7,7,7,7,7,7]},
-  {canal:"FDVP",subbu:"Point",cargo:"Supervisor FDVP",role:"Lideres",rv:"Não",m:[4,4,6,7,7,7,8,8,8,8,8,8]},
-  {canal:"FDVP",subbu:"Point",cargo:"Team Leader FDVP",role:"Lideres",rv:"Sim",m:[131,132,162,162,162,173,173,173,173,173,173,173]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. de Ventas de Campo",role:"Analistas",rv:"Sim",m:[624,661,670,737,737,789,852,852,852,852,852,852]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial FDVP",role:"Analistas",rv:"Sim",m:[743,681,860,772,772,827,730,730,730,730,730,730]},
-  {canal:"FDVP",subbu:"Point",cargo:"Exec. Comercial Semi Sr FDVP",role:"Analistas",rv:"Sim",m:[72,76,85,106,106,114,148,148,148,148,148,148]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. de Ventas Campo Assess.",role:"Analistas",rv:"Sim",m:[3,2,6,6,6,6,6,6,6,6,6,6]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Assess.",role:"Analistas",rv:"Sim",m:[0,0,0,0,0,0,0,0,0,0,0,0]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Semi Sr Assess.",role:"Analistas",rv:"Sim",m:[5,5,5,5,5,5,5,5,5,5,5,5]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Exec. Comercial Senior Assess.",role:"Analistas",rv:"Sim",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Gerente Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-  {canal:"FARMING ASSESSORADO",subbu:"Point",cargo:"Supervisor Assess.",role:"Lideres",rv:"Não",m:[1,1,1,1,1,1,1,1,1,1,1,1]},
-];
+// Sem fallback local: os dados vem exclusivamente da aba "Resumo Corp" via Grid.
+// Fica vazio ate o primeiro ensureYear() popular a partir do Grid.
+let P25=[];
+let R25=[];
+let P26=[];
+let R26=[];
 const M25=["Jan/25","Fev/25","Mar/25","Abr/25","Mai/25","Jun/25","Jul/25","Ago/25","Set/25","Out/25","Nov/25","Dez/25"];
 const M26=["Jan/26","Fev/26","Mar/26","Abr/26","Mai/26","Jun/26","Jul/26","Ago/26","Set/26","Out/26","Nov/26","Dez/26"];
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
-const ST={ano:"2026",canal:"FDVP",subbu:"all",role:"all",rv:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{},mes26ini:0,mes26fim:11};
+const ST={ano:"2026",canal:"Point",role:"all",unit:1,unitLbl:"",showY:true,showL:true,charts:{},mes26ini:0,mes26fim:11};
 
 // ── HELPERS ────────────────────────────────────────────────────────────────────
 function avg(arr){if(!arr||!arr.length)return 0;return arr.reduce((a,b)=>a+b,0)/arr.length;}
@@ -383,9 +221,7 @@ function pct(r,p){if(!p)return 0;return Math.round(r/p*100);}
 function filterRows(rows){
   return rows.filter(r=>{
     if(ST.canal!=='all'&&r.canal!==ST.canal)return false;
-    if(ST.subbu!=='all'&&r.subbu!==ST.subbu)return false;
     if(ST.role!=='all'&&r.role!==ST.role)return false;
-    if(ST.rv!=='all'&&r.rv!==ST.rv)return false;
     return true;
   });
 }
@@ -432,9 +268,7 @@ function monthlyTotals(rows,n){
 // ── APPLY FILTERS ──────────────────────────────────────────────────────────────
 function applyFilters(){
   ST.canal=document.getElementById('fCanal').value;
-  ST.subbu=document.getElementById('fSubBu').value;
   ST.role=document.getElementById('fRole').value;
-  ST.rv=document.getElementById('fRV').value;
   ST.mes26ini=parseInt(document.getElementById('fMesIni').value);
   ST.mes26fim=parseInt(document.getElementById('fMesFim').value);
   if(ST.mes26fim<ST.mes26ini)ST.mes26fim=ST.mes26ini;
@@ -656,7 +490,7 @@ function renderCanal(d){
   const allCanals=[...new Set([...d.plan,...d.real].map(r=>r.canal))].sort();
   const avgPlan=allCanals.map(c=>avg(monthlyTotals(d.plan.filter(r=>r.canal===c),n)));
   const avgReal=allCanals.map(c=>avg(monthlyTotals(d.real.filter(r=>r.canal===c),n)));
-  const lbls=allCanals.map(c=>c==='BIG SELLERS'?'Big Sellers':c==='FARMING ASSESSORADO'?'Farming Assess.':c);
+  const lbls=allCanals;
   ST.charts.canal=new Chart(ctx,{
     type:'bar',
     data:{labels:lbls,datasets:[
@@ -681,42 +515,6 @@ function renderCanal(d){
   });
 }
 
-// ── RENDER SUB-BU ──────────────────────────────────────────────────────────────
-function renderSubBu(d){
-  const ctx=document.getElementById('cSubBu').getContext('2d');
-  if(ST.charts.subbu)ST.charts.subbu.destroy();
-  const n=d.months.length;
-  const subbus=[...new Set([...d.plan,...d.real].map(r=>r.subbu))].sort();
-  const ach=subbus.map(s=>{
-    const ap=avg(monthlyTotals(d.plan.filter(r=>r.subbu===s),n));
-    const ar=avg(monthlyTotals(d.real.filter(r=>r.subbu===s),n));
-    return ap>0?Math.round(ar/ap*100):0;
-  });
-  ST.charts.subbu=new Chart(ctx,{
-    type:'bar',
-    data:{labels:subbus,datasets:[{
-      label:'Atingimento %',data:ach,
-      backgroundColor:ach.map(v=>v>=95?'rgba(0,166,80,0.20)':v>=80?'rgba(245,158,11,0.20)':'rgba(224,49,49,0.20)'),
-      borderColor:ach.map(v=>v>=95?'#00A650':v>=80?'#F59F00':'#E03131'),
-      borderWidth:2,borderRadius:4,
-      datalabels:{display:ST.showL,anchor:'end',align:'top',color:'#9ca3af',font:{size:9,weight:'700',family:'Inter'},formatter:v=>v+'%'}
-    }]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:c=>` Atingimento: ${c.raw}%`}},
-        datalabels:{display:false}
-      },
-      scales:{
-        x:{grid:{display:false},ticks:{color:'#9ca3af',font:{size:9,family:'Inter'}},border:{display:false}},
-        y:{display:ST.showY,grid:{color:'#f3f4f6'},min:0,max:130,
-           ticks:{color:'#9ca3af',font:{size:9,family:'Inter'},callback:v=>v+'%'},border:{display:false}}
-      }
-    },
-    plugins:[ChartDataLabels]
-  });
-}
 
 // ── RENDER RANKINGS ────────────────────────────────────────────────────────────
 function renderRankings(real,d){
@@ -758,7 +556,7 @@ function renderTable(plan,real,d){
   )).join('');
   document.getElementById('tHead').innerHTML=
     '<tr>'
-    +`<th rowspan="2" style="text-align:left;padding:0 16px 12px 0;vertical-align:bottom;white-space:nowrap;min-width:200px;border-bottom:2px solid #e5e7eb" class="${thBase}">Canal / Cargo</th>`
+    +`<th rowspan="2" style="text-align:left;padding:0 16px 12px 0;vertical-align:bottom;white-space:nowrap;min-width:200px;border-bottom:2px solid #e5e7eb" class="${thBase}">Produto / Cargo</th>`
     +monthHeaders
     +`<th rowspan="2" style="text-align:right;padding:0 8px 12px;vertical-align:bottom;white-space:nowrap;border-bottom:2px solid #e5e7eb" class="${thBase}">Méd. Plano</th>`
     +`<th rowspan="2" style="text-align:right;padding:0 8px 12px;vertical-align:bottom;white-space:nowrap;border-bottom:2px solid #e5e7eb" class="${thBase}">Méd. Real</th>`
@@ -823,7 +621,6 @@ function render(){
   renderEvol(pm,rm,d);
   renderGap(pm,rm,d);
   renderCanal(d);
-  renderSubBu(d);
   renderRankings(d.real,d);
   renderTable(d.plan,d.real,d);
   renderLeadershipRatio();
@@ -869,11 +666,11 @@ function toggleResumo(){
 // ── EXPORT ─────────────────────────────────────────────────────────────────────
 function exportExcel(){
   const d=ds(),n=d.months.length;
-  const rows=[['Cenário','Canal','Sub-BU','Cargo','Role','RV',...d.months,'Média']];
+  const rows=[['Cenário','Produto','Cargo','Role',...d.months,'Média']];
   const pushScenario=(label,arr)=>{
     arr.forEach(r=>{
       const m=(r.m||[]).slice(0,n);
-      rows.push([label,r.canal,r.subbu,r.cargo,r.role,r.rv,
+      rows.push([label,r.canal,r.cargo,r.role,
         ...m.map(v=>v||0),
         avg(m).toFixed(1)]);
     });
@@ -883,20 +680,17 @@ function exportExcel(){
   const ws=XLSX.utils.aoa_to_sheet(rows);
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Headcount');
-  XLSX.writeFile(wb,'Headcount_FDVP_BigSellers.xlsx');
+  XLSX.writeFile(wb,'Headcount_Resumo_Corp.xlsx');
 }
 
 // ── DATA LOADER ────────────────────────────────────────────────────────────────
+// Fonte unica: aba "Resumo Corp" - tabela flat com VERSION (FORECAST/PLAN/REAL),
+// PRODUCTO, POSITION e 24 colunas de periodo YYYYMM (jan/25 a dez/26). Sem
+// Sub-BU, sem RV, sem separacao Role/Position-type - Role e' derivado do
+// POSITION. Regra de negocio do usuario: ACQUIRING GENERAL e PAYMENTS GENERAL
+// entram dentro de POINT (ver canonProduct).
 const SHEET_ID='16_ND5bNmWBKVkh77S_zPF-JLGHow9bFCGCp9BHPTe-w';
-// NOTE: abas com "+" no nome quebram Grid.sheets.get ("Sheet range contains invalid
-// characters") - por isso as abas fonte foram renomeadas sem "+" na planilha.
-const GRID_RANGES={
-  '2025':[{range:'Real e Plano 2025!A1:AF998',type:'flat'}],
-  '2026':[
-    {range:'Plano e FCST 2026!A1:AH957',type:'flat'},
-    {range:'Real 2026!A1:Z1000',type:'pivot'}
-  ]
-};
+const RESUMO_CORP_RANGE='Resumo Corp!A1:AK200';
 const LOADED_YEARS={};
 
 function fixMojibake(v){
@@ -924,70 +718,54 @@ function toNumber(v){
     :(/^\d{1,3}(\.\d{3})+$/.test(raw)?Number(raw.replace(/\./g,'')):Number(raw));
   return Number.isFinite(parsed)?parsed:null;
 }
-function monthIndexFromHeader(v,year){
-  const raw=String(v??'').trim();
-  let m=raw.match(/^(\d{4})-(\d{1,2})-/);
-  if(m&&m[1]===year)return Number(m[2])-1;
-  m=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if(m){
-    const y=m[3].length===2?'20'+m[3]:m[3];
-    if(y===year)return Number(m[2])-1;
-  }
-  const n=normText(raw);
-  const months=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
-  const yr2=year.slice(-2);
-  for(let i=0;i<months.length;i++){
-    if(n.includes(months[i])&&(n.includes('/'+yr2)||n.includes(year)))return i;
-  }
-  return -1;
+function monthIndexFromYYYYMM(header,year){
+  const m=String(header??'').trim().match(/^(\d{4})(\d{2})$/);
+  if(!m||m[1]!==year)return -1;
+  const month=Number(m[2])-1;
+  return (month>=0&&month<12)?month:-1;
 }
-function headerIndex(header,labels){
-  const wanted=labels.map(normText);
-  for(let i=0;i<header.length;i++){
-    const h=normText(header[i]).replace(/\s+/g,' ');
-    if(wanted.includes(h))return i;
-  }
-  return -1;
+function titleCaseCargo(raw){
+  return String(raw||'').trim().toLowerCase().replace(/(^|[\s-])([a-z])/g,(m,sep,c)=>sep+c.toUpperCase());
 }
-// A base fonte tem grafias divergentes para o mesmo cargo (case, abreviacoes) -
-// canonizar aqui garante que merge, tabela, rankings e export somem como um so.
-const CARGO_ALIASES={
-  'EJECUTIVO COMERCIAL SEMI SENIOR':'Ejecutivo Comercial Semi Senior',
-  'GERENTE SENIOR':'Gerente Sr',
-  'GERENTE SR':'Gerente Sr',
-  // Rename organizacional: o cargo FDVP antes chamado "Team Leader" passou a se
-  // chamar "Ejecutivo Comercial Senior" - so existe em FDVP e nao ha conflito
-  // com nenhum outro cargo (2025 nao tinha "Ejecutivo Comercial Senior" em FDVP,
-  // e "Team Leader" nunca existiu fora de FDVP). Renomear aqui, na origem, faz
-  // 2025 e 2026 ficarem like-por-like em qualquer analise por cargo.
-  'TEAM LEADER':'Ejecutivo Comercial Senior'
+// Nomes de exibicao para os POSITION conhecidos na fonte (todos vem em CAIXA
+// ALTA no pivot). Qualquer position nova/desconhecida cai no fallback de
+// title-case generico, entao a lista nao precisa ser exaustiva.
+const CARGO_DISPLAY={
+  'ANALISTA':'Analista','ANALISTA SEMI-SENIOR':'Analista Semi-Senior','ANALISTA SENIOR':'Analista Senior',
+  'ASISTENTE':'Asistente','EJECUTIVO COMERCIAL':'Ejecutivo Comercial',
+  'EJECUTIVO COMERCIAL SEMI SENIOR':'Ejecutivo Comercial Semi Senior','EJECUTIVO COMERCIAL SENIOR':'Ejecutivo Comercial Senior',
+  'GERENTE':'Gerente','GERENTE SENIOR':'Gerente Senior','SUPERVISOR':'Supervisor'
 };
 function canonicalizeCargo(cargo){
   const c=String(cargo??'').trim();
   if(!c)return c;
-  return CARGO_ALIASES[normText(c)]||c;
+  return CARGO_DISPLAY[normText(c)]||titleCaseCargo(c);
+}
+// Regra de negocio: Acquiring General e Payments General somam dentro de Point.
+const PRODUCT_CANON={
+  'ACQUIRING GENERAL':'Point','PAYMENTS GENERAL':'Point','POINT':'Point','ONLINE PAYMENTS':'Online Payments'
+};
+function canonProduct(raw){
+  return PRODUCT_CANON[normText(raw)]||String(raw??'').trim();
+}
+// Position -> Role (Lideres/Analistas), reaproveitado pelo filtro ROLE e pelo
+// card de senioridade (nao ha coluna Position-type separada nesta fonte).
+const LIDER_POSITIONS=new Set(['GERENTE','GERENTE SENIOR','SUPERVISOR']);
+function deriveRole(position){
+  return LIDER_POSITIONS.has(normText(position))?'Lideres':'Analistas';
 }
 
-// ── ANALISTAS POR LIDER (FDVP) ───────────────────────────────────────────────────
-// De/para fornecido pelo usuario - canal FDVP, cargos exatos abaixo. Cargos fora
-// dessa lista ficam de fora de proposito.
-// "Team Leader" foi renomeado para "Ejecutivo Comercial Senior" (rename
-// organizacional, ver CARGO_ALIASES) - por isso o de/para usa o nome novo aqui,
-// classificado como Lider (mesma funcao, so mudou o nome do cargo).
+// ── ANALISTAS POR LIDER (Produto Point) ─────────────────────────────────────────
 // Sempre com dados de REALIZADO cru (LOADED_YEARS[year].actual, pre-composicao
 // com Plano/FCST) - nao usa P25/P26 nem a serie composta em R25/R26.
-const LEADERSHIP_CANAL='FDVP';
-const LIDER_CARGOS=new Set(['Gerente Sr','Gerente','Supervisor','Ejecutivo Comercial Senior'].map(normText));
-const ANALISTA_CARGOS=new Set(['Ejecutivo de Ventas de Campo','Ejecutivo Comercial','Ejecutivo Comercial Semi Senior'].map(normText));
-function isLiderCargo(cargo){return LIDER_CARGOS.has(normText(cargo));}
-function isAnalistaCargo(cargo){return ANALISTA_CARGOS.has(normText(cargo));}
+const LEADERSHIP_CANAL='Point';
 function computeLeadershipStats(year){
   const y=LOADED_YEARS[year];
   if(!y||!y.actual||!y.actual.length)return null;
   const scoped=y.actual.filter(r=>r.canal===LEADERSHIP_CANAL);
   const merged=mergeByKey(scoped);
-  const liderRows=merged.filter(r=>isLiderCargo(r.cargo));
-  const analistaRows=merged.filter(r=>isAnalistaCargo(r.cargo));
+  const liderRows=merged.filter(r=>r.role==='Lideres');
+  const analistaRows=merged.filter(r=>r.role==='Analistas');
   if(!liderRows.length||!analistaRows.length)return null;
   const liderTot=monthlyTotals(liderRows,12);
   const analistaTot=monthlyTotals(analistaRows,12);
@@ -995,37 +773,27 @@ function computeLeadershipStats(year){
   if(!months.length)return null;
   const avgLider=months.reduce((s,i)=>s+liderTot[i],0)/months.length;
   const avgAnalista=months.reduce((s,i)=>s+analistaTot[i],0)/months.length;
-  const tlRows=merged.filter(r=>normText(r.cargo)==='EJECUTIVO COMERCIAL SENIOR');
-  const avgTl=tlRows.length?months.reduce((s,i)=>s+monthlyTotals(tlRows,12)[i],0)/months.length:0;
-  return{
-    avgLider,avgAnalista,monthsCount:months.length,
-    ratio:avgLider?(avgAnalista/avgLider):0,
-    hasTeamLeader:avgTl>0
-  };
+  return{avgLider,avgAnalista,monthsCount:months.length,ratio:avgLider?(avgAnalista/avgLider):0};
 }
 function fmt1(v){return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});}
 function renderLeadershipRatio(){
   const el=document.getElementById('liderGrid');
-  const warnEl=document.getElementById('liderWarn');
   if(!el)return;
   const s25=computeLeadershipStats('2025');
   const s26=computeLeadershipStats('2026');
   const sub=document.getElementById('liderSub');
-  if(sub)sub.textContent='Apenas Realizado — Canal FDVP · Líderes = Gerente Sr, Gerente, Supervisor, Ejecutivo Comercial Senior (ex-Team Leader) · Analistas = Ejecutivo de Ventas de Campo, Ejecutivo Comercial, Ejecutivo Comercial Semi Senior';
+  if(sub)sub.textContent='Apenas Realizado — Produto Point (inclui Acquiring General + Payments General) · Líderes = Gerente, Gerente Senior, Supervisor · Analistas = demais posições';
   const card=(title,stats)=>{
     if(!stats)return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
-      +`<p class="text-sm text-gray-400">Sem dado realizado para FDVP</p></div>`;
-    const tlNote=stats.hasTeamLeader?'inclui Ejecutivo Comercial Senior (ex-Team Leader)':'<span style="color:#E03131">sem Ejecutivo Comercial Senior/Team Leader na fonte</span>';
+      +`<p class="text-sm text-gray-400">Sem dado realizado para Point</p></div>`;
     return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
       +`<p class="text-2xl font-black" style="color:#003087">${fmt1(stats.ratio)} : 1</p>`
       +`<p class="text-[11px] text-gray-500 mt-1">${fmt1(stats.ratio)} Analistas para cada Líder</p>`
-      +`<p class="text-[10px] text-gray-400 mt-2">Média líderes: ${fmt1(stats.avgLider)} · Média analistas: ${fmt1(stats.avgAnalista)} · ${stats.monthsCount} meses</p>`
-      +`<p class="text-[10px] font-semibold mt-1" style="color:${stats.hasTeamLeader?'#00A650':'#E03131'}">${tlNote}</p></div>`;
+      +`<p class="text-[10px] text-gray-400 mt-2">Média líderes: ${fmt1(stats.avgLider)} · Média analistas: ${fmt1(stats.avgAnalista)} · ${stats.monthsCount} meses</p></div>`;
   };
   let deltaHtml;
-  const mismatchTL=!!(s25&&s26&&s25.hasTeamLeader&&!s26.hasTeamLeader);
   if(s25&&s26){
     const delta=s26.ratio-s25.ratio;
     const pctDelta=s25.ratio?(delta/s25.ratio*100):0;
@@ -1035,28 +803,17 @@ function renderLeadershipRatio(){
     deltaHtml=`<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Variação 2026 vs 2025</p>`
       +`<p class="text-2xl font-black" style="color:${color}">${arrow} ${fmt1(Math.abs(delta))}</p>`
-      +`<p class="text-[11px] text-gray-500 mt-1">Proporção ${up?'aumentou':'diminuiu'} (${up?'menos':'mais'} líderes por analista) · ${pctDelta>=0?'+':''}${Math.round(pctDelta)}%</p>`
-      +(mismatchTL?`<p class="text-[10px] font-semibold mt-1" style="color:#E03131">Não comparável — ver aviso acima</p>`:'')
-      +`</div>`;
+      +`<p class="text-[11px] text-gray-500 mt-1">Proporção ${up?'aumentou':'diminuiu'} (${up?'menos':'mais'} líderes por analista) · ${pctDelta>=0?'+':''}${Math.round(pctDelta)}%</p></div>`;
   }else{
     deltaHtml=`<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Variação 2026 vs 2025</p>`
       +`<p class="text-sm text-gray-400">Dados insuficientes para comparar</p></div>`;
   }
   el.innerHTML=card('2025 — Média Realizado',s25)+card('2026 — Realizado (YTD)',s26)+deltaHtml;
-  if(warnEl){
-    warnEl.classList.toggle('hidden',!mismatchTL);
-    if(mismatchTL){
-      warnEl.innerHTML='<b>Atenção — comparação não é 1:1:</b> a aba fonte do Realizado 2026 ("Real 2026") '
-        +'não traz nenhuma linha de cargo "Ejecutivo Comercial Senior" (o antigo "Team Leader" renomeado), que responde '
-        +'por boa parte do headcount de líderes em 2025. A variação na proporção abaixo reflete esse gap de dado na '
-        +'origem, não necessariamente uma mudança real de estrutura.';
-    }
-  }
 }
 
 function rowKey(r){
-  return [r.canal,r.subbu,r.role,r.cargo,r.rv].map(normText).join('|');
+  return [r.canal,r.role,r.cargo].map(normText).join('|');
 }
 function mergeByKey(rows){
   const out=new Map();
@@ -1084,80 +841,39 @@ function composeActualForecast(actualRows,fcstRows){
   });
   return {rows,actualMonths};
 }
-function parseGridValues(values,year){
-  const plan=[],actual=[],fcst=[];
-  if(!Array.isArray(values))return{plan,actual,fcst,actualMonths:[]};
+// "Resumo Corp" e' uma tabela flat unica cobrindo os 2 anos ao mesmo tempo
+// (colunas 202501..202612) - por isso o parser ja devolve os dois anos de uma
+// vez, em vez de precisar de uma leitura por ano como na fonte antiga.
+function parseResumoCorp(values){
+  const out={'2025':{plan:[],fcst:[],actual:[]},'2026':{plan:[],fcst:[],actual:[]}};
+  if(!Array.isArray(values))return out;
+  let headerRow=-1;
   for(let r=0;r<values.length;r++){
-    const header=values[r]||[];
-    const cenarioIdx=0;
-    if(!normText(header[cenarioIdx]).startsWith('CENARIO'))continue;
-    const canalIdx=headerIndex(header,['CANAL 1','CANAL']);
-    const subbuIdx=headerIndex(header,['Sub-bu','Sub-BU']);
-    // headerIndex resolve pela ordem das COLUNAS, nao pela ordem da lista de labels.
-    // Como o header real tem "Role" (area funcional) antes de "Position type"
-    // (Lideres/Analistas), passar as duas juntas pegava sempre "Role" errado.
-    // O campo `role` do dash e usado como Lideres/Analistas (ver filtro fRole) -
-    // por isso "Position type" tem que ser resolvido com prioridade explicita.
-    const roleIdx=(()=>{const p=headerIndex(header,['Position type']);return p>=0?p:headerIndex(header,['Role']);})();
-    const cargoIdx=headerIndex(header,['Cargo']);
-    const rvIdx=headerIndex(header,['RV']);
-    const monthCols=header
-      .map((h,idx)=>({idx,month:monthIndexFromHeader(h,year)}))
-      .filter(x=>x.month>=0&&x.month<12);
-    if(!monthCols.length)continue;
-    for(let i=r+1;i<values.length;i++){
-      const row=values[i]||[];
-      if(normText(row[cenarioIdx]).startsWith('CENARIO'))break;
-      if(!row.some(c=>String(c??'').trim()!==''))break;
-      const cen=normText(row[cenarioIdx]);
-      if(!cen)continue;
-      const obj={
-        canal:String(row[canalIdx]??'').trim(),
-        subbu:String(row[subbuIdx]??'').trim(),
-        cargo:canonicalizeCargo(row[cargoIdx]),
-        role:String(row[roleIdx]??'').trim(),
-        rv:String(row[rvIdx]??'').trim(),
-        m:Array(12).fill(null)
-      };
-      monthCols.forEach(({idx,month})=>{obj.m[month]=toNumber(row[idx]);});
-      if(!obj.canal)continue;
-      if(cen==='PLANO')plan.push(obj);
-      else if(cen==='REALIZADO'||cen.startsWith('REALIZADO'))actual.push(obj);
-      else if(cen==='FCST'||cen==='FORECAST'||cen.includes('FCST')||cen.includes('FORECAST'))fcst.push(obj);
-    }
+    if(normText((values[r]||[])[0])==='VERSION'){headerRow=r;break;}
   }
-  const composed=composeActualForecast(actual,fcst);
-  return{plan:mergeByKey(plan),actual,fcst,real:composed.rows,actualMonths:composed.actualMonths};
-}
-function parseObjectRows(rows,year){
-  const plan=[],actual=[],fcst=[];
-  const keysByYear={
-    '2025':['jan./25','fev./25','mar./25','abr./25','mai./25','jun./25','jul./25','ago./25','set./25','out./25','nov./25','dez./25'],
-    '2026':['jan./26','fev./26','mar./26','abr./26','mai./26','jun./26','jul./26','ago./26','set./26','out./26','nov./26','dez./26']
-  };
-  const keys=keysByYear[year]||[];
-  rows.forEach(row=>{
-    const cen=normText(row['CENÁRIO']||row['CENARIO']||row['Cenario']||row['Cenário']);
-    if(!cen||cen.startsWith('CEN'))return;
-    const obj={
-      canal:String(row['CANAL 1']||row['Canal']||'').trim(),
-      subbu:String(row['Sub-bu']||row['Sub-BU']||'').trim(),
-      cargo:canonicalizeCargo(row['Cargo']),
-      role:String(row['Position type']||row['Role']||'').trim(),
-      rv:String(row['RV']||'').trim(),
-      m:keys.map(k=>toNumber(row[k]))
+  if(headerRow<0)return out;
+  const header=values[headerRow];
+  const monthCols25=header.map((h,idx)=>({idx,month:monthIndexFromYYYYMM(h,'2025')})).filter(x=>x.month>=0);
+  const monthCols26=header.map((h,idx)=>({idx,month:monthIndexFromYYYYMM(h,'2026')})).filter(x=>x.month>=0);
+  for(let i=headerRow+1;i<values.length;i++){
+    const row=values[i]||[];
+    if(!row.some(c=>String(c??'').trim()!==''))continue;
+    const version=normText(row[0]);
+    if(!version||!String(row[2]??'').trim())continue;
+    const cargo=canonicalizeCargo(row[2]);
+    const canal=canonProduct(row[1]);
+    const role=deriveRole(row[2]);
+    const build=(monthCols)=>{
+      const m=Array(12).fill(null);
+      monthCols.forEach(({idx,month})=>{m[month]=toNumber(row[idx]);});
+      return {canal,subbu:'',cargo,role,rv:'',m};
     };
-    if(!obj.canal)return;
-    if(cen==='PLANO')plan.push(obj);
-    else if(cen.startsWith('REALIZADO'))actual.push(obj);
-    else if(cen==='FCST'||cen.includes('FORECAST'))fcst.push(obj);
-  });
-  const composed=composeActualForecast(actual,fcst);
-  return{plan:mergeByKey(plan),actual,fcst,real:composed.rows,actualMonths:composed.actualMonths};
-}
-function transformRows(rows,year){
-  if(!rows||!rows.length)return{plan:[],real:[],actualMonths:[]};
-  return Array.isArray(rows[0])?parseGridValues(rows,year):parseObjectRows(rows,year);
+    const bucket=version==='PLAN'?'plan':version==='FORECAST'?'fcst':(version==='REAL'||version.startsWith('REAL'))?'actual':null;
+    if(!bucket)continue;
+    out['2025'][bucket].push(build(monthCols25));
+    out['2026'][bucket].push(build(monthCols26));
+  }
+  return out;
 }
 function setLoadStatus(text){
   const el=document.getElementById('lastUpd');
@@ -1198,97 +914,27 @@ async function gridGetRange(range){
   }
   throw lastErr||new Error('Range '+range+' nao pode ser lido');
 }
-// "Real 2026" e uma pivot (TAG/SUBCANAL|CANAL 2/JOB_CLASSIFICATION + datas DD/MM/YYYY),
-// sem coluna de Cenario - a aba inteira representa REALIZADO 2026. Linhas de subtotal
-// (Total geral, "<Canal> Total", etc.) tem JOB_CLASSIFICATION vazio e sao descartadas.
-// Mapa SUBCANAL/CANAL 2 (pivot) -> Canal/Sub-bu (schema flat), validado contra
-// os combos reais de CANAL 1/CANAL 2/Sub-bu/Canal na aba "Plano e FCST 2026".
-// NAO usar o TAG da pivot para decidir canal: "Hunting Instore"+FDVP e' o canal
-// FDVP (Sub-bu=Point), enquanto "Big Sellers - Hunting Big Sellers" cobre TANTO
-// Sub-bu=Instore quanto Sub-bu=OP dependendo do SUBCANAL - o TAG sozinho nao
-// diferencia. "Farming Assessorado" e' canal proprio (FARMING ASSESSORADO), nao
-// um sub-bu de Big Sellers. Sem esse mapa, subbu ficava com a grafia crua da
-// pivot (ex: "INSTORE" maiusculo) que nao batia com o valor do filtro Sub-BU
-// ("Instore"), fazendo linhas inteiras sumirem silenciosamente ao filtrar.
-const PIVOT_SUBCANAL_MAP={
-  'ENGAGEMENT':{canal:'BIG SELLERS',subbu:'Cross'},
-  'INSTORE':{canal:'BIG SELLERS',subbu:'Instore'},
-  'OP':{canal:'BIG SELLERS',subbu:'OP'},
-  'ONBOARDING':{canal:'BIG SELLERS',subbu:'Onboarding'},
-  'FARMING ASSESSORADO':{canal:'FARMING ASSESSORADO',subbu:'Point'},
-  'FDVP':{canal:'FDVP',subbu:'Point'}
-};
-function parsePivotReal2026(values,year){
-  const rows=[];
-  for(let r=0;r<values.length;r++){
-    const header=values[r]||[];
-    if(normText(header[0])!=='TAG')continue;
-    const monthCols=header
-      .map((h,idx)=>({idx,month:monthIndexFromHeader(h,year)}))
-      .filter(x=>x.month>=0&&x.month<12);
-    if(!monthCols.length)continue;
-    for(let i=r+1;i<values.length;i++){
-      const row=values[i]||[];
-      if(normText(row[0])==='TAG')break;
-      if(!row.some(c=>String(c??'').trim()!==''))break;
-      const cargoRaw=String(row[2]??'').trim();
-      if(!cargoRaw)continue;
-      const subRaw=String(row[1]??'').trim();
-      const map=PIVOT_SUBCANAL_MAP[normText(subRaw)];
-      const obj={
-        canal:map?map.canal:'BIG SELLERS',
-        subbu:map?map.subbu:subRaw,
-        cargo:canonicalizeCargo(cargoRaw),role:'',rv:'',
-        m:Array(12).fill(null)
-      };
-      monthCols.forEach(({idx,month})=>{obj.m[month]=toNumber(row[idx]);});
-      rows.push(obj);
-    }
-  }
-  return mergeByKey(rows);
+let RESUMO_CORP_PROMISE=null;
+async function ensureResumoCorpLoaded(){
+  if(RESUMO_CORP_PROMISE)return RESUMO_CORP_PROMISE;
+  RESUMO_CORP_PROMISE=(async()=>{
+    const values=await gridGetRange(RESUMO_CORP_RANGE);
+    const byYear=parseResumoCorp(values);
+    ['2025','2026'].forEach(year=>{
+      const {plan,fcst,actual}=byYear[year];
+      const composed=composeActualForecast(actual,fcst);
+      const parsed={plan:mergeByKey(plan),actual,fcst,real:composed.rows,actualMonths:composed.actualMonths};
+      LOADED_YEARS[year]=parsed;
+      if(year==='2025'){if(parsed.plan.length)P25=parsed.plan;if(parsed.real.length)R25=parsed.real;}
+      else{if(parsed.plan.length)P26=parsed.plan;if(parsed.real.length)R26=parsed.real;}
+    });
+  })();
+  return RESUMO_CORP_PROMISE;
 }
 async function ensureYear(year){
-  if(LOADED_YEARS[year])return LOADED_YEARS[year];
-  const specs=GRID_RANGES[year]||[];
-  const combined={plan:[],actual:[],fcst:[],pivotActual:[]};
-  for(const spec of specs){
-    const values=await gridGetRange(spec.range);
-    if(!values.length)continue;
-    if(spec.type==='pivot'){
-      combined.pivotActual.push(...parsePivotReal2026(values,year));
-    }else{
-      const parsed=Array.isArray(values[0])?parseGridValues(values,year):parseObjectRows(values,year);
-      combined.plan.push(...parsed.plan);
-      combined.actual.push(...(parsed.actual||[]));
-      combined.fcst.push(...(parsed.fcst||[]));
-    }
-  }
-  if(combined.pivotActual.length){
-    // pivot (ex: "Real 2026") nao tem Role/RV - herda do Cargo equivalente no Plano
-    // para o filtro de RV continuar funcionando nos dados realizados.
-    const cargoLookup={};
-    combined.plan.forEach(p=>{
-      const k=normText(p.cargo);
-      if(k&&!cargoLookup[k])cargoLookup[k]={role:p.role,rv:p.rv};
-    });
-    combined.pivotActual.forEach(r=>{
-      const hit=cargoLookup[normText(r.cargo)];
-      if(hit){r.role=r.role||hit.role;r.rv=r.rv||hit.rv;}
-    });
-    combined.actual.push(...combined.pivotActual);
-  }
-  const composed=composeActualForecast(combined.actual,combined.fcst);
-  const parsed={plan:mergeByKey(combined.plan),actual:combined.actual,fcst:combined.fcst,real:composed.rows,actualMonths:composed.actualMonths};
-  if(!parsed.plan.length&&!parsed.real.length)throw new Error('Aba '+year+' nao encontrada na planilha');
-  if(year==='2025'){
-    if(parsed.plan.length)P25=parsed.plan;
-    if(parsed.real.length)R25=parsed.real;
-  }else if(year==='2026'){
-    if(parsed.plan.length)P26=parsed.plan;
-    if(parsed.real.length)R26=parsed.real;
-  }
-  LOADED_YEARS[year]=parsed;
-  return parsed;
+  await ensureResumoCorpLoaded();
+  if(!LOADED_YEARS[year])throw new Error('Aba Resumo Corp nao encontrada na planilha');
+  return LOADED_YEARS[year];
 }
 function latestMonthLabel(months,flags){
   const idx=flags.reduce((last,on,i)=>on?i:last,-1);
@@ -1310,11 +956,11 @@ function setDefault2026FullYear(){
 async function loadFromGrid(){
   if(!await waitForGrid())return false;
   setLoadStatus('Plano vs Realizado + Forecast · Lendo planilha fonte pelo Grid');
+  // "Resumo Corp" e' uma tabela unica cobrindo 2025+2026 - uma leitura ja popula
+  // os dois anos (ver ensureResumoCorpLoaded), entao nao precisa de pre-load
+  // separado para o card de Span de Controle (2025 vs 2026).
   const y26=await ensureYear('2026');
   setDefault2026FullYear();
-  // Carrega 2025 tambem em background (sem bloquear o load principal) para que
-  // o card de Span de Controle (2025 vs 2026) ja abra populado nos dois anos.
-  ensureYear('2025').then(render).catch(e=>console.warn('Falha ao pre-carregar 2025:',e));
   const now=new Date().toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   setLoadStatus(`Fonte Grid: planilha Headcount · realizado ate ${latestMonthLabel(M26,y26.actualMonths)} · atualizado ${now}`);
   return true;
