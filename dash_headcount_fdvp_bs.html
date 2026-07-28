@@ -759,11 +759,10 @@ function deriveRole(position){
 // ── ANALISTAS POR LIDER (Produto Point) ─────────────────────────────────────────
 // Sempre com dados de REALIZADO cru (LOADED_YEARS[year].actual, pre-composicao
 // com Plano/FCST) - nao usa P25/P26 nem a serie composta em R25/R26.
-// De/para do usuario para o lado "Analistas" desta analise especifica - lista
-// FECHADA, diferente do Role generico (que classifica Analista/Asistente como
-// Analistas tambem). Aqui "Analista" (puro) e "Asistente" ficam de fora de
-// proposito - nao contam nem como lider nem como analista nesta razao.
-const ANALISTA_CARGOS_POINT=new Set(['Analista Semi-Senior','Analista Senior','Ejecutivo Comercial','Ejecutivo Comercial Semi Senior'].map(normText));
+// Confirmado pelo usuario: os 10 POSITION da fonte se dividem em uma particao
+// limpa - os 4 em LIDER_POSITIONS sao Lideres, os outros 6 (incluindo Analista
+// puro e Asistente) sao Analistas. Por isso reaproveita r.role direto, sem
+// lista fechada separada para o lado Analistas.
 const LEADERSHIP_CANAL='Point';
 function computeLeadershipStats(year){
   const y=LOADED_YEARS[year];
@@ -771,7 +770,7 @@ function computeLeadershipStats(year){
   const scoped=y.actual.filter(r=>r.canal===LEADERSHIP_CANAL);
   const merged=mergeByKey(scoped);
   const liderRows=merged.filter(r=>r.role==='Lideres');
-  const analistaRows=merged.filter(r=>ANALISTA_CARGOS_POINT.has(normText(r.cargo)));
+  const analistaRows=merged.filter(r=>r.role==='Analistas');
   if(!liderRows.length||!analistaRows.length)return null;
   const liderTot=monthlyTotals(liderRows,12);
   const analistaTot=monthlyTotals(analistaRows,12);
@@ -788,7 +787,7 @@ function renderLeadershipRatio(){
   const s25=computeLeadershipStats('2025');
   const s26=computeLeadershipStats('2026');
   const sub=document.getElementById('liderSub');
-  if(sub)sub.textContent='Apenas Realizado — Produto Point (inclui Acquiring General + Payments General) · Líderes = Gerente, Gerente Senior, Supervisor, Ejecutivo Comercial Senior · Analistas = Analista Semi-Senior, Analista Senior, Ejecutivo Comercial, Ejecutivo Comercial Semi Senior';
+  if(sub)sub.textContent='Apenas Realizado — Produto Point (inclui Acquiring General + Payments General) · Líderes = Gerente, Gerente Senior, Supervisor, Ejecutivo Comercial Senior · Analistas = demais posições (Analista, Analista Semi-Senior, Analista Senior, Asistente, Ejecutivo Comercial, Ejecutivo Comercial Semi Senior)';
   const card=(title,stats)=>{
     if(!stats)return `<div class="bg-gray-50 border border-gray-200 rounded-xl p-4">`
       +`<p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">${title}</p>`
