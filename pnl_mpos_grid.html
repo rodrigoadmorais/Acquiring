@@ -1392,47 +1392,61 @@ function renderUnitariosYTD(metrics){
   if(refArr){for(var i=0;i<12;i++){if(refArr[i]!==null&&refArr[i]!==undefined)last26=i;}}
   const ytdIdx=[];
   for(var i=0;i<=(last26<0?11:last26);i++)ytdIdx.push(i);
-  const costKeys=metrics.filter(function(m){return m.benPos!==true;}).map(function(m){return m.totalKey;});
-  function sumCosts(ver){
+  var lastMi=ytdIdx.length?ytdIdx[ytdIdx.length-1]:5;
+  var rangeLbl=ytdIdx.length?('Jan–'+MOS3[lastMi]):'YTD';
+  function fmtM(v){return v===null?'—':('R$'+(Math.abs(v)>=100?Math.abs(v).toFixed(0):Math.abs(v).toFixed(1))+'M');}
+  // soma absoluta de um conjunto de linhas de custo, num período
+  function sumKeys(ver,keys){
     var tot=0,any=false;
-    costKeys.forEach(function(k){
+    keys.forEach(function(k){
       var v=getA(ver,k,ytdIdx);
       if(v!==null&&v!==undefined){tot+=Math.abs(v);any=true;}
     });
     return any?tot:null;
   }
-  var c25=sumCosts('Realizado 2025'),c26=sumCosts('Realizado 2026');
-  var pct=(c25!==null&&c25!==0&&c26!==null)?((c26-c25)/c25*100):null;
-  var good=pct!==null?pct<0:null; // custo menor = bom
-  var lastMi=ytdIdx.length?ytdIdx[ytdIdx.length-1]:5;
-  var rangeLbl=ytdIdx.length?('Jan–'+MOS3[lastMi]):'YTD';
-  function fmtM(v){return v===null?'—':('R$'+(Math.abs(v)>=100?Math.abs(v).toFixed(0):Math.abs(v).toFixed(1))+'M');}
-  var pctColor=good?'var(--green)':'var(--red)';
-  var pctBg=good?'rgba(0,166,80,.12)':'rgba(229,57,53,.12)';
-  var arrow=pct!==null?(pct>=0?'▲':'▼'):'';
-  var pctHtml=pct!==null
-    ?`<div style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:999px;background:${pctBg}"><span style="font-size:.9rem;color:${pctColor}">${arrow}</span><span style="font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:${pctColor}">${pct>=0?'+':''}${pct.toFixed(1)}%</span></div>`
-    :'<span style="color:var(--muted)">—</span>';
+  // única quebra: custos de devices (todas as linhas de custo exceto telemetria) vs telemetria
+  var allCost=metrics.filter(function(m){return m.benPos!==true;}).map(function(m){return m.totalKey;});
+  var deviceKeys=allCost.filter(function(k){return k!=='telemetria';});
+  var teleKeys=['telemetria'];
+  // renderiza um bloco de comparação YTD 2025 vs 2026 para um grupo
+  function block(icon,title,keys){
+    var v25=sumKeys('Realizado 2025',keys),v26=sumKeys('Realizado 2026',keys);
+    var pct=(v25!==null&&v25!==0&&v26!==null)?((v26-v25)/v25*100):null;
+    var good=pct!==null?pct<0:null; // custo menor = bom
+    var pc=good?'var(--green)':'var(--red)',pbg=good?'rgba(0,166,80,.12)':'rgba(229,57,53,.12)';
+    var arw=pct!==null?(pct>=0?'▲':'▼'):'';
+    var pctHtml=pct!==null
+      ?`<div style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:${pbg}"><span style="font-size:.82rem;color:${pc}">${arw}</span><span style="font-size:1rem;font-weight:800;letter-spacing:-.03em;color:${pc}">${pct>=0?'+':''}${pct.toFixed(1)}%</span></div>`
+      :'<span style="color:var(--muted)">—</span>';
+    return `<div style="flex:1;min-width:280px;background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="flex-shrink:0;width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,rgba(255,230,0,.22),rgba(52,131,250,.12));display:flex;align-items:center;justify-content:center;font-size:1.25rem">${icon}</div>
+        <div style="font-size:.95rem;font-weight:800;letter-spacing:-.02em;color:#1F2937">${title}</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px">YTD 2025</div>
+          <div style="font-size:1.55rem;font-weight:800;letter-spacing:-.05em;color:var(--ml-navy)">${fmtM(v25)}</div>
+        </div>
+        <div style="text-align:center">${pctHtml}<div style="font-size:.58rem;color:var(--muted);font-weight:600;margin-top:3px">vs 2025</div></div>
+        <div>
+          <div style="font-size:.66rem;color:var(--muted);font-weight:600;margin-bottom:2px">YTD 2026</div>
+          <div style="font-size:1.55rem;font-weight:800;letter-spacing:-.05em;color:var(--ml-navy)">${fmtM(v26)}</div>
+        </div>
+      </div>
+    </div>`;
+  }
   var html=`<div class="card" style="padding:22px 28px;background:linear-gradient(135deg,rgba(52,131,250,.05),rgba(255,230,0,.05))">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:16px">
-        <div style="flex-shrink:0;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(255,230,0,.25),rgba(52,131,250,.15));display:flex;align-items:center;justify-content:center;font-size:1.7rem">💵</div>
-        <div>
-          <div style="font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#1F2937">Custos Totais · YTD ${rangeLbl}</div>
-          <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:2px">Soma absoluta de todas as linhas de custo · R$M · comparação justa (mesmos meses)</div>
-        </div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+      <div style="flex-shrink:0;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(255,230,0,.25),rgba(52,131,250,.15));display:flex;align-items:center;justify-content:center;font-size:1.7rem">💵</div>
+      <div>
+        <div style="font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#1F2937">Custos Totais · YTD ${rangeLbl}</div>
+        <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:2px">Soma absoluta em R$M · comparação justa (mesmos meses realizados)</div>
       </div>
-      <div style="display:flex;align-items:center;gap:40px;flex-wrap:wrap">
-        <div>
-          <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:3px">YTD 2025</div>
-          <div style="font-size:1.9rem;font-weight:800;letter-spacing:-.05em;color:var(--ml-navy)">${fmtM(c25)}</div>
-        </div>
-        <div style="text-align:center">${pctHtml}<div style="font-size:.62rem;color:var(--muted);font-weight:600;margin-top:4px">vs 2025</div></div>
-        <div>
-          <div style="font-size:.7rem;color:var(--muted);font-weight:600;margin-bottom:3px">YTD 2026</div>
-          <div style="font-size:1.9rem;font-weight:800;letter-spacing:-.05em;color:var(--ml-navy)">${fmtM(c26)}</div>
-        </div>
-      </div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      ${block('📱','Custos de Devices',deviceKeys)}
+      ${block('📡','Telemetria',teleKeys)}
     </div>
   </div>`;
   document.getElementById('unitarios-ytd').innerHTML=html;
