@@ -661,7 +661,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null,unit_ytd:false};
+const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null,unit_ytd:false,unit_focus:''};
 const COMP_PAIRS={
   real:      {left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
   real_plano:{left:'Realizado 2025',right:'Plano 2026',    lbl:'Realizado 2025 vs Plano 2026'},
@@ -1240,14 +1240,22 @@ function renderUnitariosInsights(metrics,pair,idx){
 }
 // Alinha o período do lado esquerdo (ex.: ano anterior inteiro) ao volume de meses
 // realmente disponível no lado direito, quando o toggle "Comparar YTD" está ativo.
+// Último mês realmente realizado de um cenário: usa CMV como sinal (um mês só fecha
+// quando tem CMV != 0); cai para sales_gross/vol se CMV não existir. Dinâmico: assim
+// que Jul/Ago aparecerem na base, o corte e os rótulos se ajustam sozinhos.
+function lastRealizedMonth(ver){
+  var d=D[ver];if(!d)return -1;
+  var arr=d.cmv;
+  var hasCmv=arr&&arr.some(function(v){return v!==null&&v!==undefined&&v!==0;});
+  if(!hasCmv)arr=(d.sales_gross&&d.sales_gross.some(function(v){return v!==null&&v!==undefined&&v!==0;}))?d.sales_gross:d.vol;
+  if(!arr)return -1;
+  var last=-1;
+  for(var i=0;i<12;i++){var x=arr[i];if(x!==null&&x!==undefined&&x!==0)last=i;}
+  return last;
+}
 function getUnitIdx(baseIdx,verRight){
   if(!ST.unit_ytd)return baseIdx;
-  var d=D[verRight];
-  if(!d)return baseIdx;
-  var arr=(d.vol&&d.vol.some(function(v){return v!==null&&v!==undefined;}))?d.vol:d.sales_gross;
-  if(!arr)return baseIdx;
-  var last=-1;
-  for(var i=0;i<12;i++){if(arr[i]!==null&&arr[i]!==undefined)last=i;}
+  var last=lastRealizedMonth(verRight);
   if(last<0)return baseIdx;
   return baseIdx.filter(function(i){return i<=last;});
 }
@@ -1295,6 +1303,10 @@ function renderUnitarios(){
   // ordem fixa solicitada: CMV, Receita, Telemetria, Shipping, Warehousing, Bobinas
   const ORDER=['cmv','receita_liq','telemetria','distribución','warehousing_total','other_vfc'];
   metrics.sort(function(a,b){return ORDER.indexOf(a.totalKey)-ORDER.indexOf(b.totalKey);});
+  // foco (via card YTD): 'telemetria' traz telemetria pra frente; 'devices' mantém ordem
+  if(ST.unit_focus==='telemetria'){
+    metrics.sort(function(a,b){return (a.totalKey==='telemetria'?-1:0)-(b.totalKey==='telemetria'?-1:0);});
+  }
 
   // formata o total acumulado FY do Realizado 2026 (R$M), para dar noção da grandeza da linha no ano
   function fmtFY(v){
@@ -1337,7 +1349,14 @@ function renderUnitarios(){
     // linha principal = nome da linha do P&L (m.sub); subtítulo = métrica unitária (m.lbl)
     const headline=m.sub;
     const subtitle=isAbs?'Total absoluto · R$M':(m.lbl);
-    return `<div class="card" style="padding:22px 28px;cursor:pointer;transition:box-shadow .15s;display:flex;gap:22px;align-items:stretch" onclick="openUnitModal('${m.totalKey}','${m.volKey}','${m.lbl}')" onmouseenter="this.style.boxShadow='0 28px 60px rgba(15,23,42,.15)'" onmouseleave="this.style.boxShadow=''">
+    // foco a partir do card YTD (devices = tudo menos telemetria)
+    const isTele=m.totalKey==='telemetria';
+    const focus=ST.unit_focus;
+    const dimmed=focus==='devices'?isTele:(focus==='telemetria'?!isTele:false);
+    const focused=focus==='devices'?!isTele:(focus==='telemetria'?isTele:false);
+    const focusStyle=dimmed?'opacity:.4;filter:grayscale(.4);'
+      :(focused?'border:2px solid var(--ml-blue);box-shadow:0 12px 36px rgba(52,131,250,.16);':'');
+    return `<div class="card" style="padding:22px 28px;cursor:pointer;transition:all .18s;display:flex;gap:22px;align-items:stretch;${focusStyle}" onclick="openUnitModal('${m.totalKey}','${m.volKey}','${m.lbl}')" onmouseenter="this.style.boxShadow='0 28px 60px rgba(15,23,42,.15)'" onmouseleave="this.style.boxShadow='${focused?'0 12px 36px rgba(52,131,250,.16)':''}'">
       <div style="flex-shrink:0;width:76px;height:76px;border-radius:18px;background:linear-gradient(135deg,rgba(255,230,0,.22),rgba(52,131,250,.12));display:flex;align-items:center;justify-content:center;font-size:2.3rem">${m.icon||'📊'}</div>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:14px">
@@ -1381,15 +1400,18 @@ function renderUnitarios(){
   renderUnitariosInsights(metrics,pair,idx);
 }
 
+// Alterna o foco dos cards unitários a partir dos blocos do card YTD (Devices / Telemetria)
+function setUnitFocus(g){
+  ST.unit_focus=ST.unit_focus===g?'':g;
+  renderUnitarios();
+}
+
 // Comparação YTD absoluta: soma de todas as linhas de custos, 2025 vs 2026,
 // sempre nos mesmos meses já realizados em 2026 (comparação justa que se atualiza sozinha).
 function renderUnitariosYTD(metrics){
   const MOS3=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  // meses realizados em 2026 (idx justo) — sempre corta no último mês com dado, independente do toggle
-  var d26=D['Realizado 2026']||{};
-  var refArr=(d26.vol&&d26.vol.some(function(v){return v!==null&&v!==undefined;}))?d26.vol:d26.sales_gross;
-  var last26=-1;
-  if(refArr){for(var i=0;i<12;i++){if(refArr[i]!==null&&refArr[i]!==undefined)last26=i;}}
+  // meses realizados em 2026 (idx justo) — corta no último mês com CMV realizado, independente do toggle
+  var last26=lastRealizedMonth('Realizado 2026');
   const ytdIdx=[];
   for(var i=0;i<=(last26<0?11:last26);i++)ytdIdx.push(i);
   var lastMi=ytdIdx.length?ytdIdx[ytdIdx.length-1]:5;
@@ -1429,13 +1451,17 @@ function renderUnitariosYTD(metrics){
     var pctHtml=pct!==null
       ?`<div style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:${pbg}"><span style="font-size:.82rem;color:${pc}">${arw}</span><span style="font-size:1rem;font-weight:800;letter-spacing:-.03em;color:${pc}">${pct>=0?'+':''}${pct.toFixed(1)}%</span></div>`
       :'<span style="color:var(--muted)">—</span>';
-    return `<div style="flex:1;min-width:280px;background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px 20px">
+    var active=ST.unit_focus===groupId;
+    var bStyle=active
+      ?'flex:1;min-width:280px;background:#fff;border:2px solid var(--ml-blue);border-radius:16px;padding:15px 19px;cursor:pointer;box-shadow:0 8px 28px rgba(52,131,250,.18);transition:all .15s'
+      :'flex:1;min-width:280px;background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px 20px;cursor:pointer;transition:all .15s';
+    return `<div onclick="setUnitFocus('${groupId}')" style="${bStyle}" title="Clique para destacar os cards deste grupo">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="flex-shrink:0;width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,rgba(255,230,0,.22),rgba(52,131,250,.12));display:flex;align-items:center;justify-content:center;font-size:1.25rem">${icon}</div>
-          <div style="font-size:.95rem;font-weight:800;letter-spacing:-.02em;color:#1F2937">${title}</div>
+          <div style="font-size:.95rem;font-weight:800;letter-spacing:-.02em;color:#1F2937">${title}${active?' <span style="font-size:.6rem;color:var(--ml-blue);font-weight:700">● em foco</span>':''}</div>
         </div>
-        <span onclick="showYTDDetail('${groupId}')" style="font-size:.66rem;color:var(--ml-blue);font-weight:700;cursor:pointer;white-space:nowrap">🔍 Ver base</span>
+        <span onclick="event.stopPropagation();showYTDDetail('${groupId}')" style="font-size:.66rem;color:var(--ml-blue);font-weight:700;cursor:pointer;white-space:nowrap">🔍 Ver base</span>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
         <div>
