@@ -150,6 +150,7 @@
     .br-pct.pos{color:var(--green)}
     .br-pct.neg{color:var(--red)}
     .comp-q-select{display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -1184,6 +1185,7 @@ function renderSubBridges(){
   document.getElementById('sub-bridges-container').innerHTML=cards.join('');
 }
 function renderUnitariosInsights(metrics,pair,idx){
+  if(!window._liveLoaded){document.getElementById('unitarios-insights').innerHTML='';return;}
   var results=metrics.map(function(m){
     var tL=getA(pair.left,m.totalKey,idx);
     var vL=getA(pair.left,m.volKey,idx);
@@ -1291,7 +1293,9 @@ function renderUnitarios(){
     {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🚚',note:'Full passou de 25% dos envios em 2025 para 45% em 2026. Same Day, modalidade iniciada no período, já representa 4% dos envios mensais.'},
   ];
 
+  const loaded=!!window._liveLoaded;
   function fmtUnitVal(v,abs){
+    if(!loaded)return'<span style="color:var(--muted);opacity:.4">···</span>'; // ainda carregando: em branco
     if(v===null||v===N||v===undefined)return'<span style="color:var(--muted)">—</span>';
     var s=abs?(Math.abs(v).toFixed(1)+'M'):('R$'+Math.abs(v).toFixed(2));
     return`<span style="color:var(--ml-navy)">${s}</span>`;
@@ -1310,6 +1314,7 @@ function renderUnitarios(){
 
   // formata o total acumulado FY do Realizado 2026 (R$M), para dar noção da grandeza da linha no ano
   function fmtFY(v){
+    if(!loaded)return'···';
     if(v===null||v===undefined)return'—';
     var a=Math.abs(v);
     return'R$'+(a>=100?a.toFixed(0):a.toFixed(1))+'M';
@@ -1337,10 +1342,10 @@ function renderUnitarios(){
     const pctColor=good?'var(--green)':'var(--red)';
     const pctBg=good?'rgba(0,166,80,.1)':'rgba(229,57,53,.1)';
     const arrow=pct!==null?(pct>=0?'▲':'▼'):'';
-    const pctBadge=pct!==null
+    const pctBadge=(loaded&&pct!==null)
       ?`<div style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:${pctBg}"><span style="font-size:.85rem;color:${pctColor}">${arrow}</span><span style="font-size:1.05rem;font-weight:800;letter-spacing:-.03em;color:${pctColor}">${pct>=0?'+':''}${pct.toFixed(1)}%</span></div>
          <div style="font-size:.62rem;color:var(--muted);font-weight:600;text-align:center;margin-top:4px">vs ${vsLbl}</div>`
-      :`<span style="font-size:.78rem;color:var(--muted)">—</span>`;
+      :`<span style="font-size:.78rem;color:var(--muted);opacity:.4">···</span>`;
     const fyTotal=getA('Realizado 2026',m.totalKey,PERIODS.FY);
     const mKey=m.totalKey+'|'+m.volKey+'|'+encodeURIComponent(m.lbl);
     const ownerAttrs=m.ownerEmail?` onclick="event.stopPropagation();showOwnerPopover('${m.ownerEmail}',this)" title="Ver contato"`:'';
@@ -1409,6 +1414,15 @@ function setUnitFocus(g){
 // Comparação YTD absoluta: soma de todas as linhas de custos, 2025 vs 2026,
 // sempre nos mesmos meses já realizados em 2026 (comparação justa que se atualiza sozinha).
 function renderUnitariosYTD(metrics){
+  // enquanto os dados ao vivo não chegam, não mostrar números (evita valores errados no topo)
+  if(!window._liveLoaded){
+    document.getElementById('unitarios-ytd').innerHTML=
+      '<div class="card" style="padding:26px 28px;background:linear-gradient(135deg,rgba(52,131,250,.05),rgba(255,230,0,.05))">'
+      +'<div style="display:flex;align-items:center;gap:14px;color:var(--muted)">'
+      +'<div style="width:20px;height:20px;border:2.5px solid rgba(52,131,250,.25);border-top-color:var(--ml-blue);border-radius:50%;animation:spin 0.8s linear infinite"></div>'
+      +'<span style="font-size:.85rem;font-weight:600">Carregando dados ao vivo da base…</span></div></div>';
+    return;
+  }
   const MOS3=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   // meses realizados em 2026 (idx justo) — corta no último mês com CMV realizado, independente do toggle
   var last26=lastRealizedMonth('Realizado 2026');
@@ -1434,12 +1448,12 @@ function renderUnitariosYTD(metrics){
   var teleKeys=['telemetria'];
   // registro global para o detalhamento (Ver base)
   window._ytdGroups={
-    devices:{title:'Custos de Devices',idx:ytdIdx,groups:[
+    devices:{title:'Custos de Devices',idx:ytdIdx,blocks:[
       {lbl:'Point COGS',keys:pointCogsKeys},
-      {lbl:'Previsión MPOS Cost',keys:previsionKeys},
+      {lbl:'Estoque (Previsión MPOS Cost)',keys:previsionKeys},
       {lbl:'Sales MPOS',keys:salesKeys},
     ]},
-    telemetria:{title:'Telemetria',idx:ytdIdx,lines:[{key:'telemetria',lbl:'Telemetría Point'}]}
+    telemetria:{title:'Telemetria',idx:ytdIdx,lines:[{key:'telemetria'}]}
   };
   window._ytdRange=rangeLbl;
   // renderiza um bloco de comparação YTD 2025 vs 2026 para um grupo
@@ -1495,6 +1509,13 @@ function renderUnitariosYTD(metrics){
   document.getElementById('unitarios-ytd').innerHTML=html;
 }
 
+// Rótulo de/para do dashboard para uma chave de linha (usa ROWS managerial, cai p/ ROWS_OFICIAL)
+function dashLbl(key){
+  var src=(typeof ROWS!=='undefined'?ROWS:[]).concat(typeof ROWS_OFICIAL!=='undefined'?ROWS_OFICIAL:[]);
+  for(var i=0;i<src.length;i++)if(src[i].id===key)return src[i].lbl;
+  return key;
+}
+
 // Detalhamento linha a linha de um grupo YTD (para conferência da base)
 function showYTDDetail(groupId){
   var g=(window._ytdGroups||{})[groupId];
@@ -1507,22 +1528,27 @@ function showYTDDetail(groupId){
     var s='R$'+Math.abs(v).toFixed(1)+'M';
     return v<0?'('+s+')':s;
   }
-  // itens = grupos (subtotais líquidos por bloco) ou linhas individuais
-  var items=g.groups
-    ?g.groups.map(function(gr){return{lbl:gr.lbl,keys:gr.keys};})
-    :g.lines.map(function(l){return{lbl:l.lbl,keys:[l.key]};});
-  function netFor(ver,keys){
-    var tot=0,any=false;
-    keys.forEach(function(k){var v=getA(ver,k,idx);if(v!==null&&v!==undefined){tot+=v;any=true;}});
-    return any?tot:null;
-  }
-  var r25=items.map(function(it){return netFor('Realizado 2025',it.keys);});
-  var r26=items.map(function(it){return netFor('Realizado 2026',it.keys);});
-  var t25=r25.reduce(function(s,x){return s+(x||0);},0),t26=r26.reduce(function(s,x){return s+(x||0);},0);
-  var body=items.map(function(it,i){
-    return '<tr><td style="padding:7px 10px;font-size:.76rem;color:#374151">'+it.lbl+'</td>'
-      +'<td style="padding:7px 10px;font-size:.82rem;text-align:right;font-weight:600">'+fmt(r25[i])+'</td>'
-      +'<td style="padding:7px 10px;font-size:.82rem;text-align:right;font-weight:600">'+fmt(r26[i])+'</td></tr>';
+  function net(ver,key){var v=getA(ver,key,idx);return(v===null||v===undefined)?null:v;}
+  // normaliza para blocos: cada bloco tem lbl + keys; sem blocos, um bloco único com as lines
+  var blocks=g.blocks||[{lbl:null,keys:(g.lines||[]).map(function(l){return l.key;})}];
+  var t25=0,t26=0;
+  var body=blocks.map(function(b){
+    var rows='',b25=0,b26=0,anyB=false;
+    b.keys.forEach(function(k){
+      var v25=net('Realizado 2025',k),v26=net('Realizado 2026',k);
+      if(v25!==null){b25+=v25;anyB=true;}
+      if(v26!==null){b26+=v26;anyB=true;}
+      rows+='<tr><td style="padding:6px 10px 6px '+(b.lbl?'26px':'10px')+';font-size:.75rem;color:#374151">'+dashLbl(k)+'</td>'
+        +'<td style="padding:6px 10px;font-size:.8rem;text-align:right;font-weight:600">'+fmt(v25)+'</td>'
+        +'<td style="padding:6px 10px;font-size:.8rem;text-align:right;font-weight:600">'+fmt(v26)+'</td></tr>';
+    });
+    if(anyB){t25+=b25;t26+=b26;}
+    var head=b.lbl
+      ?'<tr style="background:#F8FAFC"><td style="padding:8px 10px;font-size:.72rem;font-weight:800;color:#1F2937;text-transform:uppercase;letter-spacing:.04em">'+b.lbl+'</td>'
+        +'<td style="padding:8px 10px;font-size:.82rem;text-align:right;font-weight:800;color:var(--ml-navy)">'+fmt(anyB?b25:null)+'</td>'
+        +'<td style="padding:8px 10px;font-size:.82rem;text-align:right;font-weight:800;color:var(--ml-navy)">'+fmt(anyB?b26:null)+'</td></tr>'
+      :'';
+    return head+rows;
   }).join('');
   var overlay=document.createElement('div');
   overlay.className='ytd-pop-overlay';
@@ -2321,13 +2347,13 @@ function doFetchSheets(){
     .then(function(){return fetchWith('MNG',function(values){parseMNG(values);parsePYLMain(values);});})
     .then(function(){return sleep(160);})
     .then(function(){return getRetry('Estoque!A1:M90',0).then(function(res){if(res&&res.values)parseEstoque(res.values);}).catch(function(e){console.error('[MPOS Estoque] erro',e);});})
-    .then(function(){render();});
+    .then(function(){window._liveLoaded=true;render();});
 }
 
 function initGrid(tries){
   if(typeof Grid==='undefined'){
     if(tries>0)setTimeout(function(){initGrid(tries-1);},300);
-    else console.warn('[MPOS Vol] Grid nunca ficou disponível');
+    else {console.warn('[MPOS Vol] Grid nunca ficou disponível');window._liveLoaded=true;render();}
     return;
   }
   // Grid existe — chamar configure() como o acquiring_operational_view faz
@@ -2344,7 +2370,7 @@ function initGrid(tries){
     var w=0;
     var iv=setInterval(function(){
       if(Grid.sheets){clearInterval(iv);doFetchSheets();}
-      else if(++w>20){clearInterval(iv);console.warn('[MPOS Vol] Grid.sheets não disponível após configure');}
+      else if(++w>20){clearInterval(iv);console.warn('[MPOS Vol] Grid.sheets não disponível após configure');window._liveLoaded=true;render();}
     },200);
   }
 }
@@ -2369,7 +2395,11 @@ function brTipHide(){
   const el=document.getElementById('br-tooltip');
   if(el)el.style.display='none';
 }
-window.addEventListener('DOMContentLoaded',function(){render();initGrid(50);});
+window.addEventListener('DOMContentLoaded',function(){
+  render();initGrid(50);
+  // safety: nunca deixar em branco pra sempre — libera fallback após 12s
+  setTimeout(function(){if(!window._liveLoaded){window._liveLoaded=true;render();}},12000);
+});
 </script>
 </body>
 </html>
