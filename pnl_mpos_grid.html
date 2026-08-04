@@ -1417,34 +1417,37 @@ function renderUnitariosYTD(metrics){
   var lastMi=ytdIdx.length?ytdIdx[ytdIdx.length-1]:5;
   var rangeLbl=ytdIdx.length?('Jan–'+MOS3[lastMi]):'YTD';
   function fmtM(v){return v===null?'—':('R$'+(Math.abs(v)>=100?Math.abs(v).toFixed(0):Math.abs(v).toFixed(1))+'M');}
-  // soma absoluta de um conjunto de linhas de custo, num período
-  function sumKeys(ver,keys){
+  // soma LÍQUIDA (com sinal) de um conjunto de linhas, num período
+  function sumNet(ver,keys){
     var tot=0,any=false;
     keys.forEach(function(k){
       var v=getA(ver,k,ytdIdx);
-      if(v!==null&&v!==undefined){tot+=Math.abs(v);any=true;}
+      if(v!==null&&v!==undefined){tot+=v;any=true;}
     });
     return any?tot:null;
   }
-  // única quebra: Custos de Devices (= grupo Point COGS) vs Telemetria
-  // Point COGS = CMV + Insumos + Scrap + Recondicionamento + Shipping (Distribución+Interco) + Warehousing (Interco+Point)
-  var deviceLines=[
-    {key:'cmv',              lbl:'CMV (Cost of Products Sold)'},
-    {key:'insumos',          lbl:'Insumos Point'},
-    {key:'scrap',            lbl:'Scrap MPOS'},
-    {key:'refurb',           lbl:'Recondicionamento'},
-    {key:'distribución',     lbl:'Shipping (Distribución + Interco)'},
-    {key:'warehousing_total',lbl:'Warehousing (Interco + Point)'},
-  ];
-  var teleLines=[{key:'telemetria',lbl:'Telemetría Point'}];
+  // Custos de Devices = soma líquida de 3 blocos contábeis: Point COGS + Previsión MPOS Cost + Sales MPOS
+  var pointCogsKeys=['cmv','insumos','scrap','refurb','distribución','warehousing_total'];
+  var previsionKeys=['provision','prev_costo','hedge'];
+  var salesKeys=['sales_gross','descuentos','icms','pis_cofins','alquiler','bad_debt'];
+  var deviceKeys=pointCogsKeys.concat(previsionKeys).concat(salesKeys);
+  var teleKeys=['telemetria'];
   // registro global para o detalhamento (Ver base)
-  window._ytdGroups={devices:{title:'Custos de Devices · Point COGS',lines:deviceLines,idx:ytdIdx},telemetria:{title:'Telemetria',lines:teleLines,idx:ytdIdx}};
+  window._ytdGroups={
+    devices:{title:'Custos de Devices',idx:ytdIdx,groups:[
+      {lbl:'Point COGS',keys:pointCogsKeys},
+      {lbl:'Previsión MPOS Cost',keys:previsionKeys},
+      {lbl:'Sales MPOS',keys:salesKeys},
+    ]},
+    telemetria:{title:'Telemetria',idx:ytdIdx,lines:[{key:'telemetria',lbl:'Telemetría Point'}]}
+  };
   window._ytdRange=rangeLbl;
   // renderiza um bloco de comparação YTD 2025 vs 2026 para um grupo
-  function block(icon,title,lines,groupId){
-    var keys=lines.map(function(l){return l.key;});
-    var v25=sumKeys('Realizado 2025',keys),v26=sumKeys('Realizado 2026',keys);
-    var pct=(v25!==null&&v25!==0&&v26!==null)?((v26-v25)/v25*100):null;
+  function block(icon,title,keys,groupId){
+    var v25=sumNet('Realizado 2025',keys),v26=sumNet('Realizado 2026',keys);
+    // variação por magnitude (custo), independente do sinal contábil
+    var a25=v25!==null?Math.abs(v25):null,a26=v26!==null?Math.abs(v26):null;
+    var pct=(a25!==null&&a25!==0&&a26!==null)?((a26-a25)/a25*100):null;
     var good=pct!==null?pct<0:null; // custo menor = bom
     var pc=good?'var(--green)':'var(--red)',pbg=good?'rgba(0,166,80,.12)':'rgba(229,57,53,.12)';
     var arw=pct!==null?(pct>=0?'▲':'▼'):'';
@@ -1481,12 +1484,12 @@ function renderUnitariosYTD(metrics){
       <div style="flex-shrink:0;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(255,230,0,.25),rgba(52,131,250,.15));display:flex;align-items:center;justify-content:center;font-size:1.7rem">💵</div>
       <div>
         <div style="font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#1F2937">Custos Totais · YTD ${rangeLbl}</div>
-        <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:2px">Soma absoluta em R$M · comparação justa (mesmos meses realizados)</div>
+        <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:2px">R$M · comparação justa (mesmos meses realizados) · Devices = Point COGS + Previsión + Sales MPOS</div>
       </div>
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap">
-      ${block('📱','Custos de Devices',deviceLines,'devices')}
-      ${block('📡','Telemetria',teleLines,'telemetria')}
+      ${block('📱','Custos de Devices',deviceKeys,'devices')}
+      ${block('📡','Telemetria',teleKeys,'telemetria')}
     </div>
   </div>`;
   document.getElementById('unitarios-ytd').innerHTML=html;
@@ -1498,16 +1501,28 @@ function showYTDDetail(groupId){
   if(!g)return;
   document.querySelectorAll('.ytd-pop-overlay').forEach(function(p){p.remove();});
   var idx=g.idx;
-  function fmt(v){return v===null||v===undefined?'—':('R$'+v.toFixed(2)+'M');}
-  function rowsFor(ver){
-    return g.lines.map(function(l){var v=getA(ver,l.key,idx);return{lbl:l.lbl,v:(v===null||v===undefined)?null:Math.abs(v)};});
+  // valores contábeis com sinal: negativo entre parênteses (padrão P&L)
+  function fmt(v){
+    if(v===null||v===undefined)return'—';
+    var s='R$'+Math.abs(v).toFixed(1)+'M';
+    return v<0?'('+s+')':s;
   }
-  var r25=rowsFor('Realizado 2025'),r26=rowsFor('Realizado 2026');
-  var t25=r25.reduce(function(s,x){return s+(x.v||0);},0),t26=r26.reduce(function(s,x){return s+(x.v||0);},0);
-  var body=g.lines.map(function(l,i){
-    return '<tr><td style="padding:7px 10px;font-size:.76rem;color:#374151">'+l.lbl+'</td>'
-      +'<td style="padding:7px 10px;font-size:.82rem;text-align:right;font-weight:600">'+fmt(r25[i].v)+'</td>'
-      +'<td style="padding:7px 10px;font-size:.82rem;text-align:right;font-weight:600">'+fmt(r26[i].v)+'</td></tr>';
+  // itens = grupos (subtotais líquidos por bloco) ou linhas individuais
+  var items=g.groups
+    ?g.groups.map(function(gr){return{lbl:gr.lbl,keys:gr.keys};})
+    :g.lines.map(function(l){return{lbl:l.lbl,keys:[l.key]};});
+  function netFor(ver,keys){
+    var tot=0,any=false;
+    keys.forEach(function(k){var v=getA(ver,k,idx);if(v!==null&&v!==undefined){tot+=v;any=true;}});
+    return any?tot:null;
+  }
+  var r25=items.map(function(it){return netFor('Realizado 2025',it.keys);});
+  var r26=items.map(function(it){return netFor('Realizado 2026',it.keys);});
+  var t25=r25.reduce(function(s,x){return s+(x||0);},0),t26=r26.reduce(function(s,x){return s+(x||0);},0);
+  var body=items.map(function(it,i){
+    return '<tr><td style="padding:7px 10px;font-size:.76rem;color:#374151">'+it.lbl+'</td>'
+      +'<td style="padding:7px 10px;font-size:.82rem;text-align:right;font-weight:600">'+fmt(r25[i])+'</td>'
+      +'<td style="padding:7px 10px;font-size:.82rem;text-align:right;font-weight:600">'+fmt(r26[i])+'</td></tr>';
   }).join('');
   var overlay=document.createElement('div');
   overlay.className='ytd-pop-overlay';
@@ -1519,7 +1534,7 @@ function showYTDDetail(groupId){
   box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
     +'<div style="font-size:.98rem;font-weight:800;color:#1F2937">'+g.title+'</div>'
     +'<button style="background:#F3F4F6;border:none;cursor:pointer;border-radius:999px;padding:6px 14px;font-size:.78rem;font-weight:600;color:#6B7280">✕ Fechar</button></div>'
-    +'<div style="font-size:.72rem;color:#6B7280;margin-bottom:16px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">YTD '+(window._ytdRange||'')+' · valores absolutos R$M</div>'
+    +'<div style="font-size:.72rem;color:#6B7280;margin-bottom:16px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">YTD '+(window._ytdRange||'')+' · R$M (líquido, sinal contábil · negativo entre parênteses)</div>'
     +'<table style="width:100%;border-collapse:collapse">'
     +'<thead><tr><th style="text-align:left;padding:6px 10px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#6B7280;border-bottom:1px solid #E5E7EB">Linha</th>'
     +'<th style="text-align:right;padding:6px 10px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#6B7280;border-bottom:1px solid #E5E7EB">YTD 2025</th>'
