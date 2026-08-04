@@ -707,6 +707,17 @@ function computeUC(costM,vol){
   if(costM===N||vol===N||vol===0)return N;
   return(costM*1e6)/vol;
 }
+// Custo unitário AGREGADO "fair": soma custo e volume APENAS dos meses que têm ambos.
+// Evita achatar o unitário (ex.: Bobinas têm custo em poucos meses, mas volume em todos).
+function computeUCAgg(ver,costKey,volKey,idx){
+  var cost=0,vol=0,any=false;
+  idx.forEach(function(mi){
+    var c=getM(ver,costKey,mi),v=getM(ver,volKey,mi);
+    if(c!==N&&c!==null&&c!==undefined&&v!==N&&v!==null&&v!==undefined&&v!==0){cost+=c;vol+=v;any=true;}
+  });
+  if(!any||vol===0)return N;
+  return(cost*1e6)/vol;
+}
 
 function fd(v,ref,hi){
   if(v===N||ref===N||ref===0)return'';
@@ -1328,8 +1339,11 @@ function renderUnitarios(){
     const vL=getA(pair.left,m.volKey,idx);
     const tR=getA(pair.right,m.totalKey,idx);
     const vR=getA(pair.right,m.volKey,idx);
-    const ucL=(tL!==null&&vL!==null&&vL!==0)?computeUC(tL,vL):null;
-    const ucR=(tR!==null&&vR!==null&&vR!==0)?computeUC(tR,vR):null;
+    // unitário fair: só meses com custo E volume (evita achatar Bobinas etc.)
+    const ucLraw=computeUCAgg(pair.left,m.totalKey,m.volKey,idx);
+    const ucRraw=computeUCAgg(pair.right,m.totalKey,m.volKey,idx);
+    const ucL=ucLraw===N?null:ucLraw;
+    const ucR=ucRraw===N?null:ucRraw;
     // displayed value and type depend on mode
     const dL=isAbs?tL:ucL;
     const dR=isAbs?tR:ucR;
@@ -1632,8 +1646,14 @@ function showCalcDetail(totalKey,volKey,lbl,verL,verR){
   var comps=CALC_BREAKDOWN[totalKey]||null;
   function row(ver){
     var t=getA(ver,totalKey,idx);
-    var v=getA(ver,volKey,idx);
-    var uc=(t!==null&&v!==null&&v!==0)?computeUC(t,v):null;
+    // volume considerado no unitário = só meses que têm custo E volume (fair)
+    var vMatch=0,anyM=false;
+    idx.forEach(function(mi){
+      var c=getM(ver,totalKey,mi),vv=getM(ver,volKey,mi);
+      if(c!==N&&c!=null&&vv!==N&&vv!=null&&vv!==0){vMatch+=vv;anyM=true;}
+    });
+    var v=anyM?vMatch:getA(ver,volKey,idx);
+    var uc=computeUCAgg(ver,totalKey,volKey,idx);uc=(uc===N?null:uc);
     var parts=comps?comps.map(function(c){return{lbl:c.lbl,v:getA(ver,c.id,idx)};}):null;
     return{ver:ver,t:t,v:v,uc:uc,parts:parts};
   }
