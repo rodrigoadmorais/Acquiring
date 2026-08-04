@@ -1449,9 +1449,9 @@ function renderUnitariosYTD(metrics){
   // registro global para o detalhamento (Ver base)
   window._ytdGroups={
     devices:{title:'Custos de Devices',idx:ytdIdx,blocks:[
-      {lbl:'Point COGS',keys:pointCogsKeys},
-      {lbl:'Estoque (Previsión MPOS Cost)',keys:previsionKeys},
       {lbl:'Sales MPOS',keys:salesKeys},
+      {lbl:'Estoque (Previsión MPOS Cost)',keys:previsionKeys},
+      {lbl:'Point COGS',keys:pointCogsKeys},
     ]},
     telemetria:{title:'Telemetria',idx:ytdIdx,lines:[{key:'telemetria'}]}
   };
@@ -1516,10 +1516,18 @@ function dashLbl(key){
   return key;
 }
 
+// Alterna o modo do delta (absoluto R$ ou percentual) e re-renderiza a janela aberta
+function setYTDDelta(mode){
+  window._ytdDeltaMode=mode;
+  if(window._ytdCurrentGroup)showYTDDetail(window._ytdCurrentGroup);
+}
+
 // Detalhamento linha a linha de um grupo YTD (para conferência da base)
 function showYTDDetail(groupId){
   var g=(window._ytdGroups||{})[groupId];
   if(!g)return;
+  window._ytdCurrentGroup=groupId;
+  var mode=window._ytdDeltaMode||'abs';
   document.querySelectorAll('.ytd-pop-overlay').forEach(function(p){p.remove();});
   var idx=g.idx;
   // valores contábeis com sinal: negativo entre parênteses (padrão P&L)
@@ -1528,8 +1536,24 @@ function showYTDDetail(groupId){
     var s='R$'+Math.abs(v).toFixed(1)+'M';
     return v<0?'('+s+')':s;
   }
+  // delta = variação em magnitude (custo) entre os dois períodos
+  function delta(v25,v26){
+    var has25=v25!==null&&v25!==undefined,has26=v26!==null&&v26!==undefined;
+    if(!has25&&!has26)return'<span style="color:#9CA3AF">—</span>';
+    var a25=has25?Math.abs(v25):0,a26=has26?Math.abs(v26):0;
+    var d,txt,good;
+    if(mode==='pct'){
+      if(a25===0)return'<span style="color:#9CA3AF">—</span>';
+      d=(a26-a25)/a25*100;txt=(d>=0?'+':'')+d.toFixed(1)+'%';
+    }else{
+      d=a26-a25;txt=(d>=0?'+':'-')+'R$'+Math.abs(d).toFixed(1)+'M';
+    }
+    good=d<0; // custo menor = bom
+    var col=Math.abs(d)<0.05?'#6B7280':(good?'var(--green)':'var(--red)');
+    return '<span style="color:'+col+';font-weight:700">'+txt+'</span>';
+  }
   function net(ver,key){var v=getA(ver,key,idx);return(v===null||v===undefined)?null:v;}
-  // normaliza para blocos: cada bloco tem lbl + keys; sem blocos, um bloco único com as lines
+  function isZero(v){return v===null||v===undefined||Math.abs(v)<0.05;}
   var blocks=g.blocks||[{lbl:null,keys:(g.lines||[]).map(function(l){return l.key;})}];
   var t25=0,t26=0;
   var body=blocks.map(function(b){
@@ -1538,15 +1562,18 @@ function showYTDDetail(groupId){
       var v25=net('Realizado 2025',k),v26=net('Realizado 2026',k);
       if(v25!==null){b25+=v25;anyB=true;}
       if(v26!==null){b26+=v26;anyB=true;}
+      if(isZero(v25)&&isZero(v26))return; // pula linhas 0,0 para não sujar o quadro
       rows+='<tr><td style="padding:6px 10px 6px '+(b.lbl?'26px':'10px')+';font-size:.75rem;color:#374151">'+dashLbl(k)+'</td>'
         +'<td style="padding:6px 10px;font-size:.8rem;text-align:right;font-weight:600">'+fmt(v25)+'</td>'
-        +'<td style="padding:6px 10px;font-size:.8rem;text-align:right;font-weight:600">'+fmt(v26)+'</td></tr>';
+        +'<td style="padding:6px 10px;font-size:.8rem;text-align:right;font-weight:600">'+fmt(v26)+'</td>'
+        +'<td style="padding:6px 10px;font-size:.78rem;text-align:right">'+delta(v25,v26)+'</td></tr>';
     });
     if(anyB){t25+=b25;t26+=b26;}
     var head=b.lbl
       ?'<tr style="background:#F8FAFC"><td style="padding:8px 10px;font-size:.72rem;font-weight:800;color:#1F2937;text-transform:uppercase;letter-spacing:.04em">'+b.lbl+'</td>'
         +'<td style="padding:8px 10px;font-size:.82rem;text-align:right;font-weight:800;color:var(--ml-navy)">'+fmt(anyB?b25:null)+'</td>'
-        +'<td style="padding:8px 10px;font-size:.82rem;text-align:right;font-weight:800;color:var(--ml-navy)">'+fmt(anyB?b26:null)+'</td></tr>'
+        +'<td style="padding:8px 10px;font-size:.82rem;text-align:right;font-weight:800;color:var(--ml-navy)">'+fmt(anyB?b26:null)+'</td>'
+        +'<td style="padding:8px 10px;font-size:.8rem;text-align:right">'+delta(anyB?b25:null,anyB?b26:null)+'</td></tr>'
       :'';
     return head+rows;
   }).join('');
@@ -1555,22 +1582,27 @@ function showYTDDetail(groupId){
   overlay.style.cssText='position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.45);backdrop-filter:blur(3px)';
   overlay.onclick=function(){overlay.remove();};
   var box=document.createElement('div');
-  box.style.cssText='position:fixed;z-index:9996;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:26px 28px;box-shadow:0 24px 80px rgba(0,0,0,.25);width:min(620px,94vw);max-height:88vh;overflow:auto';
+  box.style.cssText='position:fixed;z-index:9996;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:26px 28px;box-shadow:0 24px 80px rgba(0,0,0,.25);width:min(720px,95vw);max-height:88vh;overflow:auto';
   box.onclick=function(ev){ev.stopPropagation();};
+  var pill=function(m,lbl){var on=mode===m;return '<button onclick="setYTDDelta(\''+m+'\')" style="background:'+(on?'var(--ml-blue)':'#F3F4F6')+';color:'+(on?'#fff':'#6B7280')+';border:none;cursor:pointer;border-radius:999px;padding:5px 12px;font-size:.7rem;font-weight:700">'+lbl+'</button>';};
   box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
     +'<div style="font-size:.98rem;font-weight:800;color:#1F2937">'+g.title+'</div>'
-    +'<button style="background:#F3F4F6;border:none;cursor:pointer;border-radius:999px;padding:6px 14px;font-size:.78rem;font-weight:600;color:#6B7280">✕ Fechar</button></div>'
-    +'<div style="font-size:.72rem;color:#6B7280;margin-bottom:16px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">YTD '+(window._ytdRange||'')+' · R$M (líquido, sinal contábil · negativo entre parênteses)</div>'
+    +'<button class="ytd-close" style="background:#F3F4F6;border:none;cursor:pointer;border-radius:999px;padding:6px 14px;font-size:.78rem;font-weight:600;color:#6B7280">✕ Fechar</button></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap">'
+    +'<div style="font-size:.72rem;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;font-weight:600">YTD '+(window._ytdRange||'')+' · R$M (líquido · negativo entre parênteses)</div>'
+    +'<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.66rem;color:#9CA3AF;font-weight:600">Δ:</span>'+pill('abs','R$')+pill('pct','%')+'</div></div>'
     +'<table style="width:100%;border-collapse:collapse">'
     +'<thead><tr><th style="text-align:left;padding:6px 10px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#6B7280;border-bottom:1px solid #E5E7EB">Linha</th>'
     +'<th style="text-align:right;padding:6px 10px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#6B7280;border-bottom:1px solid #E5E7EB">YTD 2025</th>'
-    +'<th style="text-align:right;padding:6px 10px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#6B7280;border-bottom:1px solid #E5E7EB">YTD 2026</th></tr></thead>'
+    +'<th style="text-align:right;padding:6px 10px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#6B7280;border-bottom:1px solid #E5E7EB">YTD 2026</th>'
+    +'<th style="text-align:right;padding:6px 10px;font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:#6B7280;border-bottom:1px solid #E5E7EB">Δ '+(mode==='pct'?'%':'R$')+'</th></tr></thead>'
     +'<tbody>'+body+'</tbody>'
     +'<tfoot><tr style="border-top:2px solid #E5E7EB"><td style="padding:9px 10px;font-size:.82rem;font-weight:800;color:#1F2937">Total</td>'
     +'<td style="padding:9px 10px;font-size:.95rem;text-align:right;font-weight:800;color:var(--ml-navy)">'+fmt(t25)+'</td>'
-    +'<td style="padding:9px 10px;font-size:.95rem;text-align:right;font-weight:800;color:var(--ml-navy)">'+fmt(t26)+'</td></tr></tfoot>'
+    +'<td style="padding:9px 10px;font-size:.95rem;text-align:right;font-weight:800;color:var(--ml-navy)">'+fmt(t26)+'</td>'
+    +'<td style="padding:9px 10px;font-size:.9rem;text-align:right">'+delta(t25,t26)+'</td></tr></tfoot>'
     +'</table>';
-  box.querySelector('button').onclick=function(){overlay.remove();};
+  box.querySelector('.ytd-close').onclick=function(){overlay.remove();};
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 }
