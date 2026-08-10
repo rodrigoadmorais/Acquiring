@@ -534,7 +534,7 @@ function parseRaw(rows) {
         clean.push({ metric:'NS', scenario:'R', canal:/PROPRIA|PROPIA|FDVP/i.test(c2)?'FDVP':'FDVT', ...months });
       } else if (c0==='Investimento') {
         const sc = /realizado/i.test(c1)?'R':'P';
-        if (/Propia Point/i.test(c2))  clean.push({ metric:'INV_PP', scenario:sc, canal:'FDVP', ...months });
+        if (/Propia (Point|Acquiring)/i.test(c2))  clean.push({ metric:'INV_PP', scenario:sc, canal:'FDVP', ...months });
         if (/^Fuerza de Ventas$/i.test(c2)) clean.push({ metric:'INV_V', scenario:sc, canal:'FDVP', ...months });
         if (/Terceros/i.test(c2))       clean.push({ metric:'INV_TP', scenario:sc, canal:'FDVT', ...months });
       } else if (c0==='HCs') {
