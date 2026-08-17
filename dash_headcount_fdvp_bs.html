@@ -903,7 +903,11 @@ async function waitForGrid(ms=2200){
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function shouldRetryGridRead(err){
   const txt=String((err&&(err.detail||err.message||err.error))||err||'').toLowerCase();
-  return !!(err&&err.retry)||txt.includes('quota')||txt.includes('too many')||txt.includes('429');
+  // "unable to parse range" costuma ser a aba genuinamente ausente/renomeada,
+  // mas tambem aparece de forma transitoria quando a planilha esta sendo
+  // editada ao vivo (aba momentaneamente indisponivel durante um rename/move) -
+  // vale um retry curto antes de desistir.
+  return !!(err&&err.retry)||txt.includes('quota')||txt.includes('too many')||txt.includes('429')||txt.includes('unable to parse range');
 }
 async function gridGetRange(range){
   let lastErr=null;
