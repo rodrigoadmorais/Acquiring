@@ -180,7 +180,10 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Bridge
       </button>
       <button class="mode-btn" id="btn-unitarios" onclick="setMode('unitarios')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="7" height="7"/><rect x="15" y="3" width="7" height="7"/><rect x="2" y="14" width="7" height="7"/><rect x="15" y="14" width="7" height="7"/></svg>Unitários
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
+      </button>
+      <button class="mode-btn" id="btn-telemetria" onclick="setMode('telemetria')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 11a8 8 0 0 1 16 0"/><path d="M7.5 14.5a4 4 0 0 1 9 0"/><line x1="12" y1="18" x2="12" y2="22"/><circle cx="12" cy="18" r="1"/></svg>Telemetria
       </button>
     </div>
   </div>
@@ -257,7 +260,7 @@
   <div id="unitarios-sec" style="display:none">
     <div class="card" style="padding:20px 24px;margin-bottom:16px">
       <div class="tbl-hdr">
-        <h3 class="tbl-title">Unitários · Preço e Custo por Unidade</h3>
+        <h3 class="tbl-title" id="unitarios-title">Unitários · Preço e Custo por Unidade</h3>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="unit-month-sel" onchange="ST.unit_month=this.value===''?null:parseInt(this.value);renderUnitarios()" style="padding:5px 12px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;outline:none">
             <option value="">FY / Quarter</option>
@@ -895,7 +898,7 @@ function renderTable(){
 function render(){
   renderQ();renderVer();
   const isBr=ST.mode==='bridge';
-  const isUnit=ST.mode==='unitarios';
+  const isUnit=ST.mode==='unitarios'||ST.mode==='telemetria';
   document.getElementById('bridge-sel').style.display=isBr?'flex':'none';
   document.getElementById('evol-sel').style.display=(isBr||isUnit)?'none':(ST.mode==='evolution'?'flex':'none');
   document.getElementById('kpi').style.display=(isBr||isUnit)?'none':'';
@@ -908,8 +911,8 @@ function render(){
 }
 function setMode(m){
   ST.mode=m;
-  const modeMap={evol:'evolution',comp:'comparison',bridge:'bridge',unitarios:'unitarios'};
-  ['evol','comp','bridge','unitarios'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',m===modeMap[k]));
+  const modeMap={evol:'evolution',comp:'comparison',bridge:'bridge',unitarios:'unitarios',telemetria:'telemetria'};
+  ['evol','comp','bridge','unitarios','telemetria'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',m===modeMap[k]));
   render();
 }
 function setQ(q){ST.q=q;render();}
@@ -1296,6 +1299,9 @@ function renderUnitarios(){
     btnYtd.style.color=ST.unit_ytd?'#fff':'var(--orange)';
     btnYtd.textContent=ST.unit_ytd?'YTD ativo ✓':'Comparar YTD (mesmos meses)';
   }
+  const isTele=ST.mode==='telemetria';
+  const titleEl=document.getElementById('unitarios-title');
+  if(titleEl)titleEl.textContent=isTele?'Telemetria · Preço e Custo por Unidade':'Unitários · Preço e Custo por Unidade';
 
   const metrics=[
     {lbl:'Receita Líq./Device',sub:'Receitas e Impostos',totalKey:'receita_liq',volKey:'vol',fmt:'cunit',benPos:true,owner:'Negócios',icon:'💰'},
@@ -1304,7 +1310,7 @@ function renderUnitarios(){
     {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'📡'},
     {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🏭',note:'Migração da operação terceirizada para própria viabilizou despacho de segunda a sábado (antes seg-sex), ganhando agilidade operacional.'},
     {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🚚',note:'Full passou de 25% dos envios em 2025 para 45% em 2026. Same Day, modalidade iniciada no período, já representa 4% dos envios mensais.'},
-  ];
+  ].filter(function(m){return isTele?m.totalKey==='telemetria':true;});
 
   const loaded=!!window._liveLoaded;
   function fmtUnitVal(v,abs){
@@ -1509,17 +1515,20 @@ function renderUnitariosYTD(metrics){
       </div>
     </div>`;
   }
+  var isTele=ST.mode==='telemetria';
+  var blocksHtml=isTele
+    ?block('📡','Telemetria',teleKeys,'telemetria')
+    :block('📱','Custos de Devices',deviceKeys,'devices')+block('📡','Telemetria',teleKeys,'telemetria');
   var html=`<div class="card" style="padding:22px 28px;background:linear-gradient(135deg,rgba(52,131,250,.05),rgba(255,230,0,.05))">
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-      <div style="flex-shrink:0;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(255,230,0,.25),rgba(52,131,250,.15));display:flex;align-items:center;justify-content:center;font-size:1.7rem">💵</div>
+      <div style="flex-shrink:0;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(255,230,0,.25),rgba(52,131,250,.15));display:flex;align-items:center;justify-content:center;font-size:1.7rem">${isTele?'📡':'💵'}</div>
       <div>
-        <div style="font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#1F2937">Custos Totais · YTD ${rangeLbl}</div>
-        <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:2px">R$M · comparação justa (mesmos meses realizados) · Devices = Point COGS + Previsión + Sales MPOS</div>
+        <div style="font-size:1.15rem;font-weight:800;letter-spacing:-.03em;color:#1F2937">${isTele?'Custos de Telemetria':'Custos Totais'} · YTD ${rangeLbl}</div>
+        <div style="font-size:.72rem;color:var(--muted);font-weight:600;margin-top:2px">${isTele?'R$M · comparação justa (mesmos meses realizados)':'R$M · comparação justa (mesmos meses realizados) · Devices = Point COGS + Previsión + Sales MPOS'}</div>
       </div>
     </div>
     <div style="display:flex;gap:16px;flex-wrap:wrap">
-      ${block('📱','Custos de Devices',deviceKeys,'devices')}
-      ${block('📡','Telemetria',teleKeys,'telemetria')}
+      ${blocksHtml}
     </div>
   </div>`;
   document.getElementById('unitarios-ytd').innerHTML=html;
