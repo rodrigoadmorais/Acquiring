@@ -909,11 +909,22 @@ function render(){
   else if(isUnit){renderUnitarios();}
   else{renderKPI();renderTable();}
 }
-function setMode(m){
+function setMode(m,skipHash){
   ST.mode=m;
   const modeMap={evol:'evolution',comp:'comparison',bridge:'bridge',unitarios:'unitarios',telemetria:'telemetria'};
   ['evol','comp','bridge','unitarios','telemetria'].forEach(k=>document.getElementById('btn-'+k).classList.toggle('active',m===modeMap[k]));
+  if(!skipHash){
+    var hashMap={unitarios:'home',telemetria:'telemetria',evolution:'evolucao',comparison:'comparativo',bridge:'bridge'};
+    history.replaceState(null,'','#'+(hashMap[m]||m));
+  }
   render();
+}
+// Deep-link por hash: #home → aba Home (sem Telemetria) · #telemetria → aba Telemetria
+function applyModeFromHash(){
+  var h=(location.hash||'').replace('#','').toLowerCase();
+  var map={home:'unitarios',unitarios:'unitarios',telemetria:'telemetria',evolucao:'evolution',evolution:'evolution',comparativo:'comparison',comparison:'comparison',bridge:'bridge'};
+  var m=map[h];
+  if(m)setMode(m,true);
 }
 function setQ(q){ST.q=q;render();}
 function setPrimary(v){ST.prim=v;render();}
@@ -1310,7 +1321,7 @@ function renderUnitarios(){
     {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'📡'},
     {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🏭',note:'Migração da operação terceirizada para própria viabilizou despacho de segunda a sábado (antes seg-sex), ganhando agilidade operacional.'},
     {lbl:'Custo/Envio',sub:'Shipping',totalKey:'distribución',volKey:'vol_envios',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🚚',note:'Full passou de 25% dos envios em 2025 para 45% em 2026. Same Day, modalidade iniciada no período, já representa 4% dos envios mensais.'},
-  ].filter(function(m){return isTele?m.totalKey==='telemetria':true;});
+  ].filter(function(m){return isTele?m.totalKey==='telemetria':m.totalKey!=='telemetria';});
 
   const loaded=!!window._liveLoaded;
   function fmtUnitVal(v,abs){
@@ -1516,9 +1527,10 @@ function renderUnitariosYTD(metrics){
     </div>`;
   }
   var isTele=ST.mode==='telemetria';
+  // Home mostra só Devices (Telemetria vive na aba própria); aba Telemetria mostra só o bloco dela
   var blocksHtml=isTele
     ?block('📡','Telemetria',teleKeys,'telemetria')
-    :block('📱','Custos de Devices',deviceKeys,'devices')+block('📡','Telemetria',teleKeys,'telemetria');
+    :block('📱','Custos de Devices',deviceKeys,'devices');
   var html=`<div class="card" style="padding:22px 28px;background:linear-gradient(135deg,rgba(52,131,250,.05),rgba(255,230,0,.05))">
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
       <div style="flex-shrink:0;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,rgba(255,230,0,.25),rgba(52,131,250,.15));display:flex;align-items:center;justify-content:center;font-size:1.7rem">${isTele?'📡':'💵'}</div>
@@ -2478,6 +2490,8 @@ function brTipHide(){
 }
 window.addEventListener('DOMContentLoaded',function(){
   render();initGrid(50);
+  applyModeFromHash();
+  window.addEventListener('hashchange',applyModeFromHash);
   // safety: nunca deixar em branco pra sempre — libera fallback após 12s
   setTimeout(function(){if(!window._liveLoaded){window._liveLoaded=true;render();}},12000);
 });
