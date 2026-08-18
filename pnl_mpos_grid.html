@@ -2410,6 +2410,42 @@ function parseVolume(values){
 
   if(planoHdr<0&&actualHdr<0)
     console.warn('[MPOS Vol] Nenhum header encontrado em Volume. Primeiras 3 linhas:',JSON.stringify(values.slice(0,3)));
+
+  // ── Section 3: "Devices Sold - 26" — Forecast por device (header jan/26…dez/26, col DEVICE_TYPE) ──
+  // Fonte oficial do volume Forecast (YTG); no cenário composto, YTD vem de Realizado/Actual.
+  var fHdr=-1,fCols={};
+  for(var ri=0;ri<values.length;ri++){
+    var row=values[ri]||[];
+    if(String(row[2]||'').toUpperCase().trim()==='DEVICE_TYPE'){
+      for(var ci=3;ci<row.length;ci++){var mm=moIdx(row[ci]);if(mm>=0&&fCols[mm]===undefined)fCols[mm]=ci;}
+      if(Object.keys(fCols).length>=3){fHdr=ri;break;}
+      fCols={};
+    }
+  }
+  if(fHdr>=0){
+    var accF=Array(12).fill(null),devF={};
+    for(var r=fHdr+1;r<values.length;r++){
+      var row=values[r]||[];
+      var cen=String(row[0]||'').toLowerCase();
+      if(cen.indexOf('forecast')<0&&cen.indexOf('fcst')<0)continue;
+      var dev=String(row[2]||'').trim().toUpperCase();
+      if(VOL_DEVS.indexOf(dev)<0)continue; // ignora subtotais e linhas sem device
+      var dk=VOL_DEV_FIELDS[dev];
+      Object.keys(fCols).forEach(function(mk){
+        var mi=parseInt(mk,10),ci=fCols[mk];
+        var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
+        if(isNaN(v)||v<=0)return;
+        accF[mi]=(accF[mi]||0)+v;
+        if(!devF[dk])devF[dk]=Array(12).fill(null);
+        devF[dk][mi]=(devF[dk][mi]||0)+v;
+      });
+    }
+    if(D['Forecast 2026']&&accF.some(function(v){return v!==null&&v>0;})){
+      D['Forecast 2026'].vol=accF;
+      VOL_DEVS.forEach(function(dv){var f=VOL_DEV_FIELDS[dv];if(devF[f])D['Forecast 2026'][f]=devF[f];});
+      console.log('[MPOS Vol] → Forecast devices',accF.slice(0,12));
+    }
+  }
 }
 
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
