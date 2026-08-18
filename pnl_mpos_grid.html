@@ -978,10 +978,11 @@ function renderBridge(){
   const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
   document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' '+ST.br_lq+' → '+verLabel(ST.br_rv)+' '+ST.br_rq+' · ex-Telemetria';
 
-  // GP do Bridge SEM telemetria (removida apenas nesta aba)
+  // Linhas excluídas da Bridge (apenas nesta aba): Telemetria e Bad Debt
+  const BR_EXCL=['telemetria','bad_debt'];
   function bridgeGP(ver,idx){
     var s=null;
-    BM_KEYS.forEach(function(k){if(k==='telemetria')return;var v=getA(ver,k,idx);if(v!==null)s=(s||0)+v;});
+    BM_KEYS.forEach(function(k){if(BR_EXCL.indexOf(k)>=0)return;var v=getA(ver,k,idx);if(v!==null)s=(s||0)+v;});
     return s;
   }
   const bmA=bridgeGP(ST.br_lv,idxL);
@@ -990,7 +991,7 @@ function renderBridge(){
   const rowMap={};
   [...ROWS,...ROWS_OFICIAL].forEach(function(r){if(!rowMap[r.id])rowMap[r.id]=r;});
 
-  const items=BRIDGE_ITEMS.filter(function(bi){return bi.key!=='telemetria';}).map(function(bi){
+  const items=BRIDGE_ITEMS.filter(function(bi){return BR_EXCL.indexOf(bi.key)<0;}).map(function(bi){
     if(bi.type==='group'){
       const breakdown=bi.keys.map(function(k){
         const a=getA(ST.br_lv,k,idxL),b=getA(ST.br_rv,k,idxR);
@@ -1160,8 +1161,9 @@ function renderBridge(){
 }
 
 // ── Sub-bridges: price × volume decomposition ─────────────────────────────
-function subBridgeSVG(tL,tR,effects){
+function subBridgeSVG(tL,tR,effects,tips){
   if(tL===null||tR===null){return'<p style="color:var(--muted);font-size:.75rem;padding:4px 0">Sem dados suficientes</p>';}
+  if(tips){window._sbTips=tips;}
   const bars=[];
   bars.push({type:'anchor',lbl:ST.br_lq+'\n'+verLabel(ST.br_lv).replace('Realizado ','Real ').replace('Forecast ','FCST '),val:tL,from:0,to:tL});
   let run=tL;
@@ -1223,9 +1225,20 @@ function subBridgeSVG(tL,tR,effects){
     var short1=(parts[1]||'').length>10?(parts[1]||'').slice(0,9)+'…':(parts[1]||'');
     s+=`<text transform="rotate(-32,${cx},${lblY})" x="${cx}" y="${lblY}" text-anchor="end" font-size="8.5" font-weight="${b.type==='anchor'?'700':'400'}" fill="${b.type==='anchor'?C_A:'#374151'}">${short0}</text>`;
     if(short1) s+=`<text transform="rotate(-32,${cx},${lblY+11})" x="${cx}" y="${lblY+11}" text-anchor="end" font-size="7.5" fill="#9CA3AF">${short1}</text>`;
+    // área invisível de hover (coluna inteira) com tooltip de composição
+    if(tips&&tips[i]){
+      s+=`<rect x="${cx-gap/2}" y="${MT}" width="${gap}" height="${cH}" fill="transparent" style="cursor:pointer" onmousemove="sbTip(event,${i})" onmouseleave="brTipHide()"></rect>`;
+    }
   });
   s+='</svg>';
   return s;
+}
+// Tooltip de composição dos sub-bridges (usa o elemento #br-tooltip)
+function sbTip(evt,i){
+  var html=(window._sbTips||[])[i];if(!html){brTipHide();return;}
+  var el=document.getElementById('br-tooltip');
+  el.innerHTML=html;el.style.display='block';
+  el.style.left=(evt.clientX+14)+'px';el.style.top=(evt.clientY-10)+'px';
 }
 
 function pvDecomp(totalKey,volKey,idxL,idxR){
@@ -1262,17 +1275,26 @@ function solve4(A,b){
   var x=[];for(var i=0;i<n;i++)x.push(M[i][n]/M[i][i]);
   return x;
 }
-// Estima preço implícito por device (AIR/MINI/PRO/SMART) via mínimos quadrados:
-// net_sales_m ≈ Σ p_i · vol_i_m, usando meses realizados (2025+2026) da base ao vivo.
+// "Vendas" = resultado de venda dos devices (Receita Líq. − CMV − Impostos + Hedge) — negativo = prejuízo
+const VENDAS_KEYS=['net_sales','pis_cofins','cmv','hedge'];
+const VENDAS_LBLS={net_sales:'Sales MPOS Líquido',pis_cofins:'PIS/COFINS',cmv:'CMV Hardware',hedge:'Hedge'};
+const DEV_VOL=['vol_air','vol_mini','vol_pro','vol_smart'];
+const DEV_LBL={vol_air:'AIR',vol_mini:'MINI',vol_pro:'PRO',vol_smart:'SMART'};
+function vgAgg(ver,idx){var s=null;VENDAS_KEYS.forEach(function(k){var v=getA(ver,k,idx);if(v!==null&&v!==undefined)s=(s||0)+v;});return s;}
+function vgMonth(ver,mi){var s=null,any=false;VENDAS_KEYS.forEach(function(k){var v=getM(ver,k,mi);if(v!==N&&v!==null&&v!==undefined){s=(s||0)+v;any=true;}});return any?s:null;}
+function sbF(v){return v===null||v===undefined?'—':((v>=0?'+':'-')+'R$'+Math.abs(v).toFixed(1)+'M');}
+function sbTR(lbl,val,strong){return '<div style="display:flex;justify-content:space-between;gap:20px'+(strong?';border-top:1px solid rgba(255,255,255,.2);margin-top:3px;padding-top:3px':'')+'"><span style="color:#D1D5DB'+(strong?';font-weight:800;color:#F9FAFB':'')+'">'+lbl+'</span><span style="font-weight:700'+(strong?';color:#F9FAFB':'')+'">'+sbF(val)+'</span></div>';}
+
+// Estima resultado unitário implícito por device (AIR/MINI/PRO/SMART) via mínimos quadrados:
+// resultado_vendas_m ≈ Σ u_i · vol_i_m, nos meses realizados (2025+2026) da base ao vivo.
 function estimateImpliedPrices(){
-  var devs=['vol_air','vol_mini','vol_pro','vol_smart'];
   var rows=[];
   ['Realizado 2025','Realizado 2026'].forEach(function(ver){
     if(!D[ver])return;
     for(var mi=0;mi<12;mi++){
-      var y=getM(ver,'net_sales',mi);
-      if(y===N||y===null||y===undefined)continue;
-      var v=devs.map(function(k){var x=getM(ver,k,mi);return(x===N||x===null||x===undefined)?0:x;});
+      var y=vgMonth(ver,mi);
+      if(y===null)continue;
+      var v=DEV_VOL.map(function(k){var x=getM(ver,k,mi);return(x===N||x===null||x===undefined)?0:x;});
       if(v.reduce(function(a,b){return a+b;},0)<=0)continue;
       rows.push({v:v,y:y});
     }
@@ -1288,17 +1310,19 @@ function estimateImpliedPrices(){
 function pvmVendas(idxL,idxR){
   var verL=ST.br_lv,verR=ST.br_rv;
   var QA=getA(verL,'vol',idxL),QB=getA(verR,'vol',idxR);
-  var RA=getA(verL,'net_sales',idxL),RB=getA(verR,'net_sales',idxR);
+  var RA=vgAgg(verL,idxL),RB=vgAgg(verR,idxR);
   if(QA===null||QB===null||QA===0||QB===0||RA===null||RB===null)return null;
-  var vol=(QB-QA)*(RA/QA);
-  var devs=['vol_air','vol_mini','vol_pro','vol_smart'];
+  var uA=RA/QA; // resultado por device do cenário base (negativo = prejuízo/unidade)
+  var vol=(QB-QA)*uA;
   var p=estimateImpliedPrices();
-  var mix=0,mixOk=false;
+  var mix=0,mixOk=false,mixParts=[];
   if(p){
     var sum=0,ok=true;
     for(var i=0;i<4;i++){
-      var aA=getA(verL,devs[i],idxL),aB=getA(verR,devs[i],idxR);
+      var aA=getA(verL,DEV_VOL[i],idxL),aB=getA(verR,DEV_VOL[i],idxR);
       if(aA===null||aB===null){ok=false;break;}
+      var contrib=((aB/QB)-(aA/QA))*p[i]*QB;
+      mixParts.push({lbl:DEV_LBL[DEV_VOL[i]],val:contrib,sA:aA/QA,sB:aB/QB,u:p[i]});
       sum+=((aB/QB)-(aA/QA))*p[i];
     }
     if(ok){mix=QB*sum;mixOk=true;}
@@ -1307,14 +1331,40 @@ function pvmVendas(idxL,idxR){
   var effects=[{lbl:'Volume',val:vol}];
   if(mixOk)effects.push({lbl:'Mix',val:mix});
   effects.push({lbl:'Preço',val:price});
-  return{tL:RA,tR:RB,effects:effects};
+
+  // Tooltips: âncoras = composição por linha da base; efeitos = racional/por device
+  var la=verLabel(verL),lb=verLabel(verR);
+  function compTip(ver,idx,ttl){
+    return '<div style="font-weight:800;margin-bottom:4px;color:#F9FAFB">Composição · '+ttl+'</div>'
+      +VENDAS_KEYS.map(function(k){return sbTR(VENDAS_LBLS[k],getA(ver,k,idx));}).join('')
+      +sbTR('= Resultado Vendas',vgAgg(ver,idx),true);
+  }
+  var tips=[];
+  tips.push(compTip(verL,idxL,la+' '+ST.br_lq));
+  tips.push('<div style="font-weight:800;margin-bottom:4px;color:#F9FAFB">Efeito Volume</div>'
+    +sbTR('Volume '+la,QA)+sbTR('Volume '+lb,QB)
+    +sbTR('Resultado/device ('+la+')',uA)
+    +sbTR('= Efeito Volume',vol,true));
+  if(mixOk){
+    tips.push('<div style="font-weight:800;margin-bottom:4px;color:#F9FAFB">Efeito Mix · por device</div>'
+      +mixParts.map(function(mp){return sbTR(mp.lbl+' ('+(mp.sA*100).toFixed(0)+'%→'+(mp.sB*100).toFixed(0)+'%)',mp.val);}).join('')
+      +sbTR('= Efeito Mix',mix,true)
+      +'<div style="font-size:.62rem;color:#9CA3AF;margin-top:3px">resultado/device implícito estimado da base</div>');
+  }
+  tips.push('<div style="font-weight:800;margin-bottom:4px;color:#F9FAFB">Efeito Preço (resíduo)</div>'
+    +sbTR('Δ Total Vendas',RB-RA)+sbTR('− Efeito Volume',-vol)+(mixOk?sbTR('− Efeito Mix',-mix):'')
+    +sbTR('= Efeito Preço',price,true)
+    +'<div style="font-size:.62rem;color:#9CA3AF;margin-top:3px">variação de preço/custo por unidade não explicada por volume/mix</div>');
+  tips.push(compTip(verR,idxR,lb+' '+ST.br_rq));
+
+  return{tL:RA,tR:RB,effects:effects,tips:tips};
 }
 function vendasCard(idxL,idxR){
   var d=pvmVendas(idxL,idxR);
-  var body=d?subBridgeSVG(d.tL,d.tR,d.effects):'<p style="color:var(--muted);font-size:.75rem">Sem dados</p>';
+  var body=d?subBridgeSVG(d.tL,d.tR,d.effects,d.tips):'<p style="color:var(--muted);font-size:.75rem">Sem dados</p>';
   return`<div class="card" style="padding:14px 18px">
     <div style="font-size:.78rem;font-weight:800;letter-spacing:-.03em;margin-bottom:2px">Vendas · Volume × Mix × Preço</div>
-    <div style="font-size:.6rem;color:var(--muted);margin-bottom:6px">Mix por device · preço implícito estimado da base</div>
+    <div style="font-size:.6rem;color:var(--muted);margin-bottom:6px">Resultado de venda (Receita − CMV − Impostos + Hedge) · passe o mouse p/ composição</div>
     ${body}
   </div>`;
 }
