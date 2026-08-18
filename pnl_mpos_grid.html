@@ -976,16 +976,21 @@ function fcBr(v,t){
 function renderBridge(){
   const idxL=PERIODS[ST.br_lq]||PERIODS.FY;
   const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
-  document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' '+ST.br_lq+' → '+verLabel(ST.br_rv)+' '+ST.br_rq;
+  document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' '+ST.br_lq+' → '+verLabel(ST.br_rv)+' '+ST.br_rq+' · ex-Telemetria';
 
-  // Build waterfall items: BM start → each BM_KEY delta → BM end
-  const bmA=getA(ST.br_lv,'bm',idxL);
-  const bmB=getA(ST.br_rv,'bm',idxR);
+  // GP do Bridge SEM telemetria (removida apenas nesta aba)
+  function bridgeGP(ver,idx){
+    var s=null;
+    BM_KEYS.forEach(function(k){if(k==='telemetria')return;var v=getA(ver,k,idx);if(v!==null)s=(s||0)+v;});
+    return s;
+  }
+  const bmA=bridgeGP(ST.br_lv,idxL);
+  const bmB=bridgeGP(ST.br_rv,idxR);
 
   const rowMap={};
   [...ROWS,...ROWS_OFICIAL].forEach(function(r){if(!rowMap[r.id])rowMap[r.id]=r;});
 
-  const items=BRIDGE_ITEMS.map(function(bi){
+  const items=BRIDGE_ITEMS.filter(function(bi){return bi.key!=='telemetria';}).map(function(bi){
     if(bi.type==='group'){
       const breakdown=bi.keys.map(function(k){
         const a=getA(ST.br_lv,k,idxL),b=getA(ST.br_rv,k,idxR);
@@ -1249,7 +1254,6 @@ function renderSubBridges(){
   const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
   const cards=[
     subBridgeCard('Vendas','net_sales','vol','Vol. Devices','Preço/Device',idxL,idxR),
-    subBridgeCard('Telemetria','telemetria','vol_mads','Vol. MADs','Preço/MAD',idxL,idxR),
     subBridgeCard('Warehousing','warehousing_total','vol_despacho','Vol. Despachos','Preço/Despacho',idxL,idxR),
     subBridgeCard('Shipping','distribución','vol_envios','Vol. Envios','Preço/Envio',idxL,idxR),
   ];
