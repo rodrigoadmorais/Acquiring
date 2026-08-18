@@ -255,6 +255,7 @@
         <h3 class="tbl-title">Bridge · Variação entre Cenários</h3>
         <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="bridge-sub"></span>
       </div>
+      <div id="bridge-delta" style="margin-top:14px"></div>
       <div id="bridge-chart" style="margin-top:16px;overflow-x:auto"></div>
     </div>
     <div id="sub-bridges-container" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:16px"></div>
@@ -1126,6 +1127,30 @@ function renderBridge(){
   </div>`;
 
   document.getElementById('bridge-chart').innerHTML=svg;
+
+  // Card de delta total entre cenário A e B (GP fim − GP início)
+  (function(){
+    var el=document.getElementById('bridge-delta');if(!el)return;
+    if(bmA===null||bmB===null){el.innerHTML='';return;}
+    var d=bmB-bmA;
+    var pct=(bmA!==0)?(d/Math.abs(bmA)*100):null;
+    var good=d>=0; // GP maior = melhor
+    var col=good?'var(--green)':'var(--red)';
+    var bg=good?'rgba(0,166,80,.08)':'rgba(229,57,53,.08)';
+    var arw=good?'▲':'▼';
+    function m(v){return(v>=0?'':'-')+'R$'+Math.abs(v).toFixed(1)+'M';}
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:'+bg+';border:1px solid var(--border);border-radius:14px;padding:14px 20px">'
+      +'<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">'
+      +'<div><div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">GP · '+verLabel(ST.br_lv)+' '+ST.br_lq+'</div><div style="font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:var(--ml-navy)">'+m(bmA)+'</div></div>'
+      +'<div style="font-size:1.2rem;color:var(--muted)">→</div>'
+      +'<div><div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">GP · '+verLabel(ST.br_rv)+' '+ST.br_rq+'</div><div style="font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:var(--ml-navy)">'+m(bmB)+'</div></div>'
+      +'</div>'
+      +'<div style="text-align:right"><div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:2px">Delta Total (B − A)</div>'
+      +'<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:999px;background:#fff;border:1.5px solid '+col+'"><span style="font-size:1rem;color:'+col+'">'+arw+'</span><span style="font-size:1.5rem;font-weight:800;letter-spacing:-.04em;color:'+col+'">'+m(d)+'</span>'
+      +(pct!==null?'<span style="font-size:.85rem;font-weight:700;color:'+col+'">('+(pct>=0?'+':'')+pct.toFixed(1)+'%)</span>':'')+'</div></div>'
+      +'</div>';
+  })();
+
   renderSubBridges();
 }
 
