@@ -253,7 +253,14 @@
     <div class="card" style="padding:20px 24px">
       <div class="tbl-hdr">
         <h3 class="tbl-title">Bridge · Variação entre Cenários</h3>
-        <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="bridge-sub"></span>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;gap:4px;background:#F3F4F6;border-radius:999px;padding:3px">
+            <button id="brspan-ytd" onclick="setBrSpan('ytd')" style="border:none;cursor:pointer;border-radius:999px;padding:5px 14px;font-size:.72rem;font-weight:700;font-family:inherit">YTD</button>
+            <button id="brspan-ytg" onclick="setBrSpan('ytg')" style="border:none;cursor:pointer;border-radius:999px;padding:5px 14px;font-size:.72rem;font-weight:700;font-family:inherit">YTG</button>
+            <button id="brspan-custom" onclick="setBrSpan('custom')" style="border:none;cursor:pointer;border-radius:999px;padding:5px 14px;font-size:.72rem;font-weight:700;font-family:inherit">Período</button>
+          </div>
+          <span style="font-size:.7rem;color:var(--muted);font-weight:600" id="bridge-sub"></span>
+        </div>
       </div>
       <div id="bridge-delta" style="margin-top:14px"></div>
       <div id="bridge-chart" style="margin-top:16px;overflow-x:auto"></div>
@@ -687,7 +694,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null,unit_ytd:true,unit_focus:''};
+const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null,unit_ytd:true,unit_focus:'',br_span:'custom'};
 const COMP_PAIRS={
   real:      {left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
   real_plano:{left:'Realizado 2025',right:'Plano 2026',    lbl:'Realizado 2025 vs Plano 2026'},
@@ -946,6 +953,7 @@ function applyModeFromHash(){
   var m=map[h];
   if(m)setMode(m,true);
 }
+function setBrSpan(s){ST.br_span=s;render();}
 function setQ(q){ST.q=q;render();}
 function setPrimary(v){ST.prim=v;render();}
 function setCompare(v){ST.comp=v;render();}
@@ -974,9 +982,24 @@ function fcBr(v,t){
 }
 
 function renderBridge(){
-  const idxL=PERIODS[ST.br_lq]||PERIODS.FY;
-  const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
-  document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' '+ST.br_lq+' → '+verLabel(ST.br_rv)+' '+ST.br_rq+' · ex-Telemetria';
+  const MOS3=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var lr=lastRealizedMonth('Realizado 2026');if(lr<0)lr=5;
+  var spanIdx=null,spanLbl='';
+  if(ST.br_span==='ytd'){spanIdx=[];for(var i=0;i<=lr;i++)spanIdx.push(i);spanLbl='YTD (Jan–'+MOS3[lr]+')';}
+  else if(ST.br_span==='ytg'){spanIdx=[];for(var i=lr+1;i<12;i++)spanIdx.push(i);spanLbl='YTG ('+(lr+1<12?MOS3[lr+1]:'')+'–Dez)';}
+  const idxL=spanIdx||PERIODS[ST.br_lq]||PERIODS.FY;
+  const idxR=spanIdx||PERIODS[ST.br_rq]||PERIODS.FY;
+  // globais para âncoras / sub-bridges usarem o mesmo período
+  window._brLblL=spanIdx?spanLbl:ST.br_lq;
+  window._brLblR=spanIdx?spanLbl:ST.br_rq;
+  window._brIdxL=idxL;window._brIdxR=idxR;
+  // toggle YTD/YTG/Período — estilos ativos + esconde seletores de período quando span fixo
+  ['ytd','ytg','custom'].forEach(function(k){var b=document.getElementById('brspan-'+k);if(!b)return;var on=ST.br_span===k;b.style.background=on?'var(--ml-blue)':'transparent';b.style.color=on?'#fff':'#6B7280';});
+  var pqA=document.getElementById('br-lq'),pqB=document.getElementById('br-rq');
+  if(pqA&&pqA.parentElement)pqA.parentElement.style.display=spanIdx?'none':'';
+  if(pqB&&pqB.parentElement)pqB.parentElement.style.display=spanIdx?'none':'';
+  var perLbl=spanIdx?spanLbl:(ST.br_lq+' → '+ST.br_rq);
+  document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' → '+verLabel(ST.br_rv)+' · '+perLbl+' · ex-Telemetria';
 
   // Linhas excluídas da Bridge (apenas nesta aba): só Telemetria
   const BR_EXCL=['telemetria'];
@@ -1014,7 +1037,7 @@ function renderBridge(){
   // Waterfall sequence: [start, ...deltas..., end]
   const bars=[];
   window._brTips=[];
-  bars.push({lbl:ST.br_lq,sublbl:verLabel(ST.br_lv),val:bmA,from:0,to:bmA,type:'anchor'});
+  bars.push({lbl:window._brLblL,sublbl:verLabel(ST.br_lv),val:bmA,from:0,to:bmA,type:'anchor'});
   window._brTips.push(null);
   let running=bmA;
   items.forEach(function(it){
@@ -1029,7 +1052,7 @@ function renderBridge(){
     window._brTips.push(null);
     running+=residual;
   }
-  bars.push({lbl:ST.br_rq,sublbl:verLabel(ST.br_rv),val:bmB,from:0,to:bmB,type:'anchor'});
+  bars.push({lbl:window._brLblR,sublbl:verLabel(ST.br_rv),val:bmB,from:0,to:bmB,type:'anchor'});
   window._brTips.push(null);
 
   // Layout constants
@@ -1152,9 +1175,9 @@ function renderBridge(){
     function m(v){return(v>=0?'':'-')+'R$'+Math.abs(v).toFixed(1)+'M';}
     el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:'+bg+';border:1px solid var(--border);border-radius:14px;padding:14px 20px">'
       +'<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">'
-      +'<div><div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">GP · '+verLabel(ST.br_lv)+' '+ST.br_lq+'</div><div style="font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:var(--ml-navy)">'+m(bmA)+'</div></div>'
+      +'<div><div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">GP · '+verLabel(ST.br_lv)+' '+window._brLblL+'</div><div style="font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:var(--ml-navy)">'+m(bmA)+'</div></div>'
       +'<div style="font-size:1.2rem;color:var(--muted)">→</div>'
-      +'<div><div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">GP · '+verLabel(ST.br_rv)+' '+ST.br_rq+'</div><div style="font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:var(--ml-navy)">'+m(bmB)+'</div></div>'
+      +'<div><div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">GP · '+verLabel(ST.br_rv)+' '+window._brLblR+'</div><div style="font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:var(--ml-navy)">'+m(bmB)+'</div></div>'
       +'</div>'
       +'<div style="text-align:right"><div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:2px">Delta Total (B − A)</div>'
       +'<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:999px;background:#fff;border:1.5px solid '+col+'"><span style="font-size:1rem;color:'+col+'">'+arw+'</span><span style="font-size:1.5rem;font-weight:800;letter-spacing:-.04em;color:'+col+'">'+m(d)+'</span>'
@@ -1170,10 +1193,10 @@ function subBridgeSVG(tL,tR,effects,tips){
   if(tL===null||tR===null){return'<p style="color:var(--muted);font-size:.75rem;padding:4px 0">Sem dados suficientes</p>';}
   if(tips){window._sbTips=tips;}
   const bars=[];
-  bars.push({type:'anchor',lbl:ST.br_lq+'\n'+verLabel(ST.br_lv).replace('Realizado ','Real ').replace('Forecast ','FCST '),val:tL,from:0,to:tL});
+  bars.push({type:'anchor',lbl:(window._brLblL||ST.br_lq)+'\n'+verLabel(ST.br_lv).replace('Realizado ','Real ').replace('Forecast ','FCST '),val:tL,from:0,to:tL});
   let run=tL;
   effects.forEach(function(e){bars.push({type:'delta',lbl:e.lbl,val:e.val,from:run,to:run+e.val});run+=e.val;});
-  bars.push({type:'anchor',lbl:ST.br_rq+'\n'+verLabel(ST.br_rv).replace('Realizado ','Real ').replace('Forecast ','FCST '),val:tR,from:0,to:tR});
+  bars.push({type:'anchor',lbl:(window._brLblR||ST.br_rq)+'\n'+verLabel(ST.br_rv).replace('Realizado ','Real ').replace('Forecast ','FCST '),val:tR,from:0,to:tR});
 
   const W=320,H=200,MT=22,MB=54,ML=48,MR=10;
   const cW=W-ML-MR,cH=H-MT-MB;
@@ -1379,8 +1402,8 @@ function vendasCard(idxL,idxR){
 }
 
 function renderSubBridges(){
-  const idxL=PERIODS[ST.br_lq]||PERIODS.FY;
-  const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
+  const idxL=window._brIdxL||PERIODS[ST.br_lq]||PERIODS.FY;
+  const idxR=window._brIdxR||PERIODS[ST.br_rq]||PERIODS.FY;
   const cards=[
     vendasCard(idxL,idxR),
     subBridgeCard('Warehousing','warehousing_total','vol_despacho','Vol. Despachos','Preço/Despacho',idxL,idxR),
