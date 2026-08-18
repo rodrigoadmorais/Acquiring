@@ -1346,9 +1346,13 @@ function pvmVendas(idxL,idxR){
   }
   var tips=[];
   tips.push(compTip(verL,idxL,la+' '+ST.br_lq));
+  function sbRow(lbl,valStr,strong){return '<div style="display:flex;justify-content:space-between;gap:20px'+(strong?';border-top:1px solid rgba(255,255,255,.2);margin-top:3px;padding-top:3px':'')+'"><span style="color:#D1D5DB'+(strong?';font-weight:800;color:#F9FAFB':'')+'">'+lbl+'</span><span style="font-weight:700'+(strong?';color:#F9FAFB':'')+'">'+valStr+'</span></div>';}
+  function nDev(q){return q===null||q===undefined?'—':Math.round(q).toLocaleString('pt-BR')+' dev';}
+  function rDev(u){return u===null||u===undefined?'—':((u<0?'-':'')+'R$'+Math.abs(u*1e6).toFixed(2));} // u está em R$M/device → R$/device
   tips.push('<div style="font-weight:800;margin-bottom:4px;color:#F9FAFB">Efeito Volume</div>'
-    +sbTR('Volume '+la,QA)+sbTR('Volume '+lb,QB)
-    +sbTR('Resultado/device ('+la+')',uA)
+    +sbRow('Volume '+la,nDev(QA))+sbRow('Volume '+lb,nDev(QB))
+    +sbRow('Δ Volume',nDev(QB-QA))
+    +sbRow('Resultado/device ('+la+')',rDev(uA))
     +sbTR('= Efeito Volume',vol,true));
   if(mixOk){
     tips.push('<div style="font-weight:800;margin-bottom:4px;color:#F9FAFB">Efeito Mix · por device</div>'
