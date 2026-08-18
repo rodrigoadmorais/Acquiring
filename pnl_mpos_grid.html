@@ -978,8 +978,8 @@ function renderBridge(){
   const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
   document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' '+ST.br_lq+' → '+verLabel(ST.br_rv)+' '+ST.br_rq+' · ex-Telemetria';
 
-  // Linhas excluídas da Bridge (apenas nesta aba): Telemetria e Bad Debt
-  const BR_EXCL=['telemetria','bad_debt'];
+  // Linhas excluídas da Bridge (apenas nesta aba): só Telemetria
+  const BR_EXCL=['telemetria'];
   function bridgeGP(ver,idx){
     var s=null;
     BM_KEYS.forEach(function(k){if(BR_EXCL.indexOf(k)>=0)return;var v=getA(ver,k,idx);if(v!==null)s=(s||0)+v;});
@@ -1001,9 +1001,14 @@ function renderBridge(){
       const delta=breakdown.reduce(function(s,x){return s+x.delta;},0);
       return{lbl:bi.lbl,delta:delta,breakdown:breakdown};
     }
-    const lbl=BRIDGE_LBLS[bi.key]||(rowMap[bi.key]||{}).lbl||bi.key;
     const a=getA(ST.br_lv,bi.key,idxL),b=getA(ST.br_rv,bi.key,idxR);
-    return{lbl,delta:(b!==null?b:0)-(a!==null?a:0)};
+    const d=(b!==null?b:0)-(a!==null?a:0);
+    // Bad Debt exibido como "Others" com tooltip explicando a composição
+    if(bi.key==='bad_debt'){
+      return{lbl:'Others',delta:d,breakdown:[{lbl:'Bad Debt (Incobrables)',delta:d}]};
+    }
+    const lbl=BRIDGE_LBLS[bi.key]||(rowMap[bi.key]||{}).lbl||bi.key;
+    return{lbl,delta:d};
   }).filter(function(it){return Math.abs(it.delta)>=0.001;});
 
   // Waterfall sequence: [start, ...deltas..., end]
