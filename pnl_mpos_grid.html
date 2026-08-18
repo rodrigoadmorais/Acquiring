@@ -461,7 +461,7 @@ const D={
   interco_egr: [-0.37,-0.37,-0.81,-0.81,-2.24,-1.55,N,N,N,N,N,N],
   warehousing: [-0.07,-0.13,0.07,0.00,-0.05,0.00,0.10,-1.44,-1.45,-1.44,-1.47,-1.44],
   alquiler:    [N,N,N,N,N,N,N,N,N,N,N,N],
-  bad_debt:    [N,N,N,N,N,-2.70,-2.70,-2.70,-2.70,-2.70,-2.70,-2.70],
+  bad_debt:    [N,N,N,N,N,N,N,N,N,N,N,N],
   telemetria:  [35.31,N,N,N,N,N,N,N,N,N,N,N],
   other_vfc:   [N,N,N,N,N,N,N,N,N,N,N,N],
 },
@@ -1163,10 +1163,10 @@ function renderBridge(){
 function subBridgeSVG(tL,tR,effects){
   if(tL===null||tR===null){return'<p style="color:var(--muted);font-size:.75rem;padding:4px 0">Sem dados suficientes</p>';}
   const bars=[];
-  bars.push({type:'anchor',lbl:ST.br_lq+'\n'+ST.br_lv.replace('Realizado ','Real ').replace('Plano ','Plano '),val:tL,from:0,to:tL});
+  bars.push({type:'anchor',lbl:ST.br_lq+'\n'+verLabel(ST.br_lv).replace('Realizado ','Real ').replace('Forecast ','FCST '),val:tL,from:0,to:tL});
   let run=tL;
   effects.forEach(function(e){bars.push({type:'delta',lbl:e.lbl,val:e.val,from:run,to:run+e.val});run+=e.val;});
-  bars.push({type:'anchor',lbl:ST.br_rq+'\n'+ST.br_rv.replace('Realizado ','Real ').replace('Plano ','Plano '),val:tR,from:0,to:tR});
+  bars.push({type:'anchor',lbl:ST.br_rq+'\n'+verLabel(ST.br_rv).replace('Realizado ','Real ').replace('Forecast ','FCST '),val:tR,from:0,to:tR});
 
   const W=320,H=200,MT=22,MB=54,ML=48,MR=10;
   const cW=W-ML-MR,cH=H-MT-MB;
@@ -1249,11 +1249,81 @@ function subBridgeCard(title,totalKey,volKey,volLbl,priceLbl,idxL,idxR){
   </div>`;
 }
 
+// Resolve 4x4 (eliminação de Gauss). Retorna null se singular.
+function solve4(A,b){
+  var n=4,M=[];
+  for(var i=0;i<n;i++)M.push(A[i].slice().concat([b[i]]));
+  for(var c=0;c<n;c++){
+    var piv=c;for(var r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[piv][c]))piv=r;
+    if(Math.abs(M[piv][c])<1e-9)return null;
+    var t=M[c];M[c]=M[piv];M[piv]=t;
+    for(var r=0;r<n;r++){if(r===c)continue;var f=M[r][c]/M[c][c];for(var k=c;k<=n;k++)M[r][k]-=f*M[c][k];}
+  }
+  var x=[];for(var i=0;i<n;i++)x.push(M[i][n]/M[i][i]);
+  return x;
+}
+// Estima preço implícito por device (AIR/MINI/PRO/SMART) via mínimos quadrados:
+// net_sales_m ≈ Σ p_i · vol_i_m, usando meses realizados (2025+2026) da base ao vivo.
+function estimateImpliedPrices(){
+  var devs=['vol_air','vol_mini','vol_pro','vol_smart'];
+  var rows=[];
+  ['Realizado 2025','Realizado 2026'].forEach(function(ver){
+    if(!D[ver])return;
+    for(var mi=0;mi<12;mi++){
+      var y=getM(ver,'net_sales',mi);
+      if(y===N||y===null||y===undefined)continue;
+      var v=devs.map(function(k){var x=getM(ver,k,mi);return(x===N||x===null||x===undefined)?0:x;});
+      if(v.reduce(function(a,b){return a+b;},0)<=0)continue;
+      rows.push({v:v,y:y});
+    }
+  });
+  if(rows.length<4)return null;
+  var A=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],b=[0,0,0,0];
+  rows.forEach(function(r){
+    for(var i=0;i<4;i++){b[i]+=r.v[i]*r.y;for(var j=0;j<4;j++)A[i][j]+=r.v[i]*r.v[j];}
+  });
+  return solve4(A,b);
+}
+// Decomposição de Vendas: Volume × Mix (AIR/MINI/PRO/SMART) × Preço (resíduo)
+function pvmVendas(idxL,idxR){
+  var verL=ST.br_lv,verR=ST.br_rv;
+  var QA=getA(verL,'vol',idxL),QB=getA(verR,'vol',idxR);
+  var RA=getA(verL,'net_sales',idxL),RB=getA(verR,'net_sales',idxR);
+  if(QA===null||QB===null||QA===0||QB===0||RA===null||RB===null)return null;
+  var vol=(QB-QA)*(RA/QA);
+  var devs=['vol_air','vol_mini','vol_pro','vol_smart'];
+  var p=estimateImpliedPrices();
+  var mix=0,mixOk=false;
+  if(p){
+    var sum=0,ok=true;
+    for(var i=0;i<4;i++){
+      var aA=getA(verL,devs[i],idxL),aB=getA(verR,devs[i],idxR);
+      if(aA===null||aB===null){ok=false;break;}
+      sum+=((aB/QB)-(aA/QA))*p[i];
+    }
+    if(ok){mix=QB*sum;mixOk=true;}
+  }
+  var price=(RB-RA)-vol-(mixOk?mix:0);
+  var effects=[{lbl:'Volume',val:vol}];
+  if(mixOk)effects.push({lbl:'Mix',val:mix});
+  effects.push({lbl:'Preço',val:price});
+  return{tL:RA,tR:RB,effects:effects};
+}
+function vendasCard(idxL,idxR){
+  var d=pvmVendas(idxL,idxR);
+  var body=d?subBridgeSVG(d.tL,d.tR,d.effects):'<p style="color:var(--muted);font-size:.75rem">Sem dados</p>';
+  return`<div class="card" style="padding:14px 18px">
+    <div style="font-size:.78rem;font-weight:800;letter-spacing:-.03em;margin-bottom:2px">Vendas · Volume × Mix × Preço</div>
+    <div style="font-size:.6rem;color:var(--muted);margin-bottom:6px">Mix por device · preço implícito estimado da base</div>
+    ${body}
+  </div>`;
+}
+
 function renderSubBridges(){
   const idxL=PERIODS[ST.br_lq]||PERIODS.FY;
   const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
   const cards=[
-    subBridgeCard('Vendas','net_sales','vol','Vol. Devices','Preço/Device',idxL,idxR),
+    vendasCard(idxL,idxR),
     subBridgeCard('Warehousing','warehousing_total','vol_despacho','Vol. Despachos','Preço/Despacho',idxL,idxR),
     subBridgeCard('Shipping','distribución','vol_envios','Vol. Envios','Preço/Envio',idxL,idxR),
   ];
@@ -2473,7 +2543,20 @@ function parsePYLMain(values){
   });
 }
 
+// Zera TODOS os arrays de dados dos cenários — garante que nada venha de valores hardcoded antigos;
+// tudo é repopulado exclusivamente pela leitura ao vivo da planilha.
+function clearLiveData(){
+  Object.keys(D).forEach(function(ver){
+    if(ver.indexOf('__')===0)return; // ignora chaves internas
+    var d=D[ver];if(!d||typeof d!=='object')return;
+    Object.keys(d).forEach(function(k){
+      if(Array.isArray(d[k]))d[k]=Array(12).fill(null);
+    });
+  });
+}
+
 function doFetchSheets(){
+  clearLiveData(); // limpa hardcoded antes de repopular ao vivo
   function fetchWith(tabName,parser){
     return getRetry(tabName+'!A:AZ',0)
       .then(function(res){
