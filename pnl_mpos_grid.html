@@ -333,6 +333,16 @@
 <script>
 const N=null;
 const VERS=['Realizado 2025','Realizado 2026','Plano 2025','Plano 2026'];
+// Cenário Forecast composto (só no Bridge): YTD realizado + YTG forecast
+const FCST_COMP_KEY='__fcst_comp_2026';
+const BR_VERS=[
+  ['Realizado 2025','Realizado 2025'],
+  ['Realizado 2026','Realizado 2026'],
+  [FCST_COMP_KEY,'Forecast 2026'],
+  ['Plano 2025','Plano 2025'],
+  ['Plano 2026','Plano 2026'],
+];
+function verLabel(v){for(var i=0;i<BR_VERS.length;i++)if(BR_VERS[i][0]===v)return BR_VERS[i][1];return v;}
 const VER_MOS={
   'Realizado 2025':['Jan/25','Fev/25','Mar/25','Abr/25','Mai/25','Jun/25','Jul/25','Ago/25','Set/25','Out/25','Nov/25','Dez/25'],
   'Realizado 2026':['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'],
@@ -531,6 +541,11 @@ const BRIDGE_ITEMS=[
 
 // Get single-month value (handles computed rows)
 function getM(ver,rowId,mi){
+  // Cenário Forecast composto (virtual): YTD (meses realizados) = Realizado 2026, YTG = Forecast 2026
+  if(ver===FCST_COMP_KEY){
+    var lr=lastRealizedMonth('Realizado 2026');
+    return getM(mi<=lr?'Realizado 2026':'Forecast 2026',rowId,mi);
+  }
   const d=D[ver];
   const r=(id)=>d[id]?d[id][mi]:N;
   const add=(a,b)=>(a===N&&b===N)?N:(a??0)+(b??0);
@@ -936,7 +951,7 @@ function setCompare(v){ST.comp=v;render();}
 function setCompQ(v){ST.comp_q=v;render();}
 
 function renderBridgeSelectors(){
-  const ops=VERS.map(v=>`<option value="${v}">${v}</option>`).join('');
+  const ops=BR_VERS.map(p=>`<option value="${p[0]}">${p[1]}</option>`).join('');
   const qops=Object.keys(PERIODS).map(k=>`<option value="${k}">${k}</option>`).join('');
   ['br-lv','br-rv'].forEach(id=>{document.getElementById(id).innerHTML=ops;});
   ['br-lq','br-rq'].forEach(id=>{document.getElementById(id).innerHTML=qops;});
@@ -960,7 +975,7 @@ function fcBr(v,t){
 function renderBridge(){
   const idxL=PERIODS[ST.br_lq]||PERIODS.FY;
   const idxR=PERIODS[ST.br_rq]||PERIODS.FY;
-  document.getElementById('bridge-sub').textContent=ST.br_lv+' '+ST.br_lq+' → '+ST.br_rv+' '+ST.br_rq;
+  document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' '+ST.br_lq+' → '+verLabel(ST.br_rv)+' '+ST.br_rq;
 
   // Build waterfall items: BM start → each BM_KEY delta → BM end
   const bmA=getA(ST.br_lv,'bm',idxL);
@@ -987,7 +1002,7 @@ function renderBridge(){
   // Waterfall sequence: [start, ...deltas..., end]
   const bars=[];
   window._brTips=[];
-  bars.push({lbl:ST.br_lq,sublbl:ST.br_lv,val:bmA,from:0,to:bmA,type:'anchor'});
+  bars.push({lbl:ST.br_lq,sublbl:verLabel(ST.br_lv),val:bmA,from:0,to:bmA,type:'anchor'});
   window._brTips.push(null);
   let running=bmA;
   items.forEach(function(it){
@@ -1002,7 +1017,7 @@ function renderBridge(){
     window._brTips.push(null);
     running+=residual;
   }
-  bars.push({lbl:ST.br_rq,sublbl:ST.br_rv,val:bmB,from:0,to:bmB,type:'anchor'});
+  bars.push({lbl:ST.br_rq,sublbl:verLabel(ST.br_rv),val:bmB,from:0,to:bmB,type:'anchor'});
   window._brTips.push(null);
 
   // Layout constants
