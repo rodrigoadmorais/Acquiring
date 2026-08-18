@@ -757,7 +757,7 @@ function renderQ(){
 }
 
 function renderVer(){
-  const ops=VERS.map(v=>`<option value="${v}">${v}</option>`).join('');
+  const ops=BR_VERS.map(p=>`<option value="${p[0]}">${p[1]}</option>`).join('');
   ['sel-p','sel-c'].forEach(id=>document.getElementById(id).innerHTML=ops);
   document.getElementById('sel-p').value=ST.prim;
   document.getElementById('sel-c').value=ST.comp;
@@ -794,17 +794,17 @@ function renderKPI(){
     </div>
     <span class="kpi-val">${k.v!==N?k.v.toFixed(1)+'M':'—'}</span>
     ${kd(k.v,k.pv,k.hi)}
-    <div class="kpi-sub">vs ${ST.comp} · R$ M</div>
+    <div class="kpi-sub">vs ${verLabel(ST.comp)} · R$ M</div>
   </article>`).join('');
 }
 
 function renderTable(){
   const idx=QS[ST.q];
-  const mos=VER_MOS[ST.prim]||[];
+  const mos=VER_MOS[ST.prim]||VER_MOS['Realizado 2026']||[];
   const isComp=ST.mode==='comparison';
   const pair=COMP_PAIRS[ST.comp_pair]||COMP_PAIRS.real;
   document.getElementById('tbl-title').textContent=isComp?`Comparativo · ${pair.lbl}`:'Evolução Mensal · P&L MPOS';
-  document.getElementById('tbl-sub').textContent=isComp?`${ST.unit_mode?'R$/device · ':''}${ST.q}`:`${ST.prim} · ${ST.q}`;
+  document.getElementById('tbl-sub').textContent=isComp?`${ST.unit_mode?'R$/device · ':''}${ST.q}`:`${verLabel(ST.prim)} · ${ST.q}`;
 
   // Comparison controls
   const btnUnit=document.getElementById('btn-unit-mode');
@@ -831,7 +831,7 @@ function renderTable(){
   } else {
     idx.forEach(i=>th+=`<th>${mos[i]||''}</th>`);
     th+='<th class="col-fy">FY/QT</th>';
-    if(ST.comp!==ST.prim) th+=`<th>vs ${ST.comp}</th>`;
+    if(ST.comp!==ST.prim) th+=`<th>vs ${verLabel(ST.comp)}</th>`;
   }
   document.getElementById('th').innerHTML=th;
 
