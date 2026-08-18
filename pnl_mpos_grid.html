@@ -999,10 +999,10 @@ function renderBridge(){
   if(pqA&&pqA.parentElement)pqA.parentElement.style.display=spanIdx?'none':'';
   if(pqB&&pqB.parentElement)pqB.parentElement.style.display=spanIdx?'none':'';
   var perLbl=spanIdx?spanLbl:(ST.br_lq+' → '+ST.br_rq);
-  document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' → '+verLabel(ST.br_rv)+' · '+perLbl+' · ex-Telemetria';
+  document.getElementById('bridge-sub').textContent=verLabel(ST.br_lv)+' → '+verLabel(ST.br_rv)+' · '+perLbl+' · ex-Telemetria e Bobinas';
 
-  // Linhas excluídas da Bridge (apenas nesta aba): só Telemetria
-  const BR_EXCL=['telemetria'];
+  // Linhas excluídas da Bridge (apenas nesta aba): Telemetria e Bobinas (Other Variable Fintech Costs)
+  const BR_EXCL=['telemetria','other_vfc'];
   function bridgeGP(ver,idx){
     var s=null;
     BM_KEYS.forEach(function(k){if(BR_EXCL.indexOf(k)>=0)return;var v=getA(ver,k,idx);if(v!==null)s=(s||0)+v;});
@@ -1016,7 +1016,7 @@ function renderBridge(){
 
   const items=BRIDGE_ITEMS.filter(function(bi){return BR_EXCL.indexOf(bi.key)<0;}).map(function(bi){
     if(bi.type==='group'){
-      const breakdown=bi.keys.map(function(k){
+      const breakdown=bi.keys.filter(function(k){return BR_EXCL.indexOf(k)<0;}).map(function(k){
         const a=getA(ST.br_lv,k,idxL),b=getA(ST.br_rv,k,idxR);
         const d=(b!==null?b:0)-(a!==null?a:0);
         return{lbl:BRIDGE_LBLS[k]||k,delta:d};
