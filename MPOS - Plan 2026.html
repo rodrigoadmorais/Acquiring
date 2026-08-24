@@ -3357,7 +3357,7 @@
                 const map = {};
                 Object.entries(pl.byCanal || {}).forEach(([c, cd]) => {
                     Object.entries(cd.devices || {}).forEach(([d, dd]) => {
-                        map[c + '|' + d] = { qty: dd.qty || 0, met: getMetricVal(dd) };
+                        map[c + '|' + d] = { qty: dd.qty || 0, met: getMetricVal(dd), receita: dd.receita || 0, cmv: dd.cmv || 0, salesTaxes: dd.salesTaxes || 0 };
                     });
                 });
                 return map;
@@ -3365,6 +3365,11 @@
             const flatA = flattenByCanalDevice(plA), flatB = flattenByCanalDevice(plB);
             const allKeysAB = new Set([...Object.keys(flatA), ...Object.keys(flatB)]);
             let priceEffect = 0, grossVolMixEffect = 0;
+            // Sub-decomposição do Efeito Preço/Custo (só é exata quando plMetric === 'resultado',
+            // já que (receita+salesTaxes) + cmv = resultado): quanto veio da NOVA TABELA DE PREÇO
+            // DE VENDA (receita+salesTaxes) vs quanto veio do aumento de CMV, no mesmo canal+device,
+            // ponderado pelo volume de B.
+            let priceEffectRevenue = 0, priceEffectCost = 0;
             allKeysAB.forEach(k => {
                 const qtyA_k = flatA[k]?.qty || 0, qtyB_k = flatB[k]?.qty || 0;
                 const metA_k = flatA[k]?.met || 0, metB_k = flatB[k]?.met || 0;
@@ -3372,12 +3377,24 @@
                 const rateB_k = qtyB_k > 0 ? metB_k / qtyB_k : 0;
                 priceEffect += qtyB_k * (rateB_k - rateA_k);
                 grossVolMixEffect += (qtyB_k - qtyA_k) * rateA_k;
+
+                const revStA = (flatA[k]?.receita || 0) + (flatA[k]?.salesTaxes || 0);
+                const revStB = (flatB[k]?.receita || 0) + (flatB[k]?.salesTaxes || 0);
+                const cmvA_k = flatA[k]?.cmv || 0, cmvB_k = flatB[k]?.cmv || 0;
+                const priceRateA = qtyA_k > 0 ? revStA / qtyA_k : 0;
+                const priceRateB = qtyB_k > 0 ? revStB / qtyB_k : 0;
+                const costRateA  = qtyA_k > 0 ? cmvA_k / qtyA_k : 0;
+                const costRateB  = qtyB_k > 0 ? cmvB_k / qtyB_k : 0;
+                priceEffectRevenue += qtyB_k * (priceRateB - priceRateA);
+                priceEffectCost    += qtyB_k * (costRateB - costRateA);
             });
             // Mix = deslocamento de composição (canal/device) a preço e custo constantes.
             // Volume + Mix + Preço somam exatamente o delta total.
             const mixEffect = grossVolMixEffect - volEffect;
             const mixPct = totA !== 0 ? (mixEffect / Math.abs(totA)) * 100 : 0;
             const pricePct = totA !== 0 ? (priceEffect / Math.abs(totA)) * 100 : 0;
+            const priceRevenuePct = totA !== 0 ? (priceEffectRevenue / Math.abs(totA)) * 100 : 0;
+            const priceCostPct = totA !== 0 ? (priceEffectCost / Math.abs(totA)) * 100 : 0;
 
             // --- Mix breakdown by device: quais devices puxam o deslocamento de composição ---
             // Contribuição de cada chave canal|device: (ΔQty) × (taxa do device em A − taxa média de A).
@@ -3476,7 +3493,11 @@
             // Price/cost paragraph — mesma composição, preço/custo unitário diferente
             text += `<p class="mt-1">▸ <strong>Efeito Preço/Custo</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
             text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — variação de preço de venda e/ou custo unitário nos mesmos canais e modelos (ex: reajuste aplicado em períodos diferentes entre os dois cenários). `;
-            text += `${metricLabel}/un. médio variou de <strong>${formatBRLDecimal(unitA)}</strong> para <strong>${formatBRLDecimal(unitB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).</p>`;
+            text += `${metricLabel}/un. médio variou de <strong>${formatBRLDecimal(unitA)}</strong> para <strong>${formatBRLDecimal(unitB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).`;
+            if (plMetric === 'resultado' && (Math.abs(priceEffectRevenue) >= 1 || Math.abs(priceEffectCost) >= 1)) {
+                text += ` Desse efeito, <strong>Nova Tabela de Preço de Venda</strong>: ${colorSpan(priceEffectRevenue, `${signFmt(priceEffectRevenue)}${formatBRL(priceEffectRevenue)}`)} (${signFmt(priceRevenuePct)}${formatBRPct(priceRevenuePct)} da base) e <strong>Aumento de Custo (CMV)</strong>: ${colorSpan(priceEffectCost, `${signFmt(priceEffectCost)}${formatBRL(priceEffectCost)}`)} (${signFmt(priceCostPct)}${formatBRPct(priceCostPct)} da base).`;
+            }
+            text += `</p>`;
 
             // Canal drivers
             if (driversText.length > 0) {
