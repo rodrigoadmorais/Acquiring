@@ -399,15 +399,17 @@
             <!-- P&L Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="card p-6 lg:col-span-2">
-                    <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                    <h4 class="text-xs font-black text-gray-800 mb-1 flex items-center gap-2 uppercase tracking-widest">
                         <i data-lucide="line-chart" class="w-4 h-4 text-gray-400"></i> Evolução Focada (A vs B)
                     </h4>
+                    <div id="pl-timeline-cost-note" class="text-[10px] font-bold text-gray-400 mb-5 ml-6"></div>
                     <div class="h-80"><canvas id="plTimelineChart"></canvas></div>
                 </div>
                 <div class="card p-6">
-                    <h4 class="text-xs font-black text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
+                    <h4 class="text-xs font-black text-gray-800 mb-1 flex items-center gap-2 uppercase tracking-widest">
                         <i data-lucide="bar-chart-2" class="w-4 h-4 text-gray-400"></i> Comparativo por Canal (Top 5)
                     </h4>
+                    <div id="pl-bar-cost-note" class="text-[10px] font-bold text-gray-400 mb-5 ml-6"></div>
                     <div class="h-80"><canvas id="plBarChart"></canvas></div>
                 </div>
             </div>
@@ -3602,16 +3604,27 @@
         // ============================================================
         // P&L CHARTS
         // ============================================================
+        // Métricas puramente/predominantemente negativas (custo/perda) — exibidas nos gráficos
+        // como magnitude positiva (subir = piorar) para não parecer o oposto à primeira vista.
+        const PL_COST_METRICS = new Set(['cmv', 'salesTaxes', 'resultado']);
+        function plChartSign() { return PL_COST_METRICS.has(plMetric) ? -1 : 1; }
+
         function drawPLCharts(plA, plB, typeA, typeB, nameA, nameB, compType, yearA, moA, yearB, moB, filterCanal, filterDevice) {
             const bColor = getBaseColor(typeB, true);
             const bBgColor = getBaseBgColor(typeB);
+            const sign = plChartSign();
+            const costNote = sign < 0 ? '↑ subir no gráfico = piora (custo/perda maior) · valores exibidos em magnitude' : '';
+            const tlNoteEl = document.getElementById('pl-timeline-cost-note');
+            const brNoteEl = document.getElementById('pl-bar-cost-note');
+            if (tlNoteEl) tlNoteEl.textContent = costNote;
+            if (brNoteEl) brNoteEl.textContent = costNote;
 
             // Bar chart (top 5 canals)
             const allC = Array.from(new Set([...Object.keys(plA.byCanal),...Object.keys(plB.byCanal)]));
             allC.sort((a,b)=>Math.abs(getMetricVal(plB.byCanal[b]||{}))-Math.abs(getMetricVal(plB.byCanal[a]||{})));
             const top5 = allC.slice(0,5);
-            const bCanalA = top5.map(c=>{ const d=plA.byCanal[c]||{}; const v=getMetricVal(d); return plUnitMode&&(d.qty||0)>0?v/d.qty:v; });
-            const bCanalB = top5.map(c=>{ const d=plB.byCanal[c]||{}; const v=getMetricVal(d); return plUnitMode&&(d.qty||0)>0?v/d.qty:v; });
+            const bCanalA = top5.map(c=>{ const d=plA.byCanal[c]||{}; const v=getMetricVal(d); return sign*(plUnitMode&&(d.qty||0)>0?v/d.qty:v); });
+            const bCanalB = top5.map(c=>{ const d=plB.byCanal[c]||{}; const v=getMetricVal(d); return sign*(plUnitMode&&(d.qty||0)>0?v/d.qty:v); });
 
             if (plBarChartObj) plBarChartObj.destroy();
             const plBarEl = document.getElementById('plBarChart');
@@ -3627,8 +3640,8 @@
                             legend: { position:'bottom', labels:{ font:{size:10,weight:'bold'} } },
                             datalabels: {
                                 display: ctx=>ctx.datasetIndex===1, align:'top', anchor:'end', offset:2,
-                                formatter:(val,ctx)=>{ const vA=ctx.chart.data.datasets[0].data[ctx.dataIndex]; if(vA===0&&val===0)return''; const d=vA!==0?((val-vA)/Math.abs(vA))*100:(val!==0?100:0); return(d>0?'+':'')+formatBRPct(d); },
-                                color: ctx=>{ const vA=ctx.chart.data.datasets[0].data[ctx.dataIndex],vB=ctx.dataset.data[ctx.dataIndex]; return(vB-vA)>0?'#16a34a':((vB-vA)<0?'#dc2626':'#6b7280'); },
+                                formatter:(val,ctx)=>{ const vA=ctx.chart.data.datasets[0].data[ctx.dataIndex]; if(vA===0&&val===0)return''; const d=vA!==0?((sign*(val-vA))/Math.abs(vA))*100:(val!==0?(sign*val>0?100:-100):0); return(d>0?'+':'')+formatBRPct(d); },
+                                color: ctx=>{ const vA=ctx.chart.data.datasets[0].data[ctx.dataIndex],vB=ctx.dataset.data[ctx.dataIndex]; const diff=sign*(vB-vA); return diff>0?'#16a34a':(diff<0?'#dc2626':'#6b7280'); },
                                 font:{weight:'bold',size:10}
                             }
                         },
@@ -3644,7 +3657,7 @@
                 const pl    = computePLPeriod(type, `MONTH|${yr}${mmStr}`, filterCanal, filterDevice);
                 const total = getMetricTotal(pl);
                 if (total === 0) return null;
-                return plUnitMode && pl.totalQty > 0 ? total/pl.totalQty : total;
+                return sign * (plUnitMode && pl.totalQty > 0 ? total/pl.totalQty : total);
             }
 
             let tlLabels=[], tlA=[], tlB=[];
@@ -3675,8 +3688,8 @@
             } else {
                 tlLabels=[nameA,nameB];
                 const vA=getMetricTotal(plA); const vB=getMetricTotal(plB);
-                tlA=[plUnitMode&&plA.totalQty>0?vA/plA.totalQty:vA, null];
-                tlB=[null, plUnitMode&&plB.totalQty>0?vB/plB.totalQty:vB];
+                tlA=[sign*(plUnitMode&&plA.totalQty>0?vA/plA.totalQty:vA), null];
+                tlB=[null, sign*(plUnitMode&&plB.totalQty>0?vB/plB.totalQty:vB)];
             }
 
             const fmtLbl = v => {
