@@ -3341,12 +3341,40 @@
             // --- Volume effect using selected metric ---
             const avgUnitA = plA.totalQty > 0 ? totA / plA.totalQty : 0;
             const volEffect = (plB.totalQty - plA.totalQty) * avgUnitA;
-            const mixEffect = deltaAbs - volEffect;
             const volPct = totA !== 0 ? (volEffect / Math.abs(totA)) * 100 : 0;
-            const mixPct = totA !== 0 ? (mixEffect / Math.abs(totA)) * 100 : 0;
             const unitA = plA.totalQty > 0 ? totA / plA.totalQty : 0;
             const unitB = plB.totalQty > 0 ? totB / plB.totalQty : 0;
             const unitPct = unitA !== 0 ? ((unitB - unitA) / Math.abs(unitA)) * 100 : 0;
+
+            // --- Efeito Preço/Custo (isolado do Mix): compara a taxa unitária (preço/custo)
+            // do MESMO canal+device entre A e B, ponderada pelo volume de B. Isso separa
+            // uma mudança de preço/custo (ex: reajuste que em um cenário só entra em ago,
+            // e no outro já está aplicado o ano inteiro) do efeito de mudança de composição.
+            function flattenByCanalDevice(pl) {
+                const map = {};
+                Object.entries(pl.byCanal || {}).forEach(([c, cd]) => {
+                    Object.entries(cd.devices || {}).forEach(([d, dd]) => {
+                        map[c + '|' + d] = { qty: dd.qty || 0, met: getMetricVal(dd) };
+                    });
+                });
+                return map;
+            }
+            const flatA = flattenByCanalDevice(plA), flatB = flattenByCanalDevice(plB);
+            const allKeysAB = new Set([...Object.keys(flatA), ...Object.keys(flatB)]);
+            let priceEffect = 0, grossVolMixEffect = 0;
+            allKeysAB.forEach(k => {
+                const qtyA_k = flatA[k]?.qty || 0, qtyB_k = flatB[k]?.qty || 0;
+                const metA_k = flatA[k]?.met || 0, metB_k = flatB[k]?.met || 0;
+                const rateA_k = qtyA_k > 0 ? metA_k / qtyA_k : 0;
+                const rateB_k = qtyB_k > 0 ? metB_k / qtyB_k : 0;
+                priceEffect += qtyB_k * (rateB_k - rateA_k);
+                grossVolMixEffect += (qtyB_k - qtyA_k) * rateA_k;
+            });
+            // Mix = deslocamento de composição (canal/device) a preço e custo constantes.
+            // Volume + Mix + Preço somam exatamente o delta total.
+            const mixEffect = grossVolMixEffect - volEffect;
+            const mixPct = totA !== 0 ? (mixEffect / Math.abs(totA)) * 100 : 0;
+            const pricePct = totA !== 0 ? (priceEffect / Math.abs(totA)) * 100 : 0;
 
             // --- Volume effect breakdown by canal (up to 85%) ---
             const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
@@ -3394,10 +3422,14 @@
             text += `(${signFmt(volPct)}${formatBRPct(volPct)} da base) — volume passou de <strong>${formatBRNum(plA.totalQty)}</strong> para <strong>${formatBRNum(plB.totalQty)}</strong> un.`;
             text += `</p>`;
 
-            // Mix paragraph with unit variation
-            text += `<p class="mt-1">▸ <strong>Efeito Mix de Devices</strong>: ${colorSpan(mixEffect, `${signFmt(mixEffect)}${formatBRL(mixEffect)}`)} `;
-            text += `(${signFmt(mixPct)}${formatBRPct(mixPct)} da base) — variação explicada pela mudança na composição de modelos. `;
-            text += `${metricLabel}/un. variou de <strong>${formatBRLDecimal(unitA)}</strong> para <strong>${formatBRLDecimal(unitB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).</p>`;
+            // Mix paragraph — composição de canal/modelo, a preço e custo constantes
+            text += `<p class="mt-1">▸ <strong>Efeito Mix de Canais/Devices</strong>: ${colorSpan(mixEffect, `${signFmt(mixEffect)}${formatBRL(mixEffect)}`)} `;
+            text += `(${signFmt(mixPct)}${formatBRPct(mixPct)} da base) — variação explicada pela mudança na composição de canais/modelos, a preço e custo constantes.</p>`;
+
+            // Price/cost paragraph — mesma composição, preço/custo unitário diferente
+            text += `<p class="mt-1">▸ <strong>Efeito Preço/Custo</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
+            text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — variação de preço de venda e/ou custo unitário nos mesmos canais e modelos (ex: reajuste aplicado em períodos diferentes entre os dois cenários). `;
+            text += `${metricLabel}/un. médio variou de <strong>${formatBRLDecimal(unitA)}</strong> para <strong>${formatBRLDecimal(unitB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).</p>`;
 
             // Canal drivers
             if (driversText.length > 0) {
