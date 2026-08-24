@@ -2325,8 +2325,9 @@
             'AIR':   { 'FDVP':   0.00, 'RESELLERS':   0.00, 'APP':  59.90, 'LANDING PAGE':  59.90, 'MGM':  53.91, 'TO':  59.90, 'TELEVENDAS':  53.91 },
             'MINI':  { 'FDVP':   0.00, 'RESELLERS':   0.00, 'APP':  25.90, 'LANDING PAGE':  25.90, 'MGM':  23.31, 'TO':  25.90, 'TELEVENDAS':  23.31 }
         };
-        // Canais do volume 2027 que precisam ser mapeados para a chave de preço acima
-        const PLAN_2027_CANAL_PRICE_MAP = { 'FDV PROPRIA': 'FDVP', 'FDV TERCERA': 'FDVP', 'LP': 'LANDING PAGE', 'TLV': 'TELEVENDAS' };
+        // Canais do volume 2027 que precisam ser mapeados para a chave de preço acima.
+        // AGENTS usa sempre o preço/CMV de TELEVENDAS (CMV já é igual pois independe de canal).
+        const PLAN_2027_CANAL_PRICE_MAP = { 'FDV PROPRIA': 'FDVP', 'FDV TERCERA': 'FDVP', 'LP': 'LANDING PAGE', 'TLV': 'TELEVENDAS', 'AGENTS': 'TELEVENDAS' };
         // Canais que mantêm o preço 2026 (não vieram na tabela de preço 2027)
         const PLAN_2027_LEGACY_PRICE_CANALS = new Set(['ENGAGEMENT', 'BIG SELLERS']);
 
