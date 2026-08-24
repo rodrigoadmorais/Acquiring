@@ -1141,6 +1141,7 @@
                 db.PLAN = parseStandardJSON(rawPlan);
                 db.ACTUAL = parseStandardJSON(rawActual);
                 db.FORECAST = parseForecastJSON(rawForecast, true);
+                db.PLAN_2027 = PLAN_2027_ROWS;
                 dbTPV = parseTPVData(rawTPV);
                 parseForecastOldJSON(rawForecastOld);
 
@@ -1188,10 +1189,10 @@
                 cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
             });
 
-            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(type => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(type => {
                 if(!db[type] || db[type].length === 0) return;
-                
-                let colC = type === 'FORECAST' ? 'Canal' : cols[type].canal;
+
+                let colC = (type === 'FORECAST' || type === 'PLAN_2027') ? 'Canal' : cols[type].canal;
                 db[type].forEach(row => {
                     let c = String(row[colC]||'').trim();
                     if(c && c !== '0') canalRegistry[c.toUpperCase()] = c;
@@ -1199,16 +1200,17 @@
 
                 let months = new Set();
                 db[type].forEach(row => { Object.keys(row).forEach(k => { if (/^\d{6}$/.test(k)) months.add(k); }); });
-                
+
                 const sortedMonths = Array.from(months).sort();
                 const years = [...new Set(sortedMonths.map(m => m.substring(0,4)))];
-                
+
                 years.forEach(y => {
                     const yMonths = sortedMonths.filter(m => m.startsWith(y)).map(m => m.substring(4));
                     let label;
                     if (type === 'PLAN') label = `Plano ${y}`;
                     else if (type === 'ACTUAL') label = `Realizado ${y}`;
                     else if (type === 'FORECAST') label = forecastDisplayVersion || `Forecast ${y}`;
+                    else if (type === 'PLAN_2027') label = `Plano ${y} v1`;
                     else label = `Forecast ${y}`;
                     scenarioList.push({ id: `${type}|${y}`, label, type: type, months: yMonths });
                 });
@@ -1235,14 +1237,14 @@
             }
 
             let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
@@ -1319,10 +1321,10 @@
 
         function populateGlobalFilters() {
             let allCanals = new Set(); let allDevices = new Set();
-            const allFilterTypes = ['PLAN', 'ACTUAL', 'FORECAST', ...forecastOldVersions.map(v => v.key)];
+            const allFilterTypes = ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', ...forecastOldVersions.map(v => v.key)];
             allFilterTypes.forEach(type => {
                 if(!db[type]) return;
-                const isFCSTT = type === 'FORECAST' || type.startsWith('FORECAST_OLD_');
+                const isFCSTT = type === 'FORECAST' || type === 'PLAN_2027' || type.startsWith('FORECAST_OLD_');
                 let colC = isFCSTT ? 'Canal' : cols[type].canal;
                 let colD = isFCSTT ? 'Device' : cols[type].device;
 
@@ -1356,7 +1358,7 @@
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type] || [];
 
-            const isFCSTType = type === 'FORECAST' || type.startsWith('FORECAST_OLD_');
+            const isFCSTType = type === 'FORECAST' || type === 'PLAN_2027' || type.startsWith('FORECAST_OLD_');
             let colC = isFCSTType ? 'Canal' : cols[type].canal;
             let colD = isFCSTType ? 'Device' : cols[type].device;
 
@@ -1501,12 +1503,14 @@
         function getBaseColor(type, isBorder = false) {
             if (type === 'PLAN') return '#10B981';
             if (type === 'FORECAST') return '#F59E0B';
+            if (type === 'PLAN_2027') return '#9333EA';
             if (type.startsWith('FORECAST_OLD_')) return '#EC4899';
             return '#3B82F6';
         }
         function getBaseBgColor(type) {
             if (type === 'PLAN') return 'rgba(16, 185, 129, 0.1)';
             if (type === 'FORECAST') return 'rgba(245, 158, 11, 0.1)';
+            if (type === 'PLAN_2027') return 'rgba(147, 51, 234, 0.1)';
             if (type.startsWith('FORECAST_OLD_')) return 'rgba(236, 72, 153, 0.1)';
             return 'rgba(59, 130, 246, 0.1)';
         }
@@ -1546,8 +1550,8 @@
 
             updateKPIs(dataA.total, dataB.total, nameA, nameB, typeB);
             
-            const pA = typeA === 'PLAN' ? 'ao Plano' : typeA === 'FORECAST' ? 'ao Forecast' : typeA.startsWith('FORECAST_OLD_') ? 'ao Forecast Old' : 'ao Realizado';
-            const pB = typeB === 'PLAN' ? 'O Plano' : typeB === 'FORECAST' ? 'O Forecast' : typeB.startsWith('FORECAST_OLD_') ? 'O Forecast Old' : 'O Realizado';
+            const pA = typeA === 'PLAN' ? 'ao Plano' : typeA === 'FORECAST' ? 'ao Forecast' : typeA === 'PLAN_2027' ? 'ao Plano 2027' : typeA.startsWith('FORECAST_OLD_') ? 'ao Forecast Old' : 'ao Realizado';
+            const pB = typeB === 'PLAN' ? 'O Plano' : typeB === 'FORECAST' ? 'O Forecast' : typeB === 'PLAN_2027' ? 'O Plano 2027' : typeB.startsWith('FORECAST_OLD_') ? 'O Forecast Old' : 'O Realizado';
             
             let aiStrB, aiStrA;
             if(compType === 'YEAR') {
@@ -2309,6 +2313,52 @@
             'MINI':   -22.00 * 4.5687
         };
 
+        // ── PLANO 2027 v1 ────────────────────────────────────────────────
+        // Tabela de preço de venda específica do Plano 2027 (canal x device).
+        // Canais que não existem nesta tabela (ENGAGEMENT, BIG SELLERS) mantêm
+        // o preço 2026 (PL_SELL_PRICE) — ver getSellPrice().
+        const PL_SELL_PRICE_2027 = {
+            'SMART': { 'FDVP': 250.00, 'RESELLERS': 199.00, 'APP': 199.00, 'LANDING PAGE': 199.00, 'MGM': 179.91, 'TO': 199.00, 'TELEVENDAS': 199.00 },
+            'PRO':   { 'FDVP':   0.00, 'RESELLERS':  89.00, 'APP': 109.90, 'LANDING PAGE': 109.90, 'MGM':  98.91, 'TO': 109.90, 'TELEVENDAS': 109.90 },
+            'AIR':   { 'FDVP':   0.00, 'RESELLERS':   0.00, 'APP':  59.90, 'LANDING PAGE':  59.90, 'MGM':  53.91, 'TO':  59.90, 'TELEVENDAS':  53.91 },
+            'MINI':  { 'FDVP':   0.00, 'RESELLERS':   0.00, 'APP':  25.90, 'LANDING PAGE':  25.90, 'MGM':  23.31, 'TO':  25.90, 'TELEVENDAS':  23.31 }
+        };
+        // Canais do volume 2027 que precisam ser mapeados para a chave de preço acima
+        const PLAN_2027_CANAL_PRICE_MAP = { 'FDV PROPRIA': 'FDVP', 'FDV TERCERA': 'FDVP', 'LP': 'LANDING PAGE', 'TLV': 'TELEVENDAS' };
+        // Canais que mantêm o preço 2026 (não vieram na tabela de preço 2027)
+        const PLAN_2027_LEGACY_PRICE_CANALS = new Set(['ENGAGEMENT', 'BIG SELLERS']);
+
+        // Volume de vendas Plano 2027 v1 por Canal/Device/Mês (jan/27–dez/27).
+        // Linhas sem canal/device atribuído (subtotais, blocos "0") foram descartadas;
+        // canais com o mesmo nome em blocos separados na base de origem (LP, TLV) foram somados.
+        const PLAN_2027_ROWS = [
+            { Canal: 'FDV PROPRIA', Device: 'SMART', '202701':18541,'202702':17577,'202703':22062,'202704':20276,'202705':20641,'202706':21708,'202707':21530,'202708':21520,'202709':21558,'202710':21175,'202711':19344,'202712':18770 },
+            { Canal: 'RESELLERS',   Device: 'PRO',   '202701':4058,'202702':3760,'202703':4339,'202704':3898,'202705':4547,'202706':4467,'202707':4597,'202708':4278,'202709':4161,'202710':4236,'202711':4554,'202712':3697 },
+            { Canal: 'RESELLERS',   Device: 'SMART', '202701':767,'202702':711,'202703':820,'202704':737,'202705':859,'202706':844,'202707':869,'202708':808,'202709':786,'202710':801,'202711':861,'202712':699 },
+            { Canal: 'MGM',         Device: 'MINI',  '202701':373,'202702':313,'202703':339,'202704':304,'202705':255,'202706':207,'202707':196,'202708':165,'202709':129,'202710':109,'202711':71,'202712':35 },
+            { Canal: 'MGM',         Device: 'AIR',   '202701':682,'202702':638,'202703':775,'202704':786,'202705':756,'202706':710,'202707':799,'202708':815,'202709':806,'202710':904,'202711':875,'202712':788 },
+            { Canal: 'MGM',         Device: 'PRO',   '202701':5456,'202702':5004,'202703':5960,'202704':5934,'202705':5599,'202706':5170,'202707':5711,'202708':5727,'202709':5566,'202710':6142,'202711':5849,'202712':5186 },
+            { Canal: 'MGM',         Device: 'SMART', '202701':1452,'202702':1332,'202703':1586,'202704':1578,'202705':1489,'202706':1375,'202707':1519,'202708':1523,'202709':1480,'202710':1632,'202711':1554,'202712':1378 },
+            { Canal: 'LP',          Device: 'MINI',  '202701':1937,'202702':1965,'202703':1785,'202704':1681,'202705':1542,'202706':1272,'202707':1421,'202708':1213,'202709':1032,'202710':989,'202711':873,'202712':732 },
+            { Canal: 'LP',          Device: 'AIR',   '202701':2987,'202702':3251,'202703':3180,'202704':3231,'202705':3206,'202706':2874,'202707':3503,'202708':3277,'202709':3075,'202710':3270,'202711':3228,'202712':3062 },
+            { Canal: 'LP',          Device: 'PRO',   '202701':7562,'202702':8115,'202703':7827,'202704':7846,'202705':7683,'202706':6798,'202707':8182,'202708':7560,'202709':7009,'202710':7366,'202711':7188,'202712':6742 },
+            { Canal: 'LP',          Device: 'SMART', '202701':1400,'202702':1494,'202703':1434,'202704':1430,'202705':1393,'202706':1227,'202707':1469,'202708':1351,'202709':1246,'202710':1303,'202711':1265,'202712':1181 },
+            { Canal: 'APP',         Device: 'MINI',  '202701':8521,'202702':7113,'202703':8218,'202704':7710,'202705':7160,'202706':7291,'202707':6838,'202708':6803,'202709':6465,'202710':6534,'202711':6379,'202712':5636 },
+            { Canal: 'APP',         Device: 'AIR',   '202701':8626,'202702':7663,'202703':9435,'202704':9448,'202705':9384,'202706':10239,'202707':10315,'202708':11053,'202709':11346,'202710':12430,'202711':13208,'202712':12760 },
+            { Canal: 'APP',         Device: 'PRO',   '202701':14025,'202702':12333,'202703':15035,'202704':14912,'202705':14673,'202706':15866,'202707':15845,'202708':16832,'202709':17136,'202710':18621,'202711':19631,'202712':18820 },
+            { Canal: 'APP',         Device: 'SMART', '202701':7774,'202702':6799,'202703':8244,'202704':8134,'202705':7962,'202706':8565,'202707':8510,'202708':8995,'202709':9112,'202710':9854,'202711':10338,'202712':9864 },
+            { Canal: 'TO',          Device: 'MINI',  '202701':2954,'202702':2751,'202703':3221,'202704':2987,'202705':3080,'202706':2955,'202707':3183,'202708':3172,'202709':3103,'202710':3125,'202711':2788,'202712':2302 },
+            { Canal: 'TO',          Device: 'AIR',   '202701':3847,'202702':3618,'202703':4278,'202704':4008,'202705':4173,'202706':4045,'202707':4401,'202708':4430,'202709':4378,'202710':4453,'202711':4014,'202712':3349 },
+            { Canal: 'TO',          Device: 'PRO',   '202701':10752,'202702':10087,'202703':11900,'202704':11122,'202705':11554,'202706':11172,'202707':12127,'202708':12180,'202709':12009,'202710':12188,'202711':10962,'202712':9123 },
+            { Canal: 'TO',          Device: 'SMART', '202701':2325,'202702':2179,'202703':2569,'202704':2399,'202705':2491,'202706':2407,'202707':2610,'202708':2620,'202709':2581,'202710':2618,'202711':2353,'202712':1957 },
+            { Canal: 'TLV',         Device: 'MINI',  '202701':188,'202702':157,'202703':191,'202704':173,'202705':172,'202706':154,'202707':195,'202708':182,'202709':134,'202710':107,'202711':71,'202712':29 },
+            { Canal: 'TLV',         Device: 'AIR',   '202701':655,'202702':604,'202703':819,'202704':834,'202705':946,'202706':975,'202707':1460,'202708':1650,'202709':1537,'202710':1653,'202711':1670,'202712':1398 },
+            { Canal: 'TLV',         Device: 'PRO',   '202701':1348,'202702':1234,'202703':1660,'202704':1679,'202705':1892,'202706':1937,'202707':2881,'202708':3235,'202709':2993,'202710':3198,'202711':3212,'202712':2672 },
+            { Canal: 'TLV',         Device: 'SMART', '202701':316,'202702':289,'202703':389,'202704':393,'202705':443,'202706':454,'202707':676,'202708':759,'202709':702,'202710':751,'202711':754,'202712':627 },
+            { Canal: 'BIG SELLERS', Device: 'PRO',   '202701':125,'202702':93,'202703':394,'202704':591,'202705':604,'202706':735,'202707':786,'202708':865,'202709':909,'202710':908,'202711':852,'202712':752 },
+            { Canal: 'BIG SELLERS', Device: 'SMART', '202701':107,'202702':206,'202703':883,'202704':1180,'202705':1208,'202706':1470,'202707':1572,'202708':1728,'202709':1818,'202710':1817,'202711':1703,'202712':1505 }
+        ];
+
         let plUnitMode = false;
         let plMetric = 'resultado';
         let plTimelineChartObj = null, plBarChartObj = null;
@@ -2349,9 +2399,13 @@
             renderPLTab();
         }
 
-        function getSellPrice(device, canal) {
+        function getSellPrice(device, canal, type) {
             const d = String(device).toUpperCase().trim();
             const c = String(canal).toUpperCase().trim();
+            if (type === 'PLAN_2027' && !PLAN_2027_LEGACY_PRICE_CANALS.has(c)) {
+                const c27 = PLAN_2027_CANAL_PRICE_MAP[c] || c;
+                return (PL_SELL_PRICE_2027[d] && PL_SELL_PRICE_2027[d][c27] !== undefined) ? PL_SELL_PRICE_2027[d][c27] : 0;
+            }
             return (PL_SELL_PRICE[d] && PL_SELL_PRICE[d][c] !== undefined) ? PL_SELL_PRICE[d][c] : 0;
         }
 
@@ -2371,17 +2425,20 @@
             return 1;
         }
 
-        // moNum (1-12) opcional — aplica ajuste de custo Smart/Pro quando presente
-        function getCostBRL(device, moNum) {
+        // moNum (1-12) opcional — aplica ajuste de custo Smart/Pro quando presente.
+        // type === 'PLAN_2027' força o custo de Dezembro/26 (flat o ano inteiro).
+        function getCostBRL(device, moNum, type) {
             const dev  = String(device).toUpperCase().trim();
             const base = PL_COST_BRL[dev] || 0;
-            if (dev === 'SMART' && moNum != null) return base * getSmartCostMult(moNum);
-            if (dev === 'PRO'   && moNum != null) return base * getProCostMult(moNum);
+            const effMoNum = type === 'PLAN_2027' ? 12 : moNum;
+            if (dev === 'SMART' && effMoNum != null) return base * getSmartCostMult(effMoNum);
+            if (dev === 'PRO'   && effMoNum != null) return base * getProCostMult(effMoNum);
             return base;
         }
 
-        // moNum (1-12) opcional — quando fornecido aplica custo ajustado do mês
-        function computePL(byCanalDevice, moNum) {
+        // moNum (1-12) opcional — quando fornecido aplica custo ajustado do mês.
+        // type opcional — quando 'PLAN_2027', usa tabela de preço e custo específicas do Plano 2027 v1.
+        function computePL(byCanalDevice, moNum, type) {
             let totalReceita = 0, totalCMV = 0;
             let byCanal = {};
 
@@ -2392,8 +2449,8 @@
 
                 Object.keys(devices).forEach(device => {
                     const qty = devices[device];
-                    const price = getSellPrice(device, canal);
-                    const cost = getCostBRL(device, moNum);
+                    const price = getSellPrice(device, canal, type);
+                    const cost = getCostBRL(device, moNum, type);
                     const receita = qty * price;
                     const cmv = qty * cost;
                     const salesTaxes = -salesTaxesRate * receita;
@@ -2455,7 +2512,7 @@
                 const data  = extractValue(type, periodId, filterCanal, filterDevice);
                 const bcd   = data.byCanalDeviceRaw || data.byCanalDevice;
                 const moNum = periodType === 'MONTH' ? parseInt(periodValue.substring(4, 6)) : null;
-                return computePL(bcd, moNum);
+                return computePL(bcd, moNum, type);
             }
 
             // Ajuste ligado + período multi-mês: acumula mês a mês com custo correto
@@ -2463,7 +2520,7 @@
             const sc   = scenarioList.find(s => s.id === `${type}|${year}`);
             if (!sc || !sc.months.length) {
                 const data = extractValue(type, periodId, filterCanal, filterDevice);
-                return computePL(data.byCanalDeviceRaw || data.byCanalDevice);
+                return computePL(data.byCanalDeviceRaw || data.byCanalDevice, null, type);
             }
 
             let months = sc.months; // ['01','02',...]
@@ -2488,9 +2545,9 @@
                 const yyyymm = year + mo;
                 const data   = extractValue(type, `MONTH|${yyyymm}`, filterCanal, filterDevice);
                 const bcd    = data.byCanalDeviceRaw || data.byCanalDevice;
-                result = mergePL(result, computePL(bcd, parseInt(mo)));
+                result = mergePL(result, computePL(bcd, parseInt(mo), type));
             }
-            return result || computePL({});
+            return result || computePL({}, null, type);
         }
 
         // Liga/desliga ajuste de custo Smart e re-renderiza
@@ -2881,14 +2938,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
-                        const lbl = t === 'PLAN' ? '🟢 Plano' : (t === 'ACTUAL' ? '🔵 Realizado' : '🟠 Forecast');
+                        const lbl = t === 'PLAN' ? '🟢 Plano' : t === 'ACTUAL' ? '🔵 Realizado' : t === 'PLAN_2027' ? '🟣 Plano 2027' : '🟠 Forecast';
                         html += `<optgroup label="${lbl}">`;
                         group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
                         html += `</optgroup>`;
@@ -2982,8 +3039,8 @@
 
             const rawA = extractValue(typeA, pidA, 'ALL', 'ALL');
             const rawB = extractValue(typeB, pidB, 'ALL', 'ALL');
-            const plA  = computePL(rawA.byCanalDeviceRaw || rawA.byCanalDevice);
-            const plB  = computePL(rawB.byCanalDeviceRaw || rawB.byCanalDevice);
+            const plA  = computePL(rawA.byCanalDeviceRaw || rawA.byCanalDevice, null, typeA);
+            const plB  = computePL(rawB.byCanalDeviceRaw || rawB.byCanalDevice, null, typeB);
 
             const DEVS   = ['SMART', 'PRO', 'AIR', 'MINI'];
             const COLORS = { SMART: '#78350f', PRO: '#c2410c', AIR: '#fb923c', MINI: '#fde68a' };
@@ -3097,14 +3154,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
-                        const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
                         let opts = `<optgroup label="--- ${label} ---">`;
                         group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                         opts += `</optgroup>`;
@@ -3762,14 +3819,14 @@
         function showCorpPLModal() {
             const sel = document.getElementById('corp-pl-scenario');
             sel.innerHTML = '';
-            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += '</optgroup>';
@@ -4088,7 +4145,7 @@
                 for(const p of periods) {
                     const dA=aggPeriod(p.typeA,p.months,filterCanal);
                     const dB=aggPeriod(p.typeB,p.months,filterCanal);
-                    let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice);
+                    let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice, null, p.typeA), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice, null, p.typeB);
                     if(groupDigital||groupAcquisicao){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
                     addGeneralSlide(p,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,dA,dB,plA,plB,hexColor(p.typeB));
                 }
@@ -4101,7 +4158,7 @@
                         const cFilter=(filterCanal==='ALL')?canal:filterCanal;
                         const dA=aggPeriod(p.typeA,p.months,cFilter);
                         const dB=aggPeriod(p.typeB,p.months,cFilter);
-                        let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice);
+                        let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice, null, p.typeA), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice, null, p.typeB);
                         if(groupDigital||groupAcquisicao){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
                         addCanalSlide(canal,p,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,dA,dB,plA,plB,hexColor(p.typeB));
                     }
@@ -4236,15 +4293,16 @@
         function extractDevicesNoEngagement(type, periodId, filterCanal, filterDevice) {
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type] || [];
-            const colC = type === 'FORECAST' ? 'Canal' : cols[type].canal;
-            const colD = type === 'FORECAST' ? 'Device' : cols[type].device;
+            const isFCST = type === 'FORECAST' || type === 'PLAN_2027' || type.startsWith('FORECAST_OLD_');
+            const colC = isFCST ? 'Canal' : cols[type].canal;
+            const colD = isFCST ? 'Device' : cols[type].device;
             let total = 0, byCanal = {}, byCanalDevice = {};
             data.forEach(row => {
                 let rawC = String(row[colC] || '').trim().toUpperCase();
                 let canal = (canalRegistry[rawC] || String(row[colC] || '').trim()).toUpperCase();
                 if (canal === 'ENGAGEMENT') return;
                 let rawD = String(row[colD] || '');
-                let device = type === 'FORECAST' ? rawD : (classifyDevice(rawD) || rawD);
+                let device = isFCST ? rawD : (classifyDevice(rawD) || rawD);
                 if (filterCanal !== 'ALL') {
                     if (filterCanal === DIGITAL_GROUP_NAME) { if (!DIGITAL_CANALS.includes(canal)) return; }
                     else if (filterCanal === ACQUISICAO_GROUP_NAME) { /* ENGAGEMENT already excluded above */ }
@@ -4307,14 +4365,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
-                        const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
                         html += `<optgroup label="--- ${label} ---">`;
                         group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
                         html += `</optgroup>`;
@@ -4355,14 +4413,14 @@
             const scB = document.getElementById('tpv-scenario-b');
             if (!scA || !scB) return;
             let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
@@ -4634,11 +4692,11 @@
             // Populate scenario selects (same grouping as comparison tab)
             let htmlA = '', htmlB = '';
             const seen = new Set();
-            ['PLAN','ACTUAL','FORECAST'].forEach(t => {
+            ['PLAN','ACTUAL','FORECAST','PLAN_2027'].forEach(t => {
                 const group = scenarioList.filter(s => s.type === t || s.id.startsWith(t + '|'));
                 const unique = group.filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
                 if (!unique.length) return;
-                const lbl = t === 'PLAN' ? '🟢 PLANO' : (t === 'ACTUAL' ? '🔵 REALIZADO' : '🟠 FORECAST');
+                const lbl = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
                 let opts = `<optgroup label="--- ${lbl} ---">`;
                 unique.forEach(s => { opts += `<option value="${s.id}">${s.label}</option>`; });
                 opts += '</optgroup>';
