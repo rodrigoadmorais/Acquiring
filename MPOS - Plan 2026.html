@@ -3379,23 +3379,50 @@
             const mixPct = totA !== 0 ? (mixEffect / Math.abs(totA)) * 100 : 0;
             const pricePct = totA !== 0 ? (priceEffect / Math.abs(totA)) * 100 : 0;
 
-            // --- Volume effect breakdown by canal (up to 85%) ---
-            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
-            const volByCanal = allCanals.map(c => {
-                const cA = plA.byCanal[c] || { qty: 0 };
-                const cB = plB.byCanal[c] || { qty: 0 };
-                const metA = getMetricVal(plA.byCanal[c] || {});
-                const unitMetA = cA.qty > 0 ? metA / cA.qty : 0;
-                return { name: c, effect: (cB.qty - cA.qty) * unitMetA };
+            // --- Mix breakdown by device: quais devices puxam o deslocamento de composição ---
+            // Contribuição de cada chave canal|device: (ΔQty) × (taxa do device em A − taxa média de A).
+            // Somado por device (Air/Mini/Pro/Smart), a soma bate exatamente com mixEffect.
+            let mixByDevice = {};
+            allKeysAB.forEach(k => {
+                const device = k.split('|')[1];
+                const qtyA_k = flatA[k]?.qty || 0, qtyB_k = flatB[k]?.qty || 0;
+                const metA_k = flatA[k]?.met || 0;
+                const rateA_k = qtyA_k > 0 ? metA_k / qtyA_k : 0;
+                const dQty = qtyB_k - qtyA_k;
+                if (!mixByDevice[device]) mixByDevice[device] = { contrib: 0, dQty: 0 };
+                mixByDevice[device].contrib += dQty * (rateA_k - avgUnitA);
+                mixByDevice[device].dQty += dQty;
             });
-            volByCanal.sort((a, b) => Math.abs(b.effect) - Math.abs(a.effect));
-            let volExpl = 0, volDrivers = [];
-            const absVol = Math.abs(volEffect);
-            for (const c of volByCanal) {
-                if (Math.abs(c.effect) < 1) continue;
-                volExpl += Math.abs(c.effect);
-                volDrivers.push(c);
-                if (absVol > 0 && (volExpl / absVol) >= 0.85) break;
+            const mixIsGrowth = mixEffect > 0;
+            let mixDrivers = Object.entries(mixByDevice)
+                .map(([device, v]) => ({ device, ...v }))
+                .filter(v => Math.abs(v.contrib) >= 1 && (mixEffect === 0 || (mixIsGrowth ? v.contrib > 0 : v.contrib < 0)))
+                .sort((a, b) => Math.abs(b.contrib) - Math.abs(a.contrib));
+            let mixExplained = 0, mixDriversText = [];
+            const absMix = Math.abs(mixEffect);
+            for (const m of mixDrivers) {
+                mixExplained += Math.abs(m.contrib);
+                const qtySign = m.dQty >= 0 ? '+' : '';
+                mixDriversText.push(`<strong class="text-gray-900">${m.device}</strong> (${qtySign}${formatBRNum(m.dQty)} un vs ${nameA}, ${colorSpan(m.contrib, `${signFmt(m.contrib)}${formatBRL(m.contrib)}`)})`);
+                if (absMix > 0 && (mixExplained / absMix) >= 0.85) break;
+            }
+
+            // --- Volume effect breakdown by canal: quais canais mais cresceram/caíram em unidades ---
+            const allCanals = Array.from(new Set([...Object.keys(plA.byCanal), ...Object.keys(plB.byCanal)]));
+            const totalDQty = plB.totalQty - plA.totalQty;
+            const qtyIsGrowth = totalDQty > 0;
+            let volQtyByCanal = allCanals.map(c => {
+                const qtyA_c = (plA.byCanal[c] || {}).qty || 0;
+                const qtyB_c = (plB.byCanal[c] || {}).qty || 0;
+                return { name: c, dQty: qtyB_c - qtyA_c };
+            }).filter(c => Math.abs(c.dQty) >= 1 && (totalDQty === 0 || (qtyIsGrowth ? c.dQty > 0 : c.dQty < 0)))
+              .sort((a, b) => Math.abs(b.dQty) - Math.abs(a.dQty));
+            let volQtyExplained = 0, volQtyDriversText = [];
+            const absTotalDQty = Math.abs(totalDQty);
+            for (const c of volQtyByCanal) {
+                volQtyExplained += Math.abs(c.dQty);
+                volQtyDriversText.push(`<strong class="text-gray-900">${c.name}</strong> (${c.dQty >= 0 ? '+' : ''}${formatBRNum(c.dQty)} un)`);
+                if (absTotalDQty > 0 && (volQtyExplained / absTotalDQty) >= 0.85) break;
             }
 
             // --- Canal-level contributors to total delta (up to 85%) ---
@@ -3423,11 +3450,28 @@
             // Volume paragraph with canal breakdown
             text += `<p class="mt-2">▸ <strong>Efeito Volume</strong>: ${colorSpan(volEffect, `${signFmt(volEffect)}${formatBRL(volEffect)}`)} `;
             text += `(${signFmt(volPct)}${formatBRPct(volPct)} da base) — volume passou de <strong>${formatBRNum(plA.totalQty)}</strong> para <strong>${formatBRNum(plB.totalQty)}</strong> un.`;
+            if (volQtyDriversText.length > 0) {
+                text += ` ${qtyIsGrowth ? 'Canais que mais cresceram' : 'Canais que mais caíram'}: ${volQtyDriversText[0]}`;
+                if (volQtyDriversText.length > 1) {
+                    const restV = volQtyDriversText.slice(1), lastV = restV.pop();
+                    text += restV.length > 0 ? `, ${restV.join(', ')} e ${lastV}` : ` e ${lastV}`;
+                }
+                text += `.`;
+            }
             text += `</p>`;
 
             // Mix paragraph — composição de canal/modelo, a preço e custo constantes
             text += `<p class="mt-1">▸ <strong>Efeito Mix de Canais/Devices</strong>: ${colorSpan(mixEffect, `${signFmt(mixEffect)}${formatBRL(mixEffect)}`)} `;
-            text += `(${signFmt(mixPct)}${formatBRPct(mixPct)} da base) — variação explicada pela mudança na composição de canais/modelos, a preço e custo constantes.</p>`;
+            text += `(${signFmt(mixPct)}${formatBRPct(mixPct)} da base) — variação explicada pela mudança na composição de canais/modelos, a preço e custo constantes.`;
+            if (mixDriversText.length > 0) {
+                text += ` Puxado por ${mixDriversText[0]}`;
+                if (mixDriversText.length > 1) {
+                    const restM = mixDriversText.slice(1), lastM = restM.pop();
+                    text += restM.length > 0 ? `, seguido por ${restM.join(', ')} e por ${lastM}` : ` e por ${lastM}`;
+                }
+                text += `.`;
+            }
+            text += `</p>`;
 
             // Price/cost paragraph — mesma composição, preço/custo unitário diferente
             text += `<p class="mt-1">▸ <strong>Efeito Preço/Custo</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
