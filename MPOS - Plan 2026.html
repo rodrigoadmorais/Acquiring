@@ -2433,10 +2433,13 @@
         }
 
         // moNum (1-12) opcional — aplica ajuste de custo Smart/Pro quando presente.
-        // type === 'PLAN_2027' força o custo de Dezembro/26 (flat o ano inteiro).
+        // type === 'PLAN' (Plano 2026) NUNCA leva o aumento — custo base o ano inteiro.
+        // type === 'PLAN_2027' força o custo de Dezembro/26 (flat, já reajustado o ano inteiro).
+        // ACTUAL/FORECAST seguem o mês real, controlados pelos botões de ajuste (Ago+).
         function getCostBRL(device, moNum, type) {
             const dev  = String(device).toUpperCase().trim();
             const base = PL_COST_BRL[dev] || 0;
+            if (type === 'PLAN') return base;
             const effMoNum = type === 'PLAN_2027' ? 12 : moNum;
             if (dev === 'SMART' && effMoNum != null) return base * getSmartCostMult(effMoNum);
             if (dev === 'PRO'   && effMoNum != null) return base * getProCostMult(effMoNum);
