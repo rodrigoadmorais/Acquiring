@@ -1144,6 +1144,7 @@
                 db.ACTUAL = parseStandardJSON(rawActual);
                 db.FORECAST = parseForecastJSON(rawForecast, true);
                 db.PLAN_2027 = PLAN_2027_ROWS;
+                db.PLAN_2027_COMODATO = PLAN_2027_ROWS;   // mesmo volume; muda o reconhecimento
                 dbTPV = parseTPVData(rawTPV);
                 parseForecastOldJSON(rawForecastOld);
 
@@ -1191,10 +1192,10 @@
                 cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
             });
 
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(type => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_COMODATO'].forEach(type => {
                 if(!db[type] || db[type].length === 0) return;
 
-                let colC = (type === 'FORECAST' || type === 'PLAN_2027') ? 'Canal' : cols[type].canal;
+                let colC = (type === 'FORECAST' || isPlan2027(type)) ? 'Canal' : cols[type].canal;
                 db[type].forEach(row => {
                     let c = String(row[colC]||'').trim();
                     if(c && c !== '0') canalRegistry[c.toUpperCase()] = c;
@@ -1213,6 +1214,7 @@
                     else if (type === 'ACTUAL') label = `Realizado ${y}`;
                     else if (type === 'FORECAST') label = forecastDisplayVersion || `Forecast ${y}`;
                     else if (type === 'PLAN_2027') label = `Plano ${y} v1`;
+                    else if (type === 'PLAN_2027_COMODATO') label = `Plano ${y} v1 — Comodato`;
                     else label = `Forecast ${y}`;
                     scenarioList.push({ id: `${type}|${y}`, label, type: type, months: yMonths });
                 });
@@ -1239,14 +1241,14 @@
             }
 
             let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_COMODATO'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
@@ -1323,10 +1325,10 @@
 
         function populateGlobalFilters() {
             let allCanals = new Set(); let allDevices = new Set();
-            const allFilterTypes = ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', ...forecastOldVersions.map(v => v.key)];
+            const allFilterTypes = ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_COMODATO', ...forecastOldVersions.map(v => v.key)];
             allFilterTypes.forEach(type => {
                 if(!db[type]) return;
-                const isFCSTT = type === 'FORECAST' || type === 'PLAN_2027' || type.startsWith('FORECAST_OLD_');
+                const isFCSTT = type === 'FORECAST' || isPlan2027(type) || type.startsWith('FORECAST_OLD_');
                 let colC = isFCSTT ? 'Canal' : cols[type].canal;
                 let colD = isFCSTT ? 'Device' : cols[type].device;
 
@@ -1360,7 +1362,7 @@
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type] || [];
 
-            const isFCSTType = type === 'FORECAST' || type === 'PLAN_2027' || type.startsWith('FORECAST_OLD_');
+            const isFCSTType = type === 'FORECAST' || isPlan2027(type) || type.startsWith('FORECAST_OLD_');
             let colC = isFCSTType ? 'Canal' : cols[type].canal;
             let colD = isFCSTType ? 'Device' : cols[type].device;
 
@@ -1506,6 +1508,7 @@
             if (type === 'PLAN') return '#10B981';
             if (type === 'FORECAST') return '#F59E0B';
             if (type === 'PLAN_2027') return '#9333EA';
+            if (type === 'PLAN_2027_COMODATO') return '#0D9488';
             if (type.startsWith('FORECAST_OLD_')) return '#EC4899';
             return '#3B82F6';
         }
@@ -1513,6 +1516,7 @@
             if (type === 'PLAN') return 'rgba(16, 185, 129, 0.1)';
             if (type === 'FORECAST') return 'rgba(245, 158, 11, 0.1)';
             if (type === 'PLAN_2027') return 'rgba(147, 51, 234, 0.1)';
+            if (type === 'PLAN_2027_COMODATO') return 'rgba(13, 148, 136, 0.1)';
             if (type.startsWith('FORECAST_OLD_')) return 'rgba(236, 72, 153, 0.1)';
             return 'rgba(59, 130, 246, 0.1)';
         }
@@ -1552,8 +1556,8 @@
 
             updateKPIs(dataA.total, dataB.total, nameA, nameB, typeB);
             
-            const pA = typeA === 'PLAN' ? 'ao Plano' : typeA === 'FORECAST' ? 'ao Forecast' : typeA === 'PLAN_2027' ? 'ao Plano 2027' : typeA.startsWith('FORECAST_OLD_') ? 'ao Forecast Old' : 'ao Realizado';
-            const pB = typeB === 'PLAN' ? 'O Plano' : typeB === 'FORECAST' ? 'O Forecast' : typeB === 'PLAN_2027' ? 'O Plano 2027' : typeB.startsWith('FORECAST_OLD_') ? 'O Forecast Old' : 'O Realizado';
+            const pA = typeA === 'PLAN' ? 'ao Plano' : typeA === 'FORECAST' ? 'ao Forecast' : typeA === 'PLAN_2027' ? 'ao Plano 2027' : typeA === 'PLAN_2027_COMODATO' ? 'ao Plano 2027 Comodato' : typeA.startsWith('FORECAST_OLD_') ? 'ao Forecast Old' : 'ao Realizado';
+            const pB = typeB === 'PLAN' ? 'O Plano' : typeB === 'FORECAST' ? 'O Forecast' : typeB === 'PLAN_2027' ? 'O Plano 2027' : typeB === 'PLAN_2027_COMODATO' ? 'O Plano 2027 Comodato' : typeB.startsWith('FORECAST_OLD_') ? 'O Forecast Old' : 'O Realizado';
             
             let aiStrB, aiStrA;
             if(compType === 'YEAR') {
@@ -2331,6 +2335,17 @@
         // Canais que mantêm o preço 2026 (não vieram na tabela de preço 2027)
         const PLAN_2027_LEGACY_PRICE_CANALS = new Set(['ENGAGEMENT', 'BIG SELLERS']);
 
+        // ── PLANO 2027 v1 — COMODATO ─────────────────────────────────────
+        // Mesmo volume, mesmo preço de venda e mesmo CMV do Plano 2027 v1, porém:
+        //  • Receita e CMV são DIFERIDOS linearmente em 36 meses (1/36 por mês,
+        //    a partir do mês da entrega). Em fev/27 reconhece-se a 2ª parcela da
+        //    coorte de jan + a 1ª parcela da coorte de fev, e assim por diante.
+        //  • Sales Taxes zerados (cessão em comodato, não venda).
+        // A quantidade de devices entregues no mês permanece a mesma.
+        const COMODATO_DEFER_MONTHS = 36;
+        function isPlan2027(type) { return type === 'PLAN_2027' || type === 'PLAN_2027_COMODATO'; }
+        function isComodatoType(type) { return type === 'PLAN_2027_COMODATO'; }
+
         // Volume de vendas Plano 2027 v1 por Canal/Device/Mês (jan/27–dez/27).
         // Linhas sem canal/device atribuído (subtotais, blocos "0") foram descartadas;
         // canais com o mesmo nome em blocos separados na base de origem (LP, TLV) foram somados.
@@ -2409,7 +2424,7 @@
         function getSellPrice(device, canal, type) {
             const d = String(device).toUpperCase().trim();
             const c = String(canal).toUpperCase().trim();
-            if (type === 'PLAN_2027' && !PLAN_2027_LEGACY_PRICE_CANALS.has(c)) {
+            if (isPlan2027(type) && !PLAN_2027_LEGACY_PRICE_CANALS.has(c)) {
                 const c27 = PLAN_2027_CANAL_PRICE_MAP[c] || c;
                 return (PL_SELL_PRICE_2027[d] && PL_SELL_PRICE_2027[d][c27] !== undefined) ? PL_SELL_PRICE_2027[d][c27] : 0;
             }
@@ -2440,44 +2455,78 @@
             const dev  = String(device).toUpperCase().trim();
             const base = PL_COST_BRL[dev] || 0;
             if (type === 'PLAN') return base;
-            const effMoNum = type === 'PLAN_2027' ? 12 : moNum;
+            const effMoNum = isPlan2027(type) ? 12 : moNum;
             if (dev === 'SMART' && effMoNum != null) return base * getSmartCostMult(effMoNum);
             if (dev === 'PRO'   && effMoNum != null) return base * getProCostMult(effMoNum);
             return base;
         }
 
+        // Quantidade RECONHECIDA no mês sob comodato, por canal/device:
+        // soma das coortes de janeiro até moNum, cada uma dividida por 36.
+        // (Ex.: em março reconhece 3 parcelas de jan + 2 de fev + 1 de mar, todas 1/36.)
+        function buildComodatoRecognizedQty(type, year, moNum, filterCanal, filterDevice) {
+            const acc = {};
+            for (let m = 1; m <= moNum; m++) {
+                const mm  = String(m).padStart(2, '0');
+                const d   = extractValue(type, `MONTH|${year}${mm}`, filterCanal, filterDevice);
+                const bcd = d.byCanalDeviceRaw || d.byCanalDevice;
+                Object.entries(bcd).forEach(([c, devs]) => {
+                    if (!acc[c]) acc[c] = {};
+                    Object.entries(devs).forEach(([dev, q]) => {
+                        acc[c][dev] = (acc[c][dev] || 0) + (q || 0) / COMODATO_DEFER_MONTHS;
+                    });
+                });
+            }
+            return acc;
+        }
+
         // moNum (1-12) opcional — quando fornecido aplica custo ajustado do mês.
-        // type opcional — quando 'PLAN_2027', usa tabela de preço e custo específicas do Plano 2027 v1.
-        function computePL(byCanalDevice, moNum, type) {
+        // type opcional — quando 'PLAN_2027'/'PLAN_2027_COMODATO', usa a tabela de preço e custo do Plano 2027.
+        // recognizedQty — obrigatório no comodato: quantidade reconhecida (diferida) por canal/device.
+        //                 A qty exibida continua sendo a de devices entregues no período.
+        function computePL(byCanalDevice, moNum, type, recognizedQty) {
+            const isComodato = isComodatoType(type);
+            const stRate = isComodato ? 0 : salesTaxesRate;   // comodato não tem sales taxes
             let totalReceita = 0, totalCMV = 0;
             let byCanal = {};
 
-            Object.keys(byCanalDevice).forEach(canal => {
-                const devices = byCanalDevice[canal];
+            // No comodato um canal/device pode não ter entrega no mês e ainda assim
+            // reconhecer parcelas de coortes anteriores — daí a união das chaves.
+            const canals = isComodato
+                ? Array.from(new Set([...Object.keys(byCanalDevice), ...Object.keys(recognizedQty || {})]))
+                : Object.keys(byCanalDevice);
+
+            canals.forEach(canal => {
+                const devices    = byCanalDevice[canal] || {};
+                const recDevices = (recognizedQty && recognizedQty[canal]) || {};
+                const devKeys    = isComodato
+                    ? Array.from(new Set([...Object.keys(devices), ...Object.keys(recDevices)]))
+                    : Object.keys(devices);
                 let cReceita = 0, cCMV = 0, cQty = 0;
                 let devPL = {};
 
-                Object.keys(devices).forEach(device => {
-                    const qty = devices[device];
+                devKeys.forEach(device => {
+                    const qty = devices[device] || 0;
+                    const recQty = isComodato ? (recDevices[device] || 0) : qty;
                     const price = getSellPrice(device, canal, type);
                     const cost = getCostBRL(device, moNum, type);
-                    const receita = qty * price;
-                    const cmv = qty * cost;
-                    const salesTaxes = -salesTaxesRate * receita;
+                    const receita = recQty * price;
+                    const cmv = recQty * cost;
+                    const salesTaxes = -stRate * receita;
                     devPL[device] = { qty, receita, cmv, salesTaxes, resultado: receita + salesTaxes + cmv };
                     cReceita += receita;
                     cCMV += cmv;
                     cQty += qty;
                 });
 
-                const cSalesTaxes = -salesTaxesRate * cReceita;
+                const cSalesTaxes = -stRate * cReceita;
                 byCanal[canal] = { receita: cReceita, cmv: cCMV, salesTaxes: cSalesTaxes, resultado: cReceita + cSalesTaxes + cCMV, qty: cQty, devices: devPL };
                 totalReceita += cReceita;
                 totalCMV += cCMV;
             });
 
             const totalQty = Object.values(byCanal).reduce((s, c) => s + c.qty, 0);
-            const totalSalesTaxes = -salesTaxesRate * totalReceita;
+            const totalSalesTaxes = -stRate * totalReceita;
             return { totalReceita, totalCMV, totalSalesTaxes, totalResultado: totalReceita + totalSalesTaxes + totalCMV, totalQty, byCanal };
         }
 
@@ -2516,16 +2565,26 @@
         // Para períodos multi-mês com ajuste ligado, agrega mês a mês com o multiplicador adequado.
         function computePLPeriod(type, periodId, filterCanal, filterDevice) {
             const [periodType, periodValue] = periodId.split('|');
+            const isComodato = isComodatoType(type);
 
-            if ((!smartCostAdjEnabled && !proCostAdjEnabled) || periodType === 'MONTH') {
-                // Caminho simples: ajuste desligado ou período de um único mês
+            if (periodType === 'MONTH') {
                 const data  = extractValue(type, periodId, filterCanal, filterDevice);
                 const bcd   = data.byCanalDeviceRaw || data.byCanalDevice;
-                const moNum = periodType === 'MONTH' ? parseInt(periodValue.substring(4, 6)) : null;
-                return computePL(bcd, moNum, type);
+                const moNum = parseInt(periodValue.substring(4, 6));
+                const rec   = isComodato
+                    ? buildComodatoRecognizedQty(type, periodValue.substring(0, 4), moNum, filterCanal, filterDevice)
+                    : null;
+                return computePL(bcd, moNum, type, rec);
             }
 
-            // Ajuste ligado + período multi-mês: acumula mês a mês com custo correto
+            // Comodato SEMPRE precisa iterar mês a mês (o reconhecimento depende do mês).
+            if (!isComodato && !smartCostAdjEnabled && !proCostAdjEnabled) {
+                // Caminho simples: ajuste desligado e sem diferimento
+                const data = extractValue(type, periodId, filterCanal, filterDevice);
+                return computePL(data.byCanalDeviceRaw || data.byCanalDevice, null, type);
+            }
+
+            // Período multi-mês: acumula mês a mês com custo/reconhecimento corretos
             const year = periodValue.substring(0, 4);
             const sc   = scenarioList.find(s => s.id === `${type}|${year}`);
             if (!sc || !sc.months.length) {
@@ -2555,7 +2614,10 @@
                 const yyyymm = year + mo;
                 const data   = extractValue(type, `MONTH|${yyyymm}`, filterCanal, filterDevice);
                 const bcd    = data.byCanalDeviceRaw || data.byCanalDevice;
-                result = mergePL(result, computePL(bcd, parseInt(mo), type));
+                const rec    = isComodato
+                    ? buildComodatoRecognizedQty(type, year, parseInt(mo), filterCanal, filterDevice)
+                    : null;
+                result = mergePL(result, computePL(bcd, parseInt(mo), type, rec));
             }
             return result || computePL({}, null, type);
         }
@@ -2948,14 +3010,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_COMODATO'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
-                        const lbl = t === 'PLAN' ? '🟢 Plano' : t === 'ACTUAL' ? '🔵 Realizado' : t === 'PLAN_2027' ? '🟣 Plano 2027' : '🟠 Forecast';
+                        const lbl = t === 'PLAN' ? '🟢 Plano' : t === 'ACTUAL' ? '🔵 Realizado' : t === 'PLAN_2027' ? '🟣 Plano 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 Plano 2027 Comodato' : '🟠 Forecast';
                         html += `<optgroup label="${lbl}">`;
                         group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
                         html += `</optgroup>`;
@@ -3049,8 +3111,8 @@
 
             const rawA = extractValue(typeA, pidA, 'ALL', 'ALL');
             const rawB = extractValue(typeB, pidB, 'ALL', 'ALL');
-            const plA  = computePL(rawA.byCanalDeviceRaw || rawA.byCanalDevice, null, typeA);
-            const plB  = computePL(rawB.byCanalDeviceRaw || rawB.byCanalDevice, null, typeB);
+            const plA  = computePLPeriod(typeA, pidA, 'ALL', 'ALL');
+            const plB  = computePLPeriod(typeB, pidB, 'ALL', 'ALL');
 
             const DEVS   = ['SMART', 'PRO', 'AIR', 'MINI'];
             const COLORS = { SMART: '#78350f', PRO: '#c2410c', AIR: '#fb923c', MINI: '#fde68a' };
@@ -3164,14 +3226,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_COMODATO'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
-                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
+                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                         let opts = `<optgroup label="--- ${label} ---">`;
                         group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                         opts += `</optgroup>`;
@@ -3314,14 +3376,14 @@
             document.getElementById('pl-th-a').innerText = `${label}${unitSuffix} (A)`;
             document.getElementById('pl-th-b').innerText = `${label}${unitSuffix} (B)`;
 
-            generatePLAI(plA, plB, nameA, nameB, typeB);
+            generatePLAI(plA, plB, nameA, nameB, typeB, typeA);
             drawPLTable(plA, plB, typeB);
             window.currentPLExportData = { plA, plB, nameA, nameB, dataA, dataB, typeA, typeB, compType, yearA, moA_val, yearB, moB_val, filterCanal, filterDevice };
             drawPLCharts(plA, plB, typeA, typeB, nameA, nameB, compType, yearA, moA_val, yearB, moB_val, filterCanal, filterDevice);
             lucide.createIcons();
         }
 
-        function generatePLAI(plA, plB, nameA, nameB, typeB) {
+        function generatePLAI(plA, plB, nameA, nameB, typeB, typeA) {
             const container = document.getElementById('pl-ai-text');
 
             const totA = getMetricTotal(plA), totB = getMetricTotal(plB);
@@ -3334,7 +3396,9 @@
                 container.innerHTML = '<p>Dados insuficientes para gerar insights neste recorte.</p>'; return;
             }
 
-            function signFmt(v) { return v >= 0 ? '+' : ''; }
+            // Zera -0 e ruído de ponto flutuante para não exibir "+-R$ 0"
+            const snapZero = v => (Object.is(v, -0) || Math.abs(v) < 0.5) ? 0 : v;
+            function signFmt(v) { return v > 0 ? '+' : ''; }
             function colorSpan(v, txt) {
                 return v > 0 ? `<span class="text-green-600 font-bold">${txt}</span>`
                      : (v < 0 ? `<span class="text-red-600 font-bold">${txt}</span>`
@@ -3343,7 +3407,7 @@
 
             // --- Volume effect using selected metric ---
             const avgUnitA = plA.totalQty > 0 ? totA / plA.totalQty : 0;
-            const volEffect = (plB.totalQty - plA.totalQty) * avgUnitA;
+            const volEffect = snapZero((plB.totalQty - plA.totalQty) * avgUnitA);
             const volPct = totA !== 0 ? (volEffect / Math.abs(totA)) * 100 : 0;
             const unitA = plA.totalQty > 0 ? totA / plA.totalQty : 0;
             const unitB = plB.totalQty > 0 ? totB / plB.totalQty : 0;
@@ -3370,6 +3434,7 @@
             // DE VENDA (receita+salesTaxes) vs quanto veio do aumento de CMV, no mesmo canal+device,
             // ponderado pelo volume de B.
             let priceEffectRevenue = 0, priceEffectCost = 0;
+            let priceEffectReceitaOnly = 0, priceEffectSalesTaxesOnly = 0;
             allKeysAB.forEach(k => {
                 const qtyA_k = flatA[k]?.qty || 0, qtyB_k = flatB[k]?.qty || 0;
                 const metA_k = flatA[k]?.met || 0, metB_k = flatB[k]?.met || 0;
@@ -3387,10 +3452,31 @@
                 const costRateB  = qtyB_k > 0 ? cmvB_k / qtyB_k : 0;
                 priceEffectRevenue += qtyB_k * (priceRateB - priceRateA);
                 priceEffectCost    += qtyB_k * (costRateB - costRateA);
+
+                // Receita e Sales Taxes separados (usado na leitura do comodato)
+                const stA_k = flatA[k]?.salesTaxes || 0, stB_k = flatB[k]?.salesTaxes || 0;
+                const recRateA = qtyA_k > 0 ? (flatA[k]?.receita || 0) / qtyA_k : 0;
+                const recRateB = qtyB_k > 0 ? (flatB[k]?.receita || 0) / qtyB_k : 0;
+                const stRateA_k = qtyA_k > 0 ? stA_k / qtyA_k : 0;
+                const stRateB_k = qtyB_k > 0 ? stB_k / qtyB_k : 0;
+                priceEffectReceitaOnly    += qtyB_k * (recRateB - recRateA);
+                priceEffectSalesTaxesOnly += qtyB_k * (stRateB_k - stRateA_k);
             });
+
+            // --- Efeito Comodato: exatamente um dos lados usa o modelo de comodato ---
+            // Isolado de volume e mix (usa a variação da taxa unitária ponderada por B),
+            // as três parcelas abaixo somam exatamente o Efeito Preço/Custo.
+            const isComodatoCompare = isComodatoType(typeA) !== isComodatoType(typeB);
+            const bothArePlan2027   = isPlan2027(typeA) && isPlan2027(typeB);
+            const pctOf = v => totA !== 0 ? (v / Math.abs(totA)) * 100 : 0;
             // Mix = deslocamento de composição (canal/device) a preço e custo constantes.
             // Volume + Mix + Preço somam exatamente o delta total.
-            const mixEffect = grossVolMixEffect - volEffect;
+            priceEffect               = snapZero(priceEffect);
+            priceEffectRevenue        = snapZero(priceEffectRevenue);
+            priceEffectCost           = snapZero(priceEffectCost);
+            priceEffectReceitaOnly    = snapZero(priceEffectReceitaOnly);
+            priceEffectSalesTaxesOnly = snapZero(priceEffectSalesTaxesOnly);
+            const mixEffect = snapZero(grossVolMixEffect - volEffect);
             const mixPct = totA !== 0 ? (mixEffect / Math.abs(totA)) * 100 : 0;
             const pricePct = totA !== 0 ? (priceEffect / Math.abs(totA)) * 100 : 0;
             const priceRevenuePct = totA !== 0 ? (priceEffectRevenue / Math.abs(totA)) * 100 : 0;
@@ -3490,14 +3576,27 @@
             }
             text += `</p>`;
 
-            // Price/cost paragraph — mesma composição, preço/custo unitário diferente
-            text += `<p class="mt-1">▸ <strong>Efeito Preço/Custo</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
-            text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — variação de preço de venda e/ou custo unitário nos mesmos canais e modelos (ex: reajuste aplicado em períodos diferentes entre os dois cenários). `;
-            text += `${metricLabel}/un. médio variou de <strong>${formatBRLDecimal(unitA)}</strong> para <strong>${formatBRLDecimal(unitB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).`;
-            if (plMetric === 'resultado' && (Math.abs(priceEffectRevenue) >= 1 || Math.abs(priceEffectCost) >= 1)) {
-                text += ` Desse efeito, <strong>Nova Tabela de Preço de Venda</strong>: ${colorSpan(priceEffectRevenue, `${signFmt(priceEffectRevenue)}${formatBRL(priceEffectRevenue)}`)} (${signFmt(priceRevenuePct)}${formatBRPct(priceRevenuePct)} da base) e <strong>Aumento de Custo (CMV)</strong>: ${colorSpan(priceEffectCost, `${signFmt(priceEffectCost)}${formatBRL(priceEffectCost)}`)} (${signFmt(priceCostPct)}${formatBRPct(priceCostPct)} da base).`;
+            // Price/cost paragraph — mesma composição, preço/custo unitário diferente.
+            // Quando um dos lados é Comodato, esse mesmo efeito é lido como Efeito Comodato.
+            if (isComodatoCompare && plMetric === 'resultado') {
+                const comoLbl = isComodatoType(typeB) ? `migrar para Comodato` : `sair do Comodato`;
+                text += `<p class="mt-1">▸ <strong>Efeito Comodato</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
+                text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — impacto de ${comoLbl}: receita e CMV diferidos em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês a partir da entrega) e sales taxes zerados`;
+                text += bothArePlan2027
+                    ? `. Volume, preço de venda e custo unitário são idênticos nos dois cenários — todo o delta é diferimento.`
+                    : `; como os cenários também têm tabelas de preço/custo distintas, este valor embute as duas coisas.`;
+                text += ` Composição: <strong>Diferimento de Receita</strong>: ${colorSpan(priceEffectReceitaOnly, `${signFmt(priceEffectReceitaOnly)}${formatBRL(priceEffectReceitaOnly)}`)} (${signFmt(pctOf(priceEffectReceitaOnly))}${formatBRPct(pctOf(priceEffectReceitaOnly))} da base), `;
+                text += `<strong>Diferimento de CMV</strong>: ${colorSpan(priceEffectCost, `${signFmt(priceEffectCost)}${formatBRL(priceEffectCost)}`)} (${signFmt(priceCostPct)}${formatBRPct(priceCostPct)} da base) e `;
+                text += `<strong>Sales Taxes</strong>: ${colorSpan(priceEffectSalesTaxesOnly, `${signFmt(priceEffectSalesTaxesOnly)}${formatBRL(priceEffectSalesTaxesOnly)}`)} (${signFmt(pctOf(priceEffectSalesTaxesOnly))}${formatBRPct(pctOf(priceEffectSalesTaxesOnly))} da base).</p>`;
+            } else {
+                text += `<p class="mt-1">▸ <strong>Efeito Preço/Custo</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
+                text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — variação de preço de venda e/ou custo unitário nos mesmos canais e modelos (ex: reajuste aplicado em períodos diferentes entre os dois cenários). `;
+                text += `${metricLabel}/un. médio variou de <strong>${formatBRLDecimal(unitA)}</strong> para <strong>${formatBRLDecimal(unitB)}</strong> (${colorSpan(unitPct, `${signFmt(unitPct)}${formatBRPct(unitPct)}`)}).`;
+                if (plMetric === 'resultado' && (Math.abs(priceEffectRevenue) >= 1 || Math.abs(priceEffectCost) >= 1)) {
+                    text += ` Desse efeito, <strong>Nova Tabela de Preço de Venda</strong>: ${colorSpan(priceEffectRevenue, `${signFmt(priceEffectRevenue)}${formatBRL(priceEffectRevenue)}`)} (${signFmt(priceRevenuePct)}${formatBRPct(priceRevenuePct)} da base) e <strong>Aumento de Custo (CMV)</strong>: ${colorSpan(priceEffectCost, `${signFmt(priceEffectCost)}${formatBRL(priceEffectCost)}`)} (${signFmt(priceCostPct)}${formatBRPct(priceCostPct)} da base).`;
+                }
+                text += `</p>`;
             }
-            text += `</p>`;
 
             // Canal drivers
             if (driversText.length > 0) {
@@ -3623,7 +3722,7 @@
                 const c = pct>0?'#16a34a':(pct<0?'#dc2626':'#6b7280');
                 return `<span style="color:${c};font-weight:bold;">${pct>0?'+':''}${pct.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</span>`;
             }
-            generatePLAI(plA, plB, nameA, nameB, typeB);
+            generatePLAI(plA, plB, nameA, nameB, typeB, typeA);
             const aiHTML = document.getElementById('pl-ai-text').innerHTML;
             const allCanals = Array.from(new Set([...Object.keys(plA.byCanal),...Object.keys(plB.byCanal)]));
             allCanals.sort((a,b) => Math.abs(plB.byCanal[b]?.resultado||0)-Math.abs(plA.byCanal[a]?.resultado||0));
@@ -3937,14 +4036,14 @@
         function showCorpPLModal() {
             const sel = document.getElementById('corp-pl-scenario');
             sel.innerHTML = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_COMODATO'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += '</optgroup>';
@@ -4032,8 +4131,16 @@
                 // --- Data helpers ---
                 function aggPeriod(type, months, cFilter) {
                     const cf = cFilter !== undefined ? cFilter : filterCanal;
-                    let total=0, byCanal={}, byDevice={}, byCanalDevice={}, byCanalDeviceRaw={};
+                    const isCom = isComodatoType(type);
+                    let total=0, byCanal={}, byDevice={}, byCanalDevice={}, byCanalDeviceRaw={}, recognizedQty={};
                     months.forEach(m => {
+                        if (isCom) {
+                            const rec = buildComodatoRecognizedQty(type, refYear, parseInt(m), cf, filterDevice);
+                            Object.entries(rec).forEach(([c,devs])=>{
+                                if(!recognizedQty[c])recognizedQty[c]={};
+                                Object.entries(devs).forEach(([dv,v])=>{ recognizedQty[c][dv]=(recognizedQty[c][dv]||0)+v; });
+                            });
+                        }
                         const d=extractValue(type,`MONTH|${refYear}${String(m).padStart(2,'0')}`,cf,filterDevice);
                         total+=d.total;
                         Object.entries(d.byCanal).forEach(([c,v])=>{ byCanal[c]=(byCanal[c]||0)+v; });
@@ -4048,7 +4155,7 @@
                             Object.entries(devs).forEach(([dv,v])=>{ byCanalDeviceRaw[c][dv]=(byCanalDeviceRaw[c][dv]||0)+v; });
                         });
                     });
-                    return {total, byCanal, byDevice, byCanalDevice, byCanalDeviceRaw};
+                    return {total, byCanal, byDevice, byCanalDevice, byCanalDeviceRaw, recognizedQty};
                 }
 
                 // Merge device qty for a canal (handles CANAIS DIGITAIS grouping)
@@ -4263,7 +4370,7 @@
                 for(const p of periods) {
                     const dA=aggPeriod(p.typeA,p.months,filterCanal);
                     const dB=aggPeriod(p.typeB,p.months,filterCanal);
-                    let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice, null, p.typeA), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice, null, p.typeB);
+                    let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice, null, p.typeA, dA.recognizedQty), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice, null, p.typeB, dB.recognizedQty);
                     if(groupDigital||groupAcquisicao){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
                     addGeneralSlide(p,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,dA,dB,plA,plB,hexColor(p.typeB));
                 }
@@ -4276,7 +4383,7 @@
                         const cFilter=(filterCanal==='ALL')?canal:filterCanal;
                         const dA=aggPeriod(p.typeA,p.months,cFilter);
                         const dB=aggPeriod(p.typeB,p.months,cFilter);
-                        let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice, null, p.typeA), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice, null, p.typeB);
+                        let plA=computePL(dA.byCanalDeviceRaw||dA.byCanalDevice, null, p.typeA, dA.recognizedQty), plB=computePL(dB.byCanalDeviceRaw||dB.byCanalDevice, null, p.typeB, dB.recognizedQty);
                         if(groupDigital||groupAcquisicao){ plA=applyGroupingPL(plA); plB=applyGroupingPL(plB); }
                         addCanalSlide(canal,p,`${p.cA} ${refYear}`,`${p.cB} ${refYear}`,dA,dB,plA,plB,hexColor(p.typeB));
                     }
@@ -4411,7 +4518,7 @@
         function extractDevicesNoEngagement(type, periodId, filterCanal, filterDevice) {
             const [periodType, periodValue] = periodId.split('|');
             const data = db[type] || [];
-            const isFCST = type === 'FORECAST' || type === 'PLAN_2027' || type.startsWith('FORECAST_OLD_');
+            const isFCST = type === 'FORECAST' || isPlan2027(type) || type.startsWith('FORECAST_OLD_');
             const colC = isFCST ? 'Canal' : cols[type].canal;
             const colD = isFCST ? 'Device' : cols[type].device;
             let total = 0, byCanal = {}, byCanalDevice = {};
@@ -4483,14 +4590,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_COMODATO'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                     if (group.length > 0) {
-                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
+                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                         html += `<optgroup label="--- ${label} ---">`;
                         group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
                         html += `</optgroup>`;
@@ -4531,14 +4638,14 @@
             const scB = document.getElementById('tpv-scenario-b');
             if (!scA || !scB) return;
             let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_COMODATO'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
@@ -4810,11 +4917,11 @@
             // Populate scenario selects (same grouping as comparison tab)
             let htmlA = '', htmlB = '';
             const seen = new Set();
-            ['PLAN','ACTUAL','FORECAST','PLAN_2027'].forEach(t => {
+            ['PLAN','ACTUAL','FORECAST','PLAN_2027','PLAN_2027_COMODATO'].forEach(t => {
                 const group = scenarioList.filter(s => s.type === t || s.id.startsWith(t + '|'));
                 const unique = group.filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
                 if (!unique.length) return;
-                const lbl = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : '🟠 FORECAST';
+                const lbl = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                 let opts = `<optgroup label="--- ${lbl} ---">`;
                 unique.forEach(s => { opts += `<option value="${s.id}">${s.label}</option>`; });
                 opts += '</optgroup>';
