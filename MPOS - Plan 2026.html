@@ -2342,9 +2342,15 @@
         //    coorte de jan + a 1ª parcela da coorte de fev, e assim por diante.
         //  • Sales Taxes zerados (cessão em comodato, não venda).
         // A quantidade de devices entregues no mês permanece a mesma.
+        // RESELLERS permanece no modelo antigo de compra e venda mesmo no cenário
+        // Comodato: reconhece receita/CMV à vista e continua pagando sales taxes.
         const COMODATO_DEFER_MONTHS = 36;
+        const COMODATO_EXCLUDED_CANALS = new Set(['RESELLERS']);
         function isPlan2027(type) { return type === 'PLAN_2027' || type === 'PLAN_2027_COMODATO'; }
         function isComodatoType(type) { return type === 'PLAN_2027_COMODATO'; }
+        function canalUsesComodato(type, canal) {
+            return isComodatoType(type) && !COMODATO_EXCLUDED_CANALS.has(String(canal).toUpperCase().trim());
+        }
 
         // Volume de vendas Plano 2027 v1 por Canal/Device/Mês (jan/27–dez/27).
         // Linhas sem canal/device atribuído (subtotais, blocos "0") foram descartadas;
@@ -2486,8 +2492,7 @@
         //                 A qty exibida continua sendo a de devices entregues no período.
         function computePL(byCanalDevice, moNum, type, recognizedQty) {
             const isComodato = isComodatoType(type);
-            const stRate = isComodato ? 0 : salesTaxesRate;   // comodato não tem sales taxes
-            let totalReceita = 0, totalCMV = 0;
+            let totalReceita = 0, totalCMV = 0, totalSalesTaxes = 0;
             let byCanal = {};
 
             // No comodato um canal/device pode não ter entrega no mês e ainda assim
@@ -2497,9 +2502,12 @@
                 : Object.keys(byCanalDevice);
 
             canals.forEach(canal => {
+                // RESELLERS segue no modelo de venda mesmo no cenário Comodato
+                const canalComodato = canalUsesComodato(type, canal);
+                const stRate = canalComodato ? 0 : salesTaxesRate;
                 const devices    = byCanalDevice[canal] || {};
                 const recDevices = (recognizedQty && recognizedQty[canal]) || {};
-                const devKeys    = isComodato
+                const devKeys    = canalComodato
                     ? Array.from(new Set([...Object.keys(devices), ...Object.keys(recDevices)]))
                     : Object.keys(devices);
                 let cReceita = 0, cCMV = 0, cQty = 0;
@@ -2507,7 +2515,7 @@
 
                 devKeys.forEach(device => {
                     const qty = devices[device] || 0;
-                    const recQty = isComodato ? (recDevices[device] || 0) : qty;
+                    const recQty = canalComodato ? (recDevices[device] || 0) : qty;
                     const price = getSellPrice(device, canal, type);
                     const cost = getCostBRL(device, moNum, type);
                     const receita = recQty * price;
@@ -2523,10 +2531,10 @@
                 byCanal[canal] = { receita: cReceita, cmv: cCMV, salesTaxes: cSalesTaxes, resultado: cReceita + cSalesTaxes + cCMV, qty: cQty, devices: devPL };
                 totalReceita += cReceita;
                 totalCMV += cCMV;
+                totalSalesTaxes += cSalesTaxes;   // acumulado por canal (a alíquota varia no comodato)
             });
 
             const totalQty = Object.values(byCanal).reduce((s, c) => s + c.qty, 0);
-            const totalSalesTaxes = -stRate * totalReceita;
             return { totalReceita, totalCMV, totalSalesTaxes, totalResultado: totalReceita + totalSalesTaxes + totalCMV, totalQty, byCanal };
         }
 
@@ -3581,7 +3589,9 @@
             if (isComodatoCompare && plMetric === 'resultado') {
                 const comoLbl = isComodatoType(typeB) ? `migrar para Comodato` : `sair do Comodato`;
                 text += `<p class="mt-1">▸ <strong>Efeito Comodato</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
+                const excl = Array.from(COMODATO_EXCLUDED_CANALS).join(', ');
                 text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — impacto de ${comoLbl}: receita e CMV diferidos em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês a partir da entrega) e sales taxes zerados`;
+                if (excl) text += `, exceto <strong>${excl}</strong>, que permanece no modelo de compra e venda`;
                 text += bothArePlan2027
                     ? `. Volume, preço de venda e custo unitário são idênticos nos dois cenários — todo o delta é diferimento.`
                     : `; como os cenários também têm tabelas de preço/custo distintas, este valor embute as duas coisas.`;
