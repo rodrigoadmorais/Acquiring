@@ -393,6 +393,12 @@
                 <h4 class="text-sm font-black text-blue-900 mb-4 flex items-center gap-2 uppercase tracking-tight">
                     <i data-lucide="sparkles" class="w-5 h-5 text-blue-600"></i> Resumo gerado por IA
                 </h4>
+                <div id="pl-comodato-premissas" class="hidden mb-4 max-w-4xl bg-teal-50 border border-teal-200 rounded-lg px-4 py-3">
+                    <p class="text-[10px] font-black text-teal-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-3.5 h-3.5"></i> Premissas — Plano 2027 v1 Comodato
+                    </p>
+                    <ul class="text-xs text-teal-900 font-medium leading-relaxed list-disc list-inside space-y-0.5"></ul>
+                </div>
                 <div id="pl-ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2"></div>
             </div>
 
@@ -3393,6 +3399,25 @@
 
         function generatePLAI(plA, plB, nameA, nameB, typeB, typeA) {
             const container = document.getElementById('pl-ai-text');
+
+            // Quadro de premissas do Comodato — só aparece quando pelo menos um dos
+            // lados comparados é o cenário Plano 2027 v1 — Comodato.
+            const premissasBox = document.getElementById('pl-comodato-premissas');
+            if (premissasBox) {
+                const anyComodato = isComodatoType(typeA) || isComodatoType(typeB);
+                if (anyComodato) {
+                    const exclList = Array.from(COMODATO_EXCLUDED_CANALS).join(', ');
+                    premissasBox.querySelector('ul').innerHTML = `
+                        <li>Receita e CMV diferidos linearmente em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês, a partir do mês da entrega do device)</li>
+                        <li>Sales taxes <strong>zerados</strong> (cessão em comodato, não venda)</li>
+                        <li><strong>${exclList}</strong> permanece no modelo tradicional de compra e venda (sem diferimento, com sales taxes)</li>
+                        <li>Volume entregue, preço de venda e CMV unitário são os mesmos do Plano 2027 v1 padrão — só muda o reconhecimento</li>
+                    `;
+                    premissasBox.classList.remove('hidden');
+                } else {
+                    premissasBox.classList.add('hidden');
+                }
+            }
 
             const totA = getMetricTotal(plA), totB = getMetricTotal(plB);
             const deltaAbs = totB - totA;
