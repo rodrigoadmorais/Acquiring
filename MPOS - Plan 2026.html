@@ -981,19 +981,33 @@
             return null;
         }
 
-        // Quando o JSON não declara versão, infere "Forecast N+M" pelo nº de meses
-        // com realizado no ano do forecast (ex.: realizado até ago → "Forecast 8+4").
-        function inferForecastVersionFromActual(forecastYear) {
+        // Nº de meses FECHADOS com realizado no ano do forecast.
+        // O mês corrente é excluído de propósito: ele ainda está acumulando dia a dia,
+        // e fundir um mês parcial por cima da projeção derruba o total do forecast.
+        function countClosedActualMonths(forecastYear) {
             if (!forecastYear) return null;
+            const now = new Date();
+            // getMonth() é 0-based: em Agosto retorna 7 → meses fechados são 1..7 (jan-jul).
+            const maxClosed = forecastYear === String(now.getFullYear()) ? now.getMonth() : 12;
             const months = new Set();
             (db.ACTUAL || []).forEach(row => {
                 Object.keys(row).forEach(k => {
                     if (/^\d{6}$/.test(k) && k.startsWith(forecastYear) && parseNum(row[k]) > 0) {
-                        months.add(k.substring(4, 6));
+                        const m = parseInt(k.substring(4, 6), 10);
+                        if (m <= maxClosed) months.add(m);
                     }
                 });
             });
-            const n = months.size;
+            return months.size;
+        }
+
+        // Quando o JSON não declara versão, infere "Forecast N+M" pelos meses fechados
+        // (ex.: realizado fechado até jul → "Forecast 7+5").
+        // offset recua a vintage: offset=1 → ciclo anterior ("Forecast 6+6").
+        function inferForecastVersionFromActual(forecastYear, offset = 0) {
+            const closed = countClosedActualMonths(forecastYear);
+            if (closed == null) return null;
+            const n = closed - offset;
             if (n < 1 || n > 12) return null;
             return `Forecast ${n}+${12 - n}`;
         }
@@ -1045,10 +1059,11 @@
             const key = 'FORECAST_OLD_0';
             db[key] = parseForecastJSON(data);
             // Detect version: _version field takes priority, else column key (e.g. "ABR", "ABR v2"),
-            // else infere pelo realizado. Sufixo "(anterior)" garante que a versão antiga
-            // continue distinguível quando os dois arquivos resolvem para o mesmo rótulo.
+            // else infere pelo realizado — com offset 1, pois o "old" é o ciclo anterior
+            // e portanto foi construído com um mês fechado a menos que o forecast atual.
+            // Sufixo "(anterior)" só entra se ainda assim os rótulos coincidirem.
             const detected = detectForecastVersion(data[0])
-                || inferForecastVersionFromActual(forecastYearOf(db[key]));
+                || inferForecastVersionFromActual(forecastYearOf(db[key]), 1);
             const versionLabel = detected
                 ? (detected === forecastDisplayVersion ? `${detected} (anterior)` : detected)
                 : 'Forecast Old';
