@@ -953,6 +953,12 @@
             return mappedData;
         }
 
+        // Colunas estruturais do layout da planilha — NUNCA são marcador de versão.
+        // 'SET' entra aqui porque é uma coluna fixa (vazia) do export e colidia com
+        // a abreviação de setembro, fazendo todo forecast virar "Forecast 9+3".
+        // Para declarar a versão explicitamente, use o campo _version no JSON.
+        const FCST_STRUCT_COLS = new Set(['row_number', 'set', 'canal', 'device_type', 'total']);
+
         function detectForecastVersion(row) {
             // Detects version from _version field OR from a column key matching a month pattern.
             // Handles: _version:"Forecast 3+9", column "ABR", "ABR v2", "forecast ABR v2", etc.
@@ -962,7 +968,9 @@
                                 'set':'9+3','out':'10+2','nov':'11+1','dez':'12+0' };
             for (const k of Object.keys(row || {})) {
                 let raw = String(k).trim();
-                if (raw.toLowerCase().startsWith('forecast ')) raw = raw.substring(9).trim();
+                const rawLower = raw.toLowerCase();
+                if (FCST_STRUCT_COLS.has(rawLower) || /^col_\d+$/.test(rawLower)) continue;
+                if (rawLower.startsWith('forecast ')) raw = raw.substring(9).trim();
                 const parts = raw.split(/\s+/);
                 const nm = monthMapV[parts[0].toLowerCase()];
                 if (nm) {
@@ -973,12 +981,34 @@
             return null;
         }
 
+        // Quando o JSON não declara versão, infere "Forecast N+M" pelo nº de meses
+        // com realizado no ano do forecast (ex.: realizado até ago → "Forecast 8+4").
+        function inferForecastVersionFromActual(forecastYear) {
+            if (!forecastYear) return null;
+            const months = new Set();
+            (db.ACTUAL || []).forEach(row => {
+                Object.keys(row).forEach(k => {
+                    if (/^\d{6}$/.test(k) && k.startsWith(forecastYear) && parseNum(row[k]) > 0) {
+                        months.add(k.substring(4, 6));
+                    }
+                });
+            });
+            const n = months.size;
+            if (n < 1 || n > 12) return null;
+            return `Forecast ${n}+${12 - n}`;
+        }
+
+        // Maior ano presente nas linhas já parseadas (o ano que está sendo previsto)
+        function forecastYearOf(rows) {
+            let y = null;
+            (rows || []).forEach(row => Object.keys(row).forEach(k => {
+                if (/^\d{6}$/.test(k)) { const yy = k.substring(0, 4); if (!y || yy > y) y = yy; }
+            }));
+            return y;
+        }
+
         function parseForecastJSON(dataArray, trackVersion = false) {
             if (!dataArray || dataArray.length === 0) return [];
-
-            if (trackVersion) {
-                forecastDisplayVersion = dataArray.length > 0 ? detectForecastVersion(dataArray[0]) : null;
-            }
 
             let cleanData = [];
             for (let i = 0; i < dataArray.length; i++) {
@@ -1001,16 +1031,27 @@
                 }
                 if(hasData) cleanData.push(obj);
             }
+
+            if (trackVersion) {
+                forecastDisplayVersion = detectForecastVersion(dataArray[0])
+                    || inferForecastVersionFromActual(forecastYearOf(cleanData));
+            }
             return cleanData;
         }
 
         function parseForecastOldJSON(data) {
             if (!data || data.length === 0) return;
             forecastOldVersions = [];
-            // Detect version: _version field takes priority, else column key (e.g. "ABR", "ABR v2")
-            const versionLabel = data.length > 0 ? (detectForecastVersion(data[0]) || 'Forecast Old') : 'Forecast Old';
             const key = 'FORECAST_OLD_0';
             db[key] = parseForecastJSON(data);
+            // Detect version: _version field takes priority, else column key (e.g. "ABR", "ABR v2"),
+            // else infere pelo realizado. Sufixo "(anterior)" garante que a versão antiga
+            // continue distinguível quando os dois arquivos resolvem para o mesmo rótulo.
+            const detected = detectForecastVersion(data[0])
+                || inferForecastVersionFromActual(forecastYearOf(db[key]));
+            const versionLabel = detected
+                ? (detected === forecastDisplayVersion ? `${detected} (anterior)` : detected)
+                : 'Forecast Old';
             forecastOldVersions.push({ key, label: versionLabel });
         }
 
@@ -1023,10 +1064,13 @@
                 const sortedMonths = Array.from(months).sort();
                 const years = [...new Set(sortedMonths.map(m => m.substring(0, 4)))];
                 years.forEach(y => {
-                    // Evita duplicata: se já existe cenário com mesmo label e mesmo ano, ignora
-                    if (scenarioList.some(s => s.label === label && s.id.endsWith(`|${y}`))) return;
+                    const id = `${key}|${y}`;
+                    // Evita apenas duplicata real do mesmo cenário (mesmo id).
+                    // Rótulo igual não pode descartar: o forecast anterior é uma
+                    // versão distinta e precisa continuar selecionável.
+                    if (scenarioList.some(s => s.id === id)) return;
                     const yMonths = sortedMonths.filter(m => m.startsWith(y)).map(m => m.substring(4));
-                    scenarioList.push({ id: `${key}|${y}`, label, type: key, months: yMonths });
+                    scenarioList.push({ id, label, type: key, months: yMonths });
                 });
             });
         }
@@ -1252,7 +1296,7 @@
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
-                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
+                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
@@ -3029,7 +3073,7 @@
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
-                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
+                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                     if (group.length > 0) {
                         const lbl = t === 'PLAN' ? '🟢 Plano' : t === 'ACTUAL' ? '🔵 Realizado' : t === 'PLAN_2027' ? '🟣 Plano 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 Plano 2027 Comodato' : '🟠 Forecast';
                         html += `<optgroup label="${lbl}">`;
@@ -3245,7 +3289,7 @@
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
-                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
+                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                     if (group.length > 0) {
                         const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                         let opts = `<optgroup label="--- ${label} ---">`;
@@ -4076,7 +4120,7 @@
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
-                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
+                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
@@ -4630,7 +4674,7 @@
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
-                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
+                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                     if (group.length > 0) {
                         const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                         html += `<optgroup label="--- ${label} ---">`;
@@ -4678,7 +4722,7 @@
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
-                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.label)) return false; _seen.add(s.label); return true; }); }
+                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                 if (group.length > 0) {
                     const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
