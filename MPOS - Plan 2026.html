@@ -694,9 +694,14 @@
                             <select id="resumo-plano27-sel" onchange="renderResumoTab()" class="bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"></select>
                         </div>
                     </div>
-                    <button onclick="toggleResumoCompact()" id="btn-resumo-compact" title="Encolher a tabela para caber melhor num slide" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all whitespace-nowrap mb-0">
-                        <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i> Modo Slide
-                    </button>
+                    <div class="flex items-end gap-2">
+                        <button onclick="toggleResumoAgentsTLV()" id="btn-resumo-agents-tlv" title="Inclui AGENTS dentro de TLV (mantém o nome TLV na tabela)" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2.5 rounded-lg font-bold text-xs hover:bg-teal-50 hover:border-teal-400 hover:text-teal-600 transition-all whitespace-nowrap mb-0">
+                            <i data-lucide="merge" class="w-3.5 h-3.5"></i> Agents → TLV
+                        </button>
+                        <button onclick="toggleResumoCompact()" id="btn-resumo-compact" title="Encolher a tabela para caber melhor num slide" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all whitespace-nowrap mb-0">
+                            <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i> Modo Slide
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -707,10 +712,23 @@
                             <i data-lucide="hash" class="w-4 h-4 text-gray-400"></i> Quantidade de Devices — por Modelo e Canal
                         </h4>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead id="resumo-qty-thead-left"></thead>
+                                <tbody id="resumo-qty-tbody-left"></tbody>
+                            </table>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead id="resumo-qty-thead-right"></thead>
+                                <tbody id="resumo-qty-tbody-right"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto border-t-2 border-gray-200">
                         <table class="w-full text-sm">
-                            <thead id="resumo-qty-thead"></thead>
-                            <tbody id="resumo-qty-tbody"></tbody>
+                            <tbody id="resumo-qty-tbody-total"></tbody>
                         </table>
                     </div>
                 </div>
@@ -718,13 +736,26 @@
                 <div class="card overflow-hidden">
                     <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
                         <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                            <i data-lucide="banknote" class="w-4 h-4 text-gray-400"></i> Resultado — por Modelo e Canal
+                            <i data-lucide="banknote" class="w-4 h-4 text-gray-400"></i> Resultado (R$ Milhões) — por Modelo e Canal
                         </h4>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead id="resumo-resultado-thead-left"></thead>
+                                <tbody id="resumo-resultado-tbody-left"></tbody>
+                            </table>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead id="resumo-resultado-thead-right"></thead>
+                                <tbody id="resumo-resultado-tbody-right"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto border-t-2 border-gray-200">
                         <table class="w-full text-sm">
-                            <thead id="resumo-resultado-thead"></thead>
-                            <tbody id="resumo-resultado-tbody"></tbody>
+                            <tbody id="resumo-resultado-tbody-total"></tbody>
                         </table>
                     </div>
                 </div>
@@ -2891,6 +2922,11 @@
             return out;
         }
 
+        // Tabela de Resultado: valor abreviado em Milhões, sem "R$", 1 casa decimal (ex.: "-12,3")
+        function resumoFmtMillion(v) {
+            return (v / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        }
+
         // Delta em percentual apenas (uma célula)
         function resumoDeltaPctCell(delta, base) {
             const pct = base !== 0 ? (delta / Math.abs(base)) * 100 : (delta !== 0 ? (delta > 0 ? 100 : -100) : 0);
@@ -2911,6 +2947,31 @@
                 Object.entries(devs || {}).forEach(([dev, v]) => { out[key][dev] = (out[key][dev] || 0) + v; });
             });
             return out;
+        }
+
+        // Toggle: soma o canal AGENTS dentro de TLV, sem criar uma linha separada
+        // e sem renomear TLV na tabela (a linha continua exibida como "TLV").
+        let resumoMergeAgentsTLV = false;
+        function resumoMergeAgents(map) {
+            if (!resumoMergeAgentsTLV) return map;
+            const out = {};
+            Object.entries(map || {}).forEach(([canal, devs]) => {
+                const key = canal === 'AGENTS' ? 'TLV' : canal;
+                if (!out[key]) out[key] = {};
+                Object.entries(devs || {}).forEach(([dev, v]) => { out[key][dev] = (out[key][dev] || 0) + v; });
+            });
+            return out;
+        }
+        function toggleResumoAgentsTLV() {
+            resumoMergeAgentsTLV = !resumoMergeAgentsTLV;
+            const btn = document.getElementById('btn-resumo-agents-tlv');
+            btn.classList.toggle('bg-teal-600', resumoMergeAgentsTLV);
+            btn.classList.toggle('text-white', resumoMergeAgentsTLV);
+            btn.classList.toggle('border-teal-700', resumoMergeAgentsTLV);
+            btn.classList.toggle('bg-white', !resumoMergeAgentsTLV);
+            btn.classList.toggle('text-gray-600', !resumoMergeAgentsTLV);
+            btn.classList.toggle('border-gray-300', !resumoMergeAgentsTLV);
+            renderResumoTab();
         }
 
         // Agrupa {canal: {device: valor}} em {device: {canal: valor}}
@@ -2936,11 +2997,14 @@
             return order;
         }
 
-        function renderResumoGrid(theadId, tbodyId, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency, canalOrder) {
+        // Renderiza uma sub-tabela (thead+tbody) para um subconjunto de devices
+        // (ex.: só PRO+SMART, ou só AIR+MINI). Retorna os totais desse subconjunto,
+        // para o chamador somar e montar a barra de total combinada.
+        function renderResumoDeviceTable(theadId, tbodyId, devices, byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder) {
             const thead = document.getElementById(theadId);
             const tbody = document.getElementById(tbodyId);
-            if (!thead || !tbody) return;
-            const fmt = isCurrency ? formatBRL : formatBRNum;
+            if (!thead || !tbody) return { totA: 0, totB: 0, totC: 0 };
+            const fmt = isCurrency ? resumoFmtMillion : formatBRNum;
 
             thead.innerHTML = `<tr class="bg-gray-50 border-b border-gray-200">
                 <th class="py-3 px-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Modelo / Canal</th>
@@ -2951,13 +3015,10 @@
                 <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Δ% vs ${labelB}</th>
             </tr>`;
 
-            const byDevA = resumoByDevice(mapA), byDevB = resumoByDevice(mapB), byDevC = resumoByDevice(mapC);
-            const allDevices = Array.from(new Set([...Object.keys(byDevA), ...Object.keys(byDevB), ...Object.keys(byDevC)]))
-                .sort((x, y) => RESUMO_DEV_ORDER.indexOf(x) - RESUMO_DEV_ORDER.indexOf(y));
             let totA = 0, totB = 0, totC = 0;
             let html = '';
 
-            allDevices.forEach(dev => {
+            devices.forEach(dev => {
                 const canA = byDevA[dev] || {}, canB = byDevB[dev] || {}, canC = byDevC[dev] || {};
                 // Canais ordenados por quantidade de devices vendidas em 2026 (maior pro menor),
                 // consistente entre a tabela de Quantidade e a de Resultado. Canais que não
@@ -2997,17 +3058,37 @@
                 </tr>` + rowsHtml;
             });
 
-            html += `<tr class="bg-gray-900">
-                <td class="py-3 px-3 text-xs font-black text-white uppercase tracking-wider">Total</td>
+            tbody.innerHTML = html;
+            lucide.createIcons();
+            return { totA, totB, totC };
+        }
+
+        // Barra de total combinada (soma dos dois blocos de devices), abaixo das duas sub-tabelas
+        function renderResumoTotalRow(tbodyId, totA, totB, totC, isCurrency) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            const fmt = isCurrency ? resumoFmtMillion : formatBRNum;
+            tbody.innerHTML = `<tr class="bg-gray-900">
+                <td class="py-3 px-3 text-xs font-black text-white uppercase tracking-wider" style="width:1%;white-space:nowrap;">Total</td>
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totA)}</td>
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totB)}</td>
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totC)}</td>
-                ${resumoDeltaPctCell(totB - totA, totA).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400').replace('text-gray-400', 'text-gray-400')}
-                ${resumoDeltaPctCell(totC - totB, totB).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400').replace('text-gray-400', 'text-gray-400')}
+                ${resumoDeltaPctCell(totB - totA, totA).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400')}
+                ${resumoDeltaPctCell(totC - totB, totB).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400')}
             </tr>`;
+        }
 
-            tbody.innerHTML = html;
-            lucide.createIcons();
+        // Orquestra as duas sub-tabelas (PRO+SMART à esquerda, AIR+MINI à direita) e o total combinado.
+        // ids = { theadLeft, tbodyLeft, theadRight, tbodyRight, tbodyTotal }
+        function renderResumoGrid(ids, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency, canalOrder) {
+            const byDevA = resumoByDevice(mapA), byDevB = resumoByDevice(mapB), byDevC = resumoByDevice(mapC);
+            const present = new Set([...Object.keys(byDevA), ...Object.keys(byDevB), ...Object.keys(byDevC)]);
+            const leftDevices = ['PRO', 'SMART'].filter(d => present.has(d));
+            const rightDevices = ['AIR', 'MINI'].filter(d => present.has(d));
+
+            const rL = renderResumoDeviceTable(ids.theadLeft, ids.tbodyLeft, leftDevices, byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder);
+            const rR = renderResumoDeviceTable(ids.theadRight, ids.tbodyRight, rightDevices, byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder);
+            renderResumoTotalRow(ids.tbodyTotal, rL.totA + rR.totA, rL.totB + rR.totB, rL.totC + rR.totC, isCurrency);
         }
 
         function renderResumoTab() {
@@ -3026,17 +3107,20 @@
             const plB = computePLPeriod(fcType, 'YEAR|2026', 'ALL', 'ALL');
             const plC = computePLPeriod(plType, 'YEAR|2027', 'ALL', 'ALL');
 
-            const qtyB = resumoApplyGrouping(resumoQtyMap(dB));
+            const prep = map => resumoApplyGrouping(resumoMergeAgents(map));
+            const qtyB = prep(resumoQtyMap(dB));
             // Ordem de canais compartilhada pelas duas tabelas: quantidade de devices vendidas
             // em 2026 (maior pro menor), dentro de cada modelo.
             const canalOrder = resumoBuildCanalOrder(qtyB);
 
-            renderResumoGrid('resumo-qty-thead', 'resumo-qty-tbody',
-                resumoApplyGrouping(resumoQtyMap(dA)), qtyB, resumoApplyGrouping(resumoQtyMap(dC)),
+            renderResumoGrid(
+                { theadLeft: 'resumo-qty-thead-left', tbodyLeft: 'resumo-qty-tbody-left', theadRight: 'resumo-qty-thead-right', tbodyRight: 'resumo-qty-tbody-right', tbodyTotal: 'resumo-qty-tbody-total' },
+                prep(resumoQtyMap(dA)), qtyB, prep(resumoQtyMap(dC)),
                 '2025', '2026', '2027', false, canalOrder);
 
-            renderResumoGrid('resumo-resultado-thead', 'resumo-resultado-tbody',
-                resumoApplyGrouping(resumoResultMap(plA)), resumoApplyGrouping(resumoResultMap(plB)), resumoApplyGrouping(resumoResultMap(plC)),
+            renderResumoGrid(
+                { theadLeft: 'resumo-resultado-thead-left', tbodyLeft: 'resumo-resultado-tbody-left', theadRight: 'resumo-resultado-thead-right', tbodyRight: 'resumo-resultado-tbody-right', tbodyTotal: 'resumo-resultado-tbody-total' },
+                prep(resumoResultMap(plA)), prep(resumoResultMap(plB)), prep(resumoResultMap(plC)),
                 '2025', '2026', '2027', true, canalOrder);
         }
 
