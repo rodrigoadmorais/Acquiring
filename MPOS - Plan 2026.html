@@ -412,10 +412,11 @@
                 </div>
                 <div id="pl-ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2"></div>
                 <div class="mt-6 pt-5 border-t border-blue-100">
-                    <h5 class="text-xs font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-gray-400"></i> Bridge — decomposição do delta entre cenários
+                    <h5 class="text-xs font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center justify-between gap-2">
+                        <span class="flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-gray-400"></i> Bridge — decomposição do delta entre cenários</span>
+                        <span id="pl-bridge-delta-total" class="text-sm normal-case tracking-normal"></span>
                     </h5>
-                    <div class="h-72"><canvas id="pl-bridge-chart"></canvas></div>
+                    <div class="h-80"><canvas id="pl-bridge-chart"></canvas></div>
                 </div>
             </div>
 
@@ -3957,6 +3958,9 @@
             // ponderado pelo volume de B.
             let priceEffectRevenue = 0, priceEffectCost = 0;
             let priceEffectReceitaOnly = 0, priceEffectSalesTaxesOnly = 0;
+            // Efeito de custo (CMV) por device — usado pro bridge separar Smart/Pro.
+            // Somado, bate exatamente com priceEffectCost.
+            const costEffectByDevice = {};
             allKeysAB.forEach(k => {
                 const qtyA_k = flatA[k]?.qty || 0, qtyB_k = flatB[k]?.qty || 0;
                 const metA_k = flatA[k]?.met || 0, metB_k = flatB[k]?.met || 0;
@@ -3973,7 +3977,10 @@
                 const costRateA  = qtyA_k > 0 ? cmvA_k / qtyA_k : 0;
                 const costRateB  = qtyB_k > 0 ? cmvB_k / qtyB_k : 0;
                 priceEffectRevenue += qtyB_k * (priceRateB - priceRateA);
-                priceEffectCost    += qtyB_k * (costRateB - costRateA);
+                const costContrib = qtyB_k * (costRateB - costRateA);
+                priceEffectCost += costContrib;
+                const kDevice = k.split('|')[1];
+                costEffectByDevice[kDevice] = (costEffectByDevice[kDevice] || 0) + costContrib;
 
                 // Receita e Sales Taxes separados (usado na leitura do comodato)
                 const stA_k = flatA[k]?.salesTaxes || 0, stB_k = flatB[k]?.salesTaxes || 0;
@@ -4135,25 +4142,47 @@
             container.innerHTML = text;
 
             // --- Bridge chart: mesmos efeitos do texto acima, em forma de waterfall ---
+            // Custo CMV separado por device (Smart/Pro) — "Outros" é o resíduo (Air+Mini),
+            // calculado por diferença pra garantir soma exata mesmo com arredondamento.
+            function buildCmvDeviceSegments(total, prefix) {
+                const smart = costEffectByDevice['SMART'] || 0;
+                const pro = costEffectByDevice['PRO'] || 0;
+                const outros = total - smart - pro;
+                const segs = [
+                    { label: `${prefix} Smart`, value: smart },
+                    { label: `${prefix} Pro`, value: pro }
+                ];
+                if (Math.abs(outros) >= 1) segs.push({ label: `${prefix} Outros`, value: outros });
+                return segs;
+            }
+
+            const volSegment = { label: 'Volume', value: volEffect, note: `${totalDQty >= 0 ? '+' : ''}${formatBRNum(totalDQty)} un` };
+
             let bridgeSegments;
             if (isComodatoCompare && plMetric === 'resultado') {
                 bridgeSegments = [
-                    { label: 'Volume', value: volEffect },
+                    volSegment,
                     { label: 'Mix', value: mixEffect },
                     { label: 'Dif. Receita', value: priceEffectReceitaOnly },
-                    { label: 'Dif. CMV', value: priceEffectCost },
+                    ...buildCmvDeviceSegments(priceEffectCost, 'Dif. CMV'),
                     { label: 'Sales Taxes', value: priceEffectSalesTaxesOnly }
                 ];
             } else if (plMetric === 'resultado' && (Math.abs(priceEffectRevenue) >= 1 || Math.abs(priceEffectCost) >= 1)) {
                 bridgeSegments = [
-                    { label: 'Volume', value: volEffect },
+                    volSegment,
                     { label: 'Mix', value: mixEffect },
                     { label: 'Preço Venda', value: priceEffectRevenue },
-                    { label: 'Custo CMV', value: priceEffectCost }
+                    ...buildCmvDeviceSegments(priceEffectCost, 'Custo CMV')
+                ];
+            } else if (plMetric === 'cmv') {
+                bridgeSegments = [
+                    volSegment,
+                    { label: 'Mix', value: mixEffect },
+                    ...buildCmvDeviceSegments(priceEffect, 'Custo CMV')
                 ];
             } else {
                 bridgeSegments = [
-                    { label: 'Volume', value: volEffect },
+                    volSegment,
                     { label: 'Mix', value: mixEffect },
                     { label: 'Preço/Custo', value: priceEffect }
                 ];
@@ -4165,19 +4194,23 @@
         // [inicio, fim] partindo do total acumulado até ali — soma exata dos efeitos
         // fecha exatamente na barra final (B).
         let plBridgeChartObj = null;
+        // segments: [{label, value, note?}] — note é uma linha extra abaixo do valor
+        // (ex.: delta de quantidade no Volume), exibida tanto no rótulo quanto no tooltip.
         function renderPLBridgeChart(nameA, nameB, totA, totB, segments, colorB) {
             const canvas = document.getElementById('pl-bridge-chart');
             if (!canvas) return;
             if (plBridgeChartObj) plBridgeChartObj.destroy();
 
+            // Sem "R$" — só a magnitude abreviada (M/K), como no restante do Resumo.
             const fmt = v => {
                 const s = v >= 0 ? '+' : '−', a = Math.abs(v);
-                if (a >= 1e6) return s + 'R$' + (a / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'M';
-                if (a >= 1e3) return s + 'R$' + (a / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'K';
-                return s + 'R$' + Math.round(a).toLocaleString('pt-BR');
+                if (a >= 1e6) return s + (a / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'M';
+                if (a >= 1e3) return s + (a / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'K';
+                return s + Math.round(a).toLocaleString('pt-BR');
             };
 
             const labels = [nameA, ...segments.map(s => s.label), nameB];
+            const notes = [null, ...segments.map(s => s.note || null), null];
             const data = [[0, totA]];
             const colors = ['#9CA3AF'];
             // Guarda o delta COM SINAL de cada barra (o array [min,max] do Chart.js perde o
@@ -4195,6 +4228,14 @@
             signedDeltas.push(totB);
             colors.push(colorB || '#2563eb');
 
+            // Δ Total da bridge = soma de todos os efeitos = totB - totA (por construção)
+            const deltaTotal = totB - totA;
+            const deltaTotalEl = document.getElementById('pl-bridge-delta-total');
+            if (deltaTotalEl) {
+                const color = deltaTotal > 0 ? 'text-green-600' : (deltaTotal < 0 ? 'text-red-600' : 'text-gray-400');
+                deltaTotalEl.innerHTML = `<span class="text-gray-400 font-bold">Δ Total:</span> <span class="font-black ${color}">${fmt(deltaTotal)}</span>`;
+            }
+
             plBridgeChartObj = new Chart(canvas, {
                 type: 'bar',
                 data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, barPercentage: 0.6 }] },
@@ -4204,24 +4245,29 @@
                         legend: { display: false },
                         datalabels: {
                             display: true, anchor: 'end', align: 'top', offset: 4,
-                            formatter: (val, ctx) => fmt(signedDeltas[ctx.dataIndex]),
-                            font: { weight: 'bold', size: 10 },
+                            formatter: (val, ctx) => {
+                                const note = notes[ctx.dataIndex];
+                                return note ? [fmt(signedDeltas[ctx.dataIndex]), note] : fmt(signedDeltas[ctx.dataIndex]);
+                            },
+                            font: { weight: 'bold', size: 14 },
+                            lineHeight: 1.3,
                             color: ctx => colors[ctx.dataIndex]
                         },
                         tooltip: {
                             callbacks: {
                                 label: ctx => {
                                     const prefix = ctx.dataIndex === 0 ? nameA + ': ' : (ctx.dataIndex === labels.length - 1 ? nameB + ': ' : '');
-                                    return prefix + fmt(signedDeltas[ctx.dataIndex]);
+                                    const note = notes[ctx.dataIndex];
+                                    return prefix + fmt(signedDeltas[ctx.dataIndex]) + (note ? ` (${note})` : '');
                                 }
                             }
                         }
                     },
                     scales: {
                         y: { grid: { color: '#f3f4f6' }, ticks: { display: false } },
-                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
+                        x: { grid: { display: false }, ticks: { font: { size: 13, weight: 'bold' } } }
                     },
-                    layout: { padding: { top: 24 } }
+                    layout: { padding: { top: 34 } }
                 }
             });
         }
