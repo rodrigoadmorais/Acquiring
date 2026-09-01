@@ -1408,21 +1408,8 @@
                 monthB.style.display = 'block';
             }
 
-            let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
-                let group = scenarioList.filter(s => s.type === t);
-                if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
-                    group = group.concat(scenarioList.filter(s => s.type === key));
-                });
-                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
-                if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
-                    let opts = `<optgroup label="--- ${label} ---">`;
-                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
-                    opts += `</optgroup>`;
-                    htmlA += opts; htmlB += opts;
-                }
-            });
+            const htmlAB = buildScenarioOptgroupsHTML(true);
+            let htmlA = htmlAB, htmlB = htmlAB;
 
             selectScA.innerHTML = htmlA; selectScB.innerHTML = htmlB;
 
@@ -2520,6 +2507,40 @@
         const COMODATO_EXCLUDED_CANALS = new Set(['RESELLERS']);
         function isPlan2027(type) { return type === 'PLAN_2027' || type === 'PLAN_2027_V2' || type === 'PLAN_2027_COMODATO' || type === 'PLAN_2027_V2_COMODATO'; }
         function isComodatoType(type) { return type === 'PLAN_2027_COMODATO' || type === 'PLAN_2027_V2_COMODATO'; }
+        // Tipos que pertencem à dimensão "Plano" no seletor de cenários — Plano 2026 e todas
+        // as variantes do Plano 2027 (venda/comodato, v1/v2) ficam juntas num único optgroup,
+        // em vez de um optgroup fragmentado por variante.
+        const SCENARIO_PLAN_TYPES = ['PLAN', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'];
+
+        // Monta o HTML dos <optgroup> do seletor de cenários com só 3 dimensões: Plano,
+        // Realizado e Forecast (Forecast já inclui as vintages antigas). styleUpper controla
+        // o estilo do rótulo do grupo ("--- 🟢 PLANO ---" vs "🟢 Plano"), usado nas telas
+        // que preferem caixa alta com travessões.
+        function buildScenarioOptgroupsHTML(styleUpper) {
+            const seen = new Set();
+            const dedupe = arr => arr.filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
+            const wrap = (label, group) => {
+                if (!group.length) return '';
+                let opts = styleUpper ? `<optgroup label="--- ${label} ---">` : `<optgroup label="${label}">`;
+                group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
+                return opts + `</optgroup>`;
+            };
+
+            let planGroup = [];
+            SCENARIO_PLAN_TYPES.forEach(t => { planGroup = planGroup.concat(scenarioList.filter(s => s.type === t)); });
+            planGroup = dedupe(planGroup);
+
+            const actGroup = dedupe(scenarioList.filter(s => s.type === 'ACTUAL'));
+
+            let fcGroup = scenarioList.filter(s => s.type === 'FORECAST');
+            forecastOldVersions.forEach(({ key }) => { fcGroup = fcGroup.concat(scenarioList.filter(s => s.type === key)); });
+            fcGroup = dedupe(fcGroup);
+
+            return wrap(styleUpper ? '🟢 PLANO' : '🟢 Plano', planGroup)
+                 + wrap(styleUpper ? '🔵 REALIZADO' : '🔵 Realizado', actGroup)
+                 + wrap(styleUpper ? '🟠 FORECAST' : '🟠 Forecast', fcGroup);
+        }
+
         function canalUsesComodato(type, canal) {
             return isComodatoType(type) && !COMODATO_EXCLUDED_CANALS.has(String(canal).toUpperCase().trim());
         }
@@ -3068,17 +3089,26 @@
         }
 
         // Barra de total combinada (soma dos dois blocos de devices), abaixo das duas sub-tabelas
-        function renderResumoTotalRow(tbodyId, totA, totB, totC, isCurrency) {
+        // A barra de total é uma tabela à parte, sem cabeçalho próprio e sem alinhar
+        // com as colunas das sub-tabelas acima — por isso cada célula leva um rótulo
+        // embutido (ex.: "2025: 1.481.040") para não depender de alinhamento visual.
+        function renderResumoTotalRow(tbodyId, totA, totB, totC, isCurrency, labelA, labelB, labelC) {
             const tbody = document.getElementById(tbodyId);
             if (!tbody) return;
             const fmt = isCurrency ? resumoFmtMillion : formatBRNum;
+            const shortA = String(labelA).slice(-2), shortB = String(labelB).slice(-2), shortC = String(labelC).slice(-2);
+            const pctOf = (delta, base) => base !== 0 ? (delta / Math.abs(base)) * 100 : (delta !== 0 ? (delta > 0 ? 100 : -100) : 0);
+            const pctTxt = (delta, base) => (base === 0 && delta === 0) ? '—' : `${pctOf(delta, base) >= 0 ? '+' : ''}${formatBRPct(pctOf(delta, base))}`;
+            const colorOf = delta => delta > 0 ? 'text-green-400' : (delta < 0 ? 'text-red-400' : 'text-gray-400');
+            const d1 = totB - totA, d2 = totC - totB;
+            const lbl = txt => `<span class="text-gray-400 font-bold">${txt}:</span> `;
             tbody.innerHTML = `<tr class="bg-gray-900">
                 <td class="py-3 px-3 text-xs font-black text-white uppercase tracking-wider" style="width:1%;white-space:nowrap;">Total</td>
-                <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totA)}</td>
-                <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totB)}</td>
-                <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totC)}</td>
-                ${resumoDeltaPctCell(totB - totA, totA).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400')}
-                ${resumoDeltaPctCell(totC - totB, totB).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400')}
+                <td class="py-3 px-3 text-right text-xs font-black text-white">${lbl(labelA)}${fmt(totA)}</td>
+                <td class="py-3 px-3 text-right text-xs font-black text-white">${lbl(labelB)}${fmt(totB)}</td>
+                <td class="py-3 px-3 text-right text-xs font-black text-white">${lbl(labelC)}${fmt(totC)}</td>
+                <td class="py-3 px-3 text-right text-xs font-black ${colorOf(d1)}">${lbl(`Var ${shortA}vs${shortB}`)}${pctTxt(d1, totA)}</td>
+                <td class="py-3 px-3 text-right text-xs font-black ${colorOf(d2)}">${lbl(`Var ${shortB}vs${shortC}`)}${pctTxt(d2, totB)}</td>
             </tr>`;
         }
 
@@ -3092,7 +3122,7 @@
 
             const rL = renderResumoDeviceTable(ids.theadLeft, ids.tbodyLeft, leftDevices, byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder);
             const rR = renderResumoDeviceTable(ids.theadRight, ids.tbodyRight, rightDevices, byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder);
-            renderResumoTotalRow(ids.tbodyTotal, rL.totA + rR.totA, rL.totB + rR.totB, rL.totC + rR.totC, isCurrency);
+            renderResumoTotalRow(ids.tbodyTotal, rL.totA + rR.totA, rL.totB + rR.totB, rL.totC + rR.totC, isCurrency, labelA, labelB, labelC);
         }
 
         function renderResumoTab() {
@@ -3476,21 +3506,7 @@
             ['mix-sc-a', 'mix-sc-b'].forEach(id => {
                 const sel = document.getElementById(id);
                 if (!sel) return;
-                let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
-                    let group = scenarioList.filter(s => s.type === t);
-                    if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
-                        group = group.concat(scenarioList.filter(s => s.type === key));
-                    });
-                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
-                    if (group.length > 0) {
-                        const lbl = t === 'PLAN' ? '🟢 Plano' : t === 'ACTUAL' ? '🔵 Realizado' : t === 'PLAN_2027' ? '🟣 Plano 2027 v1' : t === 'PLAN_2027_V2' ? '🟪 Plano 2027 v2' : t === 'PLAN_2027_COMODATO' ? '🟦 Plano 2027 v1 Comodato' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 Plano 2027 v2 Comodato' : '🟠 Forecast';
-                        html += `<optgroup label="${lbl}">`;
-                        group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
-                        html += `</optgroup>`;
-                    }
-                });
-                sel.innerHTML = html;
+                sel.innerHTML = buildScenarioOptgroupsHTML(false);
             });
             // Calcular mês anterior (mês atual - 1)
             const now = new Date();
@@ -3692,22 +3708,7 @@
             ['pl-scenario-a', 'pl-scenario-b'].forEach(id => {
                 const sel = document.getElementById(id);
                 if (!sel) return;
-                let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
-                    let group = scenarioList.filter(s => s.type === t);
-                    if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
-                        group = group.concat(scenarioList.filter(s => s.type === key));
-                    });
-                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
-                    if (group.length > 0) {
-                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
-                        let opts = `<optgroup label="--- ${label} ---">`;
-                        group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
-                        opts += `</optgroup>`;
-                        html += opts;
-                    }
-                });
-                sel.innerHTML = html;
+                sel.innerHTML = buildScenarioOptgroupsHTML(true);
             });
 
             const currentYear = new Date().getFullYear().toString();
@@ -4525,21 +4526,7 @@
 
         function showCorpPLModal() {
             const sel = document.getElementById('corp-pl-scenario');
-            sel.innerHTML = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
-                let group = scenarioList.filter(s => s.type === t);
-                if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
-                    group = group.concat(scenarioList.filter(s => s.type === key));
-                });
-                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
-                if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
-                    let opts = `<optgroup label="--- ${label} ---">`;
-                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
-                    opts += '</optgroup>';
-                    sel.innerHTML += opts;
-                }
-            });
+            sel.innerHTML = buildScenarioOptgroupsHTML(true);
             document.getElementById('corp-pl-modal').style.display = 'flex';
             lucide.createIcons();
         }
@@ -5079,21 +5066,7 @@
             ['tpv-scenario-a', 'tpv-scenario-b'].forEach(id => {
                 const sel = document.getElementById(id);
                 if (!sel) return;
-                let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
-                    let group = scenarioList.filter(s => s.type === t);
-                    if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
-                        group = group.concat(scenarioList.filter(s => s.type === key));
-                    });
-                    { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
-                    if (group.length > 0) {
-                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
-                        html += `<optgroup label="--- ${label} ---">`;
-                        group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
-                        html += `</optgroup>`;
-                    }
-                });
-                sel.innerHTML = html;
+                sel.innerHTML = buildScenarioOptgroupsHTML(true);
             });
             const y = new Date().getFullYear().toString();
             const scA = document.getElementById('tpv-scenario-a');
@@ -5127,21 +5100,8 @@
             const scA = document.getElementById('tpv-scenario-a');
             const scB = document.getElementById('tpv-scenario-b');
             if (!scA || !scB) return;
-            let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
-                let group = scenarioList.filter(s => s.type === t);
-                if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
-                    group = group.concat(scenarioList.filter(s => s.type === key));
-                });
-                { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
-                if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
-                    let opts = `<optgroup label="--- ${label} ---">`;
-                    group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
-                    opts += `</optgroup>`;
-                    htmlA += opts; htmlB += opts;
-                }
-            });
+            const htmlAB = buildScenarioOptgroupsHTML(true);
+            let htmlA = htmlAB, htmlB = htmlAB;
             scA.innerHTML = htmlA; scB.innerHTML = htmlB;
             handleTPVScenarioChange('a', false);
             handleTPVScenarioChange('b', false);
@@ -5405,19 +5365,8 @@
             const selB  = document.getElementById('previa-sc-b');
 
             // Populate scenario selects (same grouping as comparison tab)
-            let htmlA = '', htmlB = '';
-            const seen = new Set();
-            ['PLAN','ACTUAL','FORECAST','PLAN_2027','PLAN_2027_V2','PLAN_2027_COMODATO','PLAN_2027_V2_COMODATO'].forEach(t => {
-                const group = scenarioList.filter(s => s.type === t || s.id.startsWith(t + '|'));
-                const unique = group.filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
-                if (!unique.length) return;
-                const lbl = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
-                let opts = `<optgroup label="--- ${lbl} ---">`;
-                unique.forEach(s => { opts += `<option value="${s.id}">${s.label}</option>`; });
-                opts += '</optgroup>';
-                htmlA += opts; htmlB += opts;
-            });
-            selA.innerHTML = htmlA; selB.innerHTML = htmlB;
+            const htmlAB = buildScenarioOptgroupsHTML(true);
+            selA.innerHTML = htmlAB; selB.innerHTML = htmlAB;
 
             // Defaults: A = FORECAST, B = PLAN
             const fcOpt   = Array.from(selA.options).find(o => o.value.startsWith('FORECAST|'));
