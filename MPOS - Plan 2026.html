@@ -712,17 +712,29 @@
                             <i data-lucide="hash" class="w-4 h-4 text-gray-400"></i> Quantidade de Devices — por Modelo e Canal
                         </h4>
                     </div>
-                    <div class="divide-y divide-gray-200">
-                        <div class="overflow-x-auto">
+                    <div class="grid grid-cols-1 md:grid-cols-2">
+                        <div class="overflow-x-auto border-b border-gray-200 md:border-r">
                             <table class="w-full text-sm">
-                                <thead id="resumo-qty-thead-left"></thead>
-                                <tbody id="resumo-qty-tbody-left"></tbody>
+                                <thead id="resumo-qty-thead-PRO"></thead>
+                                <tbody id="resumo-qty-tbody-PRO"></tbody>
+                            </table>
+                        </div>
+                        <div class="overflow-x-auto border-b border-gray-200">
+                            <table class="w-full text-sm">
+                                <thead id="resumo-qty-thead-SMART"></thead>
+                                <tbody id="resumo-qty-tbody-SMART"></tbody>
+                            </table>
+                        </div>
+                        <div class="overflow-x-auto md:border-r border-gray-200">
+                            <table class="w-full text-sm">
+                                <thead id="resumo-qty-thead-MINI"></thead>
+                                <tbody id="resumo-qty-tbody-MINI"></tbody>
                             </table>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
-                                <thead id="resumo-qty-thead-right"></thead>
-                                <tbody id="resumo-qty-tbody-right"></tbody>
+                                <thead id="resumo-qty-thead-AIR"></thead>
+                                <tbody id="resumo-qty-tbody-AIR"></tbody>
                             </table>
                         </div>
                     </div>
@@ -739,17 +751,29 @@
                             <i data-lucide="banknote" class="w-4 h-4 text-gray-400"></i> Resultado (R$ Milhões) — por Modelo e Canal
                         </h4>
                     </div>
-                    <div class="divide-y divide-gray-200">
-                        <div class="overflow-x-auto">
+                    <div class="grid grid-cols-1 md:grid-cols-2">
+                        <div class="overflow-x-auto border-b border-gray-200 md:border-r">
                             <table class="w-full text-sm">
-                                <thead id="resumo-resultado-thead-left"></thead>
-                                <tbody id="resumo-resultado-tbody-left"></tbody>
+                                <thead id="resumo-resultado-thead-PRO"></thead>
+                                <tbody id="resumo-resultado-tbody-PRO"></tbody>
+                            </table>
+                        </div>
+                        <div class="overflow-x-auto border-b border-gray-200">
+                            <table class="w-full text-sm">
+                                <thead id="resumo-resultado-thead-SMART"></thead>
+                                <tbody id="resumo-resultado-tbody-SMART"></tbody>
+                            </table>
+                        </div>
+                        <div class="overflow-x-auto md:border-r border-gray-200">
+                            <table class="w-full text-sm">
+                                <thead id="resumo-resultado-thead-MINI"></thead>
+                                <tbody id="resumo-resultado-tbody-MINI"></tbody>
                             </table>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
-                                <thead id="resumo-resultado-thead-right"></thead>
-                                <tbody id="resumo-resultado-tbody-right"></tbody>
+                                <thead id="resumo-resultado-thead-AIR"></thead>
+                                <tbody id="resumo-resultado-tbody-AIR"></tbody>
                             </table>
                         </div>
                     </div>
@@ -3112,17 +3136,24 @@
             </tr>`;
         }
 
-        // Orquestra as duas sub-tabelas (PRO+SMART à esquerda, AIR+MINI à direita) e o total combinado.
-        // ids = { theadLeft, tbodyLeft, theadRight, tbodyRight, tbodyTotal }
-        function renderResumoGrid(ids, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency, canalOrder) {
+        // Grid 2x2: PRO e SMART lado a lado em cima, MINI e AIR lado a lado embaixo —
+        // cada device é a sua própria sub-tabela.
+        const RESUMO_GRID_DEVICES = ['PRO', 'SMART', 'MINI', 'AIR'];
+
+        // Orquestra as quatro sub-tabelas (uma por device) e o total combinado.
+        // idPrefix = prefixo comum dos ids (ex.: "resumo-qty") — os ids de cada device
+        // seguem o padrão `${idPrefix}-thead-${DEVICE}` / `${idPrefix}-tbody-${DEVICE}`.
+        function renderResumoGrid(idPrefix, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency, canalOrder) {
             const byDevA = resumoByDevice(mapA), byDevB = resumoByDevice(mapB), byDevC = resumoByDevice(mapC);
             const present = new Set([...Object.keys(byDevA), ...Object.keys(byDevB), ...Object.keys(byDevC)]);
-            const leftDevices = ['PRO', 'SMART'].filter(d => present.has(d));
-            const rightDevices = ['AIR', 'MINI'].filter(d => present.has(d));
 
-            const rL = renderResumoDeviceTable(ids.theadLeft, ids.tbodyLeft, leftDevices, byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder);
-            const rR = renderResumoDeviceTable(ids.theadRight, ids.tbodyRight, rightDevices, byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder);
-            renderResumoTotalRow(ids.tbodyTotal, rL.totA + rR.totA, rL.totB + rR.totB, rL.totC + rR.totC, isCurrency, labelA, labelB, labelC);
+            let totA = 0, totB = 0, totC = 0;
+            RESUMO_GRID_DEVICES.forEach(dev => {
+                if (!present.has(dev)) return;
+                const r = renderResumoDeviceTable(`${idPrefix}-thead-${dev}`, `${idPrefix}-tbody-${dev}`, [dev], byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder);
+                totA += r.totA; totB += r.totB; totC += r.totC;
+            });
+            renderResumoTotalRow(`${idPrefix}-tbody-total`, totA, totB, totC, isCurrency, labelA, labelB, labelC);
         }
 
         function renderResumoTab() {
@@ -3147,13 +3178,11 @@
             // em 2026 (maior pro menor), dentro de cada modelo.
             const canalOrder = resumoBuildCanalOrder(qtyB);
 
-            renderResumoGrid(
-                { theadLeft: 'resumo-qty-thead-left', tbodyLeft: 'resumo-qty-tbody-left', theadRight: 'resumo-qty-thead-right', tbodyRight: 'resumo-qty-tbody-right', tbodyTotal: 'resumo-qty-tbody-total' },
+            renderResumoGrid('resumo-qty',
                 prep(resumoQtyMap(dA)), qtyB, prep(resumoQtyMap(dC)),
                 '2025', '2026', '2027', false, canalOrder);
 
-            renderResumoGrid(
-                { theadLeft: 'resumo-resultado-thead-left', tbodyLeft: 'resumo-resultado-tbody-left', theadRight: 'resumo-resultado-thead-right', tbodyRight: 'resumo-resultado-tbody-right', tbodyTotal: 'resumo-resultado-tbody-total' },
+            renderResumoGrid('resumo-resultado',
                 prep(resumoResultMap(plA)), prep(resumoResultMap(plB)), prep(resumoResultMap(plC)),
                 '2025', '2026', '2027', true, canalOrder);
         }
