@@ -412,11 +412,12 @@
                 </div>
                 <div id="pl-ai-text" class="text-sm text-gray-700 font-medium leading-relaxed max-w-4xl space-y-2"></div>
                 <div class="mt-6 pt-5 border-t border-blue-100">
-                    <h5 class="text-xs font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center justify-between gap-2">
-                        <span class="flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-gray-400"></i> Bridge — decomposição do delta entre cenários</span>
-                        <span id="pl-bridge-delta-total" class="text-sm normal-case tracking-normal"></span>
+                    <h5 class="text-xs font-black text-gray-600 uppercase tracking-widest mb-1 flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-gray-400"></i> Bridge — decomposição do delta entre cenários
                     </h5>
+                    <div id="pl-bridge-delta-total" class="text-center text-sm normal-case tracking-normal mb-2"></div>
                     <div class="h-80"><canvas id="pl-bridge-chart"></canvas></div>
+                    <p class="text-center text-[10px] text-gray-400 font-semibold mt-1">* Eixo cortado — barras das pontas truncadas para destacar os efeitos</p>
                 </div>
             </div>
 
@@ -4160,25 +4161,27 @@
 
             let bridgeSegments;
             if (isComodatoCompare && plMetric === 'resultado') {
+                // No comodato, os efeitos de diferimento (receita + CMV) viram um único
+                // bucket "Diferimento" — Sales Taxes continua separado.
                 bridgeSegments = [
                     volSegment,
                     { label: 'Mix', value: mixEffect },
-                    { label: 'Dif. Receita', value: priceEffectReceitaOnly },
-                    ...buildCmvDeviceSegments(priceEffectCost, 'Dif. CMV'),
+                    { label: 'Diferimento', value: priceEffectReceitaOnly + priceEffectCost },
                     { label: 'Sales Taxes', value: priceEffectSalesTaxesOnly }
                 ];
             } else if (plMetric === 'resultado' && (Math.abs(priceEffectRevenue) >= 1 || Math.abs(priceEffectCost) >= 1)) {
+                // Preço Venda entra junto com Mix (mesmo bucket "Mix/Preço"); Custo CMV
+                // vira Preço Smart/Pro — nomenclatura mais direta pro leitor do bridge.
                 bridgeSegments = [
                     volSegment,
-                    { label: 'Mix', value: mixEffect },
-                    { label: 'Preço Venda', value: priceEffectRevenue },
-                    ...buildCmvDeviceSegments(priceEffectCost, 'Custo CMV')
+                    { label: 'Mix/Preço', value: mixEffect + priceEffectRevenue },
+                    ...buildCmvDeviceSegments(priceEffectCost, 'Preço')
                 ];
             } else if (plMetric === 'cmv') {
                 bridgeSegments = [
                     volSegment,
                     { label: 'Mix', value: mixEffect },
-                    ...buildCmvDeviceSegments(priceEffect, 'Custo CMV')
+                    ...buildCmvDeviceSegments(priceEffect, 'Preço')
                 ];
             } else {
                 bridgeSegments = [
@@ -4209,13 +4212,16 @@
                 return s + Math.round(a).toLocaleString('pt-BR');
             };
 
-            const labels = [nameA, ...segments.map(s => s.label), nameB];
+            // Nota (ex.: delta em unidades no Volume) vira uma 2ª linha no rótulo DO EIXO,
+            // embaixo do nome do efeito — não mais uma 2ª linha flutuando junto do valor.
+            const labels = [nameA, ...segments.map(s => s.note ? [s.label, `(${s.note})`] : s.label), nameB];
             const notes = [null, ...segments.map(s => s.note || null), null];
             const data = [[0, totA]];
             const colors = ['#9CA3AF'];
             // Guarda o delta COM SINAL de cada barra (o array [min,max] do Chart.js perde o
             // sinal, já que min<=max sempre) — necessário pro rótulo não mostrar tudo "+".
             const signedDeltas = [totA];
+            const runningPoints = [totA];
             let running = totA;
             segments.forEach(seg => {
                 const start = running, end = running + seg.value;
@@ -4223,10 +4229,21 @@
                 signedDeltas.push(seg.value);
                 colors.push(seg.value > 0 ? '#16a34a' : (seg.value < 0 ? '#dc2626' : '#9CA3AF'));
                 running = end;
+                runningPoints.push(running);
             });
             data.push([0, totB]);
             signedDeltas.push(totB);
             colors.push(colorB || '#2563eb');
+
+            // Eixo "cortado": em vez de partir de 0 (o que faria as barras de Base/Total
+            // dominarem o gráfico e achatar os efeitos), o range visível fica restrito à
+            // faixa onde os efeitos realmente acontecem — as barras das pontas ([0, totA] e
+            // [0, totB]) ficam truncadas nesse range, dando mais destaque às barras do meio.
+            const dataMin = Math.min(...runningPoints), dataMax = Math.max(...runningPoints);
+            const span = dataMax - dataMin || Math.abs(dataMax) || 1;
+            const axisPad = span * 0.32;
+            const axisMin = dataMin < 0 ? dataMin - axisPad : Math.max(0, dataMin - axisPad);
+            const axisMax = dataMax > 0 ? dataMax + axisPad : dataMax + axisPad;
 
             // Δ Total da bridge = soma de todos os efeitos = totB - totA (por construção)
             const deltaTotal = totB - totA;
@@ -4245,12 +4262,12 @@
                         legend: { display: false },
                         datalabels: {
                             display: true, anchor: 'end', align: 'top', offset: 4,
-                            formatter: (val, ctx) => {
-                                const note = notes[ctx.dataIndex];
-                                return note ? [fmt(signedDeltas[ctx.dataIndex]), note] : fmt(signedDeltas[ctx.dataIndex]);
-                            },
+                            // Nas barras das pontas ([0, valor]) o extremo "0" fica fora do
+                            // range visível (eixo cortado) — clamp mantém o rótulo dentro da
+                            // área do gráfico em vez de deixá-lo desaparecer fora da tela.
+                            clamp: true,
+                            formatter: (val, ctx) => fmt(signedDeltas[ctx.dataIndex]),
                             font: { weight: 'bold', size: 14 },
-                            lineHeight: 1.3,
                             color: ctx => colors[ctx.dataIndex]
                         },
                         tooltip: {
@@ -4264,7 +4281,7 @@
                         }
                     },
                     scales: {
-                        y: { grid: { color: '#f3f4f6' }, ticks: { display: false } },
+                        y: { min: axisMin, max: axisMax, grid: { color: '#f3f4f6' }, ticks: { display: false } },
                         x: { grid: { display: false }, ticks: { font: { size: 13, weight: 'bold' } } }
                     },
                     layout: { padding: { top: 34 } }
