@@ -2876,13 +2876,24 @@
             return out;
         }
 
-        function resumoDeltaCell(delta, base, isCurrency) {
-            const fmtVal = isCurrency ? formatBRL(delta) : formatBRNum(delta);
-            const sign = delta > 0 ? '+' : '';
+        // Delta em percentual apenas (uma célula)
+        function resumoDeltaPctCell(delta, base) {
             const pct = base !== 0 ? (delta / Math.abs(base)) * 100 : (delta !== 0 ? (delta > 0 ? 100 : -100) : 0);
             const pctTxt = (base === 0 && delta === 0) ? '—' : `${pct >= 0 ? '+' : ''}${formatBRPct(pct)}`;
             const color = delta > 0 ? 'text-green-600' : (delta < 0 ? 'text-red-600' : 'text-gray-400');
-            return `<td class="py-2 px-3 text-right text-xs font-black ${color}">${sign}${fmtVal}</td><td class="py-2 px-3 text-right text-xs font-bold ${color}">${pctTxt}</td>`;
+            return `<td class="py-2 px-3 text-right text-xs font-bold ${color}">${pctTxt}</td>`;
+        }
+
+        // Agrupa {canal: {device: valor}} em {device: {canal: valor}}
+        function resumoByDevice(map) {
+            const out = {};
+            Object.entries(map || {}).forEach(([canal, devs]) => {
+                Object.entries(devs || {}).forEach(([dev, v]) => {
+                    if (!out[dev]) out[dev] = {};
+                    out[dev][canal] = v;
+                });
+            });
+            return out;
         }
 
         function renderResumoGrid(theadId, tbodyId, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency) {
@@ -2892,58 +2903,62 @@
             const fmt = isCurrency ? formatBRL : formatBRNum;
 
             thead.innerHTML = `<tr class="bg-gray-50 border-b border-gray-200">
-                <th class="py-3 px-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Canal / Modelo</th>
+                <th class="py-3 px-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Modelo / Canal</th>
                 <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelA}</th>
                 <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelB}</th>
-                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider" colspan="2">Δ vs ${labelA}</th>
+                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Δ% vs ${labelA}</th>
                 <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelC}</th>
-                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider" colspan="2">Δ vs ${labelB}</th>
+                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Δ% vs ${labelB}</th>
             </tr>`;
 
-            const allCanals = Array.from(new Set([...Object.keys(mapA), ...Object.keys(mapB), ...Object.keys(mapC)])).sort();
+            const byDevA = resumoByDevice(mapA), byDevB = resumoByDevice(mapB), byDevC = resumoByDevice(mapC);
+            const allDevices = Array.from(new Set([...Object.keys(byDevA), ...Object.keys(byDevB), ...Object.keys(byDevC)]))
+                .sort((x, y) => RESUMO_DEV_ORDER.indexOf(x) - RESUMO_DEV_ORDER.indexOf(y));
             let totA = 0, totB = 0, totC = 0;
             let html = '';
 
-            allCanals.forEach(canal => {
-                const devA = mapA[canal] || {}, devB = mapB[canal] || {}, devC = mapC[canal] || {};
-                const devices = Array.from(new Set([...Object.keys(devA), ...Object.keys(devB), ...Object.keys(devC)]))
-                    .sort((x, y) => RESUMO_DEV_ORDER.indexOf(x) - RESUMO_DEV_ORDER.indexOf(y));
+            allDevices.forEach(dev => {
+                const canA = byDevA[dev] || {}, canB = byDevB[dev] || {}, canC = byDevC[dev] || {};
+                // Canais ordenados do mais relevante pro menos relevante (magnitude na coluna do meio;
+                // cai para A ou C quando o canal não aparece em B, ex.: canal descontinuado ou novo)
+                const canals = Array.from(new Set([...Object.keys(canA), ...Object.keys(canB), ...Object.keys(canC)]))
+                    .sort((x, y) => {
+                        const mag = c => Math.abs(canB[c] ?? canC[c] ?? canA[c] ?? 0);
+                        return mag(y) - mag(x);
+                    });
 
-                let cA = 0, cB = 0, cC = 0, rowsHtml = '';
-                devices.forEach(dev => {
-                    const a = devA[dev] || 0, b = devB[dev] || 0, c = devC[dev] || 0;
-                    cA += a; cB += b; cC += c;
+                let dA = 0, dB = 0, dC = 0, rowsHtml = '';
+                canals.forEach(canal => {
+                    const a = canA[canal] || 0, b = canB[canal] || 0, c = canC[canal] || 0;
+                    dA += a; dB += b; dC += c;
                     rowsHtml += `<tr class="border-b border-gray-50 hover:bg-blue-50/30">
-                        <td class="py-2 pl-10 text-xs text-gray-500 font-semibold">${dev}</td>
+                        <td class="py-2 pl-10 text-xs text-gray-500 font-semibold">${canal}</td>
                         <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(a)}</td>
                         <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(b)}</td>
-                        ${resumoDeltaCell(b - a, a, isCurrency)}
+                        ${resumoDeltaPctCell(b - a, a)}
                         <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(c)}</td>
-                        ${resumoDeltaCell(c - b, b, isCurrency)}
+                        ${resumoDeltaPctCell(c - b, b)}
                     </tr>`;
                 });
-                totA += cA; totB += cB; totC += cC;
+                totA += dA; totB += dB; totC += dC;
 
                 html += `<tr class="bg-gray-50/80 border-b border-gray-200">
-                    <td class="py-2.5 px-3 text-xs font-black text-gray-800">${canal}</td>
-                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(cA)}</td>
-                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(cB)}</td>
-                    ${resumoDeltaCell(cB - cA, cA, isCurrency)}
-                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(cC)}</td>
-                    ${resumoDeltaCell(cC - cB, cB, isCurrency)}
+                    <td class="py-2.5 px-3 text-xs font-black text-gray-800">${dev}</td>
+                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dA)}</td>
+                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dB)}</td>
+                    ${resumoDeltaPctCell(dB - dA, dA)}
+                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dC)}</td>
+                    ${resumoDeltaPctCell(dC - dB, dB)}
                 </tr>` + rowsHtml;
             });
 
-            const td1 = totB - totA, td2 = totC - totB;
             html += `<tr class="bg-gray-900">
                 <td class="py-3 px-3 text-xs font-black text-white uppercase tracking-wider">Total</td>
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totA)}</td>
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totB)}</td>
-                <td class="py-3 px-3 text-right text-xs font-black ${td1 >= 0 ? 'text-green-400' : 'text-red-400'}">${td1 >= 0 ? '+' : ''}${fmt(td1)}</td>
-                <td class="py-3 px-3 text-right text-xs font-bold ${td1 >= 0 ? 'text-green-400' : 'text-red-400'}">${totA !== 0 ? ((td1 / Math.abs(totA)) * 100 >= 0 ? '+' : '') + formatBRPct((td1 / Math.abs(totA)) * 100) : '—'}</td>
+                ${resumoDeltaPctCell(totB - totA, totA).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400').replace('text-gray-400', 'text-gray-400')}
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totC)}</td>
-                <td class="py-3 px-3 text-right text-xs font-black ${td2 >= 0 ? 'text-green-400' : 'text-red-400'}">${td2 >= 0 ? '+' : ''}${fmt(td2)}</td>
-                <td class="py-3 px-3 text-right text-xs font-bold ${td2 >= 0 ? 'text-green-400' : 'text-red-400'}">${totB !== 0 ? ((td2 / Math.abs(totB)) * 100 >= 0 ? '+' : '') + formatBRPct((td2 / Math.abs(totB)) * 100) : '—'}</td>
+                ${resumoDeltaPctCell(totC - totB, totB).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400').replace('text-gray-400', 'text-gray-400')}
             </tr>`;
 
             tbody.innerHTML = html;
@@ -2957,8 +2972,6 @@
             if (!fcId || !plId) return;
             const [fcType] = fcId.split('|');
             const [plType] = plId.split('|');
-            const fcLabel = scenarioList.find(s => s.id === fcId)?.label || fcId;
-            const plLabel = scenarioList.find(s => s.id === plId)?.label || plId;
 
             const dA = extractValue('ACTUAL', 'YEAR|2025', 'ALL', 'ALL');
             const dB = extractValue(fcType, 'YEAR|2026', 'ALL', 'ALL');
@@ -2970,11 +2983,11 @@
 
             renderResumoGrid('resumo-qty-thead', 'resumo-qty-tbody',
                 resumoQtyMap(dA), resumoQtyMap(dB), resumoQtyMap(dC),
-                'Realizado 2025', fcLabel, plLabel, false);
+                '2025', '2026', '2027', false);
 
             renderResumoGrid('resumo-resultado-thead', 'resumo-resultado-tbody',
                 resumoResultMap(plA), resumoResultMap(plB), resumoResultMap(plC),
-                'Realizado 2025', fcLabel, plLabel, true);
+                '2025', '2026', '2027', true);
         }
 
         /* ══════════════════════════════════════════════════════
