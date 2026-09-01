@@ -1309,7 +1309,8 @@
                 db.FORECAST = parseForecastJSON(rawForecast, true);
                 db.PLAN_2027 = PLAN_2027_ROWS;
                 db.PLAN_2027_V2 = PLAN_2027_V2_ROWS;
-                db.PLAN_2027_COMODATO = PLAN_2027_ROWS;   // mesmo volume; muda o reconhecimento
+                db.PLAN_2027_COMODATO = PLAN_2027_ROWS;      // mesmo volume do v1; muda o reconhecimento
+                db.PLAN_2027_V2_COMODATO = PLAN_2027_V2_ROWS; // mesmo volume do v2; muda o reconhecimento
                 dbTPV = parseTPVData(rawTPV);
                 parseForecastOldJSON(rawForecastOld);
 
@@ -1357,7 +1358,7 @@
                 cols[type].device = possibleDevices.find(k => k.toUpperCase().includes('POINT') || k.toUpperCase().includes('DEVICE_TYPE') || k.toUpperCase().includes('DEVICE')) || possibleDevices[0] || cols[type].canal;
             });
 
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO'].forEach(type => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(type => {
                 if(!db[type] || db[type].length === 0) return;
 
                 let colC = (type === 'FORECAST' || isPlan2027(type)) ? 'Canal' : cols[type].canal;
@@ -1378,9 +1379,10 @@
                     if (type === 'PLAN') label = `Plano ${y}`;
                     else if (type === 'ACTUAL') label = `Realizado ${y}`;
                     else if (type === 'FORECAST') label = forecastDisplayVersion || `Forecast ${y}`;
-                    else if (type === 'PLAN_2027') label = `Plano ${y} v1`;
-                    else if (type === 'PLAN_2027_V2') label = `Plano ${y} v2`;
-                    else if (type === 'PLAN_2027_COMODATO') label = `Plano ${y} v1 — Comodato`;
+                    else if (type === 'PLAN_2027') label = `Plano ${y} v1 - Venda`;
+                    else if (type === 'PLAN_2027_V2') label = `Plano ${y} v2 - Venda`;
+                    else if (type === 'PLAN_2027_COMODATO') label = `Plano ${y} v1 - Comodato`;
+                    else if (type === 'PLAN_2027_V2_COMODATO') label = `Plano ${y} v2 - Comodato`;
                     else label = `Forecast ${y}`;
                     scenarioList.push({ id: `${type}|${y}`, label, type: type, months: yMonths });
                 });
@@ -1407,14 +1409,14 @@
             }
 
             let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
@@ -1491,7 +1493,7 @@
 
         function populateGlobalFilters() {
             let allCanals = new Set(); let allDevices = new Set();
-            const allFilterTypes = ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', ...forecastOldVersions.map(v => v.key)];
+            const allFilterTypes = ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO', ...forecastOldVersions.map(v => v.key)];
             allFilterTypes.forEach(type => {
                 if(!db[type]) return;
                 const isFCSTT = type === 'FORECAST' || isPlan2027(type) || type.startsWith('FORECAST_OLD_');
@@ -1676,6 +1678,7 @@
             if (type === 'PLAN_2027') return '#9333EA';
             if (type === 'PLAN_2027_V2') return '#C026D3';
             if (type === 'PLAN_2027_COMODATO') return '#0D9488';
+            if (type === 'PLAN_2027_V2_COMODATO') return '#0891B2';
             if (type.startsWith('FORECAST_OLD_')) return '#EC4899';
             return '#3B82F6';
         }
@@ -1685,6 +1688,7 @@
             if (type === 'PLAN_2027') return 'rgba(147, 51, 234, 0.1)';
             if (type === 'PLAN_2027_V2') return 'rgba(192, 38, 211, 0.1)';
             if (type === 'PLAN_2027_COMODATO') return 'rgba(13, 148, 136, 0.1)';
+            if (type === 'PLAN_2027_V2_COMODATO') return 'rgba(8, 145, 178, 0.1)';
             if (type.startsWith('FORECAST_OLD_')) return 'rgba(236, 72, 153, 0.1)';
             return 'rgba(59, 130, 246, 0.1)';
         }
@@ -1724,8 +1728,8 @@
 
             updateKPIs(dataA.total, dataB.total, nameA, nameB, typeB);
             
-            const pA = typeA === 'PLAN' ? 'ao Plano' : typeA === 'FORECAST' ? 'ao Forecast' : typeA === 'PLAN_2027' ? 'ao Plano 2027' : typeA === 'PLAN_2027_V2' ? 'ao Plano 2027 v2' : typeA === 'PLAN_2027_COMODATO' ? 'ao Plano 2027 Comodato' : typeA.startsWith('FORECAST_OLD_') ? 'ao Forecast Old' : 'ao Realizado';
-            const pB = typeB === 'PLAN' ? 'O Plano' : typeB === 'FORECAST' ? 'O Forecast' : typeB === 'PLAN_2027' ? 'O Plano 2027' : typeB === 'PLAN_2027_V2' ? 'O Plano 2027 v2' : typeB === 'PLAN_2027_COMODATO' ? 'O Plano 2027 Comodato' : typeB.startsWith('FORECAST_OLD_') ? 'O Forecast Old' : 'O Realizado';
+            const pA = typeA === 'PLAN' ? 'ao Plano' : typeA === 'FORECAST' ? 'ao Forecast' : typeA === 'PLAN_2027' ? 'ao Plano 2027 v1' : typeA === 'PLAN_2027_V2' ? 'ao Plano 2027 v2' : typeA === 'PLAN_2027_COMODATO' ? 'ao Plano 2027 v1 Comodato' : typeA === 'PLAN_2027_V2_COMODATO' ? 'ao Plano 2027 v2 Comodato' : typeA.startsWith('FORECAST_OLD_') ? 'ao Forecast Old' : 'ao Realizado';
+            const pB = typeB === 'PLAN' ? 'O Plano' : typeB === 'FORECAST' ? 'O Forecast' : typeB === 'PLAN_2027' ? 'O Plano 2027 v1' : typeB === 'PLAN_2027_V2' ? 'O Plano 2027 v2' : typeB === 'PLAN_2027_COMODATO' ? 'O Plano 2027 v1 Comodato' : typeB === 'PLAN_2027_V2_COMODATO' ? 'O Plano 2027 v2 Comodato' : typeB.startsWith('FORECAST_OLD_') ? 'O Forecast Old' : 'O Realizado';
             
             let aiStrB, aiStrA;
             if(compType === 'YEAR') {
@@ -2514,8 +2518,8 @@
         // Comodato: reconhece receita/CMV à vista e continua pagando sales taxes.
         const COMODATO_DEFER_MONTHS = 36;
         const COMODATO_EXCLUDED_CANALS = new Set(['RESELLERS']);
-        function isPlan2027(type) { return type === 'PLAN_2027' || type === 'PLAN_2027_V2' || type === 'PLAN_2027_COMODATO'; }
-        function isComodatoType(type) { return type === 'PLAN_2027_COMODATO'; }
+        function isPlan2027(type) { return type === 'PLAN_2027' || type === 'PLAN_2027_V2' || type === 'PLAN_2027_COMODATO' || type === 'PLAN_2027_V2_COMODATO'; }
+        function isComodatoType(type) { return type === 'PLAN_2027_COMODATO' || type === 'PLAN_2027_V2_COMODATO'; }
         function canalUsesComodato(type, canal) {
             return isComodatoType(type) && !COMODATO_EXCLUDED_CANALS.has(String(canal).toUpperCase().trim());
         }
@@ -3473,14 +3477,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                     if (group.length > 0) {
-                        const lbl = t === 'PLAN' ? '🟢 Plano' : t === 'ACTUAL' ? '🔵 Realizado' : t === 'PLAN_2027' ? '🟣 Plano 2027' : t === 'PLAN_2027_V2' ? '🟪 Plano 2027 v2' : t === 'PLAN_2027_COMODATO' ? '🟦 Plano 2027 Comodato' : '🟠 Forecast';
+                        const lbl = t === 'PLAN' ? '🟢 Plano' : t === 'ACTUAL' ? '🔵 Realizado' : t === 'PLAN_2027' ? '🟣 Plano 2027 v1' : t === 'PLAN_2027_V2' ? '🟪 Plano 2027 v2' : t === 'PLAN_2027_COMODATO' ? '🟦 Plano 2027 v1 Comodato' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 Plano 2027 v2 Comodato' : '🟠 Forecast';
                         html += `<optgroup label="${lbl}">`;
                         group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
                         html += `</optgroup>`;
@@ -3689,14 +3693,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                     if (group.length > 0) {
-                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
+                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
                         let opts = `<optgroup label="--- ${label} ---">`;
                         group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                         opts += `</optgroup>`;
@@ -4522,14 +4526,14 @@
         function showCorpPLModal() {
             const sel = document.getElementById('corp-pl-scenario');
             sel.innerHTML = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += '</optgroup>';
@@ -5076,14 +5080,14 @@
                 const sel = document.getElementById(id);
                 if (!sel) return;
                 let html = '';
-                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO'].forEach(t => {
+                ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
                     let group = scenarioList.filter(s => s.type === t);
                     if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                         group = group.concat(scenarioList.filter(s => s.type === key));
                     });
                     { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                     if (group.length > 0) {
-                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
+                        const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
                         html += `<optgroup label="--- ${label} ---">`;
                         group.forEach(s => html += `<option value="${s.id}">${s.label}</option>`);
                         html += `</optgroup>`;
@@ -5124,14 +5128,14 @@
             const scB = document.getElementById('tpv-scenario-b');
             if (!scA || !scB) return;
             let htmlA = '', htmlB = '';
-            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO'].forEach(t => {
+            ['PLAN', 'ACTUAL', 'FORECAST', 'PLAN_2027', 'PLAN_2027_V2', 'PLAN_2027_COMODATO', 'PLAN_2027_V2_COMODATO'].forEach(t => {
                 let group = scenarioList.filter(s => s.type === t);
                 if (t === 'FORECAST') forecastOldVersions.forEach(({ key }) => {
                     group = group.concat(scenarioList.filter(s => s.type === key));
                 });
                 { const _seen = new Set(); group = group.filter(s => { if (_seen.has(s.id)) return false; _seen.add(s.id); return true; }); }
                 if (group.length > 0) {
-                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
+                    const label = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
                     let opts = `<optgroup label="--- ${label} ---">`;
                     group.forEach(s => opts += `<option value="${s.id}">${s.label}</option>`);
                     opts += `</optgroup>`;
@@ -5403,11 +5407,11 @@
             // Populate scenario selects (same grouping as comparison tab)
             let htmlA = '', htmlB = '';
             const seen = new Set();
-            ['PLAN','ACTUAL','FORECAST','PLAN_2027','PLAN_2027_V2','PLAN_2027_COMODATO'].forEach(t => {
+            ['PLAN','ACTUAL','FORECAST','PLAN_2027','PLAN_2027_V2','PLAN_2027_COMODATO','PLAN_2027_V2_COMODATO'].forEach(t => {
                 const group = scenarioList.filter(s => s.type === t || s.id.startsWith(t + '|'));
                 const unique = group.filter(s => { if (seen.has(s.id)) return false; seen.add(s.id); return true; });
                 if (!unique.length) return;
-                const lbl = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 COMODATO' : '🟠 FORECAST';
+                const lbl = t === 'PLAN' ? '🟢 PLANO' : t === 'ACTUAL' ? '🔵 REALIZADO' : t === 'PLAN_2027' ? '🟣 PLANO 2027 V1' : t === 'PLAN_2027_V2' ? '🟪 PLANO 2027 V2' : t === 'PLAN_2027_COMODATO' ? '🟦 PLANO 2027 V1 COMODATO' : t === 'PLAN_2027_V2_COMODATO' ? '🟦 PLANO 2027 V2 COMODATO' : '🟠 FORECAST';
                 let opts = `<optgroup label="--- ${lbl} ---">`;
                 unique.forEach(s => { opts += `<option value="${s.id}">${s.label}</option>`; });
                 opts += '</optgroup>';
