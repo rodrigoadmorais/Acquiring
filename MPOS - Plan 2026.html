@@ -47,6 +47,14 @@
         .pl-metric-btn.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
         .pl-positive { color: #16a34a; }
         .pl-negative { color: #dc2626; }
+
+        /* Modo Slide (Resumo) — encolhe as tabelas para caber melhor num print/slide */
+        #resumo-tables-wrap.resumo-compact { max-width: 860px; margin: 0 auto; }
+        #resumo-tables-wrap.resumo-compact th,
+        #resumo-tables-wrap.resumo-compact td { padding-left: 8px !important; padding-right: 8px !important; padding-top: 5px !important; padding-bottom: 5px !important; }
+        #resumo-tables-wrap.resumo-compact th { font-size: 9px !important; }
+        #resumo-tables-wrap.resumo-compact td { font-size: 11px !important; }
+        #resumo-tables-wrap.resumo-compact td.pl-10 { padding-left: 24px !important; }
     </style>
 </head>
 <body class="pb-12">
@@ -669,49 +677,56 @@
         <!-- Resumo Tab Content -->
         <div id="tab-content-resumo" style="display:none;" class="space-y-6 fade-in">
             <div class="card p-6">
-                <div class="flex flex-wrap items-end gap-6">
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Realizado</p>
-                        <div class="bg-gray-50 border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5">2025</div>
+                <div class="flex flex-wrap items-end justify-between gap-6">
+                    <div class="flex flex-wrap items-end gap-6">
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Realizado</p>
+                            <div class="bg-gray-50 border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5">2025</div>
+                        </div>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 mb-3"></i>
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Forecast 2026 (versão)</p>
+                            <select id="resumo-forecast-sel" onchange="renderResumoTab()" class="bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"></select>
+                        </div>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 mb-3"></i>
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Plano 2027 (versão)</p>
+                            <select id="resumo-plano27-sel" onchange="renderResumoTab()" class="bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"></select>
+                        </div>
                     </div>
-                    <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 mb-3"></i>
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Forecast 2026 (versão)</p>
-                        <select id="resumo-forecast-sel" onchange="renderResumoTab()" class="bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"></select>
-                    </div>
-                    <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 mb-3"></i>
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Plano 2027 (versão)</p>
-                        <select id="resumo-plano27-sel" onchange="renderResumoTab()" class="bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"></select>
-                    </div>
+                    <button onclick="toggleResumoCompact()" id="btn-resumo-compact" title="Encolher a tabela para caber melhor num slide" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all whitespace-nowrap mb-0">
+                        <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i> Modo Slide
+                    </button>
                 </div>
             </div>
 
-            <div class="card overflow-hidden">
-                <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
-                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                        <i data-lucide="hash" class="w-4 h-4 text-gray-400"></i> Quantidade de Devices — por Canal e Modelo
-                    </h4>
+            <div id="resumo-tables-wrap" class="space-y-6">
+                <div class="card overflow-hidden">
+                    <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
+                        <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                            <i data-lucide="hash" class="w-4 h-4 text-gray-400"></i> Quantidade de Devices — por Modelo e Canal
+                        </h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead id="resumo-qty-thead"></thead>
+                            <tbody id="resumo-qty-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead id="resumo-qty-thead"></thead>
-                        <tbody id="resumo-qty-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
 
-            <div class="card overflow-hidden">
-                <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
-                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                        <i data-lucide="banknote" class="w-4 h-4 text-gray-400"></i> Resultado — por Canal e Modelo
-                    </h4>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead id="resumo-resultado-thead"></thead>
-                        <tbody id="resumo-resultado-tbody"></tbody>
-                    </table>
+                <div class="card overflow-hidden">
+                    <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
+                        <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                            <i data-lucide="banknote" class="w-4 h-4 text-gray-400"></i> Resultado — por Modelo e Canal
+                        </h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead id="resumo-resultado-thead"></thead>
+                            <tbody id="resumo-resultado-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div> <!-- end tab-content-resumo -->
@@ -2884,6 +2899,20 @@
             return `<td class="py-2 px-3 text-right text-xs font-bold ${color}">${pctTxt}</td>`;
         }
 
+        // Aplica o agrupamento de canais ativo (Digitais ou Aquisição) a um mapa {canal: {device: valor}}
+        function resumoApplyGrouping(map) {
+            if (!groupDigital && !groupAcquisicao) return map;
+            const out = {};
+            Object.entries(map || {}).forEach(([canal, devs]) => {
+                let key = canal;
+                if (groupDigital) key = DIGITAL_CANALS.includes(canal) ? DIGITAL_GROUP_NAME : canal;
+                else if (groupAcquisicao) key = (canal === ACQUISICAO_EXCLUDE) ? ACQUISICAO_EXCLUDE : ACQUISICAO_GROUP_NAME;
+                if (!out[key]) out[key] = {};
+                Object.entries(devs || {}).forEach(([dev, v]) => { out[key][dev] = (out[key][dev] || 0) + v; });
+            });
+            return out;
+        }
+
         // Agrupa {canal: {device: valor}} em {device: {canal: valor}}
         function resumoByDevice(map) {
             const out = {};
@@ -2896,7 +2925,18 @@
             return out;
         }
 
-        function renderResumoGrid(theadId, tbodyId, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency) {
+        // Ordem de canais por device com base num mapa de referência (quantidade 2026),
+        // para as duas tabelas (Quantidade e Resultado) usarem o mesmo critério de ordenação.
+        function resumoBuildCanalOrder(map) {
+            const byDev = resumoByDevice(map);
+            const order = {};
+            Object.entries(byDev).forEach(([dev, cans]) => {
+                order[dev] = Object.entries(cans).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).map(([c]) => c);
+            });
+            return order;
+        }
+
+        function renderResumoGrid(theadId, tbodyId, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency, canalOrder) {
             const thead = document.getElementById(theadId);
             const tbody = document.getElementById(tbodyId);
             if (!thead || !tbody) return;
@@ -2906,8 +2946,8 @@
                 <th class="py-3 px-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Modelo / Canal</th>
                 <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelA}</th>
                 <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelB}</th>
-                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Δ% vs ${labelA}</th>
                 <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelC}</th>
+                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Δ% vs ${labelA}</th>
                 <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Δ% vs ${labelB}</th>
             </tr>`;
 
@@ -2919,10 +2959,15 @@
 
             allDevices.forEach(dev => {
                 const canA = byDevA[dev] || {}, canB = byDevB[dev] || {}, canC = byDevC[dev] || {};
-                // Canais ordenados do mais relevante pro menos relevante (magnitude na coluna do meio;
-                // cai para A ou C quando o canal não aparece em B, ex.: canal descontinuado ou novo)
+                // Canais ordenados por quantidade de devices vendidas em 2026 (maior pro menor),
+                // consistente entre a tabela de Quantidade e a de Resultado. Canais que não
+                // aparecem na referência (ex.: descontinuado/novo) caem pro fim, por magnitude local.
+                const refOrder = (canalOrder && canalOrder[dev]) || [];
+                const orderIdx = c => { const i = refOrder.indexOf(c); return i === -1 ? Infinity : i; };
                 const canals = Array.from(new Set([...Object.keys(canA), ...Object.keys(canB), ...Object.keys(canC)]))
                     .sort((x, y) => {
+                        const ix = orderIdx(x), iy = orderIdx(y);
+                        if (ix !== iy) return ix - iy;
                         const mag = c => Math.abs(canB[c] ?? canC[c] ?? canA[c] ?? 0);
                         return mag(y) - mag(x);
                     });
@@ -2935,8 +2980,8 @@
                         <td class="py-2 pl-10 text-xs text-gray-500 font-semibold">${canal}</td>
                         <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(a)}</td>
                         <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(b)}</td>
-                        ${resumoDeltaPctCell(b - a, a)}
                         <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(c)}</td>
+                        ${resumoDeltaPctCell(b - a, a)}
                         ${resumoDeltaPctCell(c - b, b)}
                     </tr>`;
                 });
@@ -2946,8 +2991,8 @@
                     <td class="py-2.5 px-3 text-xs font-black text-gray-800">${dev}</td>
                     <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dA)}</td>
                     <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dB)}</td>
-                    ${resumoDeltaPctCell(dB - dA, dA)}
                     <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dC)}</td>
+                    ${resumoDeltaPctCell(dB - dA, dA)}
                     ${resumoDeltaPctCell(dC - dB, dB)}
                 </tr>` + rowsHtml;
             });
@@ -2956,8 +3001,8 @@
                 <td class="py-3 px-3 text-xs font-black text-white uppercase tracking-wider">Total</td>
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totA)}</td>
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totB)}</td>
-                ${resumoDeltaPctCell(totB - totA, totA).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400').replace('text-gray-400', 'text-gray-400')}
                 <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totC)}</td>
+                ${resumoDeltaPctCell(totB - totA, totA).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400').replace('text-gray-400', 'text-gray-400')}
                 ${resumoDeltaPctCell(totC - totB, totB).replace('text-green-600', 'text-green-400').replace('text-red-600', 'text-red-400').replace('text-gray-400', 'text-gray-400')}
             </tr>`;
 
@@ -2981,13 +3026,32 @@
             const plB = computePLPeriod(fcType, 'YEAR|2026', 'ALL', 'ALL');
             const plC = computePLPeriod(plType, 'YEAR|2027', 'ALL', 'ALL');
 
+            const qtyB = resumoApplyGrouping(resumoQtyMap(dB));
+            // Ordem de canais compartilhada pelas duas tabelas: quantidade de devices vendidas
+            // em 2026 (maior pro menor), dentro de cada modelo.
+            const canalOrder = resumoBuildCanalOrder(qtyB);
+
             renderResumoGrid('resumo-qty-thead', 'resumo-qty-tbody',
-                resumoQtyMap(dA), resumoQtyMap(dB), resumoQtyMap(dC),
-                '2025', '2026', '2027', false);
+                resumoApplyGrouping(resumoQtyMap(dA)), qtyB, resumoApplyGrouping(resumoQtyMap(dC)),
+                '2025', '2026', '2027', false, canalOrder);
 
             renderResumoGrid('resumo-resultado-thead', 'resumo-resultado-tbody',
-                resumoResultMap(plA), resumoResultMap(plB), resumoResultMap(plC),
-                '2025', '2026', '2027', true);
+                resumoApplyGrouping(resumoResultMap(plA)), resumoApplyGrouping(resumoResultMap(plB)), resumoApplyGrouping(resumoResultMap(plC)),
+                '2025', '2026', '2027', true, canalOrder);
+        }
+
+        // Encolhe as tabelas do Resumo (menos padding/fonte, largura limitada e centralizada)
+        // para caber melhor num print/screenshot de slide.
+        function toggleResumoCompact() {
+            const wrap = document.getElementById('resumo-tables-wrap');
+            const btn = document.getElementById('btn-resumo-compact');
+            const isCompact = wrap.classList.toggle('resumo-compact');
+            btn.classList.toggle('bg-blue-600', isCompact);
+            btn.classList.toggle('text-white', isCompact);
+            btn.classList.toggle('border-blue-700', isCompact);
+            btn.classList.toggle('bg-white', !isCompact);
+            btn.classList.toggle('text-gray-600', !isCompact);
+            btn.classList.toggle('border-gray-300', !isCompact);
         }
 
         /* ══════════════════════════════════════════════════════
@@ -4285,6 +4349,7 @@
             populateGlobalFilters();
             processDashboard();
             if (document.getElementById('tab-content-pl').style.display !== 'none') renderPLTab();
+            if (document.getElementById('tab-content-resumo').style.display !== 'none') renderResumoTab();
         }
 
         function toggleSTInput() {
@@ -4350,6 +4415,7 @@
             populateGlobalFilters();
             processDashboard();
             if (document.getElementById('tab-content-pl').style.display !== 'none') renderPLTab();
+            if (document.getElementById('tab-content-resumo').style.display !== 'none') renderResumoTab();
         }
 
         // ============================================================
