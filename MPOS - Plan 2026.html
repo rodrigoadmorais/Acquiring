@@ -132,6 +132,9 @@
             <button onclick="switchTab('estoque')" id="tab-btn-estoque" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
                 <i data-lucide="package" class="w-3.5 h-3.5"></i> Estoque
             </button>
+            <button onclick="switchTab('resumo')" id="tab-btn-resumo" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
+                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Resumo
+            </button>
         </div>
 
         <!-- Comparison Tab Content -->
@@ -662,6 +665,56 @@
             </div>
 
         </div> <!-- end tab-content-estoque -->
+
+        <!-- Resumo Tab Content -->
+        <div id="tab-content-resumo" style="display:none;" class="space-y-6 fade-in">
+            <div class="card p-6">
+                <div class="flex flex-wrap items-end gap-6">
+                    <div>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Realizado</p>
+                        <div class="bg-gray-50 border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5">2025</div>
+                    </div>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 mb-3"></i>
+                    <div>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Forecast 2026 (versão)</p>
+                        <select id="resumo-forecast-sel" onchange="renderResumoTab()" class="bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"></select>
+                    </div>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-gray-300 mb-3"></i>
+                    <div>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Plano 2027 (versão)</p>
+                        <select id="resumo-plano27-sel" onchange="renderResumoTab()" class="bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card overflow-hidden">
+                <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
+                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="hash" class="w-4 h-4 text-gray-400"></i> Quantidade de Devices — por Canal e Modelo
+                    </h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead id="resumo-qty-thead"></thead>
+                        <tbody id="resumo-qty-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card overflow-hidden">
+                <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
+                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="banknote" class="w-4 h-4 text-gray-400"></i> Resultado — por Canal e Modelo
+                    </h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead id="resumo-resultado-thead"></thead>
+                        <tbody id="resumo-resultado-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div> <!-- end tab-content-resumo -->
 
     </main>
 
@@ -2740,12 +2793,150 @@
             document.getElementById('tab-content-comparison').style.display = tab === 'comparison' ? '' : 'none';
             document.getElementById('tab-content-pl').style.display = tab === 'pl' ? '' : 'none';
             document.getElementById('tab-content-estoque').style.display = tab === 'estoque' ? '' : 'none';
+            document.getElementById('tab-content-resumo').style.display = tab === 'resumo' ? '' : 'none';
             document.getElementById('tab-btn-comparison').classList.toggle('active', tab === 'comparison');
             document.getElementById('tab-btn-pl').classList.toggle('active', tab === 'pl');
             document.getElementById('tab-btn-estoque').classList.toggle('active', tab === 'estoque');
+            document.getElementById('tab-btn-resumo').classList.toggle('active', tab === 'resumo');
             if (tab === 'pl') renderPLTab();
             if (tab === 'estoque') renderEstoqueTab();
+            if (tab === 'resumo') renderResumoTab();
             lucide.createIcons();
+        }
+
+        /* ══════════════════════════════════════════════════════
+           RESUMO TAB — Realizado 2025 × Forecast 2026 × Plano 2027
+        ══════════════════════════════════════════════════════ */
+        const RESUMO_DEV_ORDER = ['SMART', 'PRO', 'AIR', 'MINI'];
+
+        function populateResumoScenarios() {
+            const selFc = document.getElementById('resumo-forecast-sel');
+            const selPl = document.getElementById('resumo-plano27-sel');
+            if (!selFc || !selPl) return;
+            const prevFc = selFc.value, prevPl = selPl.value;
+
+            const fcOpts = scenarioList.filter(s => s.type.startsWith('FORECAST') && s.id.endsWith('|2026'));
+            selFc.innerHTML = fcOpts.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+            if (fcOpts.some(s => s.id === prevFc)) selFc.value = prevFc;
+
+            const plOpts = scenarioList.filter(s => isPlan2027(s.type) && s.id.endsWith('|2027'));
+            selPl.innerHTML = plOpts.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+            if (plOpts.some(s => s.id === prevPl)) selPl.value = prevPl;
+        }
+
+        // Achata byCanalDevice (qty simples) em {canal: {device: qty}} — já é esse formato
+        function resumoQtyMap(extracted) {
+            return extracted.byCanalDeviceRaw || extracted.byCanalDevice || {};
+        }
+        // Achata pl.byCanal[c].devices[d] em {canal: {device: resultado}}
+        function resumoResultMap(pl) {
+            const out = {};
+            Object.entries(pl.byCanal || {}).forEach(([c, cd]) => {
+                out[c] = {};
+                Object.entries(cd.devices || {}).forEach(([d, dd]) => { out[c][d] = dd.resultado || 0; });
+            });
+            return out;
+        }
+
+        function resumoDeltaCell(delta, base, isCurrency) {
+            const fmtVal = isCurrency ? formatBRL(delta) : formatBRNum(delta);
+            const sign = delta > 0 ? '+' : '';
+            const pct = base !== 0 ? (delta / Math.abs(base)) * 100 : (delta !== 0 ? (delta > 0 ? 100 : -100) : 0);
+            const pctTxt = (base === 0 && delta === 0) ? '—' : `${pct >= 0 ? '+' : ''}${formatBRPct(pct)}`;
+            const color = delta > 0 ? 'text-green-600' : (delta < 0 ? 'text-red-600' : 'text-gray-400');
+            return `<td class="py-2 px-3 text-right text-xs font-black ${color}">${sign}${fmtVal}</td><td class="py-2 px-3 text-right text-xs font-bold ${color}">${pctTxt}</td>`;
+        }
+
+        function renderResumoGrid(theadId, tbodyId, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency) {
+            const thead = document.getElementById(theadId);
+            const tbody = document.getElementById(tbodyId);
+            if (!thead || !tbody) return;
+            const fmt = isCurrency ? formatBRL : formatBRNum;
+
+            thead.innerHTML = `<tr class="bg-gray-50 border-b border-gray-200">
+                <th class="py-3 px-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Canal / Modelo</th>
+                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelA}</th>
+                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelB}</th>
+                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider" colspan="2">Δ vs ${labelA}</th>
+                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelC}</th>
+                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider" colspan="2">Δ vs ${labelB}</th>
+            </tr>`;
+
+            const allCanals = Array.from(new Set([...Object.keys(mapA), ...Object.keys(mapB), ...Object.keys(mapC)])).sort();
+            let totA = 0, totB = 0, totC = 0;
+            let html = '';
+
+            allCanals.forEach(canal => {
+                const devA = mapA[canal] || {}, devB = mapB[canal] || {}, devC = mapC[canal] || {};
+                const devices = Array.from(new Set([...Object.keys(devA), ...Object.keys(devB), ...Object.keys(devC)]))
+                    .sort((x, y) => RESUMO_DEV_ORDER.indexOf(x) - RESUMO_DEV_ORDER.indexOf(y));
+
+                let cA = 0, cB = 0, cC = 0, rowsHtml = '';
+                devices.forEach(dev => {
+                    const a = devA[dev] || 0, b = devB[dev] || 0, c = devC[dev] || 0;
+                    cA += a; cB += b; cC += c;
+                    rowsHtml += `<tr class="border-b border-gray-50 hover:bg-blue-50/30">
+                        <td class="py-2 pl-10 text-xs text-gray-500 font-semibold">${dev}</td>
+                        <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(a)}</td>
+                        <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(b)}</td>
+                        ${resumoDeltaCell(b - a, a, isCurrency)}
+                        <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(c)}</td>
+                        ${resumoDeltaCell(c - b, b, isCurrency)}
+                    </tr>`;
+                });
+                totA += cA; totB += cB; totC += cC;
+
+                html += `<tr class="bg-gray-50/80 border-b border-gray-200">
+                    <td class="py-2.5 px-3 text-xs font-black text-gray-800">${canal}</td>
+                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(cA)}</td>
+                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(cB)}</td>
+                    ${resumoDeltaCell(cB - cA, cA, isCurrency)}
+                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(cC)}</td>
+                    ${resumoDeltaCell(cC - cB, cB, isCurrency)}
+                </tr>` + rowsHtml;
+            });
+
+            const td1 = totB - totA, td2 = totC - totB;
+            html += `<tr class="bg-gray-900">
+                <td class="py-3 px-3 text-xs font-black text-white uppercase tracking-wider">Total</td>
+                <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totA)}</td>
+                <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totB)}</td>
+                <td class="py-3 px-3 text-right text-xs font-black ${td1 >= 0 ? 'text-green-400' : 'text-red-400'}">${td1 >= 0 ? '+' : ''}${fmt(td1)}</td>
+                <td class="py-3 px-3 text-right text-xs font-bold ${td1 >= 0 ? 'text-green-400' : 'text-red-400'}">${totA !== 0 ? ((td1 / Math.abs(totA)) * 100 >= 0 ? '+' : '') + formatBRPct((td1 / Math.abs(totA)) * 100) : '—'}</td>
+                <td class="py-3 px-3 text-right text-xs font-black text-white">${fmt(totC)}</td>
+                <td class="py-3 px-3 text-right text-xs font-black ${td2 >= 0 ? 'text-green-400' : 'text-red-400'}">${td2 >= 0 ? '+' : ''}${fmt(td2)}</td>
+                <td class="py-3 px-3 text-right text-xs font-bold ${td2 >= 0 ? 'text-green-400' : 'text-red-400'}">${totB !== 0 ? ((td2 / Math.abs(totB)) * 100 >= 0 ? '+' : '') + formatBRPct((td2 / Math.abs(totB)) * 100) : '—'}</td>
+            </tr>`;
+
+            tbody.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function renderResumoTab() {
+            populateResumoScenarios();
+            const fcId = document.getElementById('resumo-forecast-sel')?.value;
+            const plId = document.getElementById('resumo-plano27-sel')?.value;
+            if (!fcId || !plId) return;
+            const [fcType] = fcId.split('|');
+            const [plType] = plId.split('|');
+            const fcLabel = scenarioList.find(s => s.id === fcId)?.label || fcId;
+            const plLabel = scenarioList.find(s => s.id === plId)?.label || plId;
+
+            const dA = extractValue('ACTUAL', 'YEAR|2025', 'ALL', 'ALL');
+            const dB = extractValue(fcType, 'YEAR|2026', 'ALL', 'ALL');
+            const dC = extractValue(plType, 'YEAR|2027', 'ALL', 'ALL');
+
+            const plA = computePLPeriod('ACTUAL', 'YEAR|2025', 'ALL', 'ALL');
+            const plB = computePLPeriod(fcType, 'YEAR|2026', 'ALL', 'ALL');
+            const plC = computePLPeriod(plType, 'YEAR|2027', 'ALL', 'ALL');
+
+            renderResumoGrid('resumo-qty-thead', 'resumo-qty-tbody',
+                resumoQtyMap(dA), resumoQtyMap(dB), resumoQtyMap(dC),
+                'Realizado 2025', fcLabel, plLabel, false);
+
+            renderResumoGrid('resumo-resultado-thead', 'resumo-resultado-tbody',
+                resumoResultMap(plA), resumoResultMap(plB), resumoResultMap(plC),
+                'Realizado 2025', fcLabel, plLabel, true);
         }
 
         /* ══════════════════════════════════════════════════════
