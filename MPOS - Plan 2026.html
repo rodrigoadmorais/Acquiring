@@ -697,6 +697,16 @@
                         </div>
                     </div>
                     <div class="flex items-end gap-2">
+                        <div class="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-2" title="Tamanho da fonte dos rótulos">
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">Fonte</span>
+                            <button onclick="resumoAdjustFont(-1)" class="w-6 h-6 flex items-center justify-center rounded bg-gray-50 hover:bg-gray-200 text-gray-600 font-black text-sm">−</button>
+                            <button onclick="resumoAdjustFont(1)" class="w-6 h-6 flex items-center justify-center rounded bg-gray-50 hover:bg-gray-200 text-gray-600 font-black text-sm">+</button>
+                        </div>
+                        <div class="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-2" title="Largura das barras">
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">Barras</span>
+                            <button onclick="resumoAdjustBarWidth(-1)" class="w-6 h-6 flex items-center justify-center rounded bg-gray-50 hover:bg-gray-200 text-gray-600 font-black text-sm">−</button>
+                            <button onclick="resumoAdjustBarWidth(1)" class="w-6 h-6 flex items-center justify-center rounded bg-gray-50 hover:bg-gray-200 text-gray-600 font-black text-sm">+</button>
+                        </div>
                         <button onclick="toggleResumoAgentsTLV()" id="btn-resumo-agents-tlv" title="Inclui AGENTS dentro de TLV (mantém o nome TLV nos gráficos)" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2.5 rounded-lg font-bold text-xs hover:bg-teal-50 hover:border-teal-400 hover:text-teal-600 transition-all whitespace-nowrap mb-0">
                             <i data-lucide="merge" class="w-3.5 h-3.5"></i> Agents → TLV
                         </button>
@@ -2910,6 +2920,16 @@
            RESUMO TAB — Realizado 2025 × Forecast 2026 × Plano 2027
         ══════════════════════════════════════════════════════ */
         const RESUMO_DEV_ORDER = ['SMART', 'PRO', 'AIR', 'MINI'];
+        let resumoFontScale = 1;
+        let resumoBarPct = 0.6;
+        function resumoAdjustFont(dir) {
+            resumoFontScale = Math.min(1.8, Math.max(0.6, resumoFontScale + dir * 0.1));
+            renderResumoTab();
+        }
+        function resumoAdjustBarWidth(dir) {
+            resumoBarPct = Math.min(0.95, Math.max(0.25, resumoBarPct + dir * 0.08));
+            renderResumoTab();
+        }
 
         function populateResumoScenarios() {
             const selFc = document.getElementById('resumo-forecast-sel');
@@ -3043,7 +3063,9 @@
                 label: dev,
                 data: yearsData.map(y => y.totals[dev] || 0),
                 backgroundColor: RESUMO_DEVICE_COLORS[dev],
-                stack: 'devices'
+                stack: 'devices',
+                barPercentage: resumoBarPct,
+                categoryPercentage: 0.8
             }));
             const totals = yearsData.map(y => RESUMO_DEV_ORDER.reduce((s, d) => s + (y.totals[d] || 0), 0));
 
@@ -3058,29 +3080,30 @@
                     // pilha positiva) e ajusta o lado do rótulo/bolha pelo sinal do total.
                     const topY = totals.map(t => chart.scales.y.getPixelForValue(t));
                     const dir = t => t >= 0 ? -1 : 1; // -1 = pra cima (fora da pilha positiva), 1 = pra baixo
+                    const fs = resumoFontScale;
                     ctx.save();
                     ctx.textAlign = 'center';
-                    ctx.font = 'bold 13px Inter, Arial';
+                    ctx.font = `bold ${Math.round(13 * fs)}px Inter, Arial`;
                     ctx.fillStyle = '#111827';
-                    meta0.data.forEach((el, i) => ctx.fillText(fmt(totals[i]), el.x, topY[i] + dir(totals[i]) * 12));
+                    meta0.data.forEach((el, i) => ctx.fillText(fmt(totals[i]), el.x, topY[i] + dir(totals[i]) * 12 * fs));
                     for (let i = 1; i < totals.length; i++) {
                         const x1 = meta0.data[i - 1].x, x2 = meta0.data[i].x;
                         const y1 = topY[i - 1], y2 = topY[i];
                         const d = dir(totals[i - 1]);
                         const extremeY = d === -1 ? Math.min(y1, y2) : Math.max(y1, y2);
-                        const midX = (x1 + x2) / 2, midY = extremeY + d * 38;
+                        const midX = (x1 + x2) / 2, midY = extremeY + d * 38 * fs;
                         const delta = totals[i] - totals[i - 1];
                         const pct = totals[i - 1] !== 0 ? (delta / Math.abs(totals[i - 1])) * 100 : 0;
                         const good = delta >= 0;
                         ctx.setLineDash([3, 2]); ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 1;
-                        ctx.beginPath(); ctx.moveTo(x1, y1 + d * 6); ctx.lineTo(midX, midY - d * 15); ctx.stroke();
-                        ctx.beginPath(); ctx.moveTo(x2, y2 + d * 6); ctx.lineTo(midX, midY - d * 15); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(x1, y1 + d * 6); ctx.lineTo(midX, midY - d * 15 * fs); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(x2, y2 + d * 6); ctx.lineTo(midX, midY - d * 15 * fs); ctx.stroke();
                         ctx.setLineDash([]);
                         ctx.fillStyle = good ? '#dcfce7' : '#fee2e2';
                         ctx.strokeStyle = good ? '#16a34a' : '#dc2626'; ctx.lineWidth = 1.5;
-                        ctx.beginPath(); ctx.ellipse(midX, midY, 36, 17, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                        ctx.beginPath(); ctx.ellipse(midX, midY, 36 * fs, 17 * fs, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
                         ctx.fillStyle = good ? '#16a34a' : '#dc2626';
-                        ctx.font = 'bold 10px Inter, Arial';
+                        ctx.font = `bold ${Math.round(10 * fs)}px Inter, Arial`;
                         ctx.fillText(`${good ? '+' : ''}${fmt(delta)}`, midX, midY - 2);
                         ctx.fillText(`(${good ? '+' : ''}${formatBRPct(pct)})`, midX, midY + 10);
                     }
@@ -3102,7 +3125,7 @@
                                 return tot > 0 && (ctx.dataset.data[ctx.dataIndex] / tot) >= 0.06;
                             },
                             color: ctx => RESUMO_DEVICE_TEXT[ctx.dataset.label],
-                            font: { size: 11, weight: 'bold' },
+                            font: { size: Math.round(11 * resumoFontScale), weight: 'bold' },
                             formatter: v => fmt(v)
                         },
                         tooltip: { mode: 'index', intersect: false }
@@ -3147,7 +3170,9 @@
                 label: c,
                 data: yearsData.map((y, i) => yearTotals[i] !== 0 ? ((y.totals[c] || 0) / yearTotals[i]) * 100 : 0),
                 backgroundColor: colorOf[c],
-                stack: 'canais'
+                stack: 'canais',
+                barPercentage: resumoBarPct,
+                categoryPercentage: 0.8
             }));
 
             resumoChartObjs[canvasId] = new Chart(canvas, {
@@ -3159,7 +3184,7 @@
                         legend: { display: false },
                         datalabels: {
                             display: ctx => ctx.dataset.data[ctx.dataIndex] >= 4,
-                            color: '#ffffff', font: { size: 10, weight: 'bold' },
+                            color: '#ffffff', font: { size: Math.round(10 * resumoFontScale), weight: 'bold' },
                             formatter: v => Math.round(v) + '%'
                         },
                         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` } }
