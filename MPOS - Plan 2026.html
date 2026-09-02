@@ -3140,7 +3140,10 @@
             const colorOf = {}; allCanals.forEach((c, i) => { colorOf[c] = RESUMO_CANAL_PALETTE[i % RESUMO_CANAL_PALETTE.length]; });
             const yearTotals = yearsData.map(y => Object.values(y.totals).reduce((s, v) => s + v, 0));
 
-            const datasets = allCanals.map(c => ({
+            // Chart.js empilha o 1º dataset na base — como allCanals está do maior pro
+            // menor, invertemos aqui pra o maior % ficar no topo da barra (o gráfico por
+            // Modelo não muda, continua Smart na base como antes).
+            const datasets = [...allCanals].reverse().map(c => ({
                 label: c,
                 data: yearsData.map((y, i) => yearTotals[i] !== 0 ? ((y.totals[c] || 0) / yearTotals[i]) * 100 : 0),
                 backgroundColor: colorOf[c],
