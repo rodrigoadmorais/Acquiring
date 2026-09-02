@@ -2549,11 +2549,13 @@
         //  • Receita e CMV são DIFERIDOS linearmente em 36 meses (1/36 por mês,
         //    a partir do mês da entrega). Em fev/27 reconhece-se a 2ª parcela da
         //    coorte de jan + a 1ª parcela da coorte de fev, e assim por diante.
-        //  • Sales Taxes zerados (cessão em comodato, não venda).
+        //  • Sales Taxes de 10,85% sobre a receita reconhecida (alíquota própria de
+        //    comodato/cessão de uso, menor que a de venda — COMODATO_SALES_TAXES_RATE).
         // A quantidade de devices entregues no mês permanece a mesma.
         // RESELLERS permanece no modelo antigo de compra e venda mesmo no cenário
-        // Comodato: reconhece receita/CMV à vista e continua pagando sales taxes.
+        // Comodato: reconhece receita/CMV à vista e continua pagando sales taxes de venda.
         const COMODATO_DEFER_MONTHS = 36;
+        const COMODATO_SALES_TAXES_RATE = 0.1085;
         const COMODATO_EXCLUDED_CANALS = new Set(['RESELLERS']);
         function isPlan2027(type) { return type === 'PLAN_2027' || type === 'PLAN_2027_V2' || type === 'PLAN_2027_COMODATO' || type === 'PLAN_2027_V2_COMODATO'; }
         function isComodatoType(type) { return type === 'PLAN_2027_COMODATO' || type === 'PLAN_2027_V2_COMODATO'; }
@@ -2781,7 +2783,7 @@
             canals.forEach(canal => {
                 // RESELLERS segue no modelo de venda mesmo no cenário Comodato
                 const canalComodato = canalUsesComodato(type, canal);
-                const stRate = canalComodato ? 0 : salesTaxesRate;
+                const stRate = canalComodato ? COMODATO_SALES_TAXES_RATE : salesTaxesRate;
                 const devices    = byCanalDevice[canal] || {};
                 const recDevices = (recognizedQty && recognizedQty[canal]) || {};
                 const devKeys    = canalComodato
@@ -3398,6 +3400,28 @@
 
         function bcDestroyChart(id) { if (bcChartObjs[id]) { bcChartObjs[id].destroy(); delete bcChartObjs[id]; } }
 
+        // Linha tracejada separando os anos individuais do grupo "Total 3 anos", só
+        // pra deixar visualmente claro que a última barra é uma soma, não um 4º ano.
+        const bcTotalSeparatorPlugin = {
+            id: 'bcTotalSeparator',
+            afterDraw(chart) {
+                const idx = chart.data.labels.length - 1;
+                if (idx < 1) return;
+                const xScale = chart.scales.x;
+                const xLine = (xScale.getPixelForTick(idx - 1) + xScale.getPixelForTick(idx)) / 2;
+                const { ctx, chartArea: { top, bottom } } = chart;
+                ctx.save();
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#d1d5db';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(xLine, top);
+                ctx.lineTo(xLine, bottom);
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
         function renderBCYearChart(yearAgg, totalVenda, totalComodato) {
             const canvas = document.getElementById('bc-year-chart');
             if (!canvas) return;
@@ -3413,6 +3437,7 @@
                         { label: 'Comodato', data: comoData, backgroundColor: getBaseColor(bcComodatoType()), borderRadius: 4 }
                     ]
                 },
+                plugins: [bcTotalSeparatorPlugin],
                 options: {
                     responsive: true, maintainAspectRatio: false, devicePixelRatio: 3,
                     plugins: {
@@ -4205,7 +4230,7 @@
                     const exclList = Array.from(COMODATO_EXCLUDED_CANALS).join(', ');
                     premissasBox.querySelector('ul').innerHTML = `
                         <li>Receita e CMV diferidos linearmente em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês, a partir do mês da entrega do device)</li>
-                        <li>Sales taxes <strong>zerados</strong> (cessão em comodato, não venda)</li>
+                        <li>Sales taxes de <strong>${(COMODATO_SALES_TAXES_RATE * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</strong> sobre a receita reconhecida (alíquota própria de comodato, menor que a de venda)</li>
                         <li><strong>${exclList}</strong> permanece no modelo tradicional de compra e venda (sem diferimento, com sales taxes)</li>
                         <li>Volume entregue, preço de venda e CMV unitário são os mesmos do Plano 2027 v1 padrão — só muda o reconhecimento</li>
                     `;
@@ -4417,7 +4442,7 @@
                 const comoLbl = isComodatoType(typeB) ? `migrar para Comodato` : `sair do Comodato`;
                 text += `<p class="mt-1">▸ <strong>Efeito Comodato</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
                 const excl = Array.from(COMODATO_EXCLUDED_CANALS).join(', ');
-                text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — impacto de ${comoLbl}: receita e CMV diferidos em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês a partir da entrega) e sales taxes zerados`;
+                text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — impacto de ${comoLbl}: receita e CMV diferidos em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês a partir da entrega) e sales taxes de <strong>${(COMODATO_SALES_TAXES_RATE * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</strong>`;
                 if (excl) text += `, exceto <strong>${excl}</strong>, que permanece no modelo de compra e venda`;
                 text += bothArePlan2027
                     ? `. Volume, preço de venda e custo unitário são idênticos nos dois cenários — todo o delta é diferimento.`
