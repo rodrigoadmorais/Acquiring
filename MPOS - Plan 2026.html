@@ -96,10 +96,10 @@
                 <button onclick="toggleAcquisicaoGroup()" id="btn-acquisicao-group" title="Agrupar todos os canais (exceto Engagement) como Acquisição" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600 transition-all whitespace-nowrap">
                     <i data-lucide="target" class="w-4 h-4"></i> Acquisição
                 </button>
-                <div class="flex items-center bg-gray-100 rounded-lg p-1 shadow-inner" title="Sales taxes do Comodato: 0% no modelo atual, 10,85% sobre a receita no pós-Reforma Tributária. Vale para todas as abas/cenários.">
-                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Comodato</span>
-                    <button onclick="setComodatoTaxModel('atual')" id="tax-model-atual" class="pl-metric-btn">Modelo Atual</button>
-                    <button onclick="setComodatoTaxModel('reforma')" id="tax-model-reforma" class="pl-metric-btn active" style="color:#7c3aed;">Reforma Tributária</button>
+                <div class="flex items-center bg-gray-100 rounded-lg p-1 shadow-inner" title="Sales taxes (venda e comodato): 50,57% no modelo atual, 10,85% no pós-Reforma Tributária. Vale para todas as abas/cenários.">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Sales Taxes</span>
+                    <button onclick="setTaxModel('atual')" id="tax-model-atual" class="pl-metric-btn">Modelo Atual</button>
+                    <button onclick="setTaxModel('reforma')" id="tax-model-reforma" class="pl-metric-btn active" style="color:#7c3aed;">Reforma Tributária</button>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -1388,6 +1388,7 @@
                 populatePLScenarios();
                 populateTPVScenarios();
                 populateMixScenarios();
+                setTaxModel(taxModel); // sincroniza salesTaxesRate/badge com o modelo tributário padrão (Reforma)
 
             } catch (err) {
                 console.log(err);
@@ -2554,24 +2555,44 @@
         //  • Receita e CMV são DIFERIDOS linearmente em 36 meses (1/36 por mês,
         //    a partir do mês da entrega). Em fev/27 reconhece-se a 2ª parcela da
         //    coorte de jan + a 1ª parcela da coorte de fev, e assim por diante.
-        //  • Sales Taxes: 0% no modelo tributário atual, ou 10,85% sobre a receita
-        //    reconhecida no modelo pós-Reforma Tributária — alternável globalmente pelo
-        //    botão "Reforma Tributária" no topo (a alíquota é da Reforma, não uma regra
-        //    intrínseca do comodato, por isso afeta todas as abas/cenários igualmente).
+        //  • Sales Taxes: MESMA alíquota do modelo de venda (não é uma regra própria
+        //    do comodato) — aplicada sobre a receita já diferida. Hoje (modelo atual)
+        //    essa alíquota é 50,57%; pós-Reforma Tributária cai para 10,85% — ver
+        //    toggle global "Reforma Tributária" no topo, que afeta venda e comodato
+        //    igualmente em todas as abas.
         // A quantidade de devices entregues no mês permanece a mesma.
         // RESELLERS permanece no modelo antigo de compra e venda mesmo no cenário
-        // Comodato: reconhece receita/CMV à vista e continua pagando sales taxes de venda.
+        // Comodato: reconhece receita/CMV à vista (sem diferimento).
         const COMODATO_DEFER_MONTHS = 36;
-        const COMODATO_SALES_TAXES_RATE = 0.1085;
         const COMODATO_EXCLUDED_CANALS = new Set(['RESELLERS']);
-        let comodatoTaxModel = 'reforma'; // 'atual' (0%) | 'reforma' (10,85%) — toggle global
-        function comodatoTaxRateActive() { return comodatoTaxModel === 'reforma' ? COMODATO_SALES_TAXES_RATE : 0; }
+        const REFORMA_SALES_TAXES_RATE = 0.1085;
+        let taxModel = 'reforma'; // 'atual' (SALES_TAXES_DEFAULT, 50,57%) | 'reforma' (10,85%) — vale p/ venda e comodato
 
-        // Alterna o modelo tributário do Comodato em todo o dashboard. Só precisa reprocessar
-        // a aba visível no momento — as demais já recalculam sozinhas ao serem abertas
-        // (switchTab sempre chama o render correspondente na troca de aba).
-        function setComodatoTaxModel(v) {
-            comodatoTaxModel = v;
+        // Sincroniza o badge "Sales Taxes X%" da aba P&L com o valor atual de salesTaxesRate
+        // (usado tanto pelo input manual quanto pelo toggle Atual/Reforma).
+        function syncSalesTaxesBadge() {
+            const badge = document.getElementById('st-badge');
+            const label = document.getElementById('st-badge-label');
+            if (!badge || !label) return;
+            const pct = salesTaxesRate * 100;
+            const isCustom = Math.abs(salesTaxesRate - SALES_TAXES_DEFAULT) > 0.00001 && Math.abs(salesTaxesRate - REFORMA_SALES_TAXES_RATE) > 0.00001;
+            label.textContent = `Sales Taxes ${pct.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%${isCustom ? ' ★' : ''}`;
+            badge.classList.toggle('bg-orange-50', isCustom);
+            badge.classList.toggle('border-orange-300', isCustom);
+            badge.classList.toggle('bg-gray-50', !isCustom);
+            badge.classList.toggle('border-gray-200', !isCustom);
+            label.classList.toggle('text-orange-700', isCustom);
+            label.classList.toggle('text-gray-600', !isCustom);
+        }
+
+        // Alterna o modelo tributário (venda E comodato) em todo o dashboard: hoje ambos usam
+        // 50,57%; pós-Reforma Tributária, ambos passam a 10,85% — não existe mais um modelo
+        // com sales taxes zerado. Só precisa reprocessar a aba visível no momento — as demais
+        // já recalculam sozinhas ao serem abertas (switchTab sempre chama o render na troca).
+        function setTaxModel(v) {
+            taxModel = v;
+            salesTaxesRate = v === 'reforma' ? REFORMA_SALES_TAXES_RATE : SALES_TAXES_DEFAULT;
+            syncSalesTaxesBadge();
             const btnAtual = document.getElementById('tax-model-atual');
             const btnReforma = document.getElementById('tax-model-reforma');
             btnAtual?.classList.toggle('active', v === 'atual');
@@ -2794,10 +2815,10 @@
         // type opcional — quando 'PLAN_2027'/'PLAN_2027_COMODATO', usa a tabela de preço e custo do Plano 2027.
         // recognizedQty — obrigatório no comodato: quantidade reconhecida (diferida) por canal/device.
         //                 A qty exibida continua sendo a de devices entregues no período.
-        // comodatoTaxRateOverride — opcional, default COMODATO_SALES_TAXES_RATE. Usado pela aba BC pra
-        //                 alternar entre o modelo tributário atual (0%) e o pós-Reforma (10,85%), já que
-        //                 a alíquota nova é da Reforma Tributária e não uma regra intrínseca do comodato.
-        function computePL(byCanalDevice, moNum, type, recognizedQty, comodatoTaxRateOverride) {
+        // Sales taxes usam a MESMA alíquota (salesTaxesRate) em venda e comodato — não é uma
+        // regra própria do comodato, por isso não há branch separado aqui; a alíquota em si
+        // é alternada globalmente pelo toggle Atual (50,57%) / Reforma Tributária (10,85%).
+        function computePL(byCanalDevice, moNum, type, recognizedQty) {
             const isComodato = isComodatoType(type);
             let totalReceita = 0, totalCMV = 0, totalSalesTaxes = 0;
             let byCanal = {};
@@ -2809,9 +2830,9 @@
                 : Object.keys(byCanalDevice);
 
             canals.forEach(canal => {
-                // RESELLERS segue no modelo de venda mesmo no cenário Comodato
+                // RESELLERS segue no modelo de venda mesmo no cenário Comodato (sem diferimento)
                 const canalComodato = canalUsesComodato(type, canal);
-                const stRate = canalComodato ? (comodatoTaxRateOverride != null ? comodatoTaxRateOverride : comodatoTaxRateActive()) : salesTaxesRate;
+                const stRate = salesTaxesRate;
                 const devices    = byCanalDevice[canal] || {};
                 const recDevices = (recognizedQty && recognizedQty[canal]) || {};
                 const devKeys    = canalComodato
@@ -4256,13 +4277,12 @@
                 const anyComodato = isComodatoType(typeA) || isComodatoType(typeB);
                 if (anyComodato) {
                     const exclList = Array.from(COMODATO_EXCLUDED_CANALS).join(', ');
-                    const taxModelLbl = comodatoTaxModel === 'reforma'
-                        ? `<strong>${(comodatoTaxRateActive() * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</strong> sobre a receita reconhecida (modelo pós-Reforma Tributária)`
-                        : `<strong>zerado</strong> (modelo tributário atual, pré-Reforma)`;
+                    const taxPct = (salesTaxesRate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+                    const taxModelLbl = `<strong>${taxPct}%</strong> sobre a receita reconhecida — mesma alíquota do modelo de venda (${taxModel === 'reforma' ? 'pós-Reforma Tributária' : 'modelo atual'}), não é uma regra própria do comodato`;
                     premissasBox.querySelector('ul').innerHTML = `
                         <li>Receita e CMV diferidos linearmente em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês, a partir do mês da entrega do device)</li>
                         <li>Sales taxes ${taxModelLbl}</li>
-                        <li><strong>${exclList}</strong> permanece no modelo tradicional de compra e venda (sem diferimento, com sales taxes)</li>
+                        <li><strong>${exclList}</strong> permanece no modelo tradicional de compra e venda (sem diferimento)</li>
                         <li>Volume entregue, preço de venda e CMV unitário são os mesmos do Plano 2027 v1 padrão — só muda o reconhecimento</li>
                     `;
                     premissasBox.classList.remove('hidden');
@@ -4473,8 +4493,7 @@
                 const comoLbl = isComodatoType(typeB) ? `migrar para Comodato` : `sair do Comodato`;
                 text += `<p class="mt-1">▸ <strong>Efeito Comodato</strong>: ${colorSpan(priceEffect, `${signFmt(priceEffect)}${formatBRL(priceEffect)}`)} `;
                 const excl = Array.from(COMODATO_EXCLUDED_CANALS).join(', ');
-                const comoTaxTxt = comodatoTaxModel === 'reforma' ? `sales taxes de <strong>${(comodatoTaxRateActive() * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</strong> (pós-Reforma)` : `sales taxes <strong>zerados</strong> (modelo atual)`;
-                text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — impacto de ${comoLbl}: receita e CMV diferidos em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês a partir da entrega) e ${comoTaxTxt}`;
+                text += `(${signFmt(pricePct)}${formatBRPct(pricePct)} da base) — impacto de ${comoLbl}: receita e CMV diferidos em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês a partir da entrega); sales taxes na mesma alíquota do modelo de venda (<strong>${(salesTaxesRate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</strong>), aplicada sobre a receita já diferida`;
                 if (excl) text += `, exceto <strong>${excl}</strong>, que permanece no modelo de compra e venda`;
                 text += bothArePlan2027
                     ? `. Volume, preço de venda e custo unitário são idênticos nos dois cenários — todo o delta é diferimento.`
@@ -5026,21 +5045,13 @@
             const val = parseFloat(document.getElementById('st-input').value);
             if (isNaN(val) || val < 0 || val > 100) return;
             salesTaxesRate = val / 100;
-            const isCustom = Math.abs(salesTaxesRate - SALES_TAXES_DEFAULT) > 0.00001;
-            const badge = document.getElementById('st-badge');
-            const label = document.getElementById('st-badge-label');
-            label.textContent = `Sales Taxes ${val.toLocaleString('pt-BR', {maximumFractionDigits:2})}%${isCustom ? ' ★' : ''}`;
-            if (isCustom) {
-                badge.classList.remove('bg-gray-50','border-gray-200');
-                badge.classList.add('bg-orange-50','border-orange-300');
-                label.classList.remove('text-gray-600');
-                label.classList.add('text-orange-700');
-            } else {
-                badge.classList.add('bg-gray-50','border-gray-200');
-                badge.classList.remove('bg-orange-50','border-orange-300');
-                label.classList.add('text-gray-600');
-                label.classList.remove('text-orange-700');
-            }
+            // Mantém o toggle Atual/Reforma do topo em sincronia quando o valor manual
+            // bate exatamente com um dos dois presets.
+            if (Math.abs(salesTaxesRate - SALES_TAXES_DEFAULT) < 0.00001) taxModel = 'atual';
+            else if (Math.abs(salesTaxesRate - REFORMA_SALES_TAXES_RATE) < 0.00001) taxModel = 'reforma';
+            document.getElementById('tax-model-atual')?.classList.toggle('active', taxModel === 'atual');
+            document.getElementById('tax-model-reforma')?.classList.toggle('active', taxModel === 'reforma');
+            syncSalesTaxesBadge();
             document.getElementById('st-input-area').classList.add('hidden');
             document.getElementById('st-input-area').classList.remove('flex');
             if (document.getElementById('tab-content-pl').style.display !== 'none') renderPLTab();
