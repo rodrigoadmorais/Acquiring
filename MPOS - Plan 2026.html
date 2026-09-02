@@ -136,6 +136,9 @@
             <button onclick="switchTab('resumo')" id="tab-btn-resumo" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
                 <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Resumo
             </button>
+            <button onclick="switchTab('bc')" id="tab-btn-bc" class="tab-btn px-6 py-2 text-xs font-black rounded-lg flex items-center gap-1.5">
+                <i data-lucide="line-chart" class="w-3.5 h-3.5"></i> BC
+            </button>
         </div>
 
         <!-- Comparison Tab Content -->
@@ -764,6 +767,50 @@
                 </div>
             </div>
         </div> <!-- end tab-content-resumo -->
+
+        <!-- BC Tab Content -->
+        <div id="tab-content-bc" style="display:none;" class="space-y-6 fade-in">
+            <div class="card p-6">
+                <div class="flex flex-wrap items-end justify-between gap-6">
+                    <div>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">BC — Venda vs Comodato · 2027 a 2029</p>
+                        <p class="text-xs text-gray-400 max-w-2xl">Projeta os 3 anos repetindo a mesma quantidade e preço de venda de 2027 em 2028 e 2029, comparando o modelo de Venda à vista com o Comodato (receita e CMV diferidos em 36 meses).</p>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
+                            <button onclick="setBCPlanoVersion('v1')" id="bc-ver-v1" class="pl-metric-btn active">Plano 2027 v1</button>
+                            <button onclick="setBCPlanoVersion('v2')" id="bc-ver-v2" class="pl-metric-btn">Plano 2027 v2</button>
+                        </div>
+                        <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
+                            <button onclick="setBCMetric('resultado')" id="bc-metric-resultado" class="pl-metric-btn active" style="color:#1d4ed8;">Resultado</button>
+                            <button onclick="setBCMetric('receita')" id="bc-metric-receita" class="pl-metric-btn">Receita</button>
+                            <button onclick="setBCMetric('salesTaxes')" id="bc-metric-salesTaxes" class="pl-metric-btn">Sales Taxes</button>
+                            <button onclick="setBCMetric('cmv')" id="bc-metric-cmv" class="pl-metric-btn">CMV</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bc-year-cards" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
+
+            <div class="card overflow-hidden">
+                <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
+                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-gray-400"></i> <span id="bc-year-chart-title">Resultado</span> por ano — Venda vs Comodato
+                    </h4>
+                </div>
+                <div class="p-6"><div class="h-96"><canvas id="bc-year-chart"></canvas></div></div>
+            </div>
+
+            <div class="card overflow-hidden">
+                <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
+                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4 text-gray-400"></i> <span id="bc-timeline-chart-title">Resultado</span> acumulado mês a mês — 36 meses
+                    </h4>
+                </div>
+                <div class="p-6"><div class="h-96"><canvas id="bc-timeline-chart"></canvas></div></div>
+            </div>
+        </div> <!-- end tab-content-bc -->
 
     </main>
 
@@ -2906,13 +2953,16 @@
             document.getElementById('tab-content-pl').style.display = tab === 'pl' ? '' : 'none';
             document.getElementById('tab-content-estoque').style.display = tab === 'estoque' ? '' : 'none';
             document.getElementById('tab-content-resumo').style.display = tab === 'resumo' ? '' : 'none';
+            document.getElementById('tab-content-bc').style.display = tab === 'bc' ? '' : 'none';
             document.getElementById('tab-btn-comparison').classList.toggle('active', tab === 'comparison');
             document.getElementById('tab-btn-pl').classList.toggle('active', tab === 'pl');
             document.getElementById('tab-btn-estoque').classList.toggle('active', tab === 'estoque');
             document.getElementById('tab-btn-resumo').classList.toggle('active', tab === 'resumo');
+            document.getElementById('tab-btn-bc').classList.toggle('active', tab === 'bc');
             if (tab === 'pl') renderPLTab();
             if (tab === 'estoque') renderEstoqueTab();
             if (tab === 'resumo') renderResumoTab();
+            if (tab === 'bc') renderBCTab();
             lucide.createIcons();
         }
 
@@ -3242,6 +3292,226 @@
 
             renderResumoDeviceChart('resumo-resultado-devchart', 'resumo-resultado-devlegend', resYears, true);
             renderResumoCanalPctChart('resumo-resultado-canalchart', 'resumo-resultado-canallegend', resYears.map(y => ({ label: y.label, totals: y.canalTotals })));
+        }
+
+        /* ══════════════════════════════════════════════════════
+           BC TAB — Venda vs Comodato, 2027 a 2029
+           Projeta 3 anos repetindo a mesma quantidade/preço de venda de 2027 em 2028
+           e 2029 (instrução explícita do usuário), comparando o modelo de Venda (receita
+           e CMV reconhecidos à vista) com o Comodato (receita e CMV diferidos linearmente
+           em 36 meses, cruzando os 3 anos — generaliza buildComodatoRecognizedQty, que só
+           olhava dentro do ano civil, pois aqui a coorte de dez/27 ainda reconhece parcelas
+           em 2028/2029).
+        ══════════════════════════════════════════════════════ */
+        let bcPlanoVersion = 'v1';
+        let bcMetric = 'resultado';
+        let bcChartObjs = {};
+
+        function bcSaleType() { return bcPlanoVersion === 'v2' ? 'PLAN_2027_V2' : 'PLAN_2027'; }
+        function bcComodatoType() { return bcPlanoVersion === 'v2' ? 'PLAN_2027_V2_COMODATO' : 'PLAN_2027_COMODATO'; }
+
+        function setBCPlanoVersion(v) {
+            bcPlanoVersion = v;
+            document.getElementById('bc-ver-v1')?.classList.toggle('active', v === 'v1');
+            document.getElementById('bc-ver-v2')?.classList.toggle('active', v === 'v2');
+            renderBCTab();
+        }
+
+        function setBCMetric(metric) {
+            bcMetric = metric;
+            ['resultado', 'receita', 'salesTaxes', 'cmv'].forEach(m => {
+                const btn = document.getElementById(`bc-metric-${m}`);
+                if (!btn) return;
+                if (m === metric) { btn.classList.add('active'); btn.style.color = PL_METRIC_ACTIVE_COLOR[m]; }
+                else { btn.classList.remove('active'); btn.style.color = ''; }
+            });
+            renderBCTab();
+        }
+
+        function bcMetricTotal(pl) {
+            if (bcMetric === 'receita') return pl.totalReceita;
+            if (bcMetric === 'cmv') return pl.totalCMV;
+            if (bcMetric === 'salesTaxes') return pl.totalSalesTaxes;
+            return pl.totalResultado;
+        }
+
+        function bcFmtMoney(v) {
+            const s = v < 0 ? '-R$ ' : 'R$ ', a = Math.abs(v);
+            if (a >= 1e6) return s + (a / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'M';
+            if (a >= 1e3) return s + (a / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + 'K';
+            return s + Math.round(a).toLocaleString('pt-BR');
+        }
+
+        // 12 meses (jan-dez/27) de byCanalDevice — comodato usa o mesmo volume do modelo de
+        // venda (db.PLAN_2027_COMODATO reaproveita PLAN_2027_ROWS), então um único template serve.
+        function bcMonthlyTemplate(saleType) {
+            const months = [];
+            for (let m = 1; m <= 12; m++) {
+                const mm = String(m).padStart(2, '0');
+                const d = extractValue(saleType, `MONTH|2027${mm}`, 'ALL', 'ALL');
+                months.push(d.byCanalDeviceRaw || d.byCanalDevice);
+            }
+            return months;
+        }
+
+        // Repete o template de 2027 para 2028 e 2029 e computa Venda x Comodato mês a mês.
+        function bcBuildTimeline() {
+            const saleType = bcSaleType(), comoType = bcComodatoType();
+            const template = bcMonthlyTemplate(saleType);
+            const volumes36 = [];
+            for (let i = 0; i < 36; i++) volumes36.push(template[i % 12]);
+
+            // Reconhecimento comodato acumulado cruzando os 3 anos: a coorte entregue no mês
+            // `cohort` reconhece 1/36 em cada mês de `cohort` até `cohort+35`.
+            const recognized36 = [];
+            for (let i = 0; i < 36; i++) {
+                const acc = {};
+                for (let cohort = 0; cohort <= i; cohort++) {
+                    const bcd = volumes36[cohort];
+                    Object.entries(bcd).forEach(([c, devs]) => {
+                        if (!acc[c]) acc[c] = {};
+                        Object.entries(devs).forEach(([dev, q]) => {
+                            acc[c][dev] = (acc[c][dev] || 0) + (q || 0) / COMODATO_DEFER_MONTHS;
+                        });
+                    });
+                }
+                recognized36.push(acc);
+            }
+
+            const monthsOut = [];
+            for (let i = 0; i < 36; i++) {
+                const venda = computePL(volumes36[i], 12, saleType, null);
+                const comodato = computePL(volumes36[i], 12, comoType, recognized36[i]);
+                monthsOut.push({ year: 2027 + Math.floor(i / 12), moNum: (i % 12) + 1, venda, comodato });
+            }
+            return monthsOut;
+        }
+
+        function bcAggregateYear(monthsOut, year, key) {
+            return monthsOut.filter(m => m.year === year).map(m => m[key]).reduce((acc, pl) => {
+                acc.totalReceita += pl.totalReceita; acc.totalCMV += pl.totalCMV;
+                acc.totalSalesTaxes += pl.totalSalesTaxes; acc.totalResultado += pl.totalResultado;
+                acc.totalQty += pl.totalQty;
+                return acc;
+            }, { totalReceita: 0, totalCMV: 0, totalSalesTaxes: 0, totalResultado: 0, totalQty: 0 });
+        }
+
+        function bcDestroyChart(id) { if (bcChartObjs[id]) { bcChartObjs[id].destroy(); delete bcChartObjs[id]; } }
+
+        function renderBCYearChart(yearAgg, totalVenda, totalComodato) {
+            const canvas = document.getElementById('bc-year-chart');
+            if (!canvas) return;
+            bcDestroyChart('bc-year-chart');
+            const labels = [...yearAgg.map(y => String(y.year)), 'Total 3 anos'];
+            const vendaData = [...yearAgg.map(y => bcMetricTotal(y.venda)), totalVenda];
+            const comoData = [...yearAgg.map(y => bcMetricTotal(y.comodato)), totalComodato];
+            bcChartObjs['bc-year-chart'] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels, datasets: [
+                        { label: 'Venda', data: vendaData, backgroundColor: getBaseColor(bcSaleType()), borderRadius: 4 },
+                        { label: 'Comodato', data: comoData, backgroundColor: getBaseColor(bcComodatoType()), borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11, weight: 'bold' } } },
+                        datalabels: {
+                            color: '#374151', font: { size: 10, weight: 'bold' },
+                            anchor: ctx => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'end' : 'start',
+                            align: ctx => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'end' : 'start',
+                            formatter: v => bcFmtMoney(v)
+                        },
+                        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatBRL(ctx.parsed.y)}` } }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: '#f3f4f6' }, ticks: { callback: v => bcFmtMoney(v) } }
+                    },
+                    layout: { padding: { top: 20 } }
+                }
+            });
+        }
+
+        function renderBCTimelineChart(monthsOut) {
+            const canvas = document.getElementById('bc-timeline-chart');
+            if (!canvas) return;
+            bcDestroyChart('bc-timeline-chart');
+            let accVenda = 0, accComodato = 0;
+            const labels = [], vendaData = [], comoData = [];
+            const MO_LBL = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            monthsOut.forEach(m => {
+                accVenda += bcMetricTotal(m.venda);
+                accComodato += bcMetricTotal(m.comodato);
+                labels.push(`${MO_LBL[m.moNum - 1]}/${String(m.year).slice(2)}`);
+                vendaData.push(accVenda);
+                comoData.push(accComodato);
+            });
+            bcChartObjs['bc-timeline-chart'] = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels, datasets: [
+                        { label: 'Venda (acumulado)', data: vendaData, borderColor: getBaseColor(bcSaleType()), backgroundColor: 'transparent', tension: 0.25, pointRadius: 0, borderWidth: 2.5 },
+                        { label: 'Comodato (acumulado)', data: comoData, borderColor: getBaseColor(bcComodatoType()), backgroundColor: 'transparent', tension: 0.25, pointRadius: 0, borderWidth: 2.5 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11, weight: 'bold' } } },
+                        datalabels: { display: false },
+                        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => `${ctx.dataset.label}: ${formatBRL(ctx.parsed.y)}` } }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+                        y: { grid: { color: '#f3f4f6' }, ticks: { callback: v => bcFmtMoney(v) } }
+                    }
+                }
+            });
+        }
+
+        function renderBCTab() {
+            const monthsOut = bcBuildTimeline();
+            const years = [2027, 2028, 2029];
+            const yearAgg = years.map(y => ({
+                year: y,
+                venda: bcAggregateYear(monthsOut, y, 'venda'),
+                comodato: bcAggregateYear(monthsOut, y, 'comodato')
+            }));
+            const totalVenda = yearAgg.reduce((s, y) => s + bcMetricTotal(y.venda), 0);
+            const totalComodato = yearAgg.reduce((s, y) => s + bcMetricTotal(y.comodato), 0);
+
+            const metricLbl = PL_METRIC_LABELS[bcMetric] || 'Resultado';
+            const titleA = document.getElementById('bc-year-chart-title'); if (titleA) titleA.textContent = metricLbl;
+            const titleB = document.getElementById('bc-timeline-chart-title'); if (titleB) titleB.textContent = metricLbl;
+
+            const cardsEl = document.getElementById('bc-year-cards');
+            if (cardsEl) {
+                const cardHtml = (label, venda, comodato, highlight) => {
+                    const delta = comodato - venda;
+                    const pct = venda !== 0 ? (delta / Math.abs(venda)) * 100 : 0;
+                    return `<div class="card p-5 ${highlight ? 'bg-gray-50 border-2 border-gray-300' : ''}">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">${label}</p>
+                        <div class="space-y-2">
+                            <div>
+                                <span class="font-bold text-xs" style="color:${getBaseColor(bcSaleType())}">Venda</span>
+                                <div class="font-black text-gray-800 text-sm">${formatBRL(venda)}</div>
+                            </div>
+                            <div>
+                                <span class="font-bold text-xs" style="color:${getBaseColor(bcComodatoType())}">Comodato</span>
+                                <div class="font-black text-gray-800 text-sm">${formatBRL(comodato)}</div>
+                            </div>
+                        </div>
+                        <p class="text-xs font-bold mt-3 ${delta >= 0 ? 'text-green-600' : 'text-red-600'}">${delta >= 0 ? '+' : ''}${formatBRL(delta)} (${delta >= 0 ? '+' : ''}${pct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%) vs Venda</p>
+                    </div>`;
+                };
+                cardsEl.innerHTML = yearAgg.map(y => cardHtml(String(y.year), bcMetricTotal(y.venda), bcMetricTotal(y.comodato), false)).join('')
+                    + cardHtml('Total 3 anos', totalVenda, totalComodato, true);
+            }
+
+            renderBCYearChart(yearAgg, totalVenda, totalComodato);
+            renderBCTimelineChart(monthsOut);
         }
 
         /* ══════════════════════════════════════════════════════
