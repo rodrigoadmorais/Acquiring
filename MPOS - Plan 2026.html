@@ -103,17 +103,8 @@
                 </div>
             </div>
             <div class="flex gap-2">
-                <button onclick="generateExecutiveReport()" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-indigo-700 transition-all active:scale-95">
-                    <i data-lucide="file-text" class="w-4 h-4"></i> PDF Executivo
-                </button>
                 <button onclick="exportExcel()" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
                     <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel / GSheets
-                </button>
-                <button onclick="exportJoinedCSV()" class="flex items-center gap-2 bg-gray-500 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-gray-600 transition-all active:scale-95">
-                    <i data-lucide="download" class="w-4 h-4"></i> CSV
-                </button>
-                <button onclick="generatePPT()" id="ppt-gen-btn" class="flex items-center gap-2 bg-yellow-400 text-gray-900 px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-yellow-500 transition-all active:scale-95 border border-yellow-500">
-                    <i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT
                 </button>
                 <button onclick="showCorpPLModal()" class="flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-violet-700 transition-all active:scale-95">
                     <i data-lucide="building-2" class="w-4 h-4"></i> P&amp;L Corp
@@ -5172,8 +5163,7 @@
             const moStr = String(refMonth).padStart(2,'0');
 
             const btn = document.getElementById('ppt-gen-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4"></i> Gerando PPT...';
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4"></i> Gerando PPT...'; }
             lucide.createIcons();
             await new Promise(r => setTimeout(r, 50));
 
@@ -5450,8 +5440,7 @@
                 console.error(e);
             }
 
-            btn.disabled = false;
-            btn.innerHTML = '<i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT';
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="presentation" class="w-4 h-4"></i> Gerar PPT'; }
             lucide.createIcons();
         }
 
