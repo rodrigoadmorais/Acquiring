@@ -48,13 +48,6 @@
         .pl-positive { color: #16a34a; }
         .pl-negative { color: #dc2626; }
 
-        /* Modo Slide (Resumo) — encolhe as tabelas para caber melhor num print/slide */
-        #resumo-tables-wrap.resumo-compact { max-width: 860px; margin: 0 auto; }
-        #resumo-tables-wrap.resumo-compact th,
-        #resumo-tables-wrap.resumo-compact td { padding-left: 8px !important; padding-right: 8px !important; padding-top: 5px !important; padding-bottom: 5px !important; }
-        #resumo-tables-wrap.resumo-compact th { font-size: 9px !important; }
-        #resumo-tables-wrap.resumo-compact td { font-size: 11px !important; }
-        #resumo-tables-wrap.resumo-compact td.pl-10 { padding-left: 24px !important; }
     </style>
 </head>
 <body class="pb-12">
@@ -704,11 +697,8 @@
                         </div>
                     </div>
                     <div class="flex items-end gap-2">
-                        <button onclick="toggleResumoAgentsTLV()" id="btn-resumo-agents-tlv" title="Inclui AGENTS dentro de TLV (mantém o nome TLV na tabela)" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2.5 rounded-lg font-bold text-xs hover:bg-teal-50 hover:border-teal-400 hover:text-teal-600 transition-all whitespace-nowrap mb-0">
+                        <button onclick="toggleResumoAgentsTLV()" id="btn-resumo-agents-tlv" title="Inclui AGENTS dentro de TLV (mantém o nome TLV nos gráficos)" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2.5 rounded-lg font-bold text-xs hover:bg-teal-50 hover:border-teal-400 hover:text-teal-600 transition-all whitespace-nowrap mb-0">
                             <i data-lucide="merge" class="w-3.5 h-3.5"></i> Agents → TLV
-                        </button>
-                        <button onclick="toggleResumoCompact()" id="btn-resumo-compact" title="Encolher a tabela para caber melhor num slide" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all whitespace-nowrap mb-0">
-                            <i data-lucide="minimize-2" class="w-3.5 h-3.5"></i> Modo Slide
                         </button>
                     </div>
                 </div>
@@ -718,78 +708,48 @@
                 <div class="card overflow-hidden">
                     <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
                         <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                            <i data-lucide="hash" class="w-4 h-4 text-gray-400"></i> Quantidade de Devices — por Modelo e Canal
+                            <i data-lucide="hash" class="w-4 h-4 text-gray-400"></i> Quantidade de Devices — 2025 · 2026 · 2027
                         </h4>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2">
-                        <div class="overflow-x-auto border-b border-gray-200 md:border-r">
-                            <table class="w-full text-sm">
-                                <thead id="resumo-qty-thead-PRO"></thead>
-                                <tbody id="resumo-qty-tbody-PRO"></tbody>
-                            </table>
+                    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Por Modelo</p>
+                            <div class="flex items-stretch gap-2">
+                                <div class="flex-1 h-96"><canvas id="resumo-qty-devchart"></canvas></div>
+                                <div id="resumo-qty-devlegend" class="flex flex-col gap-3 justify-center pl-3 border-l border-gray-100 shrink-0"></div>
+                            </div>
                         </div>
-                        <div class="overflow-x-auto border-b border-gray-200">
-                            <table class="w-full text-sm">
-                                <thead id="resumo-qty-thead-SMART"></thead>
-                                <tbody id="resumo-qty-tbody-SMART"></tbody>
-                            </table>
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Por Canal (% do total)</p>
+                            <div class="flex items-stretch gap-2">
+                                <div class="flex-1 h-96"><canvas id="resumo-qty-canalchart"></canvas></div>
+                                <div id="resumo-qty-canallegend" class="flex flex-col gap-1.5 justify-center pl-3 border-l border-gray-100 shrink-0 max-h-96 overflow-y-auto"></div>
+                            </div>
                         </div>
-                        <div class="overflow-x-auto md:border-r border-gray-200">
-                            <table class="w-full text-sm">
-                                <thead id="resumo-qty-thead-MINI"></thead>
-                                <tbody id="resumo-qty-tbody-MINI"></tbody>
-                            </table>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead id="resumo-qty-thead-AIR"></thead>
-                                <tbody id="resumo-qty-tbody-AIR"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto border-t-2 border-gray-200">
-                        <table class="w-full text-sm">
-                            <tbody id="resumo-qty-tbody-total"></tbody>
-                        </table>
                     </div>
                 </div>
 
                 <div class="card overflow-hidden">
                     <div class="bg-gray-50 px-6 py-5 border-b border-gray-200">
                         <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                            <i data-lucide="banknote" class="w-4 h-4 text-gray-400"></i> Resultado (R$ Milhões) — por Modelo e Canal
+                            <i data-lucide="banknote" class="w-4 h-4 text-gray-400"></i> Resultado (R$ Milhões) — 2025 · 2026 · 2027
                         </h4>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2">
-                        <div class="overflow-x-auto border-b border-gray-200 md:border-r">
-                            <table class="w-full text-sm">
-                                <thead id="resumo-resultado-thead-PRO"></thead>
-                                <tbody id="resumo-resultado-tbody-PRO"></tbody>
-                            </table>
+                    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Por Modelo</p>
+                            <div class="flex items-stretch gap-2">
+                                <div class="flex-1 h-96"><canvas id="resumo-resultado-devchart"></canvas></div>
+                                <div id="resumo-resultado-devlegend" class="flex flex-col gap-3 justify-center pl-3 border-l border-gray-100 shrink-0"></div>
+                            </div>
                         </div>
-                        <div class="overflow-x-auto border-b border-gray-200">
-                            <table class="w-full text-sm">
-                                <thead id="resumo-resultado-thead-SMART"></thead>
-                                <tbody id="resumo-resultado-tbody-SMART"></tbody>
-                            </table>
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Por Canal (% do total)</p>
+                            <div class="flex items-stretch gap-2">
+                                <div class="flex-1 h-96"><canvas id="resumo-resultado-canalchart"></canvas></div>
+                                <div id="resumo-resultado-canallegend" class="flex flex-col gap-1.5 justify-center pl-3 border-l border-gray-100 shrink-0 max-h-96 overflow-y-auto"></div>
+                            </div>
                         </div>
-                        <div class="overflow-x-auto md:border-r border-gray-200">
-                            <table class="w-full text-sm">
-                                <thead id="resumo-resultado-thead-MINI"></thead>
-                                <tbody id="resumo-resultado-tbody-MINI"></tbody>
-                            </table>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead id="resumo-resultado-thead-AIR"></thead>
-                                <tbody id="resumo-resultado-tbody-AIR"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto border-t-2 border-gray-200">
-                        <table class="w-full text-sm">
-                            <tbody id="resumo-resultado-tbody-total"></tbody>
-                        </table>
                     </div>
                 </div>
             </div>
@@ -3044,125 +3004,178 @@
             return out;
         }
 
-        // Ordem de canais por device com base num mapa de referência (quantidade 2026),
-        // para as duas tabelas (Quantidade e Resultado) usarem o mesmo critério de ordenação.
-        function resumoBuildCanalOrder(map) {
+        // Totais por device (soma de todos os canais) e por canal (soma de todos os
+        // devices), a partir do mapa achatado {canal: {device: valor}}.
+        function resumoDeviceTotals(map) {
             const byDev = resumoByDevice(map);
-            const order = {};
-            Object.entries(byDev).forEach(([dev, cans]) => {
-                order[dev] = Object.entries(cans).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).map(([c]) => c);
+            const out = {};
+            RESUMO_DEV_ORDER.forEach(d => { out[d] = Object.values(byDev[d] || {}).reduce((s, v) => s + v, 0); });
+            return out;
+        }
+        function resumoCanalTotals(map) {
+            const out = {};
+            Object.entries(map || {}).forEach(([canal, devs]) => {
+                out[canal] = Object.values(devs || {}).reduce((s, v) => s + v, 0);
             });
-            return order;
+            return out;
         }
 
-        // Renderiza uma sub-tabela (thead+tbody) para um subconjunto de devices
-        // (ex.: só PRO+SMART, ou só AIR+MINI). Retorna os totais desse subconjunto,
-        // para o chamador somar e montar a barra de total combinada.
-        function renderResumoDeviceTable(theadId, tbodyId, devices, byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder) {
-            const thead = document.getElementById(theadId);
-            const tbody = document.getElementById(tbodyId);
-            if (!thead || !tbody) return { totA: 0, totB: 0, totC: 0 };
-            const fmt = isCurrency ? resumoFmtMillion : formatBRNum;
+        // Smart embaixo → Mini em cima na pilha (Chart.js empilha na ordem dos datasets,
+        // o primeiro fica na base), igual ao gráfico de referência.
+        const RESUMO_DEVICE_COLORS = { SMART: '#0EA5E9', PRO: '#0C4A6E', AIR: '#7DD3FC', MINI: '#D1D5DB' };
+        const RESUMO_DEVICE_TEXT   = { SMART: '#ffffff', PRO: '#ffffff', AIR: '#0c4a6e', MINI: '#374151' };
+        const RESUMO_CANAL_PALETTE = ['#0d9488', '#7c3aed', '#84cc16', '#ef4444', '#f59e0b', '#0ea5e9', '#ec4899', '#64748b', '#14b8a6', '#a855f7', '#22c55e', '#f97316', '#3b82f6', '#eab308'];
 
-            thead.innerHTML = `<tr class="bg-gray-50 border-b border-gray-200">
-                <th class="py-3 px-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-wider">Modelo / Canal</th>
-                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelA}</th>
-                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelB}</th>
-                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">${labelC}</th>
-                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Δ% vs ${labelA}</th>
-                <th class="py-3 px-3 text-right text-[10px] font-black text-gray-500 uppercase tracking-wider">Δ% vs ${labelB}</th>
-            </tr>`;
+        let resumoChartObjs = {};
+        function resumoDestroyChart(canvasId) {
+            if (resumoChartObjs[canvasId]) { resumoChartObjs[canvasId].destroy(); delete resumoChartObjs[canvasId]; }
+        }
 
-            let totA = 0, totB = 0, totC = 0;
-            let html = '';
+        // Barra empilhada por device (valores absolutos) com total no topo de cada
+        // coluna e uma "bolha" de variação YoY (absoluta + %) entre colunas consecutivas.
+        function renderResumoDeviceChart(canvasId, legendId, yearsData, isCurrency) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            resumoDestroyChart(canvasId);
+            const fmt = isCurrency ? v => resumoFmtMillion(v) : formatBRNum;
 
-            devices.forEach(dev => {
-                const canA = byDevA[dev] || {}, canB = byDevB[dev] || {}, canC = byDevC[dev] || {};
-                // Canais ordenados por quantidade de devices vendidas em 2026 (maior pro menor),
-                // consistente entre a tabela de Quantidade e a de Resultado. Canais que não
-                // aparecem na referência (ex.: descontinuado/novo) caem pro fim, por magnitude local.
-                const refOrder = (canalOrder && canalOrder[dev]) || [];
-                const orderIdx = c => { const i = refOrder.indexOf(c); return i === -1 ? Infinity : i; };
-                const canals = Array.from(new Set([...Object.keys(canA), ...Object.keys(canB), ...Object.keys(canC)]))
-                    .sort((x, y) => {
-                        const ix = orderIdx(x), iy = orderIdx(y);
-                        if (ix !== iy) return ix - iy;
-                        const mag = c => Math.abs(canB[c] ?? canC[c] ?? canA[c] ?? 0);
-                        return mag(y) - mag(x);
-                    });
+            const datasets = RESUMO_DEV_ORDER.map(dev => ({
+                label: dev,
+                data: yearsData.map(y => y.totals[dev] || 0),
+                backgroundColor: RESUMO_DEVICE_COLORS[dev],
+                stack: 'devices'
+            }));
+            const totals = yearsData.map(y => RESUMO_DEV_ORDER.reduce((s, d) => s + (y.totals[d] || 0), 0));
 
-                let dA = 0, dB = 0, dC = 0, rowsHtml = '';
-                canals.forEach(canal => {
-                    const a = canA[canal] || 0, b = canB[canal] || 0, c = canC[canal] || 0;
-                    dA += a; dB += b; dC += c;
-                    rowsHtml += `<tr class="border-b border-gray-50 hover:bg-blue-50/30">
-                        <td class="py-2 pl-10 text-xs text-gray-500 font-semibold">${canal}</td>
-                        <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(a)}</td>
-                        <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(b)}</td>
-                        <td class="py-2 px-3 text-right text-xs text-gray-600">${fmt(c)}</td>
-                        ${resumoDeltaPctCell(b - a, a)}
-                        ${resumoDeltaPctCell(c - b, b)}
-                    </tr>`;
+            const yoyPlugin = {
+                id: 'resumoYoy',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    const meta0 = chart.getDatasetMeta(0);
+                    if (!meta0.data.length) return;
+                    // Resultado é negativo nesse negócio (CMV domina), então a pilha cresce
+                    // pra baixo — usa o pixel real do valor total (não um mínimo assumindo
+                    // pilha positiva) e ajusta o lado do rótulo/bolha pelo sinal do total.
+                    const topY = totals.map(t => chart.scales.y.getPixelForValue(t));
+                    const dir = t => t >= 0 ? -1 : 1; // -1 = pra cima (fora da pilha positiva), 1 = pra baixo
+                    ctx.save();
+                    ctx.textAlign = 'center';
+                    ctx.font = 'bold 13px Inter, Arial';
+                    ctx.fillStyle = '#111827';
+                    meta0.data.forEach((el, i) => ctx.fillText(fmt(totals[i]), el.x, topY[i] + dir(totals[i]) * 12));
+                    for (let i = 1; i < totals.length; i++) {
+                        const x1 = meta0.data[i - 1].x, x2 = meta0.data[i].x;
+                        const y1 = topY[i - 1], y2 = topY[i];
+                        const d = dir(totals[i - 1]);
+                        const extremeY = d === -1 ? Math.min(y1, y2) : Math.max(y1, y2);
+                        const midX = (x1 + x2) / 2, midY = extremeY + d * 38;
+                        const delta = totals[i] - totals[i - 1];
+                        const pct = totals[i - 1] !== 0 ? (delta / Math.abs(totals[i - 1])) * 100 : 0;
+                        const good = delta >= 0;
+                        ctx.setLineDash([3, 2]); ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 1;
+                        ctx.beginPath(); ctx.moveTo(x1, y1 + d * 6); ctx.lineTo(midX, midY - d * 15); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(x2, y2 + d * 6); ctx.lineTo(midX, midY - d * 15); ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.fillStyle = good ? '#dcfce7' : '#fee2e2';
+                        ctx.strokeStyle = good ? '#16a34a' : '#dc2626'; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.ellipse(midX, midY, 36, 17, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = good ? '#16a34a' : '#dc2626';
+                        ctx.font = 'bold 10px Inter, Arial';
+                        ctx.fillText(`${good ? '+' : ''}${fmt(delta)}`, midX, midY - 2);
+                        ctx.fillText(`(${good ? '+' : ''}${formatBRPct(pct)})`, midX, midY + 10);
+                    }
+                    ctx.restore();
+                }
+            };
+
+            resumoChartObjs[canvasId] = new Chart(canvas, {
+                type: 'bar',
+                data: { labels: yearsData.map(y => y.label), datasets },
+                plugins: [yoyPlugin],
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            display: ctx => {
+                                const tot = totals[ctx.dataIndex];
+                                return tot > 0 && (ctx.dataset.data[ctx.dataIndex] / tot) >= 0.06;
+                            },
+                            color: ctx => RESUMO_DEVICE_TEXT[ctx.dataset.label],
+                            font: { size: 11, weight: 'bold' },
+                            formatter: v => fmt(v)
+                        },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, display: false, grid: { display: false } }
+                    },
+                    layout: { padding: { top: 74, bottom: 74 } }
+                }
+            });
+
+            const legendEl = document.getElementById(legendId);
+            if (legendEl) {
+                legendEl.innerHTML = [...RESUMO_DEV_ORDER].reverse().map(d => `<div class="flex items-center gap-2">
+                    <div style="width:14px;height:14px;background:${RESUMO_DEVICE_COLORS[d]};border-radius:3px;flex-shrink:0;"></div>
+                    <span class="text-xs font-bold text-gray-600">${d.charAt(0) + d.slice(1).toLowerCase()}</span>
+                </div>`).join('');
+            }
+        }
+
+        // Barra empilhada em % por canal (share de cada canal sobre o total do ano),
+        // com legenda lateral de cores — sem agrupar canais, cada um vira uma fatia.
+        function renderResumoCanalPctChart(canvasId, legendId, yearsData) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            resumoDestroyChart(canvasId);
+
+            const allCanals = Array.from(new Set(yearsData.flatMap(y => Object.keys(y.totals))))
+                .sort((a, b) => {
+                    const totA = yearsData.reduce((s, y) => s + Math.abs(y.totals[a] || 0), 0);
+                    const totB = yearsData.reduce((s, y) => s + Math.abs(y.totals[b] || 0), 0);
+                    return totB - totA;
                 });
-                totA += dA; totB += dB; totC += dC;
+            const colorOf = {}; allCanals.forEach((c, i) => { colorOf[c] = RESUMO_CANAL_PALETTE[i % RESUMO_CANAL_PALETTE.length]; });
+            const yearTotals = yearsData.map(y => Object.values(y.totals).reduce((s, v) => s + v, 0));
 
-                html += `<tr class="bg-gray-50/80 border-b border-gray-200">
-                    <td class="py-2.5 px-3 text-xs font-black text-gray-800">${dev}</td>
-                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dA)}</td>
-                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dB)}</td>
-                    <td class="py-2.5 px-3 text-right text-xs font-black text-gray-800">${fmt(dC)}</td>
-                    ${resumoDeltaPctCell(dB - dA, dA)}
-                    ${resumoDeltaPctCell(dC - dB, dB)}
-                </tr>` + rowsHtml;
+            const datasets = allCanals.map(c => ({
+                label: c,
+                data: yearsData.map((y, i) => yearTotals[i] !== 0 ? ((y.totals[c] || 0) / yearTotals[i]) * 100 : 0),
+                backgroundColor: colorOf[c],
+                stack: 'canais'
+            }));
+
+            resumoChartObjs[canvasId] = new Chart(canvas, {
+                type: 'bar',
+                data: { labels: yearsData.map(y => y.label), datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            display: ctx => ctx.dataset.data[ctx.dataIndex] >= 4,
+                            color: '#ffffff', font: { size: 10, weight: 'bold' },
+                            formatter: v => Math.round(v) + '%'
+                        },
+                        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` } }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, display: false, min: 0, max: 100, grid: { display: false } }
+                    },
+                    layout: { padding: { top: 10 } }
+                }
             });
 
-            tbody.innerHTML = html;
-            lucide.createIcons();
-            return { totA, totB, totC };
-        }
-
-        // Barra de total combinada (soma dos dois blocos de devices), abaixo das duas sub-tabelas
-        // A barra de total é uma tabela à parte, sem cabeçalho próprio e sem alinhar
-        // com as colunas das sub-tabelas acima — por isso cada célula leva um rótulo
-        // embutido (ex.: "2025: 1.481.040") para não depender de alinhamento visual.
-        function renderResumoTotalRow(tbodyId, totA, totB, totC, isCurrency, labelA, labelB, labelC) {
-            const tbody = document.getElementById(tbodyId);
-            if (!tbody) return;
-            const fmt = isCurrency ? resumoFmtMillion : formatBRNum;
-            const shortA = String(labelA).slice(-2), shortB = String(labelB).slice(-2), shortC = String(labelC).slice(-2);
-            const pctOf = (delta, base) => base !== 0 ? (delta / Math.abs(base)) * 100 : (delta !== 0 ? (delta > 0 ? 100 : -100) : 0);
-            const pctTxt = (delta, base) => (base === 0 && delta === 0) ? '—' : `${pctOf(delta, base) >= 0 ? '+' : ''}${formatBRPct(pctOf(delta, base))}`;
-            const colorOf = delta => delta > 0 ? 'text-green-400' : (delta < 0 ? 'text-red-400' : 'text-gray-400');
-            const d1 = totB - totA, d2 = totC - totB;
-            const lbl = txt => `<span class="text-gray-400 font-bold">${txt}:</span> `;
-            tbody.innerHTML = `<tr class="bg-gray-900">
-                <td class="py-3 px-3 text-xs font-black text-white uppercase tracking-wider" style="width:1%;white-space:nowrap;">Total</td>
-                <td class="py-3 px-3 text-right text-xs font-black text-white">${lbl(labelA)}${fmt(totA)}</td>
-                <td class="py-3 px-3 text-right text-xs font-black text-white">${lbl(labelB)}${fmt(totB)}</td>
-                <td class="py-3 px-3 text-right text-xs font-black text-white">${lbl(labelC)}${fmt(totC)}</td>
-                <td class="py-3 px-3 text-right text-xs font-black ${colorOf(d1)}">${lbl(`Var ${shortA}vs${shortB}`)}${pctTxt(d1, totA)}</td>
-                <td class="py-3 px-3 text-right text-xs font-black ${colorOf(d2)}">${lbl(`Var ${shortB}vs${shortC}`)}${pctTxt(d2, totB)}</td>
-            </tr>`;
-        }
-
-        // Grid 2x2: PRO e SMART lado a lado em cima, MINI e AIR lado a lado embaixo —
-        // cada device é a sua própria sub-tabela.
-        const RESUMO_GRID_DEVICES = ['PRO', 'SMART', 'MINI', 'AIR'];
-
-        // Orquestra as quatro sub-tabelas (uma por device) e o total combinado.
-        // idPrefix = prefixo comum dos ids (ex.: "resumo-qty") — os ids de cada device
-        // seguem o padrão `${idPrefix}-thead-${DEVICE}` / `${idPrefix}-tbody-${DEVICE}`.
-        function renderResumoGrid(idPrefix, mapA, mapB, mapC, labelA, labelB, labelC, isCurrency, canalOrder) {
-            const byDevA = resumoByDevice(mapA), byDevB = resumoByDevice(mapB), byDevC = resumoByDevice(mapC);
-            const present = new Set([...Object.keys(byDevA), ...Object.keys(byDevB), ...Object.keys(byDevC)]);
-
-            let totA = 0, totB = 0, totC = 0;
-            RESUMO_GRID_DEVICES.forEach(dev => {
-                if (!present.has(dev)) return;
-                const r = renderResumoDeviceTable(`${idPrefix}-thead-${dev}`, `${idPrefix}-tbody-${dev}`, [dev], byDevA, byDevB, byDevC, labelA, labelB, labelC, isCurrency, canalOrder);
-                totA += r.totA; totB += r.totB; totC += r.totC;
-            });
-            renderResumoTotalRow(`${idPrefix}-tbody-total`, totA, totB, totC, isCurrency, labelA, labelB, labelC);
+            const legendEl = document.getElementById(legendId);
+            if (legendEl) {
+                legendEl.innerHTML = allCanals.map(c => `<div class="flex items-center gap-2">
+                    <div style="width:12px;height:12px;background:${colorOf[c]};border-radius:3px;flex-shrink:0;"></div>
+                    <span class="text-xs font-bold text-gray-600">${c}</span>
+                </div>`).join('');
+            }
         }
 
         function renderResumoTab() {
@@ -3182,32 +3195,25 @@
             const plC = computePLPeriod(plType, 'YEAR|2027', 'ALL', 'ALL');
 
             const prep = map => resumoApplyGrouping(resumoMergeAgents(map));
-            const qtyB = prep(resumoQtyMap(dB));
-            // Ordem de canais compartilhada pelas duas tabelas: quantidade de devices vendidas
-            // em 2026 (maior pro menor), dentro de cada modelo.
-            const canalOrder = resumoBuildCanalOrder(qtyB);
+            const qtyA = prep(resumoQtyMap(dA)), qtyB = prep(resumoQtyMap(dB)), qtyC = prep(resumoQtyMap(dC));
+            const resA = prep(resumoResultMap(plA)), resB = prep(resumoResultMap(plB)), resC = prep(resumoResultMap(plC));
 
-            renderResumoGrid('resumo-qty',
-                prep(resumoQtyMap(dA)), qtyB, prep(resumoQtyMap(dC)),
-                '2025', '2026', '2027', false, canalOrder);
+            const qtyYears = [
+                { label: '2025', totals: resumoDeviceTotals(qtyA), canalTotals: resumoCanalTotals(qtyA) },
+                { label: '2026', totals: resumoDeviceTotals(qtyB), canalTotals: resumoCanalTotals(qtyB) },
+                { label: '2027', totals: resumoDeviceTotals(qtyC), canalTotals: resumoCanalTotals(qtyC) }
+            ];
+            const resYears = [
+                { label: '2025', totals: resumoDeviceTotals(resA), canalTotals: resumoCanalTotals(resA) },
+                { label: '2026', totals: resumoDeviceTotals(resB), canalTotals: resumoCanalTotals(resB) },
+                { label: '2027', totals: resumoDeviceTotals(resC), canalTotals: resumoCanalTotals(resC) }
+            ];
 
-            renderResumoGrid('resumo-resultado',
-                prep(resumoResultMap(plA)), prep(resumoResultMap(plB)), prep(resumoResultMap(plC)),
-                '2025', '2026', '2027', true, canalOrder);
-        }
+            renderResumoDeviceChart('resumo-qty-devchart', 'resumo-qty-devlegend', qtyYears, false);
+            renderResumoCanalPctChart('resumo-qty-canalchart', 'resumo-qty-canallegend', qtyYears.map(y => ({ label: y.label, totals: y.canalTotals })));
 
-        // Encolhe as tabelas do Resumo (menos padding/fonte, largura limitada e centralizada)
-        // para caber melhor num print/screenshot de slide.
-        function toggleResumoCompact() {
-            const wrap = document.getElementById('resumo-tables-wrap');
-            const btn = document.getElementById('btn-resumo-compact');
-            const isCompact = wrap.classList.toggle('resumo-compact');
-            btn.classList.toggle('bg-blue-600', isCompact);
-            btn.classList.toggle('text-white', isCompact);
-            btn.classList.toggle('border-blue-700', isCompact);
-            btn.classList.toggle('bg-white', !isCompact);
-            btn.classList.toggle('text-gray-600', !isCompact);
-            btn.classList.toggle('border-gray-300', !isCompact);
+            renderResumoDeviceChart('resumo-resultado-devchart', 'resumo-resultado-devlegend', resYears, true);
+            renderResumoCanalPctChart('resumo-resultado-canalchart', 'resumo-resultado-canallegend', resYears.map(y => ({ label: y.label, totals: y.canalTotals })));
         }
 
         /* ══════════════════════════════════════════════════════
