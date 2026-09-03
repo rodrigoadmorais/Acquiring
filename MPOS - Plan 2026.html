@@ -783,6 +783,9 @@
                             <button onclick="setBCMetric('salesTaxes')" id="bc-metric-salesTaxes" class="pl-metric-btn">Sales Taxes</button>
                             <button onclick="setBCMetric('cmv')" id="bc-metric-cmv" class="pl-metric-btn">CMV</button>
                         </div>
+                        <button onclick="exportBCExcel()" title="Exporta a evolução mensal dos 3 anos (Qtd, Receita, Sales Taxes, CMV) — Venda x Comodato" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel / GSheets
+                        </button>
                     </div>
                 </div>
             </div>
@@ -3577,6 +3580,58 @@
 
             renderBCYearChart(yearAgg, totalVenda, totalComodato);
             renderBCTimelineChart(monthsOut);
+        }
+
+        // Exporta a evolução mensal dos 3 anos (Jan/27-Dez/29) por Qtd/Receita/Sales
+        // Taxes/CMV, Venda x Comodato — baixa um .xlsx que abre direto no Excel ou pode
+        // ser importado no Google Sheets (Arquivo > Importar), no mesmo padrão dos
+        // outros botões "Excel / GSheets" do dashboard.
+        function exportBCExcel() {
+            const monthsOut = bcBuildTimeline();
+            const saleLabel = bcPlanoVersion === 'v2' ? 'Plano 2027 v2 - Venda' : 'Plano 2027 v1 - Venda';
+            const comoLabel = bcPlanoVersion === 'v2' ? 'Plano 2027 v2 - Comodato' : 'Plano 2027 v1 - Comodato';
+            const MO_LBL = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+            // Aba 1 — evolução mensal agregada (o que foi pedido: Qtd/Receita/Sales Taxes/CMV por mês)
+            const totalsRows = [['Cenário', 'Ano', 'Mês', 'Mês/Ano', 'Qtd Devices', 'Receita', 'Sales Taxes', 'CMV', 'Resultado']];
+            function emitTotals(scenarioName, key) {
+                monthsOut.forEach(m => {
+                    const pl = m[key];
+                    const mLbl = `${MO_LBL[m.moNum - 1]}/${String(m.year).slice(2)}`;
+                    totalsRows.push([scenarioName, m.year, m.moNum, mLbl, Math.round(pl.totalQty || 0), Math.round(pl.totalReceita || 0), Math.round(pl.totalSalesTaxes || 0), Math.round(pl.totalCMV || 0), Math.round(pl.totalResultado || 0)]);
+                });
+            }
+            emitTotals(saleLabel, 'venda');
+            emitTotals(comoLabel, 'comodato');
+
+            // Aba 2 — mesmo detalhe, aberto por Canal/Device (a "base" por trás dos totais)
+            const detailRows = [['Cenário', 'Ano', 'Mês', 'Mês/Ano', 'Canal', 'Device', 'Qtd', 'Receita', 'Sales Taxes', 'CMV', 'Resultado']];
+            function emitDetail(scenarioName, key) {
+                monthsOut.forEach(m => {
+                    const pl = m[key];
+                    const mLbl = `${MO_LBL[m.moNum - 1]}/${String(m.year).slice(2)}`;
+                    Object.keys(pl.byCanal || {}).forEach(canal => {
+                        const cData = pl.byCanal[canal];
+                        Object.entries(cData.devices || {}).forEach(([dev, d]) => {
+                            if (!d) return;
+                            detailRows.push([scenarioName, m.year, m.moNum, mLbl, canal, dev, Math.round(d.qty || 0), Math.round(d.receita || 0), Math.round(d.salesTaxes || 0), Math.round(d.cmv || 0), Math.round(d.resultado || 0)]);
+                        });
+                    });
+                });
+            }
+            emitDetail(saleLabel, 'venda');
+            emitDetail(comoLabel, 'comodato');
+
+            const wb = XLSX.utils.book_new();
+            const wsTotals = XLSX.utils.aoa_to_sheet(totalsRows);
+            wsTotals['!cols'] = [24, 6, 6, 10, 12, 14, 14, 12, 14].map(w => ({ wch: w }));
+            XLSX.utils.book_append_sheet(wb, wsTotals, 'BC Evolução Mensal');
+
+            const wsDetail = XLSX.utils.aoa_to_sheet(detailRows);
+            wsDetail['!cols'] = [24, 6, 6, 10, 22, 10, 10, 14, 14, 12, 14].map(w => ({ wch: w }));
+            XLSX.utils.book_append_sheet(wb, wsDetail, 'BC Detalhe Canal-Device');
+
+            XLSX.writeFile(wb, `MPOS_BC_${bcPlanoVersion}_${new Date().getTime()}.xlsx`);
         }
 
         /* ══════════════════════════════════════════════════════
