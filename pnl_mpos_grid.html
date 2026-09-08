@@ -1702,7 +1702,7 @@ function renderUnitarios(){
   if(cSel)cSel.value=ST.flt_canal;
   var noteEl=document.getElementById('unitarios-filter-note');
   if(noteEl)noteEl.textContent=filterOn
-    ?'Filtro ativo (rateio por preço de venda de referência × volume): afeta apenas Receita Líq./Device e CMV/Device — as demais linhas (Bobina, MAD, Despacho, Envio) não têm quebra por device/canal na base e seguem com o total da empresa.'
+    ?'Filtro ativo: Receita Líq./Device e CMV/Device são rateados por preço de venda de referência × volume. Bobina, MAD, Despacho e Envio mantêm o custo unitário global — assume-se o mesmo valor por device/canal (sem quebra na base).'
     :'';
   renderUnitariosYTD(metrics);
   renderUnitariosInsights(metrics,pair,idx);
