@@ -576,6 +576,7 @@ function getM(ver,rowId,mi){
     case 'warehousing_total':return add(r('interco_wh'),r('warehousing'));
     case 'resultado_vendas': return add(getM(ver,'receita_liq',mi),r('cmv'));
     case 'bobinas':return add(r('insumos'),r('other_vfc'));
+    case 'cmv_hedge':return add(r('cmv'),r('hedge'));
     case 'estoque_total':{
       var ih=r('estoque_inhouse'),rp=r('estoque_reparo');
       if(ih===N&&rp===N)return N;
@@ -1565,7 +1566,7 @@ function renderUnitarios(){
 
   const metrics=[
     {lbl:'Receita Líq./Device',sub:'Receitas e Impostos',totalKey:'receita_liq',volKey:'vol',fmt:'cunit',benPos:true,owner:'Negócios',icon:'💰'},
-    {lbl:'CMV/Device',sub:'CMV',totalKey:'cmv',volKey:'vol',fmt:'cunit',benPos:false,owner:'Controladoria',ownerEmail:'gabriel.gassantos@mercadolivre.com',icon:'🏷️'},
+    {lbl:'CMV/Device',sub:'CMV + Hedge',totalKey:'cmv_hedge',volKey:'vol',fmt:'cunit',benPos:false,owner:'Controladoria',ownerEmail:'gabriel.gassantos@mercadolivre.com',icon:'🏷️'},
     {lbl:'Custo/Bobina',sub:'Bobinas · kit c/ 6',totalKey:'other_vfc',volKey:'vol_bobinas',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🧻'},
     {lbl:'Custo/MAD',sub:'Telemetria',totalKey:'telemetria',volKey:'vol_mads',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'📡'},
     {lbl:'Custo/Despacho',sub:'Warehousing',totalKey:'warehousing_total',volKey:'vol_despacho',fmt:'cunit',benPos:false,owner:'Supply',ownerEmail:'danilo.ferreira@mercadopago.com',icon:'🏭',note:'Migração da operação terceirizada para própria viabilizou despacho de segunda a sábado (antes seg-sex), ganhando agilidade operacional.'},
@@ -1584,7 +1585,7 @@ function renderUnitarios(){
   if(btnAbs)btnAbs.textContent=isAbs?'Ver Unitário (R$/device)':'Ver Absoluto (R$M)';
 
   // ordem fixa solicitada: CMV, Receita, Telemetria, Shipping, Warehousing, Bobinas
-  const ORDER=['cmv','receita_liq','telemetria','distribución','warehousing_total','other_vfc'];
+  const ORDER=['cmv_hedge','receita_liq','telemetria','distribución','warehousing_total','other_vfc'];
   metrics.sort(function(a,b){return ORDER.indexOf(a.totalKey)-ORDER.indexOf(b.totalKey);});
   // foco (via card YTD): 'telemetria' traz telemetria pra frente; 'devices' mantém ordem
   if(ST.unit_focus==='telemetria'){
@@ -1917,6 +1918,10 @@ const CALC_BREAKDOWN={
   'warehousing_total':[
     {id:'interco_wh',lbl:'COGS Interco Warehousing Produtos – Egresos'},
     {id:'warehousing',lbl:'Warehousing Point'},
+  ],
+  'cmv_hedge':[
+    {id:'cmv',lbl:'CMV (Cost of Products Sold)'},
+    {id:'hedge',lbl:'Hedge'},
   ],
 };
 
