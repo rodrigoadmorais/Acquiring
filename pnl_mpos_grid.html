@@ -2098,7 +2098,7 @@ function renderUnitModalChart(){
   var data25=raw25.concat(new Array(12).fill(null));
   var data26=new Array(12).fill(null).concat(raw26);
   // formatação por métrica
-  var fmt=view==='unit'?function(v){return'R$'+v.toFixed(2);}
+  var fmt=view==='unit'?function(v){return v.toFixed(2);}
     :(view==='vol'?fmtVolCount:fmtValM);
   // título e toggle
   var titles={unit:'💰 Evolução do Custo Unitário (R$/device)',abs:'💵 Evolução do Valor Absoluto (R$M)',vol:'📦 Evolução do Volume (unidades)'};
