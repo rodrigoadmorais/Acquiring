@@ -284,8 +284,19 @@
           <button id="btn-unit-abs" onclick="ST.unit_abs=!ST.unit_abs;renderUnitarios()" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--ml-blue);background:transparent;color:var(--ml-blue);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Ver Absoluto (R$M)</button>
           <button id="btn-unit-ytd" onclick="ST.unit_ytd=!ST.unit_ytd;renderUnitarios()" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--orange);background:transparent;color:var(--orange);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar YTD (mesmos meses)</button>
           <button id="btn-unit-pair" onclick="" style="padding:5px 14px;border-radius:999px;border:1.5px solid var(--muted);background:transparent;color:var(--text);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">Comparar Plano 2026</button>
+          <select id="unit-device-sel" onchange="ST.flt_device=this.value;renderUnitarios()" style="padding:5px 12px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;outline:none">
+            <option value="">Todos os Devices</option>
+            <option value="AIR">AIR</option><option value="MINI">MINI</option><option value="PRO">PRO</option><option value="SMART">SMART</option>
+          </select>
+          <select id="unit-canal-sel" onchange="ST.flt_canal=this.value;renderUnitarios()" style="padding:5px 12px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;outline:none">
+            <option value="">Todos os Canais</option>
+            <option value="APP">APP</option><option value="FDV Propria">FDV Própria</option><option value="FDV Tercera">FDV Tercera</option>
+            <option value="LP">LP</option><option value="MGM">MGM</option><option value="RESELLERS">Resellers</option>
+            <option value="TLV">TLV</option><option value="TO">TO</option><option value="Engagement">Engagement</option><option value="Big Sellers">Big Sellers</option>
+          </select>
         </div>
       </div>
+      <div id="unitarios-filter-note" style="font-size:.68rem;color:var(--muted);margin-top:8px"></div>
     </div>
     <div id="unitarios-ytd" style="margin-bottom:16px"></div>
     <div id="unitarios-insights" style="margin-bottom:16px"></div>
@@ -694,7 +705,7 @@ const ROWS_OFICIAL=[
   {id:'bm',          lbl:'GP (Gross Profit)',                                     t:'cur', comp:true, hl:true, bm:true},
 ];
 
-const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null,unit_ytd:true,unit_focus:'',br_span:'custom'};
+const ST={mode:'unitarios',q:'FY',prim:'Realizado 2026',comp:'Plano 2026',comp_q:'FY',br_lv:'Realizado 2026',br_lq:'FY',br_rv:'Plano 2026',br_rq:'FY',pyl_oficial:false,unit_mode:true,comp_pair:'real',unit_pair:'real',unit_abs:false,unit_month:null,unit_ytd:true,unit_focus:'',br_span:'custom',flt_device:'',flt_canal:''};
 const COMP_PAIRS={
   real:      {left:'Realizado 2025',right:'Realizado 2026',lbl:'Realizado 2025 vs 2026'},
   real_plano:{left:'Realizado 2025',right:'Plano 2026',    lbl:'Realizado 2025 vs Plano 2026'},
@@ -1498,6 +1509,28 @@ function lastRealizedMonth(ver){
   for(var i=0;i<12;i++){var x=arr[i];if(x!==null&&x!==undefined&&x!==0)last=i;}
   return last;
 }
+// Rateia o total contábil (CMV/Receita) entre device × canal usando peso = volume × preço de venda
+// (tabela de referência fixa). Retorna {frac, vol} — fração do total e volume que casam com o filtro.
+function allocByDeviceCanal(ver,idx,deviceFlt,canalFlt){
+  var d=D[ver];if(!d||!d.volCombo)return null;
+  var wTot=0,wSel=0,volSel=0,any=false;
+  Object.keys(d.volCombo).forEach(function(ck){
+    var parts=ck.split('|'),dev=parts[0],canal=parts[1];
+    var arr=d.volCombo[ck];
+    var v=0;idx.forEach(function(mi){var x=arr[mi];if(x!==null&&x!==undefined)v+=x;});
+    if(v<=0)return;
+    any=true;
+    var p=priceOf(dev,canal);
+    var w=v*p;
+    wTot+=w;
+    var matchDev=!deviceFlt||dev===deviceFlt;
+    var matchCanal=!canalFlt||canal===canalFlt;
+    if(matchDev&&matchCanal){wSel+=w;volSel+=v;}
+  });
+  if(!any)return null;
+  return{frac:wTot>0?(wSel/wTot):0,vol:volSel};
+}
+
 function getUnitIdx(baseIdx,verRight){
   if(!ST.unit_ytd)return baseIdx;
   var last=lastRealizedMonth(verRight);
@@ -1567,16 +1600,30 @@ function renderUnitarios(){
   }
 
 
+  const filterOn=!!(ST.flt_device||ST.flt_canal);
   const cards=metrics.map(function(m){
-    const tL=getA(pair.left,m.totalKey,idx);
-    const vL=getA(pair.left,m.volKey,idx);
-    const tR=getA(pair.right,m.totalKey,idx);
-    const vR=getA(pair.right,m.volKey,idx);
-    // unitário fair: só meses com custo E volume (evita achatar Bobinas etc.)
-    const ucLraw=computeUCAgg(pair.left,m.totalKey,m.volKey,idx);
-    const ucRraw=computeUCAgg(pair.right,m.totalKey,m.volKey,idx);
-    const ucL=ucLraw===N?null:ucLraw;
-    const ucR=ucRraw===N?null:ucRraw;
+    let tL=getA(pair.left,m.totalKey,idx);
+    let vL=getA(pair.left,m.volKey,idx);
+    let tR=getA(pair.right,m.totalKey,idx);
+    let vR=getA(pair.right,m.volKey,idx);
+    // filtro Device/Canal: só se aplica a métricas cujo volume vem do total de devices ('vol'),
+    // que é onde temos a quebra por device×canal. Rateia o total contábil pelo peso volume×preço.
+    const filterApplies=filterOn&&m.volKey==='vol';
+    let ucL,ucR;
+    if(filterApplies){
+      const allocL=allocByDeviceCanal(pair.left,idx,ST.flt_device,ST.flt_canal);
+      const allocR=allocByDeviceCanal(pair.right,idx,ST.flt_device,ST.flt_canal);
+      if(allocL){tL=tL!==null?tL*allocL.frac:null;vL=allocL.vol;}else{tL=null;vL=null;}
+      if(allocR){tR=tR!==null?tR*allocR.frac:null;vR=allocR.vol;}else{tR=null;vR=null;}
+      ucL=(tL!==null&&vL!==null&&vL!==0)?computeUC(tL,vL):null;
+      ucR=(tR!==null&&vR!==null&&vR!==0)?computeUC(tR,vR):null;
+    } else {
+      // unitário fair: só meses com custo E volume (evita achatar Bobinas etc.)
+      const ucLraw=computeUCAgg(pair.left,m.totalKey,m.volKey,idx);
+      const ucRraw=computeUCAgg(pair.right,m.totalKey,m.volKey,idx);
+      ucL=ucLraw===N?null:ucLraw;
+      ucR=ucRraw===N?null:ucRraw;
+    }
     // displayed value and type depend on mode
     const dL=isAbs?tL:ucL;
     const dR=isAbs?tR:ucR;
@@ -1650,6 +1697,13 @@ function renderUnitarios(){
     </div>`;
   });
   document.getElementById('unitarios-cards').innerHTML=cards.join('');
+  var dSel=document.getElementById('unit-device-sel'),cSel=document.getElementById('unit-canal-sel');
+  if(dSel)dSel.value=ST.flt_device;
+  if(cSel)cSel.value=ST.flt_canal;
+  var noteEl=document.getElementById('unitarios-filter-note');
+  if(noteEl)noteEl.textContent=filterOn
+    ?'Filtro ativo (rateio por preço de venda de referência × volume): afeta apenas Receita Líq./Device e CMV/Device — as demais linhas (Bobina, MAD, Despacho, Envio) não têm quebra por device/canal na base e seguem com o total da empresa.'
+    :'';
   renderUnitariosYTD(metrics);
   renderUnitariosInsights(metrics,pair,idx);
 }
@@ -2345,9 +2399,19 @@ function detectDevCol(values,hdrIdx){
   return best>=0?best:2; // fallback col 2 (coluna C)
 }
 
-function accumVolRow(row,colMap,months,acc,devAcc,devCol){
+// Preço de venda por device × canal (referência fixa informada pelo usuário — não vem da base)
+const PRICE_TABLE={
+  AIR:  {APP:59.17,'FDV Propria':0,'FDV Tercera':0,LP:59.17,MGM:53.25,RESELLERS:0,TLV:0,TO:56.42,Engagement:14.77},
+  MINI: {APP:26.00,'FDV Propria':0,'FDV Tercera':0,LP:26.00,MGM:23.00,RESELLERS:0,TLV:0,TO:25.00},
+  PRO:  {APP:125.50,'FDV Propria':0,'FDV Tercera':0,LP:125.50,MGM:113.00,RESELLERS:96.75,TLV:127.67,TO:119.00,Engagement:94.18,'Big Sellers':116.38},
+  SMART:{APP:205.42,'FDV Propria':234.00,'FDV Tercera':233.00,LP:205.42,MGM:184.83,RESELLERS:176.50,TLV:205.42,TO:194.83,Engagement:51.38,'Big Sellers':204.93},
+};
+function priceOf(dev,canal){var t=PRICE_TABLE[dev];if(!t)return 0;var v=t[canal];return v===undefined?0:v;}
+
+function accumVolRow(row,colMap,months,acc,devAcc,devCol,comboAcc,canalCol){
   var devRaw=String(row[devCol]||'').trim().toUpperCase();
   var isDev=VOL_DEVS.indexOf(devRaw)>=0;
+  var canalRaw=canalCol!==undefined?String(row[canalCol]||'').trim():'';
   for(var m=0;m<months;m++){
     var ci=colMap[m];if(ci===undefined)continue;
     var v=parseFloat(String(row[ci]||'').replace(/\./g,'').replace(',','.'));
@@ -2357,12 +2421,18 @@ function accumVolRow(row,colMap,months,acc,devAcc,devCol){
       var dk=VOL_DEV_FIELDS[devRaw];
       if(!devAcc[dk])devAcc[dk]=Array(12).fill(null);
       devAcc[dk][m]=(devAcc[dk][m]||0)+v;
+      if(comboAcc&&canalRaw){
+        var ck=devRaw+'|'+canalRaw;
+        if(!comboAcc[ck])comboAcc[ck]=Array(12).fill(null);
+        comboAcc[ck][m]=(comboAcc[ck][m]||0)+v;
+      }
     }
   }
 }
 
-function storeVolAcc(key,acc,devAcc){
+function storeVolAcc(key,acc,devAcc,comboAcc){
   D[key].vol=acc;
+  if(comboAcc&&Object.keys(comboAcc).length)D[key].volCombo=comboAcc;
   VOL_DEVS.forEach(function(d){
     var f=VOL_DEV_FIELDS[d];
     if(devAcc[f]&&devAcc[f].some(function(v){return v!==null&&v>0;}))D[key][f]=devAcc[f];
@@ -2389,7 +2459,7 @@ function parseVolume(values){
     pyList.forEach(function(y){
       pyColArr[y]=Array.from({length:12},function(_,m){return planoColMap[y+'_'+m];});
     });
-    var acc={},devAcc={};
+    var acc={},devAcc={},comboAcc={};
     for(var r=planoHdr+1;r<values.length;r++){
       var row=values[r]||[];
       var cenRaw=String(row[0]||'').trim();if(!cenRaw)continue;
@@ -2398,12 +2468,13 @@ function parseVolume(values){
         if(!key||!D[key])return;
         if(!acc[key])acc[key]=Array(12).fill(null);
         if(!devAcc[key])devAcc[key]={};
-        accumVolRow(row,pyColArr[year],12,acc[key],devAcc[key],pDevCol);
+        if(!comboAcc[key])comboAcc[key]={};
+        accumVolRow(row,pyColArr[year],12,acc[key],devAcc[key],pDevCol,comboAcc[key],1);
       });
     }
     Object.keys(acc).forEach(function(key){
       console.log('[MPOS Vol] → Plano',key,'vol',acc[key].slice(0,6));
-      storeVolAcc(key,acc[key],devAcc[key]||{});
+      storeVolAcc(key,acc[key],devAcc[key]||{},comboAcc[key]||{});
     });
   }
 
@@ -2430,7 +2501,7 @@ function parseVolume(values){
     ayList.forEach(function(y){
       ayColArr[y]=Array.from({length:12},function(_,m){return actualColMap[y+'_'+m];});
     });
-    var acc2={},devAcc2={};
+    var acc2={},devAcc2={},comboAcc2={};
     for(var r=actualHdr+1;r<values.length;r++){
       var row=values[r]||[];
       // só linhas da seção "Actual" — evita vazar dados de outras seções (ex.: Forecast por device)
@@ -2441,12 +2512,13 @@ function parseVolume(values){
         if(!D[key])return;
         if(!acc2[key])acc2[key]=Array(12).fill(null);
         if(!devAcc2[key])devAcc2[key]={};
-        accumVolRow(row,ayColArr[year],12,acc2[key],devAcc2[key],aDevCol);
+        if(!comboAcc2[key])comboAcc2[key]={};
+        accumVolRow(row,ayColArr[year],12,acc2[key],devAcc2[key],aDevCol,comboAcc2[key],1);
       });
     }
     Object.keys(acc2).forEach(function(key){
       var hasData=acc2[key].some(function(v){return v!==null&&v>0;});
-      if(hasData){console.log('[MPOS Vol] → Actual',key,'vol',acc2[key].slice(0,6));storeVolAcc(key,acc2[key],devAcc2[key]||{});}
+      if(hasData){console.log('[MPOS Vol] → Actual',key,'vol',acc2[key].slice(0,6));storeVolAcc(key,acc2[key],devAcc2[key]||{},comboAcc2[key]||{});}
     });
   }
 
