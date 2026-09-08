@@ -3962,15 +3962,19 @@
                 plugins: [ChartDataLabels]
             });
 
-            computeStockImpact(rLabels, rEstoque, rCover, rDevData);
+            // Usa o histórico COMPLETO (visLabels, desde jan/25), não o range De/Até já
+            // filtrado do gráfico — o usuário quer poder escolher qualquer período aqui,
+            // independente do que está sendo exibido no gráfico acima.
+            computeStockImpact(visLabels, visEstoque, visCover, visDevData);
             renderStockMix();
         }
 
-        // Impacto/Benefício de Estoque: pega o range Período Inicial/Final (dentro do
-        // range De/Até já filtrado acima), calcula o delta de estoque (unidades) e
-        // multiplica pelo custo médio unitário ponderado pela composição (mix) de
-        // devices em estoque ao longo de todo o intervalo — não só nas pontas —
-        // porque a composição muda mês a mês e queremos o custo "típico" do período.
+        // Impacto/Benefício de Estoque: pega o Período Inicial/Final (independente do
+        // range De/Até do gráfico acima — sempre abre o histórico completo, desde
+        // jan/25), calcula o delta de estoque (unidades) e multiplica pelo custo médio
+        // unitário ponderado pela composição (mix) de devices em estoque ao longo de
+        // todo o intervalo — não só nas pontas — porque a composição muda mês a mês e
+        // queremos o custo "típico" do período.
         // Estoque subindo = capital adicional investido (Impacto); caindo = capital
         // liberado (Benefício). Usa o custo base por device (PL_COST_BRL), sem o
         // ajuste de onda de Ago+ do Smart/Pro — é uma estimativa de valorização de
