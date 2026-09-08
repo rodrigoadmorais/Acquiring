@@ -604,6 +604,47 @@
                 </div>
             </div>
 
+            <!-- Impacto/Benefício de Estoque -->
+            <div class="card overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
+                    <h2 class="text-sm font-black tracking-widest uppercase flex items-center gap-2 text-gray-700">
+                        <i data-lucide="calculator" class="w-4 h-4 text-yellow-500"></i> Impacto/Benefício de Estoque
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Período Inicial</span>
+                        <select id="stock-impact-start" onchange="renderEstoqueTab()"
+                            class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                        </select>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Período Final</span>
+                        <select id="stock-impact-end" onchange="renderEstoqueTab()"
+                            class="bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                        </select>
+                    </div>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Delta Estoque</p>
+                        <p id="stock-impact-delta-qty" class="text-xl font-black text-gray-800">–</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Custo Médio Unitário (mix do período)</p>
+                        <p id="stock-impact-avg-cost" class="text-xl font-black text-gray-800">–</p>
+                    </div>
+                    <div class="text-center">
+                        <p id="stock-impact-value-label" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Impacto/Benefício estimado</p>
+                        <p id="stock-impact-value" class="text-2xl font-black text-gray-800">–</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Delta Dias de Cobertura</p>
+                        <p id="stock-impact-delta-cover" class="text-xl font-black text-gray-800">–</p>
+                    </div>
+                </div>
+                <div class="px-6 pb-5 space-y-1">
+                    <p class="text-[11px] text-gray-400">Estimativa: delta de estoque (unidades) no período × custo médio unitário ponderado pela composição (mix) de devices em estoque no mesmo período. Positivo (estoque subiu) = mais capital investido; negativo (estoque caiu) = capital liberado.</p>
+                    <p id="stock-impact-fallback-note" class="hidden text-[11px] text-orange-500 font-bold">* Sem detalhe por device dentro do período selecionado — custo médio calculado com base no mix de todo o histórico visível.</p>
+                </div>
+            </div>
+
             <!-- ── MPOS Sales per Device ─────────────────────────────── -->
             <div class="card overflow-hidden">
                 <!-- Título -->
@@ -3921,7 +3962,83 @@
                 plugins: [ChartDataLabels]
             });
 
+            computeStockImpact(rLabels, rEstoque, rCover, rDevData);
             renderStockMix();
+        }
+
+        // Impacto/Benefício de Estoque: pega o range Período Inicial/Final (dentro do
+        // range De/Até já filtrado acima), calcula o delta de estoque (unidades) e
+        // multiplica pelo custo médio unitário ponderado pela composição (mix) de
+        // devices em estoque ao longo de todo o intervalo — não só nas pontas —
+        // porque a composição muda mês a mês e queremos o custo "típico" do período.
+        // Estoque subindo = capital adicional investido (Impacto); caindo = capital
+        // liberado (Benefício). Usa o custo base por device (PL_COST_BRL), sem o
+        // ajuste de onda de Ago+ do Smart/Pro — é uma estimativa de valorização de
+        // estoque físico, não uma simulação de P&L.
+        function computeStockImpact(rLabels, rEstoque, rCover, rDevData) {
+            const selA = document.getElementById('stock-impact-start');
+            const selB = document.getElementById('stock-impact-end');
+            if (!selA || !selB) return;
+
+            const prevA = selA.options[selA.selectedIndex]?.text || '';
+            const prevB = selB.options[selB.selectedIndex]?.text || '';
+            selA.innerHTML = ''; selB.innerHTML = '';
+            rLabels.forEach((l, i) => {
+                const o1 = document.createElement('option'); o1.value = i; o1.textContent = l; selA.appendChild(o1);
+                const o2 = document.createElement('option'); o2.value = i; o2.textContent = l; selB.appendChild(o2);
+            });
+            const matchA = rLabels.indexOf(prevA);
+            const matchB = rLabels.indexOf(prevB);
+            selA.value = matchA >= 0 ? matchA : 0;
+            selB.value = matchB >= 0 ? matchB : rLabels.length - 1;
+            if (parseInt(selA.value) > parseInt(selB.value)) selA.value = selB.value;
+
+            const idxA = parseInt(selA.value), idxB = parseInt(selB.value);
+            const deltaEstoque = (rEstoque[idxB] || 0) - (rEstoque[idxA] || 0);
+            const deltaCover = (rCover[idxB] || 0) - (rCover[idxA] || 0);
+
+            const DEVICES = ['Smart', 'Pro', 'Air', 'Mini'];
+            function mixCostOverRange(from, to) {
+                let sumQty = 0, sumVal = 0;
+                for (let i = from; i <= to; i++) {
+                    DEVICES.forEach(dev => {
+                        const q = (rDevData[dev] || [])[i] || 0;
+                        const unitCost = Math.abs(PL_COST_BRL[dev.toUpperCase()] || 0);
+                        sumQty += q;
+                        sumVal += q * unitCost;
+                    });
+                }
+                return sumQty > 0 ? sumVal / sumQty : null;
+            }
+            // A base de estoque só abre por device a partir de um certo mês (dados mais
+            // antigos só têm o total). Se o período escolhido cair todo antes disso, cai
+            // pro mix médio de todo o histórico visível em vez de mostrar custo zerado.
+            let avgUnitCost = mixCostOverRange(idxA, idxB);
+            let usedFallbackMix = false;
+            if (avgUnitCost === null) {
+                avgUnitCost = mixCostOverRange(0, rLabels.length - 1) || 0;
+                usedFallbackMix = true;
+            }
+            const valorImpacto = deltaEstoque * avgUnitCost;
+
+            const elDelta = document.getElementById('stock-impact-delta-qty');
+            const elCost = document.getElementById('stock-impact-avg-cost');
+            const elValue = document.getElementById('stock-impact-value');
+            const elLabel = document.getElementById('stock-impact-value-label');
+            const elCover = document.getElementById('stock-impact-delta-cover');
+
+            if (elDelta) elDelta.textContent = `${deltaEstoque >= 0 ? '+' : ''}${Math.round(deltaEstoque).toLocaleString('pt-BR')} un.`;
+            if (elCost) elCost.textContent = formatBRLDecimal(avgUnitCost);
+            if (elValue) {
+                elValue.textContent = formatBRL(Math.abs(valorImpacto));
+                elValue.classList.remove('text-red-600', 'text-green-600', 'text-gray-800');
+                elValue.classList.add(deltaEstoque > 0 ? 'text-red-600' : deltaEstoque < 0 ? 'text-green-600' : 'text-gray-800');
+            }
+            if (elLabel) elLabel.textContent = deltaEstoque > 0 ? 'Impacto estimado (mais capital em estoque)' : deltaEstoque < 0 ? 'Benefício estimado (capital liberado)' : 'Impacto/Benefício estimado';
+            if (elCover) elCover.textContent = `${deltaCover >= 0 ? '+' : ''}${Math.round(deltaCover).toLocaleString('pt-BR')} dias`;
+
+            const elNote = document.getElementById('stock-impact-fallback-note');
+            if (elNote) elNote.classList.toggle('hidden', !usedFallbackMix);
         }
 
         /* ══════════════════════════════════════════════════════
