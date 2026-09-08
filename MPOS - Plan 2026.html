@@ -627,7 +627,7 @@
                         <p id="stock-impact-delta-qty" class="text-xl font-black text-gray-800">–</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Custo Médio Unitário (mix do período)</p>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">CMV Médio Unitário (mix do período)</p>
                         <p id="stock-impact-avg-cost" class="text-xl font-black text-gray-800">–</p>
                     </div>
                     <div class="text-center">
@@ -640,8 +640,8 @@
                     </div>
                 </div>
                 <div class="px-6 pb-5 space-y-1">
-                    <p class="text-[11px] text-gray-400">Estimativa: delta de estoque (unidades) no período × custo médio unitário ponderado pela composição (mix) de devices em estoque no mesmo período. Positivo (estoque subiu) = mais capital investido; negativo (estoque caiu) = capital liberado.</p>
-                    <p id="stock-impact-fallback-note" class="hidden text-[11px] text-orange-500 font-bold">* Sem detalhe por device dentro do período selecionado — custo médio calculado com base no mix de todo o histórico visível.</p>
+                    <p class="text-[11px] text-gray-400">Estimativa: delta de estoque (unidades) no período × CMV médio unitário ponderado pela composição (mix) de devices em estoque no mesmo período — considera apenas o custo (CMV) do device, não receita nem sales taxes. Positivo (estoque subiu) = mais capital investido; negativo (estoque caiu) = capital liberado.</p>
+                    <p id="stock-impact-fallback-note" class="hidden text-[11px] text-orange-500 font-bold">* Sem detalhe por device dentro do período selecionado — CMV médio calculado com base no mix de todo o histórico visível.</p>
                 </div>
             </div>
 
@@ -3971,14 +3971,15 @@
 
         // Impacto/Benefício de Estoque: pega o Período Inicial/Final (independente do
         // range De/Até do gráfico acima — sempre abre o histórico completo, desde
-        // jan/25), calcula o delta de estoque (unidades) e multiplica pelo custo médio
+        // jan/25), calcula o delta de estoque (unidades) e multiplica pelo CMV médio
         // unitário ponderado pela composição (mix) de devices em estoque ao longo de
         // todo o intervalo — não só nas pontas — porque a composição muda mês a mês e
-        // queremos o custo "típico" do período.
+        // queremos o custo "típico" do período. Propositalmente só CMV (PL_COST_BRL):
+        // é uma valorização de estoque físico pelo custo de reposição, não uma
+        // simulação de P&L — por isso NÃO entra receita nem sales taxes aqui.
         // Estoque subindo = capital adicional investido (Impacto); caindo = capital
         // liberado (Benefício). Usa o custo base por device (PL_COST_BRL), sem o
-        // ajuste de onda de Ago+ do Smart/Pro — é uma estimativa de valorização de
-        // estoque físico, não uma simulação de P&L.
+        // ajuste de onda de Ago+ do Smart/Pro.
         function computeStockImpact(rLabels, rEstoque, rCover, rDevData) {
             const selA = document.getElementById('stock-impact-start');
             const selB = document.getElementById('stock-impact-end');
