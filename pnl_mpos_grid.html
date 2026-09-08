@@ -2433,6 +2433,9 @@ function parseVolume(values){
     var acc2={},devAcc2={};
     for(var r=actualHdr+1;r<values.length;r++){
       var row=values[r]||[];
+      // só linhas da seção "Actual" — evita vazar dados de outras seções (ex.: Forecast por device)
+      // que reaproveitam índices de coluna diferentes mas caem no mesmo range de varredura
+      if(String(row[0]||'').trim().toLowerCase()!=='actual')continue;
       ayList.forEach(function(year){
         var key='Realizado '+year;
         if(!D[key])return;
