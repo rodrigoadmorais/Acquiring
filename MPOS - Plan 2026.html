@@ -1693,11 +1693,17 @@
             });
             if (groupDigital && (filterCanal === 'ALL' || filterCanal === DIGITAL_GROUP_NAME)) {
                 const groupedByCanal = {};
+                const groupedBCD = {};
                 Object.entries(byCanal).forEach(([c,v]) => {
                     const k = DIGITAL_CANALS.includes(c) ? DIGITAL_GROUP_NAME : c;
                     groupedByCanal[k] = (groupedByCanal[k]||0) + v;
                 });
-                return { total, byCanal: groupedByCanal, byDevice, byCanalDevice };
+                Object.entries(byCanalDevice).forEach(([c, devs]) => {
+                    const k = DIGITAL_CANALS.includes(c) ? DIGITAL_GROUP_NAME : c;
+                    if (!groupedBCD[k]) groupedBCD[k] = {};
+                    Object.entries(devs).forEach(([dev, qty]) => { groupedBCD[k][dev] = (groupedBCD[k][dev]||0) + qty; });
+                });
+                return { total, byCanal: groupedByCanal, byDevice, byCanalDevice: groupedBCD, byCanalDeviceRaw: byCanalDevice };
             }
             if (groupAcquisicao && (filterCanal === 'ALL' || filterCanal === ACQUISICAO_GROUP_NAME)) {
                 const groupedByCanal = {};
