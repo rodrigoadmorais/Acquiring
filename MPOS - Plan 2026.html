@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs/dist/pptxgen.bundle.js"></script>
     <style>
@@ -3795,30 +3796,111 @@
         }
 
         // Exporta a evolução mensal dos 3 anos (Jan/27-Dez/29) por Qtd/Receita/Sales
-        // Taxes/CMV, Venda x Comodato — baixa um .xlsx que abre direto no Excel ou pode
-        // ser importado no Google Sheets (Arquivo > Importar), no mesmo padrão dos
-        // outros botões "Excel / GSheets" do dashboard.
-        function exportBCExcel() {
+        // Taxes/CMV, Venda x Comodato — baixa um .xlsx com uma capa estilizada (padrão
+        // visual Mercado Livre: amarelo #FFE600 + navy #1A1A2E, mesmas cores do gerador
+        // de PPT) resumindo os 2 cenários e o delta entre eles, ano a ano.
+        // Usa ExcelJS (não o SheetJS/XLSX usado nos outros exports do dash) porque o
+        // build community do SheetJS não escreve estilo de célula (cor/preenchimento)
+        // em .xlsx — testado e confirmado: o estilo se perde no round-trip write→read.
+        async function exportBCExcel() {
             const monthsOut = bcBuildTimeline();
             const saleLabel = `Plano 2027 ${bcPlanoVersion} - Venda`;
             const comoLabel = `Plano 2027 ${bcPlanoVersion} - Comodato`;
             const MO_LBL = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const metricLbl = PL_METRIC_LABELS[bcMetric] || 'Resultado';
 
-            // Aba 1 — evolução mensal agregada (o que foi pedido: Qtd/Receita/Sales Taxes/CMV por mês)
-            const totalsRows = [['Cenário', 'Ano', 'Mês', 'Mês/Ano', 'Qtd Devices', 'Receita', 'Sales Taxes', 'CMV', 'Resultado']];
-            function emitTotals(scenarioName, key) {
+            const ML_Y = 'FFFFE600', ML_D = 'FF1A1A2E', ML_GRAY = 'FFF3F4F6', ML_WHITE = 'FFFFFFFF';
+            const ML_GREEN = 'FF16A34A', ML_RED = 'FFDC2626', ML_MUTED = 'FF6B7280';
+            const moneyFmt = '"R$" #,##0;[Red]-"R$" #,##0';
+            const pctFmt = '+0.0%;-0.0%';
+            const fill = rgb => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: rgb } });
+
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'MPOS Analytics';
+            workbook.created = new Date();
+
+            // ── Aba 0 — Capa: resumo por ano (Venda x Comodato x Delta) ──────────
+            const years = [2027, 2028, 2029];
+            const yearAgg = years.map(y => ({
+                year: y,
+                venda: bcMetricTotal(bcAggregateYear(monthsOut, y, 'venda')),
+                comodato: bcMetricTotal(bcAggregateYear(monthsOut, y, 'comodato'))
+            }));
+            const totalVenda = yearAgg.reduce((s, y) => s + y.venda, 0);
+            const totalComodato = yearAgg.reduce((s, y) => s + y.comodato, 0);
+
+            const capa = workbook.addWorksheet('Capa', { views: [{ showGridLines: false }] });
+            capa.columns = [{ width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 16 }];
+
+            capa.mergeCells('A1:E1');
+            const titleCell = capa.getCell('A1');
+            titleCell.value = 'MPOS ANALYTICS — BC: VENDA VS COMODATO';
+            titleCell.font = { bold: true, size: 16, color: { argb: ML_D } };
+            titleCell.fill = fill(ML_Y);
+            titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            capa.getRow(1).height = 32;
+
+            capa.mergeCells('A2:E2');
+            const subtitleCell = capa.getCell('A2');
+            subtitleCell.value = `Plano 2027 ${bcPlanoVersion} · Projeção 2027-2029 · Métrica: ${metricLbl}`;
+            subtitleCell.font = { italic: true, size: 10, color: { argb: ML_MUTED } };
+            subtitleCell.alignment = { horizontal: 'center' };
+            capa.getRow(2).height = 20;
+
+            const headerRow = capa.addRow(['Ano', 'Venda', 'Comodato', 'Delta (R$)', 'Delta (%)']);
+            headerRow.eachCell(c => {
+                c.font = { bold: true, color: { argb: ML_WHITE } };
+                c.fill = fill(ML_D);
+                c.alignment = { horizontal: 'center' };
+            });
+
+            const addYearRow = (label, v, c, highlight) => {
+                const d = c - v;
+                const pct = v !== 0 ? d / Math.abs(v) : 0;
+                const row = capa.addRow([label, v, c, d, pct]);
+                row.getCell(1).font = { bold: !!highlight };
+                row.getCell(2).numFmt = moneyFmt;
+                row.getCell(3).numFmt = moneyFmt;
+                row.getCell(4).numFmt = moneyFmt;
+                row.getCell(5).numFmt = pctFmt;
+                const deltaColor = d >= 0 ? ML_GREEN : ML_RED;
+                row.getCell(4).font = { bold: true, color: { argb: deltaColor } };
+                row.getCell(5).font = { bold: true, color: { argb: deltaColor } };
+                if (highlight) row.eachCell(cell => { cell.fill = fill(ML_GRAY); });
+                return row;
+            };
+            yearAgg.forEach(y => addYearRow(String(y.year), y.venda, y.comodato, false));
+            capa.addRow([]);
+            addYearRow('Total 3 anos', totalVenda, totalComodato, true);
+
+            // ── Aba 1 — evolução mensal agregada (Qtd/Receita/Sales Taxes/CMV por mês) ──
+            const totals = workbook.addWorksheet('BC Evolução Mensal');
+            totals.columns = [
+                { header: 'Cenário', width: 24 }, { header: 'Ano', width: 6 }, { header: 'Mês', width: 6 },
+                { header: 'Mês/Ano', width: 10 }, { header: 'Qtd Devices', width: 12 }, { header: 'Receita', width: 16 },
+                { header: 'Sales Taxes', width: 16 }, { header: 'CMV', width: 16 }, { header: 'Resultado', width: 16 }
+            ];
+            totals.getRow(1).eachCell(c => { c.font = { bold: true, color: { argb: ML_WHITE } }; c.fill = fill(ML_D); });
+            const emitTotals = (scenarioName, key) => {
                 monthsOut.forEach(m => {
                     const pl = m[key];
                     const mLbl = `${MO_LBL[m.moNum - 1]}/${String(m.year).slice(2)}`;
-                    totalsRows.push([scenarioName, m.year, m.moNum, mLbl, Math.round(pl.totalQty || 0), Math.round(pl.totalReceita || 0), Math.round(pl.totalSalesTaxes || 0), Math.round(pl.totalCMV || 0), Math.round(pl.totalResultado || 0)]);
+                    totals.addRow([scenarioName, m.year, m.moNum, mLbl, Math.round(pl.totalQty || 0), Math.round(pl.totalReceita || 0), Math.round(pl.totalSalesTaxes || 0), Math.round(pl.totalCMV || 0), Math.round(pl.totalResultado || 0)]);
                 });
-            }
+            };
             emitTotals(saleLabel, 'venda');
             emitTotals(comoLabel, 'comodato');
 
-            // Aba 2 — mesmo detalhe, aberto por Canal/Device (a "base" por trás dos totais)
-            const detailRows = [['Cenário', 'Ano', 'Mês', 'Mês/Ano', 'Canal', 'Device', 'Qtd', 'Receita', 'Sales Taxes', 'CMV', 'Resultado']];
-            function emitDetail(scenarioName, key) {
+            // ── Aba 2 — mesmo detalhe, aberto por Canal/Device ──────────────────
+            const detail = workbook.addWorksheet('BC Detalhe Canal-Device');
+            detail.columns = [
+                { header: 'Cenário', width: 24 }, { header: 'Ano', width: 6 }, { header: 'Mês', width: 6 },
+                { header: 'Mês/Ano', width: 10 }, { header: 'Canal', width: 22 }, { header: 'Device', width: 10 },
+                { header: 'Qtd', width: 10 }, { header: 'Receita', width: 16 }, { header: 'Sales Taxes', width: 16 },
+                { header: 'CMV', width: 14 }, { header: 'Resultado', width: 16 }
+            ];
+            detail.getRow(1).eachCell(c => { c.font = { bold: true, color: { argb: ML_WHITE } }; c.fill = fill(ML_D); });
+            const emitDetail = (scenarioName, key) => {
                 monthsOut.forEach(m => {
                     const pl = m[key];
                     const mLbl = `${MO_LBL[m.moNum - 1]}/${String(m.year).slice(2)}`;
@@ -3826,24 +3908,24 @@
                         const cData = pl.byCanal[canal];
                         Object.entries(cData.devices || {}).forEach(([dev, d]) => {
                             if (!d) return;
-                            detailRows.push([scenarioName, m.year, m.moNum, mLbl, canal, dev, Math.round(d.qty || 0), Math.round(d.receita || 0), Math.round(d.salesTaxes || 0), Math.round(d.cmv || 0), Math.round(d.resultado || 0)]);
+                            detail.addRow([scenarioName, m.year, m.moNum, mLbl, canal, dev, Math.round(d.qty || 0), Math.round(d.receita || 0), Math.round(d.salesTaxes || 0), Math.round(d.cmv || 0), Math.round(d.resultado || 0)]);
                         });
                     });
                 });
-            }
+            };
             emitDetail(saleLabel, 'venda');
             emitDetail(comoLabel, 'comodato');
 
-            const wb = XLSX.utils.book_new();
-            const wsTotals = XLSX.utils.aoa_to_sheet(totalsRows);
-            wsTotals['!cols'] = [24, 6, 6, 10, 12, 14, 14, 12, 14].map(w => ({ wch: w }));
-            XLSX.utils.book_append_sheet(wb, wsTotals, 'BC Evolução Mensal');
-
-            const wsDetail = XLSX.utils.aoa_to_sheet(detailRows);
-            wsDetail['!cols'] = [24, 6, 6, 10, 22, 10, 10, 14, 14, 12, 14].map(w => ({ wch: w }));
-            XLSX.utils.book_append_sheet(wb, wsDetail, 'BC Detalhe Canal-Device');
-
-            XLSX.writeFile(wb, `MPOS_BC_${bcPlanoVersion}_${new Date().getTime()}.xlsx`);
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MPOS_BC_${bcPlanoVersion}_${new Date().getTime()}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         /* ══════════════════════════════════════════════════════
