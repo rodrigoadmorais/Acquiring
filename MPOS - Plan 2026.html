@@ -3578,6 +3578,17 @@
             return months;
         }
 
+        // Um cenário faseado (COMODATO_PHASED_CANAL_START) representa uma transição
+        // ÚNICA que acontece no ano de origem (2027) — a partir do 2º ano da projeção
+        // (2028 em diante) o canal já migrou de vez pra comodato, não "recomeça" a
+        // fase de venda todo ano. absoluteIdx é o índice 0-based nos 36 meses da
+        // projeção (0 = jan/27 ... 35 = dez/29); só usa o mês-calendário pra decidir a
+        // fase quando ainda estamos no ano 1 (idx < 12).
+        function bcCanalUsesComodato(type, canal, absoluteIdx) {
+            const moNum = absoluteIdx < 12 ? (absoluteIdx % 12) + 1 : null;
+            return canalUsesComodato(type, canal, moNum);
+        }
+
         // Repete o template de 2027 para 2028 e 2029 e computa Venda x Comodato mês a mês,
         // respeitando os filtros globais de Canal/Device (Segmentação, topo da página).
         function bcBuildTimeline() {
@@ -3591,16 +3602,16 @@
             // Reconhecimento comodato acumulado cruzando os 3 anos: a coorte entregue no mês
             // `cohort` reconhece 1/36 em cada mês de `cohort` até `cohort+35`. Cada coorte só
             // entra no diferimento se o canal JÁ estava em comodato no mês em que nasceu —
-            // essencial pro cenário faseado (ex. TO em venda até jun/27): coortes entregues
-            // enquanto o canal ainda era venda não podem também virar diferimento depois.
+            // essencial pro cenário faseado (ex. TO em venda até jun/27, mas já 100% comodato
+            // em 2028/2029): coortes entregues enquanto o canal ainda era venda não podem
+            // também virar diferimento depois.
             const recognized36 = [];
             for (let i = 0; i < 36; i++) {
                 const acc = {};
                 for (let cohort = 0; cohort <= i; cohort++) {
-                    const cohortMoNum = (cohort % 12) + 1;
                     const bcd = volumes36[cohort];
                     Object.entries(bcd).forEach(([c, devs]) => {
-                        if (!canalUsesComodato(comoType, c, cohortMoNum)) return;
+                        if (!bcCanalUsesComodato(comoType, c, cohort)) return;
                         if (!acc[c]) acc[c] = {};
                         Object.entries(devs).forEach(([dev, q]) => {
                             acc[c][dev] = (acc[c][dev] || 0) + (q || 0) / COMODATO_DEFER_MONTHS;
@@ -3615,9 +3626,12 @@
                 // moNum real do mês (não 12 fixo) — getCostBRL ignora isso pra tipos Plano 2027
                 // (sempre usa Dez/26 flat), mas canalUsesComodato() dentro de computePL() precisa
                 // do mês verdadeiro pra decidir corretamente cenários faseados (ex. TO em jul/27).
+                // Pro lado comodato, passamos null quando já estamos no 2º ano em diante, pra
+                // não reaplicar a fase de venda em 2028/2029 (ver bcCanalUsesComodato acima).
                 const moNum = (i % 12) + 1;
+                const comodatoMoNum = i < 12 ? moNum : null;
                 const venda = computePL(volumes36[i], moNum, saleType, null);
-                const comodato = computePL(volumes36[i], moNum, comoType, recognized36[i]);
+                const comodato = computePL(volumes36[i], comodatoMoNum, comoType, recognized36[i]);
                 monthsOut.push({ year: 2027 + Math.floor(i / 12), moNum, venda, comodato });
             }
             return monthsOut;
