@@ -88,8 +88,8 @@
                     <i data-lucide="filter" class="w-5 h-5"></i>
                     <span class="text-[11px] font-black uppercase tracking-widest">Segmentação</span>
                 </div>
-                <select id="filter-canal" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
-                <select id="filter-device" onchange="processDashboard()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                <select id="filter-canal" onchange="handleGlobalFilterChange()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
+                <select id="filter-device" onchange="handleGlobalFilterChange()" class="w-48 bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"></select>
                 <button onclick="toggleDigitalGroup()" id="btn-digital-group" title="Agrupar APP, LP e TO como Canais Digitais" class="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-600 px-3 py-2 rounded-lg font-bold text-xs hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all whitespace-nowrap">
                     <i data-lucide="layers" class="w-4 h-4"></i> Canais Digitais
                 </button>
@@ -814,7 +814,7 @@
                 <div class="flex flex-wrap items-end justify-between gap-6">
                     <div>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">BC — Venda vs Comodato · 2027 a 2029</p>
-                        <p class="text-xs text-gray-400 max-w-2xl">Projeta os 3 anos repetindo a mesma quantidade e preço de venda de 2027 em 2028 e 2029, comparando o modelo de Venda à vista com o Comodato (receita e CMV diferidos em 36 meses).</p>
+                        <p id="bc-subtitle" class="text-xs text-gray-400 max-w-2xl">Projeta os 3 anos repetindo a mesma quantidade e preço de venda de 2027 em 2028 e 2029, comparando o modelo de Venda à vista com o Comodato (receita e CMV diferidos em 36 meses).</p>
                     </div>
                     <div class="flex flex-wrap items-end gap-3">
                         <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
@@ -1791,6 +1791,14 @@
             if (type === 'PLAN_2027_V3_COMODATO_TO_JUL') return 'rgba(101, 163, 13, 0.1)';
             if (type.startsWith('FORECAST_OLD_')) return 'rgba(236, 72, 153, 0.1)';
             return 'rgba(59, 130, 246, 0.1)';
+        }
+
+        // Os filtros globais de Canal/Device (Segmentação, topo) também afetam a Simulação
+        // P&L e a aba BC — ambas leem filter-canal/filter-device diretamente ao renderizar.
+        function handleGlobalFilterChange() {
+            processDashboard();
+            if (document.getElementById('tab-content-pl').style.display !== 'none') renderPLTab();
+            if (document.getElementById('tab-content-bc').style.display !== 'none') renderBCTab();
         }
 
         function processDashboard() {
@@ -3518,7 +3526,10 @@
         let bcChartObjs = {};
 
         function bcSaleType() { return bcPlanoVersion === 'v3' ? 'PLAN_2027_V3' : bcPlanoVersion === 'v2' ? 'PLAN_2027_V2' : 'PLAN_2027'; }
-        function bcComodatoType() { return bcPlanoVersion === 'v3' ? 'PLAN_2027_V3_COMODATO' : bcPlanoVersion === 'v2' ? 'PLAN_2027_V2_COMODATO' : 'PLAN_2027_COMODATO'; }
+        // v3 usa o cenário faseado (todos os canais em comodato, exceto RESELLERS que
+        // permanece em venda e TO que só migra pra comodato a partir de jul/27) — v1/v2
+        // não têm variante faseada e continuam no comodato "puro" (100% desde jan).
+        function bcComodatoType() { return bcPlanoVersion === 'v3' ? 'PLAN_2027_V3_COMODATO_TO_JUL' : bcPlanoVersion === 'v2' ? 'PLAN_2027_V2_COMODATO' : 'PLAN_2027_COMODATO'; }
 
         function setBCPlanoVersion(v) {
             bcPlanoVersion = v;
@@ -3555,31 +3566,41 @@
 
         // 12 meses (jan-dez/27) de byCanalDevice — comodato usa o mesmo volume do modelo de
         // venda (db.PLAN_2027_COMODATO reaproveita PLAN_2027_ROWS), então um único template serve.
-        function bcMonthlyTemplate(saleType) {
+        // filterCanal/filterDevice vêm dos seletores globais de Segmentação, pra dar pra
+        // conferir a lógica (ex.: isolar TO ou RESELLERS) igual nas outras abas.
+        function bcMonthlyTemplate(saleType, filterCanal, filterDevice) {
             const months = [];
             for (let m = 1; m <= 12; m++) {
                 const mm = String(m).padStart(2, '0');
-                const d = extractValue(saleType, `MONTH|2027${mm}`, 'ALL', 'ALL');
+                const d = extractValue(saleType, `MONTH|2027${mm}`, filterCanal, filterDevice);
                 months.push(d.byCanalDeviceRaw || d.byCanalDevice);
             }
             return months;
         }
 
-        // Repete o template de 2027 para 2028 e 2029 e computa Venda x Comodato mês a mês.
+        // Repete o template de 2027 para 2028 e 2029 e computa Venda x Comodato mês a mês,
+        // respeitando os filtros globais de Canal/Device (Segmentação, topo da página).
         function bcBuildTimeline() {
             const saleType = bcSaleType(), comoType = bcComodatoType();
-            const template = bcMonthlyTemplate(saleType);
+            const filterCanal = document.getElementById('filter-canal')?.value || 'ALL';
+            const filterDevice = document.getElementById('filter-device')?.value || 'ALL';
+            const template = bcMonthlyTemplate(saleType, filterCanal, filterDevice);
             const volumes36 = [];
             for (let i = 0; i < 36; i++) volumes36.push(template[i % 12]);
 
             // Reconhecimento comodato acumulado cruzando os 3 anos: a coorte entregue no mês
-            // `cohort` reconhece 1/36 em cada mês de `cohort` até `cohort+35`.
+            // `cohort` reconhece 1/36 em cada mês de `cohort` até `cohort+35`. Cada coorte só
+            // entra no diferimento se o canal JÁ estava em comodato no mês em que nasceu —
+            // essencial pro cenário faseado (ex. TO em venda até jun/27): coortes entregues
+            // enquanto o canal ainda era venda não podem também virar diferimento depois.
             const recognized36 = [];
             for (let i = 0; i < 36; i++) {
                 const acc = {};
                 for (let cohort = 0; cohort <= i; cohort++) {
+                    const cohortMoNum = (cohort % 12) + 1;
                     const bcd = volumes36[cohort];
                     Object.entries(bcd).forEach(([c, devs]) => {
+                        if (!canalUsesComodato(comoType, c, cohortMoNum)) return;
                         if (!acc[c]) acc[c] = {};
                         Object.entries(devs).forEach(([dev, q]) => {
                             acc[c][dev] = (acc[c][dev] || 0) + (q || 0) / COMODATO_DEFER_MONTHS;
@@ -3591,9 +3612,13 @@
 
             const monthsOut = [];
             for (let i = 0; i < 36; i++) {
-                const venda = computePL(volumes36[i], 12, saleType, null);
-                const comodato = computePL(volumes36[i], 12, comoType, recognized36[i]);
-                monthsOut.push({ year: 2027 + Math.floor(i / 12), moNum: (i % 12) + 1, venda, comodato });
+                // moNum real do mês (não 12 fixo) — getCostBRL ignora isso pra tipos Plano 2027
+                // (sempre usa Dez/26 flat), mas canalUsesComodato() dentro de computePL() precisa
+                // do mês verdadeiro pra decidir corretamente cenários faseados (ex. TO em jul/27).
+                const moNum = (i % 12) + 1;
+                const venda = computePL(volumes36[i], moNum, saleType, null);
+                const comodato = computePL(volumes36[i], moNum, comoType, recognized36[i]);
+                monthsOut.push({ year: 2027 + Math.floor(i / 12), moNum, venda, comodato });
             }
             return monthsOut;
         }
@@ -3719,6 +3744,13 @@
             const metricLbl = PL_METRIC_LABELS[bcMetric] || 'Resultado';
             const titleA = document.getElementById('bc-year-chart-title'); if (titleA) titleA.textContent = metricLbl;
             const titleB = document.getElementById('bc-timeline-chart-title'); if (titleB) titleB.textContent = metricLbl;
+
+            const subtitle = document.getElementById('bc-subtitle');
+            if (subtitle) {
+                subtitle.textContent = bcPlanoVersion === 'v3'
+                    ? 'Projeta os 3 anos repetindo a mesma quantidade e preço de venda de 2027 em 2028 e 2029, comparando Venda à vista com Comodato — no Comodato, RESELLERS permanece em venda (mas compõe o total do cenário) e TO só migra pra comodato a partir de jul/27, os demais canais em comodato o período todo (receita e CMV diferidos em 36 meses).'
+                    : 'Projeta os 3 anos repetindo a mesma quantidade e preço de venda de 2027 em 2028 e 2029, comparando o modelo de Venda à vista com o Comodato (receita e CMV diferidos em 36 meses).';
+            }
 
             const cardsEl = document.getElementById('bc-year-cards');
             if (cardsEl) {
