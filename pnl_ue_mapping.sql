@@ -32,18 +32,22 @@
 -- O BigQuery nao aceita os placeholders <UE_DATE_DESDE> / <UE_DATE_HASTA> da
 -- ferramenta interna. Alternativas, se preferir:
 --   a) query parameters : WHERE UE_DATE BETWEEN @ue_date_desde AND @ue_date_hasta
---   b) literais diretos : WHERE UE_DATE BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+--   b) literais diretos : WHERE UE_DATE BETWEEN DATE '2026-01-01' AND DATE '2026-12-31'
 --   c) placeholders     : WHERE UE_DATE BETWEEN <UE_DATE_DESDE> AND <UE_DATE_HASTA>
 --                         (so na ferramenta interna, nao no console do BQ)
 -- Se UE_DATE nao for DATE (ex.: TIMESTAMP/STRING), ajuste o tipo do DECLARE.
 --
--- CUSTO: a tabela e particionada por UE_DATE e o pruning funciona, entao o custo
--- e proporcional a janela de datas. Medido em dry-run (4 colunas de metrica):
---     1 mes  ->   526 GB
---     9 meses -> 11.661 GB  (~US$ 57)
--- Com as 170 colunas do P&L o volume sobe bastante. Rode mes a mes e evite
--- ranges longos sem necessidade.
-DECLARE UE_DATE_DESDE DATE DEFAULT DATE_TRUNC(CURRENT_DATE(), MONTH);
+-- CUSTO (importante): a tabela e particionada por UE_DATE e o pruning funciona,
+-- entao o custo cresce com a janela de datas E com o numero de colunas.
+-- Medido via dry-run na janela 2026-01-01 -> 2026-09-14 (~8,5 meses):
+--       4 colunas de metrica  ->  4.118 GiB  (US$  20)
+--      40 colunas de metrica  -> 14.482 GiB  (US$  71)
+--   => marginal de ~288 GiB por coluna de metrica
+--   => as 170 colunas deste P&L  ~= 51.900 GiB (~51 TiB, ~US$ 250) por rodada
+-- Ou seja: ~6 TiB / ~US$ 30 por mes de dados.
+-- Recomendado: rodar mes a mes (UE_DATE_DESDE = DATE_TRUNC(CURRENT_DATE(), MONTH))
+-- e materializar o resultado numa tabela, em vez de reprocessar o YTD inteiro.
+DECLARE UE_DATE_DESDE DATE DEFAULT DATE '2026-01-01';   -- 2026 em diante
 DECLARE UE_DATE_HASTA DATE DEFAULT CURRENT_DATE();
 
 WITH base AS (
