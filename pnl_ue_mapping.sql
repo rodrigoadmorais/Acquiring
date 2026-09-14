@@ -24,6 +24,24 @@
 -- por UNION ALL e o ARRAY<STRUCT<>> por uma tabela/VALUES de mapeamento.
 -- =============================================================================
 
+-- Periodo: ajuste as duas datas abaixo.
+-- O BigQuery nao aceita os placeholders <UE_DATE_DESDE> / <UE_DATE_HASTA> da
+-- ferramenta interna. Alternativas, se preferir:
+--   a) query parameters : WHERE UE_DATE BETWEEN @ue_date_desde AND @ue_date_hasta
+--   b) literais diretos : WHERE UE_DATE BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+--   c) placeholders     : WHERE UE_DATE BETWEEN <UE_DATE_DESDE> AND <UE_DATE_HASTA>
+--                         (so na ferramenta interna, nao no console do BQ)
+-- Se UE_DATE nao for DATE (ex.: TIMESTAMP/STRING), ajuste o tipo do DECLARE.
+--
+-- CUSTO: a tabela e particionada por UE_DATE e o pruning funciona, entao o custo
+-- e proporcional a janela de datas. Medido em dry-run (4 colunas de metrica):
+--     1 mes  ->   526 GB
+--     9 meses -> 11.661 GB  (~US$ 57)
+-- Com as 170 colunas do P&L o volume sobe bastante. Rode mes a mes e evite
+-- ranges longos sem necessidade.
+DECLARE UE_DATE_DESDE DATE DEFAULT DATE_TRUNC(CURRENT_DATE(), MONTH);
+DECLARE UE_DATE_HASTA DATE DEFAULT CURRENT_DATE();
+
 WITH base AS (
   SELECT
     PERIODO,
@@ -201,8 +219,10 @@ WITH base AS (
     SUM(UE_MP_MNG_OTHER_VARIABLE_FINTECH_COSTS_POINT_AMT_LC) AS UE_MP_MNG_OTHER_VARIABLE_FINTECH_COSTS_POINT_AMT_LC,
     SUM(UE_MP_MNG_OWN_CHANNELS_AMT_LC) AS UE_MP_MNG_OWN_CHANNELS_AMT_LC,
     SUM(UE_MP_MNG_POM_ACQUISITION_AMT_LC) AS UE_MP_MNG_POM_ACQUISITION_AMT_LC
-  FROM WHOWNER.BT_MP_UNIT_ECONOMICS
-  WHERE UE_DATE BETWEEN <UE_DATE_DESDE> AND <UE_DATE_HASTA>
+  -- no console do BQ precisa do projeto; na ferramenta interna
+  -- "WHOWNER.BT_MP_UNIT_ECONOMICS" tambem funciona
+  FROM `meli-bi-data.WHOWNER.BT_MP_UNIT_ECONOMICS`
+  WHERE UE_DATE BETWEEN UE_DATE_DESDE AND UE_DATE_HASTA
   GROUP BY ALL
 ),
 
