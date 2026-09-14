@@ -119,6 +119,9 @@
                 <button onclick="showDocsModal()" class="flex items-center gap-2 bg-slate-700 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-slate-800 transition-all active:scale-95">
                     <i data-lucide="book-open" class="w-4 h-4"></i> Documentação
                 </button>
+                <button onclick="showCostUSDModal()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-blue-700 transition-all active:scale-95">
+                    <i data-lucide="dollar-sign" class="w-4 h-4"></i> Custo USD
+                </button>
             </div>
         </div>
 
@@ -953,6 +956,25 @@
     </div>
 
     <!-- PPT Modal -->
+    <!-- Custo USD Modal -->
+    <div id="cost-usd-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/50 backdrop-blur-sm" style="display:none;" onclick="if(event.target===this)hideCostUSDModal()">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-3xl mx-4 max-h-[85vh] overflow-y-auto animate-fade-in" onclick="event.stopPropagation()">
+            <div class="flex items-start justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-600 p-2.5 rounded-xl shadow-sm">
+                        <i data-lucide="dollar-sign" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-gray-900">Custo Unitário em USD</h3>
+                        <p class="text-xs text-gray-500 font-medium mt-0.5">Por device e por cenário — taxa USD/BRL fixa: <strong>4,5687</strong></p>
+                    </div>
+                </div>
+                <button onclick="hideCostUSDModal()" class="text-gray-400 hover:text-gray-700 text-lg leading-none">&times;</button>
+            </div>
+            <div id="cost-usd-content"><!-- gerado por renderCostUSDModal() --></div>
+        </div>
+    </div>
+
     <div id="ppt-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/50 backdrop-blur-sm" style="display:none;">
         <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 animate-fade-in">
             <div class="flex items-center gap-3 mb-6">
@@ -6844,6 +6866,63 @@
 
         function hideDocsModal() {
             document.getElementById('docs-modal').style.display = 'none';
+        }
+
+        // Mesma taxa fixa usada no restante do dash (badge "USD/BRL" da aba P&L, PPT etc.)
+        const USD_BRL_RATE = 4.5687;
+
+        function showCostUSDModal() {
+            renderCostUSDModal();
+            document.getElementById('cost-usd-modal').style.display = 'flex';
+            lucide.createIcons();
+        }
+        function hideCostUSDModal() {
+            document.getElementById('cost-usd-modal').style.display = 'none';
+        }
+
+        // Custo unitário em USD por device, agrupado pelos 3 regimes de custo que
+        // getCostBRL() realmente distingue (não por cada tipo de cenário individual,
+        // já que todas as versões do Plano 2027 — v1/v2/v3, venda ou comodato — e todos
+        // os Forecasts (atual + antigos) e o Realizado seguem exatamente a mesma regra):
+        //  • Plano 2026 (PLAN): custo base, nunca leva o ajuste de Ago+.
+        //  • Realizado/Forecast: varia por mês — base até jul, ajustado (Smart +12,5%,
+        //    Pro +14,5%) a partir de ago — controlado pelos toggles da aba P&L.
+        //  • Plano 2027 (qualquer versão/venda/comodato): isPlan2027() força o mês pra
+        //    12, ou seja, sempre trava no nível de Dez/26 (já com o ajuste embutido,
+        //    flat o ano inteiro) — por isso um único valor serve pras 3 versões.
+        function renderCostUSDModal() {
+            const DEVICES = ['SMART', 'PRO', 'AIR', 'MINI'];
+            const fmtUSD = v => 'US$ ' + Math.abs(v / USD_BRL_RATE).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const rows = DEVICES.map(dev => ({
+                device: dev,
+                plano2026: getCostBRL(dev, null, 'PLAN'),
+                realizadoAntes: getCostBRL(dev, 1, 'ACTUAL'),
+                realizadoAgo: getCostBRL(dev, 8, 'ACTUAL'),
+                plano2027: getCostBRL(dev, 12, 'PLAN_2027')
+            }));
+
+            let html = `<div class="overflow-x-auto"><table class="w-full text-left border-collapse text-xs">
+                <thead><tr class="text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-200">
+                    <th class="p-3">Device</th>
+                    <th class="p-3">Plano 2026</th>
+                    <th class="p-3">Realizado/Forecast — até Jul</th>
+                    <th class="p-3">Realizado/Forecast — Ago+</th>
+                    <th class="p-3">Plano 2027 (v1/v2/v3, venda e comodato)</th>
+                </tr></thead><tbody class="divide-y divide-gray-100">`;
+            rows.forEach(r => {
+                html += `<tr>
+                    <td class="p-3 font-black text-gray-800">${r.device.charAt(0) + r.device.slice(1).toLowerCase()}</td>
+                    <td class="p-3 font-bold text-gray-700">${fmtUSD(r.plano2026)}</td>
+                    <td class="p-3 font-bold text-gray-700">${fmtUSD(r.realizadoAntes)}</td>
+                    <td class="p-3 font-bold text-orange-600">${fmtUSD(r.realizadoAgo)}</td>
+                    <td class="p-3 font-bold text-purple-700">${fmtUSD(r.plano2027)}</td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>
+                <p class="mt-4 text-[11px] text-gray-400">Realizado/Forecast usa o custo base até julho e aplica o ajuste de onda (Smart +12,5%, Pro +14,5%) a partir de agosto — hoje ${smartCostAdjEnabled ? '<strong>ativo</strong>' : '<strong>inativo</strong>'} pro Smart e ${proCostAdjEnabled ? '<strong>ativo</strong>' : '<strong>inativo</strong>'} pro Pro (botões da aba Simulação P&amp;L). Plano 2027 (todas as versões, venda ou comodato) sempre trava no nível de Dezembro/26 — por isso um único valor cobre v1, v2 e v3.</p>`;
+
+            document.getElementById('cost-usd-content').innerHTML = html;
         }
 
         function docNav(el) {
