@@ -840,7 +840,7 @@
                             <button onclick="setBCMetric('salesTaxes')" id="bc-metric-salesTaxes" class="pl-metric-btn">Sales Taxes</button>
                             <button onclick="setBCMetric('cmv')" id="bc-metric-cmv" class="pl-metric-btn">CMV</button>
                         </div>
-                        <button onclick="exportBCExcel()" title="Exporta a evolução mensal dos 3 anos (Qtd, Receita, Sales Taxes, CMV) — Venda x Comodato" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
+                        <button onclick="showBCExportModal()" title="Escolhe quais cenários entram no Excel antes de gerar — evolução mensal dos 3 anos (Qtd, Receita, Sales Taxes, CMV)" class="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-md hover:bg-green-700 transition-all active:scale-95">
                             <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel / GSheets
                         </button>
                     </div>
@@ -965,6 +965,28 @@
 
     <!-- PPT Modal -->
     <!-- Custo USD Modal -->
+    <!-- BC Export Modal — escolha de cenários antes de gerar o Excel -->
+    <div id="bc-export-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/50 backdrop-blur-sm" style="display:none;" onclick="if(event.target===this)hideBCExportModal()">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 max-h-[85vh] overflow-y-auto animate-fade-in" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="bg-green-600 p-2.5 rounded-xl shadow-sm">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-gray-900">Exportar BC — Escolher Cenários</h3>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5">A capa compara os cenários marcados abaixo (delta contra o 1º)</p>
+                </div>
+            </div>
+            <div id="bc-export-scenario-list" class="space-y-2 my-5"><!-- gerado por showBCExportModal() --></div>
+            <div class="flex gap-3">
+                <button onclick="hideBCExportModal()" class="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition-all">Cancelar</button>
+                <button onclick="runBCExport()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i> Gerar Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="cost-usd-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/50 backdrop-blur-sm" style="display:none;" onclick="if(event.target===this)hideCostUSDModal()">
         <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-3xl mx-4 max-h-[85vh] overflow-y-auto animate-fade-in" onclick="event.stopPropagation()">
             <div class="flex items-start justify-between mb-6">
@@ -3676,54 +3698,71 @@
             return months;
         }
 
-        // Repete o template de 2027 para 2028 e 2029 e computa Venda x Comodato mês a mês,
-        // respeitando os filtros globais de Canal/Device (Segmentação, topo da página).
-        function bcBuildTimeline() {
-            const saleType = bcSaleType(), comoType = bcComodatoType();
-            const filterCanal = document.getElementById('filter-canal')?.value || 'ALL';
-            const filterDevice = document.getElementById('filter-device')?.value || 'ALL';
-            const template = bcMonthlyTemplate(saleType, filterCanal, filterDevice);
+        // Computa a projeção de 36 meses (jan/27-dez/29) pra UM tipo de cenário só,
+        // repetindo o template mensal de 2027. Serve tanto pra venda quanto comodato —
+        // o volume (byCanalDevice) é sempre lido do próprio "type" recebido, já que todo
+        // par venda/comodato do mesmo canal reaproveita o mesmo array de linhas (só muda
+        // o reconhecimento). canalUsesComodato() aceita "índice absoluto + 1" como moNum
+        // (1=jan/27, 12=jan/28, 24=jan/29 — mesma escala de COMODATO_PHASED_CANAL_START),
+        // então uma transição faseada pode cair em qualquer um dos 3 anos da projeção
+        // (ex.: TO_JAN28 fica em venda o ano de 2027 inteiro e só migra em jan/28).
+        function bcComputeTimelineForType(type, filterCanal, filterDevice) {
+            const template = bcMonthlyTemplate(type, filterCanal, filterDevice);
             const volumes36 = [];
             for (let i = 0; i < 36; i++) volumes36.push(template[i % 12]);
 
-            // canalUsesComodato() aceita "índice absoluto + 1" como moNum — 1 = jan/27,
-            // 12 = jan/28, 24 = jan/29 — a mesma escala usada em COMODATO_PHASED_CANAL_START,
-            // então uma transição faseada pode cair em qualquer um dos 3 anos da projeção
-            // (ex.: TO_JAN28 fica em venda o ano de 2027 inteiro e só migra em jan/28).
-
-            // Reconhecimento comodato acumulado cruzando os 3 anos: a coorte entregue no mês
-            // `cohort` reconhece 1/36 em cada mês de `cohort` até `cohort+35`. Cada coorte só
-            // entra no diferimento se o canal JÁ estava em comodato no mês em que nasceu —
-            // essencial pro cenário faseado: coortes entregues enquanto o canal ainda era
-            // venda não podem também virar diferimento depois de a fase migrar pra comodato.
-            const recognized36 = [];
-            for (let i = 0; i < 36; i++) {
-                const acc = {};
-                for (let cohort = 0; cohort <= i; cohort++) {
-                    const bcd = volumes36[cohort];
-                    Object.entries(bcd).forEach(([c, devs]) => {
-                        if (!canalUsesComodato(comoType, c, cohort + 1)) return;
-                        if (!acc[c]) acc[c] = {};
-                        Object.entries(devs).forEach(([dev, q]) => {
-                            acc[c][dev] = (acc[c][dev] || 0) + (q || 0) / COMODATO_DEFER_MONTHS;
+            const comodato = isComodatoType(type);
+            let recognized36 = null;
+            if (comodato) {
+                // Reconhecimento acumulado cruzando os 3 anos: a coorte entregue no mês
+                // `cohort` reconhece 1/36 em cada mês de `cohort` até `cohort+35`. Cada
+                // coorte só entra no diferimento se o canal JÁ estava em comodato no mês
+                // em que nasceu — essencial pro cenário faseado: coortes entregues
+                // enquanto o canal ainda era venda não podem também virar diferimento
+                // depois de a fase migrar pra comodato.
+                recognized36 = [];
+                for (let i = 0; i < 36; i++) {
+                    const acc = {};
+                    for (let cohort = 0; cohort <= i; cohort++) {
+                        const bcd = volumes36[cohort];
+                        Object.entries(bcd).forEach(([c, devs]) => {
+                            if (!canalUsesComodato(type, c, cohort + 1)) return;
+                            if (!acc[c]) acc[c] = {};
+                            Object.entries(devs).forEach(([dev, q]) => {
+                                acc[c][dev] = (acc[c][dev] || 0) + (q || 0) / COMODATO_DEFER_MONTHS;
+                            });
                         });
-                    });
+                    }
+                    recognized36.push(acc);
                 }
-                recognized36.push(acc);
             }
 
             const monthsOut = [];
             for (let i = 0; i < 36; i++) {
                 // moNum calendário (1-12, repete todo ano) — usado pra custo (getCostBRL
                 // ignora isso pra tipos Plano 2027, sempre usa Dez/26 flat) e pros rótulos de
-                // mês/ano exibidos. O lado comodato usa "i + 1" (índice absoluto) na chamada de
-                // computePL() especificamente pra decidir a fase corretamente.
+                // mês/ano exibidos. Pro lado comodato, passamos "i + 1" (índice absoluto) na
+                // chamada de computePL() especificamente pra decidir a fase corretamente.
                 const moNum = (i % 12) + 1;
-                const venda = computePL(volumes36[i], moNum, saleType, null);
-                const comodato = computePL(volumes36[i], i + 1, comoType, recognized36[i]);
-                monthsOut.push({ year: 2027 + Math.floor(i / 12), moNum, venda, comodato });
+                const pl = comodato
+                    ? computePL(volumes36[i], i + 1, type, recognized36[i])
+                    : computePL(volumes36[i], moNum, type, null);
+                monthsOut.push({ year: 2027 + Math.floor(i / 12), moNum, pl });
             }
             return monthsOut;
+        }
+
+        // Repete o template de 2027 para 2028 e 2029 e computa Venda x Comodato mês a mês,
+        // respeitando os filtros globais de Canal/Device (Segmentação, topo da página).
+        // Usado pelos cards/gráficos da aba BC (sempre exatamente 2 séries: venda x a
+        // variante de comodato selecionada no momento).
+        function bcBuildTimeline() {
+            const saleType = bcSaleType(), comoType = bcComodatoType();
+            const filterCanal = document.getElementById('filter-canal')?.value || 'ALL';
+            const filterDevice = document.getElementById('filter-device')?.value || 'ALL';
+            const vTimeline = bcComputeTimelineForType(saleType, filterCanal, filterDevice);
+            const cTimeline = bcComputeTimelineForType(comoType, filterCanal, filterDevice);
+            return vTimeline.map((m, i) => ({ year: m.year, moNum: m.moNum, venda: m.pl, comodato: cTimeline[i].pl }));
         }
 
         function bcAggregateYear(monthsOut, year, key) {
@@ -3890,19 +3929,73 @@
             renderBCTimelineChart(monthsOut);
         }
 
+        // Cenários disponíveis pra exportar, dado o Plano 2027 selecionado no momento —
+        // v1/v2 só têm Venda x Comodato "puro"; v3 abre as 5 variantes de comodato.
+        function bcAvailableExportScenarios() {
+            const keys = [bcSaleType()];
+            if (bcPlanoVersion === 'v3') {
+                keys.push('PLAN_2027_V3_COMODATO', 'PLAN_2027_V3_COMODATO_TO_JUL27', 'PLAN_2027_V3_COMODATO_TO_OUT27', 'PLAN_2027_V3_COMODATO_TO_JAN28', 'PLAN_2027_V3_COMODATO_TO_NUNCA');
+            } else {
+                keys.push(bcComodatoType());
+            }
+            return keys;
+        }
+
+        // Abre o modal de seleção de cenários antes de gerar o Excel — pré-marca a Venda
+        // e a variante de Comodato ativas no momento na aba BC.
+        function showBCExportModal() {
+            const opts = bcAvailableExportScenarios();
+            const defaultChecked = new Set([bcSaleType(), bcComodatoType()]);
+            const list = document.getElementById('bc-export-scenario-list');
+            list.innerHTML = opts.map(type => `
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-all">
+                    <input type="checkbox" class="bc-export-check w-4 h-4 accent-green-600" value="${type}" ${defaultChecked.has(type) ? 'checked' : ''}>
+                    <span class="text-sm font-bold text-gray-700">${scenarioTypeShortLabel(type)}</span>
+                </label>
+            `).join('');
+            document.getElementById('bc-export-modal').style.display = 'flex';
+            lucide.createIcons();
+        }
+        function hideBCExportModal() {
+            document.getElementById('bc-export-modal').style.display = 'none';
+        }
+        function runBCExport() {
+            const selected = Array.from(document.querySelectorAll('.bc-export-check:checked')).map(el => el.value);
+            if (selected.length < 1) { alert('Selecione pelo menos 1 cenário.'); return; }
+            hideBCExportModal();
+            exportBCExcel(selected);
+        }
+
         // Exporta a evolução mensal dos 3 anos (Jan/27-Dez/29) por Qtd/Receita/Sales
-        // Taxes/CMV, Venda x Comodato — baixa um .xlsx com uma capa estilizada (padrão
-        // visual Mercado Livre: amarelo #FFE600 + navy #1A1A2E, mesmas cores do gerador
-        // de PPT) resumindo os 2 cenários e o delta entre eles, ano a ano.
+        // Taxes/CMV, comparando os cenários escolhidos em showBCExportModal() — baixa um
+        // .xlsx com uma capa estilizada (padrão visual Mercado Livre: amarelo #FFE600 +
+        // navy #1A1A2E, mesmas cores do gerador de PPT) com Receita/Sales Taxes/CMV/
+        // Resultado (o totalizador) por ano + Total 3 anos, e o delta de cada cenário
+        // contra o 1º selecionado (baseline, geralmente a Venda).
         // Usa ExcelJS (não o SheetJS/XLSX usado nos outros exports do dash) porque o
         // build community do SheetJS não escreve estilo de célula (cor/preenchimento)
         // em .xlsx — testado e confirmado: o estilo se perde no round-trip write→read.
-        async function exportBCExcel() {
-            const monthsOut = bcBuildTimeline();
-            const saleLabel = `Plano 2027 ${bcPlanoVersion} - Venda`;
-            const comoLabel = scenarioTypeShortLabel(bcComodatoType());
+        async function exportBCExcel(selectedTypes) {
+            if (!selectedTypes || !selectedTypes.length) selectedTypes = [bcSaleType(), bcComodatoType()];
+            const filterCanal = document.getElementById('filter-canal')?.value || 'ALL';
+            const filterDevice = document.getElementById('filter-device')?.value || 'ALL';
             const MO_LBL = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-            const metricLbl = PL_METRIC_LABELS[bcMetric] || 'Resultado';
+
+            const timelines = {};
+            const labels = {};
+            selectedTypes.forEach(t => {
+                timelines[t] = bcComputeTimelineForType(t, filterCanal, filterDevice);
+                labels[t] = scenarioTypeShortLabel(t);
+            });
+
+            const emptyAgg = () => ({ totalReceita: 0, totalSalesTaxes: 0, totalCMV: 0, totalResultado: 0 });
+            const addPL = (acc, pl) => {
+                acc.totalReceita += pl.totalReceita; acc.totalSalesTaxes += pl.totalSalesTaxes;
+                acc.totalCMV += pl.totalCMV; acc.totalResultado += pl.totalResultado;
+                return acc;
+            };
+            const aggYear = (t, year) => timelines[t].filter(m => m.year === year).reduce((acc, m) => addPL(acc, m.pl), emptyAgg());
+            const aggTotal = t => timelines[t].reduce((acc, m) => addPL(acc, m.pl), emptyAgg());
 
             const ML_Y = 'FFFFE600', ML_D = 'FF1A1A2E', ML_GRAY = 'FFF3F4F6', ML_WHITE = 'FFFFFFFF';
             const ML_GREEN = 'FF16A34A', ML_RED = 'FFDC2626', ML_MUTED = 'FF6B7280';
@@ -3914,104 +4007,135 @@
             workbook.creator = 'MPOS Analytics';
             workbook.created = new Date();
 
-            // ── Aba 0 — Capa: resumo por ano (Venda x Comodato x Delta) ──────────
-            const years = [2027, 2028, 2029];
-            const yearAgg = years.map(y => ({
-                year: y,
-                venda: bcMetricTotal(bcAggregateYear(monthsOut, y, 'venda')),
-                comodato: bcMetricTotal(bcAggregateYear(monthsOut, y, 'comodato'))
-            }));
-            const totalVenda = yearAgg.reduce((s, y) => s + y.venda, 0);
-            const totalComodato = yearAgg.reduce((s, y) => s + y.comodato, 0);
+            // ── Aba 0 — Capa: Receita/Sales Taxes/CMV/Resultado por ano (+ Total 3 anos),
+            // colunas = cada cenário escolhido, e o delta de cada um contra o 1º (baseline).
+            const baseline = selectedTypes[0];
+            const others = selectedTypes.slice(1);
+            const nCols = 1 + selectedTypes.length + others.length * 2;
 
             const capa = workbook.addWorksheet('Capa', { views: [{ showGridLines: false }] });
-            capa.columns = [{ width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 16 }];
+            capa.columns = Array.from({ length: nCols }, (_, i) => ({ width: i === 0 ? 16 : 20 }));
 
-            capa.mergeCells('A1:E1');
-            const titleCell = capa.getCell('A1');
-            titleCell.value = 'MPOS ANALYTICS — BC: VENDA VS COMODATO';
+            capa.mergeCells(1, 1, 1, nCols);
+            const titleCell = capa.getCell(1, 1);
+            titleCell.value = 'MPOS ANALYTICS — BC: COMPARATIVO DE CENÁRIOS';
             titleCell.font = { bold: true, size: 16, color: { argb: ML_D } };
             titleCell.fill = fill(ML_Y);
             titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
             capa.getRow(1).height = 32;
 
-            capa.mergeCells('A2:E2');
-            const subtitleCell = capa.getCell('A2');
-            subtitleCell.value = bcPlanoVersion === 'v3'
-                ? `Plano 2027 v3 · ${comoLabel} · Projeção 2027-2029 · Métrica: ${metricLbl}`
-                : `Plano 2027 ${bcPlanoVersion} · Projeção 2027-2029 · Métrica: ${metricLbl}`;
+            capa.mergeCells(2, 1, 2, nCols);
+            const subtitleCell = capa.getCell(2, 1);
+            subtitleCell.value = `Plano 2027 ${bcPlanoVersion} · Projeção 2027-2029 · Cenários: ${selectedTypes.map(t => labels[t]).join(' · ')}`;
             subtitleCell.font = { italic: true, size: 10, color: { argb: ML_MUTED } };
             subtitleCell.alignment = { horizontal: 'center' };
             capa.getRow(2).height = 20;
 
-            const headerRow = capa.addRow(['Ano', 'Venda', 'Comodato', 'Delta (R$)', 'Delta (%)']);
-            headerRow.eachCell(c => {
-                c.font = { bold: true, color: { argb: ML_WHITE } };
-                c.fill = fill(ML_D);
-                c.alignment = { horizontal: 'center' };
-            });
+            let curRow = 4;
+            const blocks = [2027, 2028, 2029].map(y => ({ label: String(y), agg: t => aggYear(t, y) }));
+            blocks.push({ label: 'Total 3 anos', agg: aggTotal });
 
-            const addYearRow = (label, v, c, highlight) => {
-                const d = c - v;
-                const pct = v !== 0 ? d / Math.abs(v) : 0;
-                const row = capa.addRow([label, v, c, d, pct]);
-                row.getCell(1).font = { bold: !!highlight };
-                row.getCell(2).numFmt = moneyFmt;
-                row.getCell(3).numFmt = moneyFmt;
-                row.getCell(4).numFmt = moneyFmt;
-                row.getCell(5).numFmt = pctFmt;
-                const deltaColor = d >= 0 ? ML_GREEN : ML_RED;
-                row.getCell(4).font = { bold: true, color: { argb: deltaColor } };
-                row.getCell(5).font = { bold: true, color: { argb: deltaColor } };
-                if (highlight) row.eachCell(cell => { cell.fill = fill(ML_GRAY); });
-                return row;
-            };
-            yearAgg.forEach(y => addYearRow(String(y.year), y.venda, y.comodato, false));
-            capa.addRow([]);
-            addYearRow('Total 3 anos', totalVenda, totalComodato, true);
+            const metricRows = [
+                { key: 'totalReceita', label: 'Receita' },
+                { key: 'totalSalesTaxes', label: 'Sales Taxes' },
+                { key: 'totalCMV', label: 'CMV' },
+                { key: 'totalResultado', label: 'Resultado', totalizer: true }
+            ];
+
+            blocks.forEach(block => {
+                capa.mergeCells(curRow, 1, curRow, nCols);
+                const yearCell = capa.getCell(curRow, 1);
+                yearCell.value = block.label;
+                yearCell.font = { bold: true, size: 12, color: { argb: ML_WHITE } };
+                yearCell.fill = fill(ML_D);
+                yearCell.alignment = { horizontal: 'center' };
+                curRow++;
+
+                const headerVals = ['', ...selectedTypes.map(t => labels[t])];
+                others.forEach(t => headerVals.push(`Δ ${labels[t]} (R$)`, `Δ ${labels[t]} (%)`));
+                const headerRow = capa.getRow(curRow);
+                headerVals.forEach((v, idx) => {
+                    const cell = headerRow.getCell(idx + 1);
+                    cell.value = v;
+                    cell.font = { bold: true, color: { argb: 'FF374151' } };
+                    cell.alignment = { horizontal: idx === 0 ? 'left' : 'center', wrapText: true };
+                });
+                curRow++;
+
+                const aggByType = {};
+                selectedTypes.forEach(t => { aggByType[t] = block.agg(t); });
+
+                metricRows.forEach(metric => {
+                    const row = capa.getRow(curRow);
+                    const labelCell = row.getCell(1);
+                    labelCell.value = metric.label;
+                    labelCell.font = { bold: !!metric.totalizer };
+
+                    selectedTypes.forEach((t, idx) => {
+                        const cell = row.getCell(idx + 2);
+                        cell.value = aggByType[t][metric.key];
+                        cell.numFmt = moneyFmt;
+                        if (metric.totalizer) cell.font = { bold: true };
+                    });
+
+                    let colIdx = selectedTypes.length + 1;
+                    others.forEach(t => {
+                        const baseVal = aggByType[baseline][metric.key];
+                        const val = aggByType[t][metric.key];
+                        const delta = val - baseVal;
+                        const pct = baseVal !== 0 ? delta / Math.abs(baseVal) : 0;
+                        const deltaColor = delta >= 0 ? ML_GREEN : ML_RED;
+                        const deltaCell = row.getCell(colIdx + 1);
+                        deltaCell.value = delta; deltaCell.numFmt = moneyFmt;
+                        deltaCell.font = { bold: true, color: { argb: deltaColor } };
+                        const pctCell = row.getCell(colIdx + 2);
+                        pctCell.value = pct; pctCell.numFmt = pctFmt;
+                        pctCell.font = { bold: true, color: { argb: deltaColor } };
+                        colIdx += 2;
+                    });
+
+                    if (metric.totalizer) row.eachCell(c => { c.fill = fill(ML_GRAY); });
+                    curRow++;
+                });
+                curRow++; // linha em branco entre os blocos de ano
+            });
 
             // ── Aba 1 — evolução mensal agregada (Qtd/Receita/Sales Taxes/CMV por mês) ──
             const totals = workbook.addWorksheet('BC Evolução Mensal');
             totals.columns = [
-                { header: 'Cenário', width: 24 }, { header: 'Ano', width: 6 }, { header: 'Mês', width: 6 },
+                { header: 'Cenário', width: 28 }, { header: 'Ano', width: 6 }, { header: 'Mês', width: 6 },
                 { header: 'Mês/Ano', width: 10 }, { header: 'Qtd Devices', width: 12 }, { header: 'Receita', width: 16 },
                 { header: 'Sales Taxes', width: 16 }, { header: 'CMV', width: 16 }, { header: 'Resultado', width: 16 }
             ];
             totals.getRow(1).eachCell(c => { c.font = { bold: true, color: { argb: ML_WHITE } }; c.fill = fill(ML_D); });
-            const emitTotals = (scenarioName, key) => {
-                monthsOut.forEach(m => {
-                    const pl = m[key];
+            selectedTypes.forEach(t => {
+                timelines[t].forEach(m => {
                     const mLbl = `${MO_LBL[m.moNum - 1]}/${String(m.year).slice(2)}`;
-                    totals.addRow([scenarioName, m.year, m.moNum, mLbl, Math.round(pl.totalQty || 0), Math.round(pl.totalReceita || 0), Math.round(pl.totalSalesTaxes || 0), Math.round(pl.totalCMV || 0), Math.round(pl.totalResultado || 0)]);
+                    totals.addRow([labels[t], m.year, m.moNum, mLbl, Math.round(m.pl.totalQty || 0), Math.round(m.pl.totalReceita || 0), Math.round(m.pl.totalSalesTaxes || 0), Math.round(m.pl.totalCMV || 0), Math.round(m.pl.totalResultado || 0)]);
                 });
-            };
-            emitTotals(saleLabel, 'venda');
-            emitTotals(comoLabel, 'comodato');
+            });
 
             // ── Aba 2 — mesmo detalhe, aberto por Canal/Device ──────────────────
             const detail = workbook.addWorksheet('BC Detalhe Canal-Device');
             detail.columns = [
-                { header: 'Cenário', width: 24 }, { header: 'Ano', width: 6 }, { header: 'Mês', width: 6 },
+                { header: 'Cenário', width: 28 }, { header: 'Ano', width: 6 }, { header: 'Mês', width: 6 },
                 { header: 'Mês/Ano', width: 10 }, { header: 'Canal', width: 22 }, { header: 'Device', width: 10 },
                 { header: 'Qtd', width: 10 }, { header: 'Receita', width: 16 }, { header: 'Sales Taxes', width: 16 },
                 { header: 'CMV', width: 14 }, { header: 'Resultado', width: 16 }
             ];
             detail.getRow(1).eachCell(c => { c.font = { bold: true, color: { argb: ML_WHITE } }; c.fill = fill(ML_D); });
-            const emitDetail = (scenarioName, key) => {
-                monthsOut.forEach(m => {
-                    const pl = m[key];
+            selectedTypes.forEach(t => {
+                timelines[t].forEach(m => {
                     const mLbl = `${MO_LBL[m.moNum - 1]}/${String(m.year).slice(2)}`;
-                    Object.keys(pl.byCanal || {}).forEach(canal => {
-                        const cData = pl.byCanal[canal];
+                    Object.keys(m.pl.byCanal || {}).forEach(canal => {
+                        const cData = m.pl.byCanal[canal];
                         Object.entries(cData.devices || {}).forEach(([dev, d]) => {
                             if (!d) return;
-                            detail.addRow([scenarioName, m.year, m.moNum, mLbl, canal, dev, Math.round(d.qty || 0), Math.round(d.receita || 0), Math.round(d.salesTaxes || 0), Math.round(d.cmv || 0), Math.round(d.resultado || 0)]);
+                            detail.addRow([labels[t], m.year, m.moNum, mLbl, canal, dev, Math.round(d.qty || 0), Math.round(d.receita || 0), Math.round(d.salesTaxes || 0), Math.round(d.cmv || 0), Math.round(d.resultado || 0)]);
                         });
                     });
                 });
-            };
-            emitDetail(saleLabel, 'venda');
-            emitDetail(comoLabel, 'comodato');
+            });
 
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
