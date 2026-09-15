@@ -32,22 +32,22 @@
 -- O BigQuery nao aceita os placeholders <UE_DATE_DESDE> / <UE_DATE_HASTA> da
 -- ferramenta interna. Alternativas, se preferir:
 --   a) query parameters : WHERE UE_DATE BETWEEN @ue_date_desde AND @ue_date_hasta
---   b) literais diretos : WHERE UE_DATE BETWEEN DATE '2026-01-01' AND DATE '2026-12-31'
+--   b) literais diretos : WHERE UE_DATE BETWEEN DATE '2024-01-01' AND DATE '2024-12-31'
 --   c) placeholders     : WHERE UE_DATE BETWEEN <UE_DATE_DESDE> AND <UE_DATE_HASTA>
 --                         (so na ferramenta interna, nao no console do BQ)
 -- Se UE_DATE nao for DATE (ex.: TIMESTAMP/STRING), ajuste o tipo do DECLARE.
 --
 -- CUSTO (importante): a tabela e particionada por UE_DATE e o pruning funciona,
 -- entao o custo cresce com a janela de datas E com o numero de colunas.
--- Medido via dry-run na janela 2026-01-01 -> 2026-09-14 (~8,5 meses):
+-- Medido via dry-run (~8,5 meses, janela 2026-01-01 -> 2026-09-14):
 --       4 colunas de metrica  ->  4.118 GiB  (US$  20)
 --      40 colunas de metrica  -> 14.482 GiB  (US$  71)
 --   => marginal de ~288 GiB por coluna de metrica
---   => as 170 colunas deste P&L  ~= 51.900 GiB (~51 TiB, ~US$ 250) por rodada
--- Ou seja: ~6 TiB / ~US$ 30 por mes de dados.
--- Recomendado: rodar mes a mes (UE_DATE_DESDE = DATE_TRUNC(CURRENT_DATE(), MONTH))
--- e materializar o resultado numa tabela, em vez de reprocessar o YTD inteiro.
-DECLARE UE_DATE_DESDE DATE DEFAULT DATE '2026-01-01';   -- 2026 em diante
+--   => as 170 colunas deste P&L  ~= 6 TiB (~US$ 30) por mes de dados
+-- A janela 2024-01-01 -> hoje cobre ~2,7 anos: estimar ~194 TiB / ~US$ 950
+-- para as 170 colunas de uma so vez. Recomendado rodar por mes/trimestre e
+-- materializar o resultado numa tabela, em vez de reprocessar tudo de uma vez.
+DECLARE UE_DATE_DESDE DATE DEFAULT DATE '2024-01-01';   -- 2024 em diante
 DECLARE UE_DATE_HASTA DATE DEFAULT CURRENT_DATE();
 
 WITH base AS (
@@ -522,7 +522,7 @@ mapa AS (
     ('UE_MP_MNG_OTH_DIR_VAR_COST_AMT_LC', 'C.17.6', 'Other Variable Fintech Costs', 'PYL_DETAIL_MANAGERIAL_NEW', 'C. Variable Contribution', 'C.17 Direct Variable Costs', 'C.17.6 Other Variable Fintech Costs', NULL, 'PYL', NULL),
     ('UE_MP_MNG_OTHER_VARIABLE_FINTECH_COSTS_POINT_AMT_LC', 'C.17.6', 'Other Variable Fintech Costs', 'PYL_DETAIL_MANAGERIAL_NEW', 'C. Variable Contribution', 'C.17 Direct Variable Costs', 'C.17.6 Other Variable Fintech Costs', NULL, 'PYL', NULL),
     ('UE_MP_MNG_CERTIFIED_ADVISOR_AMT_LC', 'C.17.6', 'Other Variable Fintech Costs', 'PYL_DETAIL_MANAGERIAL_NEW', 'C. Variable Contribution', 'C.17 Direct Variable Costs', 'C.17.6 Other Variable Fintech Costs', NULL, 'PYL', NULL),
-    ('UE_MP_MNG_TLM_AMT_LC', 'C.17.7', 'Telemetría', 'PYL_DETAIL_MANAGERIAL_NEW', 'C. Variable Contribution', 'C.17 Direct Variable Costs', 'C.17.7 Telemetría', NULL, 'PYL', NULL),
+    ('UE_MP_MNG_TLM_AMT_LC', 'C.17.7', 'Telemetria', 'PYL_DETAIL_MANAGERIAL_NEW', 'C. Variable Contribution', 'C.17 Direct Variable Costs', 'C.17.7 Telemetria', NULL, 'PYL', NULL),
     ('UE_MP_MNG_DISCOUNT_AMT_LC', 'C.17.8', 'Descuentos', 'PYL_DETAIL_MANAGERIAL_NEW', 'C. Variable Contribution', 'C.17 Direct Variable Costs', 'C.17.8 Descuentos', NULL, 'PYL', NULL),
     ('UE_MP_PAYER_DISCOUNT_AMT_LC', 'C.17.8', 'Descuentos', 'PYL_DETAIL_MANAGERIAL_NEW', 'C. Variable Contribution', 'C.17 Direct Variable Costs', 'C.17.8 Descuentos', NULL, 'PYL', NULL),
     ('UE_MP_INCENTIVES_SELLERS_AMT_LC', 'C.17.8', 'Descuentos', 'PYL_DETAIL_MANAGERIAL_NEW', 'C. Variable Contribution', 'C.17 Direct Variable Costs', 'C.17.8 Descuentos', NULL, 'PYL', NULL),
@@ -542,7 +542,7 @@ mapa AS (
     ('UE_MP_MNG_SUPP_COST_POINT_AMT_LC', 'D.19.2.4', 'Insumos Point', 'PYL_MANAGERIAL_UE_NEW', 'D. Direct Contribution', 'D.19 Customer Acquisition Cost', 'D.19.2 Point COGS', 'D.19.2.4 Insumos Point', 'PYL', NULL),
     ('UE_MP_MNG_RECOND_AMT_LC', 'D.19.2.5', 'Reacondicionamiento', 'PYL_MANAGERIAL_UE_NEW', 'D. Direct Contribution', 'D.19 Customer Acquisition Cost', 'D.19.2 Point COGS', 'D.19.2.5 Reacondicionamiento', 'PYL', NULL),
     ('UE_MP_MNG_OTH_MPOS_COGS_AMT_LC', 'D.19.2.6', 'Other MPOS Cogs', 'PYL_MANAGERIAL_UE_NEW', 'D. Direct Contribution', 'D.19 Customer Acquisition Cost', 'D.19.2 Point COGS', 'D.19.2.6 Other MPOS Cogs', 'PYL', NULL),
-    ('UE_MP_MNG_PREV_COST_MPOS_AMT_LC', 'D.19.3', 'Previsión MPOS Cost', 'PYL_DETAIL_MANAGERIAL_NEW', 'D. Direct Contribution', 'D.19 Customer Acquisition Cost', 'D.19.3 Previsión MPOS Cost', NULL, 'PYL', NULL),
+    ('UE_MP_MNG_PREV_COST_MPOS_AMT_LC', 'D.19.3', 'Prevision MPOS Cost', 'PYL_DETAIL_MANAGERIAL_NEW', 'D. Direct Contribution', 'D.19 Customer Acquisition Cost', 'D.19.3 Prevision MPOS Cost', NULL, 'PYL', NULL),
     ('UE_MP_MNG_COMISIONES_RESELLERS_POINT_AMT_LC', 'D.19.4.1', 'Comisiones a Resellers Point', 'PYL_MANAGERIAL_UE_NEW', 'D. Direct Contribution', 'D.19 Customer Acquisition Cost', 'D.19.4 CPA', 'D.19.4.1 Comisiones a Resellers Point', 'PYL', NULL),
     ('UE_MP_MNG_SLS_FORCE_MPOS_AMT_LC', 'D.19.4.2', 'Fuerza de Venta de Terceros Point', 'PYL_MANAGERIAL_UE_NEW', 'D. Direct Contribution', 'D.19 Customer Acquisition Cost', 'D.19.4 CPA', 'D.19.4.2 Fuerza de Venta de Terceros Point', 'PYL', NULL),
     ('UE_MP_MNG_SLS_FORCE_PROPIA_AMT_LC', 'D.19.4.3', 'Fuerza de Venta Propia Acquiring', 'PYL_MANAGERIAL_UE_NEW', 'D. Direct Contribution', 'D.19 Customer Acquisition Cost', 'D.19.4 CPA', 'D.19.4.3 Fuerza de Venta Propia Acquiring', 'PYL', NULL),
