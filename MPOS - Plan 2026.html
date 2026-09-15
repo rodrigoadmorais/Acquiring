@@ -828,10 +828,10 @@
                         </div>
                         <div id="bc-to-transition-group" class="flex items-center bg-gray-200 rounded-lg p-1 shadow-inner gap-0.5" title="Quando o canal TO migra pra comodato (só se aplica ao Plano 2027 v3)">
                             <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">TO em comodato</span>
-                            <button onclick="setBCToTransition('out26')" id="bc-to-out26" class="pl-metric-btn">Out/26</button>
-                            <button onclick="setBCToTransition('jan27')" id="bc-to-jan27" class="pl-metric-btn">Jan/27</button>
+                            <button onclick="setBCToTransition('inicio')" id="bc-to-inicio" class="pl-metric-btn">Desde o início</button>
                             <button onclick="setBCToTransition('jul27')" id="bc-to-jul27" class="pl-metric-btn active">Jul/27</button>
-                            <button onclick="setBCToTransition('nunca')" id="bc-to-nunca" class="pl-metric-btn">Nunca</button>
+                            <button onclick="setBCToTransition('out27')" id="bc-to-out27" class="pl-metric-btn">Out/27</button>
+                            <button onclick="setBCToTransition('jan28')" id="bc-to-jan28" class="pl-metric-btn">Jan/28</button>
                         </div>
                         <div class="flex bg-gray-200 rounded-lg p-1 shadow-inner">
                             <button onclick="setBCMetric('resultado')" id="bc-metric-resultado" class="pl-metric-btn active" style="color:#1d4ed8;">Resultado</button>
@@ -1437,10 +1437,9 @@
                 db.PLAN_2027_COMODATO = PLAN_2027_ROWS;      // mesmo volume do v1; muda o reconhecimento
                 db.PLAN_2027_V2_COMODATO = PLAN_2027_V2_ROWS; // mesmo volume do v2; muda o reconhecimento
                 db.PLAN_2027_V3_COMODATO = PLAN_2027_V3_ROWS; // mesmo volume do v3; muda o reconhecimento
-                db.PLAN_2027_V3_COMODATO_TO_JUL = PLAN_2027_V3_ROWS; // mesmo volume; TO só entra em comodato a partir de jul/27
-                db.PLAN_2027_V3_COMODATO_TO_OUT26 = PLAN_2027_V3_ROWS; // TO entra em comodato em out/26 (antes da janela — já nasce comodato)
-                db.PLAN_2027_V3_COMODATO_TO_JAN27 = PLAN_2027_V3_ROWS; // TO entra em comodato em jan/27 (desde o 1º mês da janela)
-                db.PLAN_2027_V3_COMODATO_TO_NUNCA = PLAN_2027_V3_ROWS; // TO nunca migra pra comodato, fica 100% venda
+                db.PLAN_2027_V3_COMODATO_TO_JUL27 = PLAN_2027_V3_ROWS; // mesmo volume; TO só entra em comodato a partir de jul/27
+                db.PLAN_2027_V3_COMODATO_TO_OUT27 = PLAN_2027_V3_ROWS; // TO só entra em comodato a partir de out/27
+                db.PLAN_2027_V3_COMODATO_TO_JAN28 = PLAN_2027_V3_ROWS; // TO só entra em comodato a partir de jan/28 (venda o ano de 2027 inteiro)
                 dbTPV = parseTPVData(rawTPV);
                 parseForecastOldJSON(rawForecastOld);
 
@@ -1516,10 +1515,9 @@
                     else if (type === 'PLAN_2027_COMODATO') label = `Plano ${y} v1 - Comodato`;
                     else if (type === 'PLAN_2027_V2_COMODATO') label = `Plano ${y} v2 - Comodato`;
                     else if (type === 'PLAN_2027_V3_COMODATO') label = `Plano ${y} v3 - Comodato`;
-                    else if (type === 'PLAN_2027_V3_COMODATO_TO_JUL') label = `Plano ${y} v3 - Comodato (TO a partir Jul/27)`;
-                    else if (type === 'PLAN_2027_V3_COMODATO_TO_OUT26') label = `Plano ${y} v3 - Comodato (TO a partir Out/26)`;
-                    else if (type === 'PLAN_2027_V3_COMODATO_TO_JAN27') label = `Plano ${y} v3 - Comodato (TO a partir Jan/27)`;
-                    else if (type === 'PLAN_2027_V3_COMODATO_TO_NUNCA') label = `Plano ${y} v3 - Comodato (TO nunca)`;
+                    else if (type === 'PLAN_2027_V3_COMODATO_TO_JUL27') label = `Plano ${y} v3 - Comodato (TO a partir Jul/27)`;
+                    else if (type === 'PLAN_2027_V3_COMODATO_TO_OUT27') label = `Plano ${y} v3 - Comodato (TO a partir Out/27)`;
+                    else if (type === 'PLAN_2027_V3_COMODATO_TO_JAN28') label = `Plano ${y} v3 - Comodato (TO a partir Jan/28)`;
                     else label = `Forecast ${y}`;
                     scenarioList.push({ id: `${type}|${y}`, label, type: type, months: yMonths });
                 });
@@ -1811,10 +1809,9 @@
             if (type === 'PLAN_2027_COMODATO') return '#0D9488';
             if (type === 'PLAN_2027_V2_COMODATO') return '#0891B2';
             if (type === 'PLAN_2027_V3_COMODATO') return '#0E7490';
-            if (type === 'PLAN_2027_V3_COMODATO_TO_JUL') return '#65A30D';
-            if (type === 'PLAN_2027_V3_COMODATO_TO_OUT26') return '#EA580C';
-            if (type === 'PLAN_2027_V3_COMODATO_TO_JAN27') return '#0891B2';
-            if (type === 'PLAN_2027_V3_COMODATO_TO_NUNCA') return '#57534E';
+            if (type === 'PLAN_2027_V3_COMODATO_TO_JUL27') return '#65A30D';
+            if (type === 'PLAN_2027_V3_COMODATO_TO_OUT27') return '#EA580C';
+            if (type === 'PLAN_2027_V3_COMODATO_TO_JAN28') return '#7C3AED';
             if (type.startsWith('FORECAST_OLD_')) return '#EC4899';
             return '#3B82F6';
         }
@@ -1827,10 +1824,9 @@
             if (type === 'PLAN_2027_COMODATO') return 'rgba(13, 148, 136, 0.1)';
             if (type === 'PLAN_2027_V2_COMODATO') return 'rgba(8, 145, 178, 0.1)';
             if (type === 'PLAN_2027_V3_COMODATO') return 'rgba(14, 116, 144, 0.1)';
-            if (type === 'PLAN_2027_V3_COMODATO_TO_JUL') return 'rgba(101, 163, 13, 0.1)';
-            if (type === 'PLAN_2027_V3_COMODATO_TO_OUT26') return 'rgba(234, 88, 12, 0.1)';
-            if (type === 'PLAN_2027_V3_COMODATO_TO_JAN27') return 'rgba(8, 145, 178, 0.1)';
-            if (type === 'PLAN_2027_V3_COMODATO_TO_NUNCA') return 'rgba(87, 83, 78, 0.1)';
+            if (type === 'PLAN_2027_V3_COMODATO_TO_JUL27') return 'rgba(101, 163, 13, 0.1)';
+            if (type === 'PLAN_2027_V3_COMODATO_TO_OUT27') return 'rgba(234, 88, 12, 0.1)';
+            if (type === 'PLAN_2027_V3_COMODATO_TO_JAN28') return 'rgba(124, 58, 237, 0.1)';
             if (type.startsWith('FORECAST_OLD_')) return 'rgba(236, 72, 153, 0.1)';
             return 'rgba(59, 130, 246, 0.1)';
         }
@@ -2712,7 +2708,7 @@
         }
         // As 4 variantes "quando o TO entra em comodato" oferecidas na aba BC pro Plano
         // 2027 v3 — usado em vários pontos do código pra evitar repetir a lista inteira.
-        const BC_TO_PHASE_TYPES = ['PLAN_2027_V3_COMODATO_TO_JUL', 'PLAN_2027_V3_COMODATO_TO_OUT26', 'PLAN_2027_V3_COMODATO_TO_JAN27', 'PLAN_2027_V3_COMODATO_TO_NUNCA'];
+        const BC_TO_PHASE_TYPES = ['PLAN_2027_V3_COMODATO_TO_JUL27', 'PLAN_2027_V3_COMODATO_TO_OUT27', 'PLAN_2027_V3_COMODATO_TO_JAN28'];
         function isPlan2027(type) { return type === 'PLAN_2027' || type === 'PLAN_2027_V2' || type === 'PLAN_2027_V3' || type === 'PLAN_2027_COMODATO' || type === 'PLAN_2027_V2_COMODATO' || type === 'PLAN_2027_V3_COMODATO' || BC_TO_PHASE_TYPES.includes(type); }
         function isComodatoType(type) { return type === 'PLAN_2027_COMODATO' || type === 'PLAN_2027_V2_COMODATO' || type === 'PLAN_2027_V3_COMODATO' || BC_TO_PHASE_TYPES.includes(type); }
         // Tipos que pertencem à dimensão "Plano" no seletor de cenários — Plano 2026 e todas
@@ -2725,10 +2721,9 @@
             'PLAN_2027': 'Plano 2027 v1', 'PLAN_2027_V2': 'Plano 2027 v2', 'PLAN_2027_V3': 'Plano 2027 v3',
             'PLAN_2027_COMODATO': 'Plano 2027 v1 Comodato', 'PLAN_2027_V2_COMODATO': 'Plano 2027 v2 Comodato',
             'PLAN_2027_V3_COMODATO': 'Plano 2027 v3 Comodato',
-            'PLAN_2027_V3_COMODATO_TO_JUL': 'Plano 2027 v3 Comodato (TO a partir Jul/27)',
-            'PLAN_2027_V3_COMODATO_TO_OUT26': 'Plano 2027 v3 Comodato (TO a partir Out/26)',
-            'PLAN_2027_V3_COMODATO_TO_JAN27': 'Plano 2027 v3 Comodato (TO a partir Jan/27)',
-            'PLAN_2027_V3_COMODATO_TO_NUNCA': 'Plano 2027 v3 Comodato (TO nunca)'
+            'PLAN_2027_V3_COMODATO_TO_JUL27': 'Plano 2027 v3 Comodato (TO a partir Jul/27)',
+            'PLAN_2027_V3_COMODATO_TO_OUT27': 'Plano 2027 v3 Comodato (TO a partir Out/27)',
+            'PLAN_2027_V3_COMODATO_TO_JAN28': 'Plano 2027 v3 Comodato (TO a partir Jan/28)'
         };
         function scenarioTypeShortLabel(type) {
             if (SCENARIO_TYPE_SHORT_LABELS[type]) return SCENARIO_TYPE_SHORT_LABELS[type];
@@ -2812,33 +2807,32 @@
         }
 
         // Cenários "faseados" onde um canal específico começa em venda e só migra pra
-        // comodato a partir de um certo mês (1-12) do ano de origem (2027) — o resto do
-        // canal segue as regras normais de isComodatoType/COMODATO_EXCLUDED_CANALS.
-        // moNum opcional: quando omitido, assume que o canal já está na fase comodato
-        // (ex.: cálculo do mix agregado sem contexto de mês).
+        // comodato a partir de um índice absoluto de mês (0-based, 0 = jan/27) dentro da
+        // janela de projeção de 3 anos (jan/27-dez/29) — o resto do canal segue as regras
+        // normais de isComodatoType/COMODATO_EXCLUDED_CANALS. moNum aqui é sempre "índice
+        // absoluto + 1" (1 = jan/27, 12 = jan/28, 24 = jan/29, ...), não um mês 1-12 que
+        // se repete todo ano — assim uma transição pode cair em qualquer um dos 3 anos.
+        // Fora da aba BC (P&L/Resumo/Motor de Comparação, que só têm dado de 2027), moNum
+        // já chega naturalmente como 1-12 = os próprios índices 1-12 do ano de origem.
         // Variantes do "quando o TO entra em comodato" (aba BC, Plano 2027 v3):
-        //  • TO_JUL: venda até jun/27, comodato a partir de jul/27 (padrão original).
-        //  • TO_OUT26 / TO_JAN27: a transição acontece antes ou bem no início da janela
-        //    de projeção (jan/27-dez/29) — como não temos dado de 2026, isso equivale a
-        //    "já nasce em comodato" (sem entrada aqui: nenhum mês 1-12 satisfaz a condição
-        //    de exclusão, então o canal fica comodato o tempo todo, igual a qualquer canal
-        //    sem fase). Por isso NÃO precisam de entrada neste mapa.
+        //  • TO_JUL27: venda até jun/27, comodato a partir de jul/27 (índice 6).
+        //  • TO_OUT27: venda até set/27, comodato a partir de out/27 (índice 9).
+        //  • TO_JAN28: venda o ano inteiro de 2027, comodato a partir de jan/28 (índice 12
+        //    — fora do ano civil 2027, por isso nas abas que só enxergam 2027 o TO aparece
+        //    100% venda; só na aba BC, que projeta até 2029, a transição fica visível).
+        // "TO desde o início" não precisa de variante própria — é o PLAN_2027_V3_COMODATO
+        // normal (sem nenhuma entrada aqui, o canal fica comodato o tempo todo).
         const COMODATO_PHASED_CANAL_START = {
-            'PLAN_2027_V3_COMODATO_TO_JUL': { 'TO': 7 }
-        };
-        // Cenários onde um canal NUNCA migra pra comodato (fica 100% venda os 3 anos,
-        // igual RESELLERS) — diferente do faseado, não depende do mês.
-        const COMODATO_TYPE_EXTRA_EXCLUDED_CANALS = {
-            'PLAN_2027_V3_COMODATO_TO_NUNCA': new Set(['TO'])
+            'PLAN_2027_V3_COMODATO_TO_JUL27': { 'TO': 6 },
+            'PLAN_2027_V3_COMODATO_TO_OUT27': { 'TO': 9 },
+            'PLAN_2027_V3_COMODATO_TO_JAN28': { 'TO': 12 }
         };
         function canalUsesComodato(type, canal, moNum) {
             if (!isComodatoType(type)) return false;
             const c = String(canal).toUpperCase().trim();
             if (COMODATO_EXCLUDED_CANALS.has(c)) return false;
-            const extraExcluded = COMODATO_TYPE_EXTRA_EXCLUDED_CANALS[type];
-            if (extraExcluded && extraExcluded.has(c)) return false;
             const phased = COMODATO_PHASED_CANAL_START[type];
-            if (phased && phased[c] != null && moNum != null && moNum < phased[c]) return false;
+            if (phased && phased[c] != null && moNum != null && (moNum - 1) < phased[c]) return false;
             return true;
         }
 
@@ -3032,7 +3026,7 @@
         // (Ex.: em março reconhece 3 parcelas de jan + 2 de fev + 1 de mar, todas 1/36.)
         // Em cenários faseados, uma coorte só entra no diferimento se o canal JÁ estava em
         // comodato no mês em que ela foi entregue — coortes entregues enquanto o canal ainda
-        // era venda (ex.: TO até jun/27 em PLAN_2027_V3_COMODATO_TO_JUL) já foram 100%
+        // era venda (ex.: TO até jun/27 em PLAN_2027_V3_COMODATO_TO_JUL27) já foram 100%
         // reconhecidas como venda naquele mês e não podem também virar diferimento.
         function buildComodatoRecognizedQty(type, year, moNum, filterCanal, filterDevice) {
             const acc = {};
@@ -3071,7 +3065,7 @@
 
             canals.forEach(canal => {
                 // RESELLERS segue no modelo de venda mesmo no cenário Comodato (sem diferimento).
-                // Em cenários faseados (ex. PLAN_2027_V3_COMODATO_TO_JUL), o canal também pode
+                // Em cenários faseados (ex. PLAN_2027_V3_COMODATO_TO_JUL27), o canal também pode
                 // estar em venda dependendo do mês — daí passar moNum aqui.
                 const canalComodato = canalUsesComodato(type, canal, moNum);
                 const stRate = salesTaxesRate;
@@ -3601,19 +3595,19 @@
         let bcChartObjs = {};
         // Quando o TO entra em comodato no cenário v3 — só é relevante pra v3, já que
         // v1/v2 não têm variante faseada (continuam no comodato "puro", 100% desde jan).
-        let bcToTransition = 'jul27'; // 'jul27' | 'out26' | 'jan27' | 'nunca'
+        // 'inicio' usa o PLAN_2027_V3_COMODATO normal (sem fase — TO comodato desde jan/27).
+        let bcToTransition = 'jul27'; // 'inicio' | 'jul27' | 'out27' | 'jan28'
         const BC_TO_TRANSITION_TYPES = {
-            jul27: 'PLAN_2027_V3_COMODATO_TO_JUL',
-            out26: 'PLAN_2027_V3_COMODATO_TO_OUT26',
-            jan27: 'PLAN_2027_V3_COMODATO_TO_JAN27',
-            nunca: 'PLAN_2027_V3_COMODATO_TO_NUNCA'
+            inicio: 'PLAN_2027_V3_COMODATO',
+            jul27: 'PLAN_2027_V3_COMODATO_TO_JUL27',
+            out27: 'PLAN_2027_V3_COMODATO_TO_OUT27',
+            jan28: 'PLAN_2027_V3_COMODATO_TO_JAN28'
         };
 
         function bcSaleType() { return bcPlanoVersion === 'v3' ? 'PLAN_2027_V3' : bcPlanoVersion === 'v2' ? 'PLAN_2027_V2' : 'PLAN_2027'; }
-        // v3 usa um dos 4 cenários faseados (todos os canais em comodato, exceto
-        // RESELLERS que permanece em venda, e TO que migra pra comodato conforme
-        // bcToTransition) — v1/v2 não têm variante faseada e continuam no comodato
-        // "puro" (100% desde jan).
+        // v3 usa um dos 4 cenários (todos os canais em comodato, exceto RESELLERS que
+        // permanece em venda, e TO que migra pra comodato conforme bcToTransition) —
+        // v1/v2 não têm variante faseada e continuam no comodato "puro" (100% desde jan).
         function bcComodatoType() { return bcPlanoVersion === 'v3' ? BC_TO_TRANSITION_TYPES[bcToTransition] : bcPlanoVersion === 'v2' ? 'PLAN_2027_V2_COMODATO' : 'PLAN_2027_COMODATO'; }
 
         function setBCPlanoVersion(v) {
@@ -3627,7 +3621,7 @@
 
         function setBCToTransition(v) {
             bcToTransition = v;
-            ['jul27', 'out26', 'jan27', 'nunca'].forEach(k => {
+            ['inicio', 'jul27', 'out27', 'jan28'].forEach(k => {
                 document.getElementById(`bc-to-${k}`)?.classList.toggle('active', k === v);
             });
             renderBCTab();
@@ -3672,17 +3666,6 @@
             return months;
         }
 
-        // Um cenário faseado (COMODATO_PHASED_CANAL_START) representa uma transição
-        // ÚNICA que acontece no ano de origem (2027) — a partir do 2º ano da projeção
-        // (2028 em diante) o canal já migrou de vez pra comodato, não "recomeça" a
-        // fase de venda todo ano. absoluteIdx é o índice 0-based nos 36 meses da
-        // projeção (0 = jan/27 ... 35 = dez/29); só usa o mês-calendário pra decidir a
-        // fase quando ainda estamos no ano 1 (idx < 12).
-        function bcCanalUsesComodato(type, canal, absoluteIdx) {
-            const moNum = absoluteIdx < 12 ? (absoluteIdx % 12) + 1 : null;
-            return canalUsesComodato(type, canal, moNum);
-        }
-
         // Repete o template de 2027 para 2028 e 2029 e computa Venda x Comodato mês a mês,
         // respeitando os filtros globais de Canal/Device (Segmentação, topo da página).
         function bcBuildTimeline() {
@@ -3693,19 +3676,23 @@
             const volumes36 = [];
             for (let i = 0; i < 36; i++) volumes36.push(template[i % 12]);
 
+            // canalUsesComodato() aceita "índice absoluto + 1" como moNum — 1 = jan/27,
+            // 12 = jan/28, 24 = jan/29 — a mesma escala usada em COMODATO_PHASED_CANAL_START,
+            // então uma transição faseada pode cair em qualquer um dos 3 anos da projeção
+            // (ex.: TO_JAN28 fica em venda o ano de 2027 inteiro e só migra em jan/28).
+
             // Reconhecimento comodato acumulado cruzando os 3 anos: a coorte entregue no mês
             // `cohort` reconhece 1/36 em cada mês de `cohort` até `cohort+35`. Cada coorte só
             // entra no diferimento se o canal JÁ estava em comodato no mês em que nasceu —
-            // essencial pro cenário faseado (ex. TO em venda até jun/27, mas já 100% comodato
-            // em 2028/2029): coortes entregues enquanto o canal ainda era venda não podem
-            // também virar diferimento depois.
+            // essencial pro cenário faseado: coortes entregues enquanto o canal ainda era
+            // venda não podem também virar diferimento depois de a fase migrar pra comodato.
             const recognized36 = [];
             for (let i = 0; i < 36; i++) {
                 const acc = {};
                 for (let cohort = 0; cohort <= i; cohort++) {
                     const bcd = volumes36[cohort];
                     Object.entries(bcd).forEach(([c, devs]) => {
-                        if (!bcCanalUsesComodato(comoType, c, cohort)) return;
+                        if (!canalUsesComodato(comoType, c, cohort + 1)) return;
                         if (!acc[c]) acc[c] = {};
                         Object.entries(devs).forEach(([dev, q]) => {
                             acc[c][dev] = (acc[c][dev] || 0) + (q || 0) / COMODATO_DEFER_MONTHS;
@@ -3717,15 +3704,13 @@
 
             const monthsOut = [];
             for (let i = 0; i < 36; i++) {
-                // moNum real do mês (não 12 fixo) — getCostBRL ignora isso pra tipos Plano 2027
-                // (sempre usa Dez/26 flat), mas canalUsesComodato() dentro de computePL() precisa
-                // do mês verdadeiro pra decidir corretamente cenários faseados (ex. TO em jul/27).
-                // Pro lado comodato, passamos null quando já estamos no 2º ano em diante, pra
-                // não reaplicar a fase de venda em 2028/2029 (ver bcCanalUsesComodato acima).
+                // moNum calendário (1-12, repete todo ano) — usado pra custo (getCostBRL
+                // ignora isso pra tipos Plano 2027, sempre usa Dez/26 flat) e pros rótulos de
+                // mês/ano exibidos. O lado comodato usa "i + 1" (índice absoluto) na chamada de
+                // computePL() especificamente pra decidir a fase corretamente.
                 const moNum = (i % 12) + 1;
-                const comodatoMoNum = i < 12 ? moNum : null;
                 const venda = computePL(volumes36[i], moNum, saleType, null);
-                const comodato = computePL(volumes36[i], comodatoMoNum, comoType, recognized36[i]);
+                const comodato = computePL(volumes36[i], i + 1, comoType, recognized36[i]);
                 monthsOut.push({ year: 2027 + Math.floor(i / 12), moNum, venda, comodato });
             }
             return monthsOut;
@@ -3856,10 +3841,10 @@
             const subtitle = document.getElementById('bc-subtitle');
             if (subtitle) {
                 const toClause = {
-                    out26: 'TO já entra comodato desde o início da janela (transição em out/26, antes de jan/27 — mesmo efeito de "sempre comodato" dentro de 2027-2029)',
-                    jan27: 'TO já entra comodato desde o início da janela (transição em jan/27, no 1º mês projetado)',
+                    inicio: 'TO já entra comodato desde o início (jan/27)',
                     jul27: 'TO só migra pra comodato a partir de jul/27',
-                    nunca: 'TO nunca migra pra comodato — fica 100% venda os 3 anos, igual RESELLERS'
+                    out27: 'TO só migra pra comodato a partir de out/27',
+                    jan28: 'TO fica em venda o ano de 2027 inteiro e só migra pra comodato a partir de jan/28'
                 }[bcToTransition];
                 subtitle.textContent = bcPlanoVersion === 'v3'
                     ? `Projeta os 3 anos repetindo a mesma quantidade e preço de venda de 2027 em 2028 e 2029, comparando Venda à vista com Comodato — no Comodato, RESELLERS permanece em venda (mas compõe o total do cenário) e ${toClause}, os demais canais em comodato o período todo (receita e CMV diferidos em 36 meses).`
@@ -4802,17 +4787,20 @@
                     const taxPct = (salesTaxesRate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
                     const taxModelLbl = `<strong>${taxPct}%</strong> sobre a receita reconhecida — mesma alíquota do modelo de venda (${taxModel === 'reforma' ? 'pós-Reforma Tributária' : 'modelo atual'}), não é uma regra própria do comodato`;
                     const phased = COMODATO_PHASED_CANAL_START[typeA] || COMODATO_PHASED_CANAL_START[typeB];
-                    const phasedLi = phased ? Object.entries(phased).map(([c, m]) =>
-                        `<li><strong>${c}</strong> fica em modelo de venda até ${['','jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][m-1]}/27 e só entra em comodato a partir de ${['','jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][m]}/27 em diante</li>`
+                    // Índice absoluto (0 = jan/27) → "mon/ano", pra suportar transições que
+                    // caem em qualquer um dos 3 anos da projeção (ex.: jan/28 = índice 12).
+                    const absIdxToLabel = idx => {
+                        const MO_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+                        return `${MO_PT[((idx % 12) + 12) % 12]}/${String(2027 + Math.floor(idx / 12)).slice(2)}`;
+                    };
+                    const phasedLi = phased ? Object.entries(phased).map(([c, startIdx]) =>
+                        `<li><strong>${c}</strong> fica em modelo de venda até ${absIdxToLabel(startIdx - 1)} e só entra em comodato a partir de ${absIdxToLabel(startIdx)} em diante</li>`
                     ).join('') : '';
-                    const extraExcl = COMODATO_TYPE_EXTRA_EXCLUDED_CANALS[typeA] || COMODATO_TYPE_EXTRA_EXCLUDED_CANALS[typeB];
-                    const extraExclLi = extraExcl ? `<li><strong>${Array.from(extraExcl).join(', ')}</strong> nunca migra pra comodato neste cenário — fica 100% venda o período todo, igual ${exclList}</li>` : '';
                     premissasBox.querySelector('ul').innerHTML = `
                         <li>Receita e CMV diferidos linearmente em <strong>${COMODATO_DEFER_MONTHS} meses</strong> (1/${COMODATO_DEFER_MONTHS} por mês, a partir do mês da entrega do device)</li>
                         <li>Sales taxes ${taxModelLbl}</li>
                         <li><strong>${exclList}</strong> permanece no modelo tradicional de compra e venda (sem diferimento)</li>
                         ${phasedLi}
-                        ${extraExclLi}
                         <li>Volume entregue, preço de venda e CMV unitário são os mesmos do Plano 2027 padrão — só muda o reconhecimento</li>
                     `;
                     premissasBox.classList.remove('hidden');
